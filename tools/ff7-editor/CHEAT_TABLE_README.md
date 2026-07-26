@@ -2,7 +2,7 @@
 
 Companion Cheat Engine table for the browser save editor.
 
-**File:** `GGdropmans_FF7_Steam.CT`
+**File:** `GGdropmanFF7V1.0.CT`
 
 ## Requirements
 
@@ -14,7 +14,7 @@ Companion Cheat Engine table for the browser save editor.
 ## How to use
 
 1. Start FF7 and load a save
-2. Open `GGdropmans_FF7_Steam.CT` in Cheat Engine
+2. Open `GGdropmanFF7V1.0.CT` in Cheat Engine
 3. Attach to **ff7_en.exe**
 4. Expand groups and edit values, or tick the `[Script]` rows once
 

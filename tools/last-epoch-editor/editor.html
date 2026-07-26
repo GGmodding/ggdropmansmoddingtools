@@ -113,7 +113,7 @@
         <button type="button" class="btn btn--accent" id="btn-add-skill">Add to character</button>
         <button type="button" class="btn" id="btn-fill-known-nodes">Fill known nodes to max (all trees)</button>
       </div>
-      <p class="panel-note">Unspent points still save separately. Visual trees come from datamined layouts; list editor is under each tree if you need raw IDs. Icons load from Last Epoch Tools CDN.</p>
+      <p class="panel-note">Unspent points still save separately. Visual trees use datamined layouts; icons come from Last Epoch Tools. List editor is under each tree if you need raw IDs.</p>
       <div id="trees-root" class="tree-list"></div>
     </section>
 
@@ -184,31 +184,37 @@
           <button type="button" class="btn" id="btn-filter-equipped">Filter table → equipped</button>
         </div>
         <div class="le-inv-screen__body">
-          <div class="le-doll" id="equip-grid" aria-label="Equipment"></div>
+          <div class="le-doll-wrap">
+            <div class="le-doll-label">Equipment</div>
+            <div class="le-doll" id="equip-grid" aria-label="Equipment"></div>
+          </div>
           <div class="le-bag-wrap">
-            <div class="le-bag-label">Inventory</div>
+            <div class="le-bag-label">Bag (12×12)</div>
             <div class="le-bag" id="inv-grid" style="--cols:12;--rows:12"></div>
           </div>
         </div>
       </div>
       <div class="items-layout">
-        <div class="table-wrap items-table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th></th>
-                <th>#</th>
-                <th></th>
-                <th>Item</th>
-                <th>Rarity</th>
-                <th>Qty</th>
-                <th>Container</th>
-                <th>Pos</th>
-              </tr>
-            </thead>
-            <tbody id="items-body"></tbody>
-          </table>
-        </div>
+        <details class="items-table-details" open>
+          <summary>Item list</summary>
+          <div class="table-wrap items-table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>#</th>
+                  <th></th>
+                  <th>Item</th>
+                  <th>Rarity</th>
+                  <th>Qty</th>
+                  <th>Container</th>
+                  <th>Pos</th>
+                </tr>
+              </thead>
+              <tbody id="items-body"></tbody>
+            </table>
+          </div>
+        </details>
         <aside class="item-detail" id="item-detail">
           <h3 class="subhead">Selected item</h3>
           <p class="panel-note" id="item-detail-empty">Select a row or inventory slot to edit.</p>
@@ -407,6 +413,7 @@
 
   <script src="data.js"></script>
   <script src="skills-db.js"></script>
+  <script src="passive-sections.js"></script>
   <script src="items-db.js"></script>
   <script src="affixes-db.js"></script>
   <script src="progress-db.js"></script>

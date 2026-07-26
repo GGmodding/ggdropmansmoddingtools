@@ -330,13 +330,15 @@
     const passive = LESave.ensurePassiveTree(d);
     LESave.syncTreeArrays(passive);
     const passiveName = passiveId
-      ? LESkills.skillName(passiveId) + " (Passives)"
+      ? (LEData.classById(d.characterClass)?.name || LESkills.skillName(passiveId)) + " Passives"
       : "Passive Tree";
     els.treesRoot.appendChild(
       buildTreeCard({
         title: passiveName,
         treeId: passiveId,
-        meta: passiveId ? `savedCharacterTree · ${passiveId}` : "savedCharacterTree",
+        meta: passiveId
+          ? `savedCharacterTree · ${passiveId} · base + 3 masteries`
+          : "savedCharacterTree",
         tree: passive,
         removable: false,
         onChange: () => setDirty(true),
@@ -407,7 +409,7 @@
     return reqs.every((req) => pointsOnNode(tree, req.n) >= (Number(req.r) || 0));
   }
 
-  function buildVisualTree(treeId, tree, { onChange, refresh }) {
+  function buildVisualTree(treeId, tree, { onChange, refresh, onlyNodeIds }) {
     const wrap = document.createElement("div");
     wrap.className = "skill-tree-view";
     const hint = document.createElement("div");
@@ -431,21 +433,28 @@
       return wrap;
     }
 
-    const entries = Object.keys(skill.nodes).map((nid) => {
-      const meta = skill.nodes[nid];
-      return {
-        id: Number(nid),
-        meta,
-        x: meta.x != null ? Number(meta.x) : null,
-        y: meta.y != null ? Number(meta.y) : null,
-      };
-    });
+    const allow = onlyNodeIds
+      ? new Set([...onlyNodeIds].map((n) => Number(n)))
+      : null;
+
+    const entries = Object.keys(skill.nodes)
+      .map((nid) => {
+        const meta = skill.nodes[nid];
+        return {
+          id: Number(nid),
+          meta,
+          x: meta.x != null ? Number(meta.x) : null,
+          y: meta.y != null ? Number(meta.y) : null,
+        };
+      })
+      .filter((e) => !allow || allow.has(e.id));
     const positioned = entries.filter((e) => e.x != null && e.y != null);
     const useLayout = positioned.length >= Math.max(3, entries.length * 0.5);
 
-    const SCALE = 0.52;
-    const NODE = 54;
-    const PAD = 72;
+    const SCALE = 0.92;
+    const NODE = 70;
+    const PAD = 88;
+    const MIN_CENTER = 78;
     let minX = 0;
     let maxX = 0;
     let minY = 0;
@@ -467,23 +476,12 @@
       // fallback ring layout
       const n = entries.length || 1;
       const ang = (i / n) * Math.PI * 2 - Math.PI / 2;
-      const rad = 40 + Math.floor(i / 8) * 70;
+      const rad = 55 + Math.floor(i / 8) * 78;
       return {
-        left: 280 + Math.cos(ang) * rad,
-        top: 220 + Math.sin(ang) * rad,
+        left: 300 + Math.cos(ang) * rad,
+        top: 240 + Math.sin(ang) * rad,
       };
     }
-
-    const width = useLayout ? (maxX - minX) * SCALE + PAD * 2 + NODE : 560;
-    const height = useLayout ? (maxY - minY) * SCALE + PAD * 2 + NODE : 480;
-    stage.style.width = Math.max(480, width) + "px";
-    stage.style.height = Math.max(360, height) + "px";
-
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("class", "skill-tree-view__edges");
-    svg.setAttribute("width", String(Math.max(480, width)));
-    svg.setAttribute("height", String(Math.max(360, height)));
-    stage.appendChild(svg);
 
     const posMap = new Map();
     entries.forEach((e, i) => {
@@ -491,27 +489,115 @@
       posMap.set(e.id, { ...p, cx: p.left + NODE / 2, cy: p.top + NODE / 2 });
     });
 
-    // edges
+    // Light overlap fix only — preserve datamined spacing
+    const ids = [...posMap.keys()];
+    for (let iter = 0; iter < 12; iter++) {
+      let moved = false;
+      for (let i = 0; i < ids.length; i++) {
+        for (let j = i + 1; j < ids.length; j++) {
+          const a = posMap.get(ids[i]);
+          const b = posMap.get(ids[j]);
+          let dx = b.cx - a.cx;
+          let dy = b.cy - a.cy;
+          let dist = Math.hypot(dx, dy);
+          if (dist < 0.01) {
+            dx = 1;
+            dy = 0;
+            dist = 0.01;
+          }
+          if (dist >= MIN_CENTER) continue;
+          const push = (MIN_CENTER - dist) / 2;
+          const nx = dx / dist;
+          const ny = dy / dist;
+          a.cx -= nx * push;
+          a.cy -= ny * push;
+          b.cx += nx * push;
+          b.cy += ny * push;
+          a.left = a.cx - NODE / 2;
+          a.top = a.cy - NODE / 2;
+          b.left = b.cx - NODE / 2;
+          b.top = b.cy - NODE / 2;
+          moved = true;
+        }
+      }
+      if (!moved) break;
+    }
+
+    let stageW = 480;
+    let stageH = 360;
+    posMap.forEach((p) => {
+      stageW = Math.max(stageW, p.left + NODE + PAD);
+      stageH = Math.max(stageH, p.top + NODE + PAD);
+    });
+    // Normalize so nothing sits clipped past the origin
+    let shiftX = 0;
+    let shiftY = 0;
+    posMap.forEach((p) => {
+      if (p.left < PAD / 2) shiftX = Math.max(shiftX, PAD / 2 - p.left);
+      if (p.top < PAD / 2) shiftY = Math.max(shiftY, PAD / 2 - p.top);
+    });
+    if (shiftX || shiftY) {
+      posMap.forEach((p) => {
+        p.left += shiftX;
+        p.top += shiftY;
+        p.cx += shiftX;
+        p.cy += shiftY;
+      });
+      stageW += shiftX;
+      stageH += shiftY;
+    }
+
+    stage.style.width = Math.ceil(stageW) + "px";
+    stage.style.height = Math.ceil(stageH + 22) + "px";
+
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "skill-tree-view__edges");
+    svg.setAttribute("width", String(Math.ceil(stageW)));
+    svg.setAttribute("height", String(Math.ceil(stageH + 22)));
+    const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    defs.innerHTML =
+      '<filter id="skill-edge-glow" x="-40%" y="-40%" width="180%" height="180%">' +
+      '<feGaussianBlur stdDeviation="1.6" result="b"/>' +
+      '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>' +
+      "</filter>";
+    svg.appendChild(defs);
+    stage.appendChild(svg);
+
+    // edges (only within this section/view)
     entries.forEach((e) => {
       const reqs = Array.isArray(e.meta.r) ? e.meta.r : [];
       reqs.forEach((req) => {
-        const from = posMap.get(Number(req.n));
+        const parentId = Number(req.n);
+        if (allow && !allow.has(parentId)) return;
+        const from = posMap.get(parentId);
         const to = posMap.get(e.id);
         if (!from || !to) return;
+        const pts = pointsOnNode(tree, e.id);
+        const parentPts = pointsOnNode(tree, req.n);
+        const linked = parentPts >= (Number(req.r) || 0) && pts > 0;
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        g.setAttribute("class", "skill-edge-group" + (linked ? " is-active" : ""));
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", String(from.cx));
         line.setAttribute("y1", String(from.cy));
         line.setAttribute("x2", String(to.cx));
         line.setAttribute("y2", String(to.cy));
-        const pts = pointsOnNode(tree, e.id);
-        const parentPts = pointsOnNode(tree, req.n);
-        const linked = parentPts >= (Number(req.r) || 0) && pts > 0;
         line.setAttribute("class", "skill-edge" + (linked ? " is-active" : ""));
-        svg.appendChild(line);
+        if (linked) line.setAttribute("filter", "url(#skill-edge-glow)");
+        g.appendChild(line);
+        const mx = (from.cx + to.cx) / 2;
+        const my = (from.cy + to.cy) / 2;
+        const joint = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        joint.setAttribute("cx", String(mx));
+        joint.setAttribute("cy", String(my));
+        joint.setAttribute("r", linked ? "3.2" : "2.4");
+        joint.setAttribute("class", "skill-edge__joint" + (linked ? " is-active" : ""));
+        g.appendChild(joint);
+        svg.appendChild(g);
       });
     });
 
-    entries.forEach((e, i) => {
+    entries.forEach((e) => {
       const p = posMap.get(e.id);
       const pts = pointsOnNode(tree, e.id);
       const max = e.meta.m != null ? Number(e.meta.m) : 0;
@@ -530,21 +616,25 @@
         (max > 0 ? ` (${pts}/${max})` : pts ? ` (${pts})` : "") +
         (e.meta.d ? "\n" + e.meta.d : "");
 
+      const hex = document.createElement("span");
+      hex.className = "skill-node__hex";
+      const hexInner = document.createElement("span");
+      hexInner.className = "skill-node__hex-inner";
       const ic = makeIconEl(LESkills.nodeIconClass(treeId, e.id), "skill-icon--tree");
-      if (ic) btn.appendChild(ic);
+      if (ic) hexInner.appendChild(ic);
       else {
         const fallback = document.createElement("span");
         fallback.className = "skill-node__fallback";
         fallback.textContent = "◆";
-        btn.appendChild(fallback);
+        hexInner.appendChild(fallback);
       }
+      hex.appendChild(hexInner);
+      btn.appendChild(hex);
 
-      if (max > 0 || pts > 0) {
-        const badge = document.createElement("span");
-        badge.className = "skill-node__pts";
-        badge.textContent = max > 0 ? `${pts}/${max}` : String(pts);
-        btn.appendChild(badge);
-      }
+      const badge = document.createElement("span");
+      badge.className = "skill-node__pts";
+      badge.textContent = max > 0 ? `${pts}/${max}` : pts > 0 ? String(pts) : "0";
+      btn.appendChild(badge);
 
       btn.addEventListener("click", (ev) => {
         ev.preventDefault();
@@ -675,8 +765,91 @@
     card.appendChild(head);
 
     let visualHost = null;
+    function sectionSpent(nodeIds) {
+      let spent = 0;
+      let cap = 0;
+      nodeIds.forEach((nid) => {
+        const pts = pointsOnNode(tree, nid);
+        spent += pts;
+        const max = LESkills.nodeMaxPoints(treeId, nid);
+        if (max != null && max > 0) cap += max;
+      });
+      return { spent, cap };
+    }
+
     function refreshVisual() {
       const next = document.createElement("div");
+      next.className = "tree-visual-host";
+      const classId = state.data ? state.data.characterClass : null;
+      const sections =
+        treeId &&
+        LESkills.isPassiveTreeId(treeId) &&
+        window.LEPassiveSections
+          ? LEPassiveSections.namedSections(treeId, classId)
+          : null;
+
+      if (treeId && dbSkill && LESkills.treeHasLayout(treeId) && sections && sections.length) {
+        const tabs = document.createElement("div");
+        tabs.className = "skill-mastery-tabs";
+        const panelsHost = document.createElement("div");
+        panelsHost.className = "skill-mastery-panels";
+
+        let activeIdx = Number(card.dataset.activeMastery || 0);
+        if (activeIdx < 0 || activeIdx >= sections.length) activeIdx = 0;
+
+        function showSection(idx) {
+          activeIdx = idx;
+          card.dataset.activeMastery = String(idx);
+          tabs.querySelectorAll(".skill-mastery-tab").forEach((b, i) => {
+            b.classList.toggle("is-active", i === idx);
+          });
+          panelsHost.innerHTML = "";
+          const sec = sections[idx];
+          const { spent, cap } = sectionSpent(sec.nodeIds);
+          const head = document.createElement("div");
+          head.className = "skill-mastery-panel__head";
+          head.innerHTML =
+            `<h4 class="skill-mastery-panel__title">${sec.name}</h4>` +
+            `<span class="skill-mastery-panel__pts">${spent}${cap ? " / " + cap : ""} pts</span>`;
+          panelsHost.appendChild(head);
+          panelsHost.appendChild(
+            buildVisualTree(treeId, tree, {
+              onlyNodeIds: sec.nodeIds,
+              onChange,
+              refresh: () => {
+                refreshVisual();
+                rebuildNodeTable();
+              },
+            })
+          );
+        }
+
+        sections.forEach((sec, idx) => {
+          const { spent } = sectionSpent(sec.nodeIds);
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className =
+            "skill-mastery-tab" +
+            (idx === activeIdx ? " is-active" : "") +
+            (sec.kind === "base" ? " is-base" : "");
+          btn.innerHTML =
+            `<span class="skill-mastery-tab__name">${sec.name}</span>` +
+            `<span class="skill-mastery-tab__pts">${spent}</span>`;
+          btn.addEventListener("click", () => showSection(idx));
+          tabs.appendChild(btn);
+        });
+
+        next.appendChild(tabs);
+        next.appendChild(panelsHost);
+        // defer show until host attached? can call immediately
+        // but tabs need to exist first — showSection uses tabs query
+        if (visualHost) card.replaceChild(next, visualHost);
+        else card.appendChild(next);
+        visualHost = next;
+        showSection(activeIdx);
+        return;
+      }
+
       if (treeId && dbSkill && LESkills.treeHasLayout(treeId)) {
         next.appendChild(
           buildVisualTree(treeId, tree, {
@@ -924,6 +1097,116 @@
     return " le-rarity-" + Number(rarity);
   }
 
+  let itemTipEl = null;
+  function ensureItemTip() {
+    if (itemTipEl) return itemTipEl;
+    itemTipEl = document.createElement("div");
+    itemTipEl.className = "item-tip";
+    itemTipEl.hidden = true;
+    itemTipEl.setAttribute("role", "tooltip");
+    document.body.appendChild(itemTipEl);
+    return itemTipEl;
+  }
+
+  function hideItemTip() {
+    const tip = ensureItemTip();
+    tip.hidden = true;
+    tip.innerHTML = "";
+  }
+
+  function positionItemTip(clientX, clientY) {
+    const tip = ensureItemTip();
+    if (tip.hidden) return;
+    const pad = 14;
+    const tw = tip.offsetWidth || 260;
+    const th = tip.offsetHeight || 120;
+    let left = clientX + pad;
+    let top = clientY + pad;
+    if (left + tw > window.innerWidth - 8) left = clientX - tw - pad;
+    if (top + th > window.innerHeight - 8) top = clientY - th - pad;
+    tip.style.left = Math.max(8, left) + "px";
+    tip.style.top = Math.max(8, top) + "px";
+  }
+
+  function buildItemTipHtml(item, decoded, heading) {
+    const packed =
+      (decoded && decoded.packed) ||
+      (item && window.LEItemCodec ? LEItemCodec.unpackBestEffort(item.data) : null);
+    const rarityName = window.LEItems ? LEItems.rarityName(decoded && decoded.rarity) : "—";
+    const qty = item ? Number(item.quantity) || 0 : 0;
+    const parts = [];
+    if (heading) parts.push(`<div class="item-tip__slot">${escapeHtml(heading)}</div>`);
+    parts.push(
+      `<div class="item-tip__name">${escapeHtml((decoded && decoded.label) || "Item")}</div>`
+    );
+    parts.push(
+      `<div class="item-tip__meta">${escapeHtml(rarityName)}` +
+        (qty > 1 ? ` · qty ${qty}` : "") +
+        `</div>`
+    );
+    if (packed) {
+      const bits = [];
+      if (packed.forgingPotential != null) bits.push(`FP ${packed.forgingPotential}`);
+      if (packed.legendaryPotential != null && Number(packed.legendaryPotential) > 0) {
+        bits.push(`LP ${packed.legendaryPotential}`);
+      }
+      if (packed.uniqueId != null) bits.push(`Unique #${packed.uniqueId}`);
+      if (bits.length) {
+        parts.push(`<div class="item-tip__meta">${escapeHtml(bits.join(" · "))}</div>`);
+      }
+      const affixes = Array.isArray(packed.affixes) ? packed.affixes : [];
+      if (affixes.length) {
+        parts.push('<ul class="item-tip__affixes">');
+        affixes.forEach((a) => {
+          const name = affixLabel(a.id);
+          const tier = a.tier != null ? `T${Number(a.tier) + 1}` : "";
+          const roll = a.roll != null ? `roll ${a.roll}` : "";
+          const sealed = a.sealed ? " · sealed" : "";
+          const trail = [tier, roll].filter(Boolean).join(" · ");
+          parts.push(
+            `<li><span class="item-tip__affix-name">${escapeHtml(name)}</span>` +
+              (trail || sealed
+                ? `<span class="item-tip__affix-meta">${escapeHtml(trail + sealed)}</span>`
+                : "") +
+              `</li>`
+          );
+        });
+        parts.push("</ul>");
+      } else if (packed.layout === "unknown" || !packed.layout) {
+        parts.push('<div class="item-tip__note">Stats not fully decoded for this item layout.</div>');
+      }
+    } else if (item && Array.isArray(item.data) && item.data.length) {
+      parts.push(
+        `<div class="item-tip__note">Raw: ${escapeHtml(item.data.slice(0, 8).join(", "))}${
+          item.data.length > 8 ? "…" : ""
+        }</div>`
+      );
+    }
+    return parts.join("");
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function bindItemTooltip(el, item, decoded, heading) {
+    if (!el || !item) return;
+    el.removeAttribute("title");
+    el.addEventListener("mouseenter", (ev) => {
+      const tip = ensureItemTip();
+      tip.innerHTML = buildItemTipHtml(item, decoded, heading);
+      tip.hidden = false;
+      tip.className = "item-tip" + rarityClass(decoded && decoded.rarity);
+      positionItemTip(ev.clientX, ev.clientY);
+    });
+    el.addEventListener("mousemove", (ev) => positionItemTip(ev.clientX, ev.clientY));
+    el.addEventListener("mouseleave", hideItemTip);
+  }
+
   function appendItemIcon(parent, decoded) {
     const wrap = document.createElement("span");
     wrap.className = "le-slot__icon";
@@ -972,7 +1255,6 @@
       if (selectedIndex === index) btn.classList.add("is-selected");
       btn.style.gridColumn = `${x + 1} / span ${w}`;
       btn.style.gridRow = `${y + 1} / span ${h}`;
-      btn.title = decoded.label || ("Item #" + index);
       appendItemIcon(btn, decoded);
       const qty = Number(item.quantity) || 0;
       if (qty > 1) {
@@ -981,6 +1263,7 @@
         q.textContent = String(qty);
         btn.appendChild(q);
       }
+      bindItemTooltip(btn, item, decoded);
       btn.addEventListener("click", () => onSelect && onSelect(index));
       gridEl.appendChild(btn);
     });
@@ -1037,8 +1320,8 @@
       if (found) {
         const decoded = decodeForUi(found.item);
         btn.className += rarityClass(decoded.rarity);
-        btn.title = `${slot.label}: ${decoded.label}`;
         appendItemIcon(btn, decoded);
+        bindItemTooltip(btn, found.item, decoded, slot.label);
         btn.addEventListener("click", () => {
           if (
             els.itemContainerFilter.value === "equipped" ||
