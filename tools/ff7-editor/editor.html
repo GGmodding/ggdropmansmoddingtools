@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GGdropmans FF7 Save Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="drop-overlay" class="drop-overlay" hidden>
+    <div class="drop-overlay__panel">Drop save00–save09.ff7 to load</div>
+  </div>
+
+  <header class="topbar">
+    <a class="brand" href="../../index.html" style="text-decoration:none;color:inherit">
+      <span class="brand__mark">FF7</span>
+      <div class="brand__text">
+        <h1>GGdropmans FF7 Editor</h1>
+        <p>Steam / PC · Back to hub</p>
+      </div>
+    </a>
+    <div class="topbar__actions">
+      <label class="btn btn--primary">
+        Load Save
+        <input id="file-input" type="file" accept=".ff7,application/octet-stream" hidden />
+      </label>
+      <button id="btn-backup" class="btn" type="button" disabled>Download Backup</button>
+      <button id="btn-save" class="btn btn--accent" type="button" disabled>Save Changes</button>
+      <span id="dirty-pill" class="pill" hidden>Unsaved</span>
+    </div>
+  </header>
+
+  <section class="path-banner">
+    <strong>Steam tip</strong>
+    <span>Close the game first. Saves live in <code>Documents\Square Enix\FINAL FANTASY VII Steam\user_&lt;ID&gt;\</code> as <code>save00.ff7</code>–<code>save09.ff7</code>. Turn off Steam Cloud while testing edits, or sync may overwrite your file.</span>
+  </section>
+
+  <div id="install-modal" class="modal" hidden>
+    <div class="modal__card">
+      <h2>Save downloaded</h2>
+      <ol>
+        <li>Make sure FF7 is fully closed.</li>
+        <li>Overwrite the matching <code>save##.ff7</code> in your Steam user folder.</li>
+        <li>If Steam Cloud is on, keep it off until you confirm the load works.</li>
+      </ol>
+      <div class="modal__actions">
+        <button type="button" class="btn btn--accent" id="btn-close-modal">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="slot-bar" id="slot-bar" hidden></div>
+
+  <nav class="tabs" id="tabs" aria-label="Editor sections" hidden>
+    <button class="tab is-active" data-tab="party" type="button">Gil &amp; Party</button>
+    <button class="tab" data-tab="chars" type="button">Characters</button>
+    <button class="tab" data-tab="items" type="button">Items</button>
+    <button class="tab" data-tab="materia" type="button">Materia</button>
+    <button class="tab" data-tab="chocobos" type="button">Chocobos</button>
+  </nav>
+
+  <main class="main">
+    <div id="empty-state" class="empty">
+      <h2>Load a Steam .ff7 save</h2>
+      <p>Drag and drop <code>save00.ff7</code>–<code>save09.ff7</code>, or click <strong>Load Save</strong>.</p>
+    </div>
+
+    <section id="panel-party" class="panel is-active" hidden>
+      <div class="panel__head">
+        <h2>Gil &amp; Party</h2>
+        <p id="slot-meta">Slot preview</p>
+      </div>
+      <div class="grid form-grid">
+        <label>Gil<input id="f-gil" type="number" min="0" max="99999999" step="1" /></label>
+        <label>Play time (seconds)<input id="f-time" type="number" min="0" step="1" /></label>
+        <label>Party slot 1
+          <select id="f-party0"></select>
+        </label>
+        <label>Party slot 2
+          <select id="f-party1"></select>
+        </label>
+        <label>Party slot 3
+          <select id="f-party2"></select>
+        </label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn" id="btn-max-gil">Set gil to 99999999</button>
+        <button type="button" class="btn btn--accent" id="btn-enable-sephiroth">Enable Sephiroth in party</button>
+      </div>
+      <p class="panel-note">Sephiroth replaces Vincent’s character slot (game limitation). Young Cloud / Sephiroth also appear in the party dropdowns.</p>
+    </section>
+
+    <section id="panel-chars" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Character Stats</h2>
+        <p>Base stats, HP/MP, EXP, equipment, and equipped materia.</p>
+      </div>
+      <div class="char-tabs" id="char-tabs"></div>
+      <div class="grid form-grid" id="char-form"></div>
+
+      <h3 class="subhead">Limit Breaks</h3>
+      <p class="panel-note">Learned limits are a bitmask on the character record. Level 4 is included when unlocking all (no manual item needed).</p>
+      <div class="checks" id="limit-checks"></div>
+      <div class="grid form-grid" style="margin-top:0.85rem">
+        <label>Current limit level<input id="f-limit-level" type="number" min="1" max="4" step="1" /></label>
+        <label>Limit bar (255 = ready)<input id="f-limit-bar" type="number" min="0" max="255" step="1" /></label>
+        <label>Kills<input id="f-kills" type="number" min="0" max="65535" step="1" /></label>
+        <label>Limit 1-1 uses<input id="f-limit1-used" type="number" min="0" max="65535" step="1" /></label>
+        <label>Limit 2-1 uses<input id="f-limit2-used" type="number" min="0" max="65535" step="1" /></label>
+        <label>Limit 3-1 uses<input id="f-limit3-used" type="number" min="0" max="65535" step="1" /></label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-unlock-limits-current">Unlock all limits (this character)</button>
+        <button type="button" class="btn btn--accent" id="btn-unlock-limits-all">Unlock all limits (all characters)</button>
+        <button type="button" class="btn" id="btn-fill-limit-bar">Fill limit bar</button>
+      </div>
+
+      <h3 class="subhead">Weapon materia</h3>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Materia</th><th>AP</th></tr></thead>
+          <tbody id="char-wmat"></tbody>
+        </table>
+      </div>
+      <h3 class="subhead">Armor materia</h3>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Materia</th><th>AP</th></tr></thead>
+          <tbody id="char-amat"></tbody>
+        </table>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn" id="btn-max-stats">Max base stats (255)</button>
+        <button type="button" class="btn" id="btn-fill-hpmp">Fill HP/MP to max</button>
+      </div>
+    </section>
+
+    <section id="panel-items" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Item Stock</h2>
+        <p>320 inventory slots. Qty maxes at 99 in the menu UI (higher values usually still work on Steam).</p>
+      </div>
+      <div class="toolbar">
+        <label>Filter
+          <select id="item-filter">
+            <option value="all">All</option>
+            <option value="owned">Owned only</option>
+            <option value="Item">Items</option>
+            <option value="Weapon">Weapons</option>
+            <option value="Armor">Armor</option>
+            <option value="Accessory">Accessories</option>
+          </select>
+        </label>
+        <label>Search<input id="item-search" type="text" placeholder="Name…" /></label>
+        <button type="button" class="btn" id="btn-add-item">Add item to first empty</button>
+        <button type="button" class="btn btn--accent" id="btn-add-all-items">Add all items ×99</button>
+        <button type="button" class="btn" id="btn-max-common">Stock common consumables ×99</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Slot</th><th>Type</th><th>Item</th><th>Qty</th><th></th></tr>
+          </thead>
+          <tbody id="items-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-materia" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Party Materia</h2>
+        <p>200 materia inventory slots. AP <code>16777215</code> (0xFFFFFF) = mastered.</p>
+      </div>
+      <div class="toolbar">
+        <label>Filter
+          <select id="mat-filter">
+            <option value="all">All</option>
+            <option value="owned">Owned only</option>
+          </select>
+        </label>
+        <button type="button" class="btn" id="btn-add-materia">Add materia to first empty</button>
+        <button type="button" class="btn btn--accent" id="btn-add-all-materia">Add all materia (mastered)</button>
+        <button type="button" class="btn" id="btn-master-all">Master all owned</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Slot</th><th>Materia</th><th>AP</th><th></th></tr>
+          </thead>
+          <tbody id="materia-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-chocobos" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Chocobo Stables</h2>
+        <p>Six ranch slots — stats, name, type, stamina, and stable occupancy.</p>
+      </div>
+      <div class="grid form-grid">
+        <label>Stables owned (0–6)<input id="f-stables-owned" type="number" min="0" max="6" step="1" /></label>
+        <label>Occupied count<input id="f-stables-occupied" type="number" min="0" max="6" step="1" /></label>
+      </div>
+      <div class="char-tabs" id="choco-tabs"></div>
+      <div class="grid form-grid" id="choco-form"></div>
+      <div class="checks" id="choco-flags" style="margin-top:1rem"></div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-fill-gold-chocobos">Fill 6 max gold chocobos</button>
+        <button type="button" class="btn" id="btn-max-choco-stats">Max current chocobo stats</button>
+        <button type="button" class="btn btn--danger" id="btn-clear-choco">Clear current stable</button>
+      </div>
+    </section>
+  </main>
+
+  <div class="status" id="status">No save loaded.</div>
+
+  <script src="data.js"></script>
+  <script src="save.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
