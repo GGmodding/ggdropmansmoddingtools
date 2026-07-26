@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ggdropmansmoddingtools</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: #fff;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% 0%, rgba(80, 120, 255, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 80%, rgba(255, 80, 160, 0.08), transparent 50%),
+        radial-gradient(ellipse 50% 40% at 10% 70%, rgba(60, 220, 160, 0.08), transparent 50%),
+        #1a1d24;
+      background-attachment: fixed;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 16px 80px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 20%, transparent 75%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .credits-button {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 20;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(20, 24, 36, 0.75);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+    }
+
+    .credits-button:hover {
+      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(30, 36, 52, 0.9);
+    }
+
+    .hud-shell {
+      width: 100%;
+      max-width: 920px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hud-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .hud-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 96px;
+      padding: 0;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 8px;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      text-shadow: 0 0 2px #000, 0 2px 12px rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: rgba(15, 20, 40, 0.45);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, filter 0.2s ease;
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+    }
+
+    .hud-btn:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.4);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    }
+
+    .hud-btn:active { transform: translateY(0); }
+
+    .hud-btn__label {
+      position: relative;
+      z-index: 1;
+      padding: 14px 16px;
+      width: 100%;
+    }
+
+    .hud-btn--featured {
+      grid-column: 1 / -1;
+      min-height: 120px;
+      border-color: rgba(226, 168, 58, 0.75);
+      background:
+        linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.55) 100%),
+        url("https://cdn.cloudflare.steamstatic.com/steam/apps/3070070/header.jpg") center 40% / cover no-repeat;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 215, 120, 0.15);
+    }
+
+    .hud-btn--featured:hover {
+      border-color: rgba(255, 220, 120, 0.9);
+      filter: brightness(1.06);
+    }
+
+    .hud-btn--soon {
+      min-height: 96px;
+      border-color: rgba(120, 140, 180, 0.35);
+      background: linear-gradient(145deg, rgba(40, 48, 70, 0.85), rgba(18, 22, 34, 0.95));
+      color: rgba(255, 255, 255, 0.75);
+    }
+
+    .hud-btn--banner {
+      grid-column: 1 / -1;
+      min-height: 64px;
+      border-color: rgba(100, 160, 255, 0.35);
+      background: linear-gradient(90deg, rgba(30, 60, 120, 0.55), rgba(20, 24, 40, 0.85) 40%, rgba(80, 40, 100, 0.45));
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+    }
+
+    .visitor-count {
+      position: fixed;
+      left: 14px;
+      bottom: 14px;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 220, 100, 0.25);
+      background: rgba(12, 14, 20, 0.8);
+      backdrop-filter: blur(10px);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .visitor-count-label { color: rgba(255, 255, 255, 0.55); }
+    .visitor-count-num { color: #ffd24a; }
+    .visitor-count-sep { color: rgba(255, 255, 255, 0.35); margin: 0 2px; }
+    .visitor-count-stats { display: inline-flex; align-items: center; gap: 6px; }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.65);
+    }
+
+    .modal-overlay[hidden] { display: none !important; }
+
+    .modal {
+      width: min(480px, 100%);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: #161a24;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      padding: 1rem 1.15rem 1.2rem;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.85rem;
+    }
+
+    .modal-title { font-size: 1.15rem; letter-spacing: 0.03em; }
+
+    .modal-close {
+      border: none;
+      background: transparent;
+      color: #fff;
+      font-size: 1.5rem;
+      line-height: 1;
+      cursor: pointer;
+      opacity: 0.7;
+    }
+
+    .modal-close:hover { opacity: 1; }
+
+    .credits-body {
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.55;
+      font-size: 0.95rem;
+    }
+
+    .credits-body p + p,
+    .credits-body ul { margin-top: 0.65rem; }
+    .credits-body a { color: #ffd24a; }
+    .credits-body ul { padding-left: 1.1rem; }
+
+    @media (max-width: 640px) {
+      .hud-grid { grid-template-columns: 1fr; }
+      .hud-btn--featured,
+      .hud-btn--banner { grid-column: auto; }
+      .visitor-count {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <button type="button" class="credits-button" id="credits-btn">Credits</button>
+
+  <div class="hud-shell">
+    <nav class="hud-grid" aria-label="Editors">
+      <a class="hud-btn hud-btn--featured" href="tools/tcg-editor/editor.html">
+        <span class="hud-btn__label">TCG Card Shop Simulator</span>
+      </a>
+
+      <button type="button" class="hud-btn hud-btn--soon" onclick="showComingSoon()">
+        <span class="hud-btn__label">Coming Soon</span>
+      </button>
+      <button type="button" class="hud-btn hud-btn--soon" onclick="showComingSoon()">
+        <span class="hud-btn__label">Coming Soon</span>
+      </button>
+      <button type="button" class="hud-btn hud-btn--soon" onclick="showComingSoon()">
+        <span class="hud-btn__label">Coming Soon</span>
+      </button>
+      <button type="button" class="hud-btn hud-btn--soon" onclick="showComingSoon()">
+        <span class="hud-btn__label">Coming Soon</span>
+      </button>
+      <button type="button" class="hud-btn hud-btn--soon" onclick="showComingSoon()">
+        <span class="hud-btn__label">Coming Soon</span>
+      </button>
+      <button type="button" class="hud-btn hud-btn--banner" onclick="showComingSoon()" aria-label="More coming soon">
+        <span class="hud-btn__label">ggdropmansmoddingtools — more coming soon</span>
+      </button>
+    </nav>
+  </div>
+
+  <div class="visitor-count" id="visitor-count">
+    <span class="visitor-count-label">Visits</span>
+    <span class="visitor-count-stats">
+      <span class="visitor-count-num" id="visitor-total">--</span>
+      <span class="visitor-count-sep">|</span>
+      <span class="visitor-count-num" id="visitor-unique">--</span>
+      <span class="visitor-count-label">unique</span>
+    </span>
+  </div>
+
+  <div class="modal-overlay" id="credits-modal" hidden>
+    <div class="modal" role="dialog" aria-labelledby="credits-title">
+      <div class="modal-header">
+        <h2 class="modal-title" id="credits-title">Credits</h2>
+        <button type="button" class="modal-close" id="credits-close" aria-label="Close">×</button>
+      </div>
+      <div class="credits-body">
+        <p><strong>Site:</strong> ggdropmansmoddingtools</p>
+        <p><strong>Creator:</strong> GGdropman</p>
+        <p><strong>Editors:</strong></p>
+        <ul>
+          <li><a href="tools/tcg-editor/editor.html">TCG Card Shop Save Editor</a> — GGdropman</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="soon-modal" hidden>
+    <div class="modal" role="dialog" aria-labelledby="soon-title">
+      <div class="modal-header">
+        <h2 class="modal-title" id="soon-title">Coming Soon</h2>
+        <button type="button" class="modal-close" id="soon-close" aria-label="Close">×</button>
+      </div>
+      <p class="credits-body">More save editors will show up here as they’re built. The TCG Card Shop editor is ready now.</p>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const creditsModal = document.getElementById("credits-modal");
+      const soonModal = document.getElementById("soon-modal");
+      const openModal = (el) => { el.hidden = false; };
+      const closeModal = (el) => { el.hidden = true; };
+
+      document.getElementById("credits-btn").addEventListener("click", () => openModal(creditsModal));
+      document.getElementById("credits-close").addEventListener("click", () => closeModal(creditsModal));
+      document.getElementById("soon-close").addEventListener("click", () => closeModal(soonModal));
+      creditsModal.addEventListener("click", (e) => { if (e.target === creditsModal) closeModal(creditsModal); });
+      soonModal.addEventListener("click", (e) => { if (e.target === soonModal) closeModal(soonModal); });
+      window.showComingSoon = () => openModal(soonModal);
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          closeModal(creditsModal);
+          closeModal(soonModal);
+        }
+      });
+
+      try {
+        const totalKey = "gg_visits_total";
+        const uniqueKey = "gg_visits_unique_flag";
+        const total = (Number(localStorage.getItem(totalKey)) || 0) + 1;
+        localStorage.setItem(totalKey, String(total));
+        let unique = Number(localStorage.getItem("gg_visits_unique_count")) || 0;
+        if (!localStorage.getItem(uniqueKey)) {
+          unique += 1;
+          localStorage.setItem(uniqueKey, "1");
+          localStorage.setItem("gg_visits_unique_count", String(unique));
+        }
+        document.getElementById("visitor-total").textContent = String(total);
+        document.getElementById("visitor-unique").textContent = String(unique || 1);
+      } catch {
+        document.getElementById("visitor-total").textContent = "--";
+        document.getElementById("visitor-unique").textContent = "--";
+      }
+    })();
+  </script>
+</body>
+</html>
