@@ -1,3 +1,5 @@
 ﻿.DS_Store
 Thumbs.db
 *.log
+tools/last-epoch-editor/_moditem.json
+tools/last-epoch-editor/_campaign_progress.json

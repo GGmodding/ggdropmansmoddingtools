@@ -1,0 +1,676 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="45">
+  <CheatEntries>
+
+    <CheatEntry>
+      <ID>1</ID>
+      <Description>"=== GGdropmans FF7 Editor (Steam Classic) ==="</Description>
+      <Options moHideChildren="1"/>
+      <Color>00C08040</Color>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+
+        <CheatEntry>
+          <ID>2</ID>
+          <Description>"README — how to use"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{
+GGdropmans FF7 Cheat Table
+==========================
+Process: ff7_en.exe  (Steam classic / 2013 remaster)
+NOT for Remake, Rebirth, or the 2026 "Steam Edition" wrapper unless it still launches ff7_en.exe.
+
+1. Start FF7 (English Steam build)
+2. Open this .CT in Cheat Engine
+3. Attach to ff7_en.exe
+4. Edit values below (field/menu stats use the in-RAM savemap)
+
+If numbers look wrong after a game update:
+- Search your current Gil as Exact Value, 4 Bytes
+- Note the address, then set Savemap Base = GilAddress - 0xB7C
+- Or edit the "Savemap Base" entry below
+
+Savemap offsets match the browser editor / Black Chocobo wiki.
+}
+[ENABLE]
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>3</ID>
+          <Description>"Savemap Base (gil = base+B7C)"</Description>
+          <ShowAsHex>1</ShowAsHex>
+          <VariableType>4 Bytes</VariableType>
+          <Address>ff7_en.exe+9BFD38</Address>
+          <Color>00808080</Color>
+        </CheatEntry>
+
+      </CheatEntries>
+    </CheatEntry>
+
+    <!-- ===================== PARTY / GIL ===================== -->
+    <CheatEntry>
+      <ID>10</ID>
+      <Description>"Gil &amp; Party"</Description>
+      <Options moHideChildren="1" moManualExpandCollapse="1"/>
+      <Color>0040C080</Color>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+
+        <CheatEntry>
+          <ID>11</ID>
+          <Description>"Gil"</Description>
+          <VariableType>4 Bytes</VariableType>
+          <Address>ff7_en.exe+9C08B4</Address>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>12</ID>
+          <Description>"Party slot 1 (0=Cloud … 7=Vincent 8=Cid 10=Sephiroth FF=empty)"</Description>
+          <ShowAsHex>1</ShowAsHex>
+          <VariableType>Byte</VariableType>
+          <Address>ff7_en.exe+9BFD38+4F8</Address>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>13</ID>
+          <Description>"Party slot 2"</Description>
+          <ShowAsHex>1</ShowAsHex>
+          <VariableType>Byte</VariableType>
+          <Address>ff7_en.exe+9BFD38+4F9</Address>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>14</ID>
+          <Description>"Party slot 3"</Description>
+          <ShowAsHex>1</ShowAsHex>
+          <VariableType>Byte</VariableType>
+          <Address>ff7_en.exe+9BFD38+4FA</Address>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>15</ID>
+          <Description>"[Script] Max Gil (99999999)"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if getAddressSafe("ff7_en.exe") == nil then
+  showMessage("Attach to ff7_en.exe first")
+  error("no process")
+end
+writeInteger(getAddress("ff7_en.exe")+0x9C08B4, 99999999)
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>16</ID>
+          <Description>"[Script] Enable Sephiroth (sets Vincent id=0x0A, PHS bit, party slot 3)"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local base = getAddress("ff7_en.exe")+0x9BFD38
+-- Vincent/Sephiroth character id at record 7 (0x3F0 + 0x00)
+writeByte(base+0x3F0, 0x0A)
+-- PHS allowed + visible bit 7
+local allowed = readSmallInteger(base+0x10A4) or 0
+local visible = readSmallInteger(base+0x10A6) or 0
+writeSmallInteger(base+0x10A4, allowed | 0x80)
+writeSmallInteger(base+0x10A6, visible | 0x80)
+-- Put Sephiroth in party slot 3
+writeByte(base+0x4FA, 0x0A)
+writeByte(base+0x0CAD+2, 0x0A)
+showMessage("Sephiroth enabled (shares Vincent slot). Save in-game to keep it.")
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+
+      </CheatEntries>
+    </CheatEntry>
+
+    <!-- ===================== CHARACTERS ===================== -->
+    <CheatEntry>
+      <ID>100</ID>
+      <Description>"Characters (savemap / field)"</Description>
+      <Options moHideChildren="1" moManualExpandCollapse="1"/>
+      <Color>004080C0</Color>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+
+        <!-- Helper: generate per-character groups. Offsets: Cloud 54, +84 each -->
+
+        <CheatEntry>
+          <ID>110</ID>
+          <Description>"Cloud (record +0x54)"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry><ID>111</ID><Description>"Level"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+55</Address></CheatEntry>
+            <CheatEntry><ID>112</ID><Description>"Strength"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+56</Address></CheatEntry>
+            <CheatEntry><ID>113</ID><Description>"Vitality"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+57</Address></CheatEntry>
+            <CheatEntry><ID>114</ID><Description>"Magic"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+58</Address></CheatEntry>
+            <CheatEntry><ID>115</ID><Description>"Spirit"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+59</Address></CheatEntry>
+            <CheatEntry><ID>116</ID><Description>"Dexterity"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+5A</Address></CheatEntry>
+            <CheatEntry><ID>117</ID><Description>"Luck"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+5B</Address></CheatEntry>
+            <CheatEntry><ID>118</ID><Description>"Limit level (1-4)"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+62</Address></CheatEntry>
+            <CheatEntry><ID>119</ID><Description>"Limit bar (255=ready)"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+63</Address></CheatEntry>
+            <CheatEntry><ID>120</ID><Description>"Limits learned (set 733 / 0x02DB = all)"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+76</Address></CheatEntry>
+            <CheatEntry><ID>121</ID><Description>"Kills"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+78</Address></CheatEntry>
+            <CheatEntry><ID>122</ID><Description>"Current HP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+80</Address></CheatEntry>
+            <CheatEntry><ID>123</ID><Description>"Base HP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+82</Address></CheatEntry>
+            <CheatEntry><ID>124</ID><Description>"Current MP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+84</Address></CheatEntry>
+            <CheatEntry><ID>125</ID><Description>"Base MP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+86</Address></CheatEntry>
+            <CheatEntry><ID>126</ID><Description>"Max HP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+8C</Address></CheatEntry>
+            <CheatEntry><ID>127</ID><Description>"Max MP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+8E</Address></CheatEntry>
+            <CheatEntry><ID>128</ID><Description>"EXP"</Description><VariableType>4 Bytes</VariableType><Address>ff7_en.exe+9BFD38+90</Address></CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>130</ID>
+          <Description>"Barret (record +0xD8)"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry><ID>131</ID><Description>"Level"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+D9</Address></CheatEntry>
+            <CheatEntry><ID>132</ID><Description>"Strength"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+DA</Address></CheatEntry>
+            <CheatEntry><ID>133</ID><Description>"Vitality"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+DB</Address></CheatEntry>
+            <CheatEntry><ID>134</ID><Description>"Magic"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+DC</Address></CheatEntry>
+            <CheatEntry><ID>135</ID><Description>"Spirit"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+DD</Address></CheatEntry>
+            <CheatEntry><ID>136</ID><Description>"Dexterity"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+DE</Address></CheatEntry>
+            <CheatEntry><ID>137</ID><Description>"Luck"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+DF</Address></CheatEntry>
+            <CheatEntry><ID>138</ID><Description>"Limit level"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+E6</Address></CheatEntry>
+            <CheatEntry><ID>139</ID><Description>"Limit bar"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+E7</Address></CheatEntry>
+            <CheatEntry><ID>140</ID><Description>"Limits learned (733=all)"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+FA</Address></CheatEntry>
+            <CheatEntry><ID>141</ID><Description>"Current HP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+104</Address></CheatEntry>
+            <CheatEntry><ID>142</ID><Description>"Max HP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+110</Address></CheatEntry>
+            <CheatEntry><ID>143</ID><Description>"Current MP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+108</Address></CheatEntry>
+            <CheatEntry><ID>144</ID><Description>"Max MP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+112</Address></CheatEntry>
+            <CheatEntry><ID>145</ID><Description>"EXP"</Description><VariableType>4 Bytes</VariableType><Address>ff7_en.exe+9BFD38+114</Address></CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>150</ID>
+          <Description>"Tifa (record +0x15C)"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry><ID>151</ID><Description>"Level"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+15D</Address></CheatEntry>
+            <CheatEntry><ID>152</ID><Description>"Strength"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+15E</Address></CheatEntry>
+            <CheatEntry><ID>153</ID><Description>"Vitality"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+15F</Address></CheatEntry>
+            <CheatEntry><ID>154</ID><Description>"Magic"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+160</Address></CheatEntry>
+            <CheatEntry><ID>155</ID><Description>"Spirit"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+161</Address></CheatEntry>
+            <CheatEntry><ID>156</ID><Description>"Dexterity"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+162</Address></CheatEntry>
+            <CheatEntry><ID>157</ID><Description>"Luck"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+163</Address></CheatEntry>
+            <CheatEntry><ID>158</ID><Description>"Limit level"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+16A</Address></CheatEntry>
+            <CheatEntry><ID>159</ID><Description>"Limit bar"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+16B</Address></CheatEntry>
+            <CheatEntry><ID>160</ID><Description>"Limits learned (733=all)"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+17E</Address></CheatEntry>
+            <CheatEntry><ID>161</ID><Description>"Current HP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+188</Address></CheatEntry>
+            <CheatEntry><ID>162</ID><Description>"Max HP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+194</Address></CheatEntry>
+            <CheatEntry><ID>163</ID><Description>"Current MP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+18C</Address></CheatEntry>
+            <CheatEntry><ID>164</ID><Description>"Max MP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+196</Address></CheatEntry>
+            <CheatEntry><ID>165</ID><Description>"EXP"</Description><VariableType>4 Bytes</VariableType><Address>ff7_en.exe+9BFD38+198</Address></CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>170</ID>
+          <Description>"Aeris (record +0x1E0)"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry><ID>171</ID><Description>"Level"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+1E1</Address></CheatEntry>
+            <CheatEntry><ID>172</ID><Description>"Strength"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+1E2</Address></CheatEntry>
+            <CheatEntry><ID>173</ID><Description>"Vitality"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+1E3</Address></CheatEntry>
+            <CheatEntry><ID>174</ID><Description>"Magic"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+1E4</Address></CheatEntry>
+            <CheatEntry><ID>175</ID><Description>"Spirit"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+1E5</Address></CheatEntry>
+            <CheatEntry><ID>176</ID><Description>"Dexterity"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+1E6</Address></CheatEntry>
+            <CheatEntry><ID>177</ID><Description>"Luck"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+1E7</Address></CheatEntry>
+            <CheatEntry><ID>178</ID><Description>"Limit level"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+1EE</Address></CheatEntry>
+            <CheatEntry><ID>179</ID><Description>"Limit bar"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+1EF</Address></CheatEntry>
+            <CheatEntry><ID>180</ID><Description>"Limits learned (733=all)"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+202</Address></CheatEntry>
+            <CheatEntry><ID>181</ID><Description>"Current HP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+20C</Address></CheatEntry>
+            <CheatEntry><ID>182</ID><Description>"Max HP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+218</Address></CheatEntry>
+            <CheatEntry><ID>183</ID><Description>"Current MP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+210</Address></CheatEntry>
+            <CheatEntry><ID>184</ID><Description>"Max MP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+21A</Address></CheatEntry>
+            <CheatEntry><ID>185</ID><Description>"EXP"</Description><VariableType>4 Bytes</VariableType><Address>ff7_en.exe+9BFD38+21C</Address></CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>190</ID>
+          <Description>"Red XIII (record +0x264)"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry><ID>191</ID><Description>"Level"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+265</Address></CheatEntry>
+            <CheatEntry><ID>192</ID><Description>"Strength"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+266</Address></CheatEntry>
+            <CheatEntry><ID>193</ID><Description>"Vitality"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+267</Address></CheatEntry>
+            <CheatEntry><ID>194</ID><Description>"Magic"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+268</Address></CheatEntry>
+            <CheatEntry><ID>195</ID><Description>"Spirit"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+269</Address></CheatEntry>
+            <CheatEntry><ID>196</ID><Description>"Dexterity"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+26A</Address></CheatEntry>
+            <CheatEntry><ID>197</ID><Description>"Luck"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+26B</Address></CheatEntry>
+            <CheatEntry><ID>198</ID><Description>"Limit level"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+272</Address></CheatEntry>
+            <CheatEntry><ID>199</ID><Description>"Limit bar"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+273</Address></CheatEntry>
+            <CheatEntry><ID>200</ID><Description>"Limits learned (733=all)"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+286</Address></CheatEntry>
+            <CheatEntry><ID>201</ID><Description>"Current HP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+290</Address></CheatEntry>
+            <CheatEntry><ID>202</ID><Description>"Max HP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+29C</Address></CheatEntry>
+            <CheatEntry><ID>203</ID><Description>"Current MP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+294</Address></CheatEntry>
+            <CheatEntry><ID>204</ID><Description>"Max MP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+29E</Address></CheatEntry>
+            <CheatEntry><ID>205</ID><Description>"EXP"</Description><VariableType>4 Bytes</VariableType><Address>ff7_en.exe+9BFD38+2A0</Address></CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>210</ID>
+          <Description>"Yuffie (record +0x2E8)"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry><ID>211</ID><Description>"Level"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+2E9</Address></CheatEntry>
+            <CheatEntry><ID>212</ID><Description>"Strength"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+2EA</Address></CheatEntry>
+            <CheatEntry><ID>213</ID><Description>"Vitality"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+2EB</Address></CheatEntry>
+            <CheatEntry><ID>214</ID><Description>"Magic"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+2EC</Address></CheatEntry>
+            <CheatEntry><ID>215</ID><Description>"Spirit"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+2ED</Address></CheatEntry>
+            <CheatEntry><ID>216</ID><Description>"Dexterity"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+2EE</Address></CheatEntry>
+            <CheatEntry><ID>217</ID><Description>"Luck"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+2EF</Address></CheatEntry>
+            <CheatEntry><ID>218</ID><Description>"Limit level"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+2F6</Address></CheatEntry>
+            <CheatEntry><ID>219</ID><Description>"Limit bar"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+2F7</Address></CheatEntry>
+            <CheatEntry><ID>220</ID><Description>"Limits learned (733=all)"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+30A</Address></CheatEntry>
+            <CheatEntry><ID>221</ID><Description>"Current HP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+314</Address></CheatEntry>
+            <CheatEntry><ID>222</ID><Description>"Max HP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+320</Address></CheatEntry>
+            <CheatEntry><ID>223</ID><Description>"Current MP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+318</Address></CheatEntry>
+            <CheatEntry><ID>224</ID><Description>"Max MP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+322</Address></CheatEntry>
+            <CheatEntry><ID>225</ID><Description>"EXP"</Description><VariableType>4 Bytes</VariableType><Address>ff7_en.exe+9BFD38+324</Address></CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>230</ID>
+          <Description>"Cait Sith (record +0x36C)"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry><ID>231</ID><Description>"Level"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+36D</Address></CheatEntry>
+            <CheatEntry><ID>232</ID><Description>"Strength"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+36E</Address></CheatEntry>
+            <CheatEntry><ID>233</ID><Description>"Vitality"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+36F</Address></CheatEntry>
+            <CheatEntry><ID>234</ID><Description>"Magic"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+370</Address></CheatEntry>
+            <CheatEntry><ID>235</ID><Description>"Spirit"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+371</Address></CheatEntry>
+            <CheatEntry><ID>236</ID><Description>"Dexterity"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+372</Address></CheatEntry>
+            <CheatEntry><ID>237</ID><Description>"Luck"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+373</Address></CheatEntry>
+            <CheatEntry><ID>238</ID><Description>"Limit level"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+37A</Address></CheatEntry>
+            <CheatEntry><ID>239</ID><Description>"Limit bar"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+37B</Address></CheatEntry>
+            <CheatEntry><ID>240</ID><Description>"Limits learned"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+38E</Address></CheatEntry>
+            <CheatEntry><ID>241</ID><Description>"Current HP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+398</Address></CheatEntry>
+            <CheatEntry><ID>242</ID><Description>"Max HP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+3A4</Address></CheatEntry>
+            <CheatEntry><ID>243</ID><Description>"Current MP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+39C</Address></CheatEntry>
+            <CheatEntry><ID>244</ID><Description>"Max MP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+3A6</Address></CheatEntry>
+            <CheatEntry><ID>245</ID><Description>"EXP"</Description><VariableType>4 Bytes</VariableType><Address>ff7_en.exe+9BFD38+3A8</Address></CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>250</ID>
+          <Description>"Vincent / Sephiroth (record +0x3F0) — id 7=Vincent, 0x0A=Sephiroth"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry><ID>251</ID><Description>"Character ID (7=Vincent, 10=Sephiroth)"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+3F0</Address></CheatEntry>
+            <CheatEntry><ID>252</ID><Description>"Level"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+3F1</Address></CheatEntry>
+            <CheatEntry><ID>253</ID><Description>"Strength"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+3F2</Address></CheatEntry>
+            <CheatEntry><ID>254</ID><Description>"Vitality"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+3F3</Address></CheatEntry>
+            <CheatEntry><ID>255</ID><Description>"Magic"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+3F4</Address></CheatEntry>
+            <CheatEntry><ID>256</ID><Description>"Spirit"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+3F5</Address></CheatEntry>
+            <CheatEntry><ID>257</ID><Description>"Dexterity"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+3F6</Address></CheatEntry>
+            <CheatEntry><ID>258</ID><Description>"Luck"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+3F7</Address></CheatEntry>
+            <CheatEntry><ID>259</ID><Description>"Limit level"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+3FE</Address></CheatEntry>
+            <CheatEntry><ID>260</ID><Description>"Limit bar"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+3FF</Address></CheatEntry>
+            <CheatEntry><ID>261</ID><Description>"Limits learned (733=all)"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+412</Address></CheatEntry>
+            <CheatEntry><ID>262</ID><Description>"Current HP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+41C</Address></CheatEntry>
+            <CheatEntry><ID>263</ID><Description>"Max HP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+428</Address></CheatEntry>
+            <CheatEntry><ID>264</ID><Description>"Current MP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+420</Address></CheatEntry>
+            <CheatEntry><ID>265</ID><Description>"Max MP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+42A</Address></CheatEntry>
+            <CheatEntry><ID>266</ID><Description>"EXP"</Description><VariableType>4 Bytes</VariableType><Address>ff7_en.exe+9BFD38+42C</Address></CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>270</ID>
+          <Description>"Cid (record +0x474)"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry><ID>271</ID><Description>"Level"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+475</Address></CheatEntry>
+            <CheatEntry><ID>272</ID><Description>"Strength"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+476</Address></CheatEntry>
+            <CheatEntry><ID>273</ID><Description>"Vitality"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+477</Address></CheatEntry>
+            <CheatEntry><ID>274</ID><Description>"Magic"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+478</Address></CheatEntry>
+            <CheatEntry><ID>275</ID><Description>"Spirit"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+479</Address></CheatEntry>
+            <CheatEntry><ID>276</ID><Description>"Dexterity"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+47A</Address></CheatEntry>
+            <CheatEntry><ID>277</ID><Description>"Luck"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+47B</Address></CheatEntry>
+            <CheatEntry><ID>278</ID><Description>"Limit level"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+482</Address></CheatEntry>
+            <CheatEntry><ID>279</ID><Description>"Limit bar"</Description><VariableType>Byte</VariableType><Address>ff7_en.exe+9BFD38+483</Address></CheatEntry>
+            <CheatEntry><ID>280</ID><Description>"Limits learned (733=all)"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+496</Address></CheatEntry>
+            <CheatEntry><ID>281</ID><Description>"Current HP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+4A0</Address></CheatEntry>
+            <CheatEntry><ID>282</ID><Description>"Max HP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+4AC</Address></CheatEntry>
+            <CheatEntry><ID>283</ID><Description>"Current MP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+4A4</Address></CheatEntry>
+            <CheatEntry><ID>284</ID><Description>"Max MP"</Description><VariableType>2 Bytes</VariableType><Address>ff7_en.exe+9BFD38+4AE</Address></CheatEntry>
+            <CheatEntry><ID>285</ID><Description>"EXP"</Description><VariableType>4 Bytes</VariableType><Address>ff7_en.exe+9BFD38+4B0</Address></CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>290</ID>
+          <Description>"[Script] Max stats + unlock all limits (ALL characters)"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local base = getAddress("ff7_en.exe")+0x9BFD38
+local records = {0x54,0xD8,0x15C,0x1E0,0x264,0x2E8,0x36C,0x3F0,0x474}
+for _,r in ipairs(records) do
+  local p = base + r
+  -- stats STR..LCK
+  for i=2,7 do writeByte(p+i, 255) end
+  writeByte(p+0x0E, 4)       -- limit level
+  writeByte(p+0x0F, 255)     -- limit bar
+  writeSmallInteger(p+0x22, 0x02DB) -- all limits
+  writeSmallInteger(p+0x24, 65535) -- kills
+  writeSmallInteger(p+0x26, 255)
+  writeSmallInteger(p+0x28, 255)
+  writeSmallInteger(p+0x2A, 255)
+  -- fill HP/MP to max
+  local maxHp = readSmallInteger(p+0x38) or 9999
+  local maxMp = readSmallInteger(p+0x3A) or 999
+  writeSmallInteger(p+0x2C, maxHp)
+  writeSmallInteger(p+0x30, maxMp)
+end
+showMessage("Maxed stats + all limits for all 9 character records. Save in-game.")
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+
+      </CheatEntries>
+    </CheatEntry>
+
+    <!-- ===================== ITEMS ===================== -->
+    <CheatEntry>
+      <ID>300</ID>
+      <Description>"Items (320 slots @ +0x4FC) — 2 bytes: qty&lt;&lt;9 | id"</Description>
+      <Options moHideChildren="1" moManualExpandCollapse="1"/>
+      <Color>00C0A040</Color>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+
+        <CheatEntry>
+          <ID>301</ID>
+          <Description>"Item slot 1 (raw word)"</Description>
+          <VariableType>2 Bytes</VariableType>
+          <Address>ff7_en.exe+9BFD38+4FC</Address>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>302</ID>
+          <Description>"Item slot 2"</Description>
+          <VariableType>2 Bytes</VariableType>
+          <Address>ff7_en.exe+9BFD38+4FE</Address>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>303</ID>
+          <Description>"Item slot 3"</Description>
+          <VariableType>2 Bytes</VariableType>
+          <Address>ff7_en.exe+9BFD38+500</Address>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>304</ID>
+          <Description>"Item slot 4"</Description>
+          <VariableType>2 Bytes</VariableType>
+          <Address>ff7_en.exe+9BFD38+502</Address>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>305</ID>
+          <Description>"Item slot 5"</Description>
+          <VariableType>2 Bytes</VariableType>
+          <Address>ff7_en.exe+9BFD38+504</Address>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>310</ID>
+          <Description>"[Script] Set all owned item quantities to 99"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local base = getAddress("ff7_en.exe")+0x9BFD38+0x4FC
+local n = 0
+for i=0,319 do
+  local raw = readSmallInteger(base + i*2) or 0xFFFF
+  local id = raw &amp; 0x1FF
+  if id ~= 0x1FF and raw ~= 0xFFFF then
+    writeSmallInteger(base + i*2, ((99 &lt;&lt; 9) &amp; 0xFE00) | id)
+    n = n + 1
+  end
+end
+showMessage(string.format("Set qty=99 on %d item slots.", n))
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>311</ID>
+          <Description>"[Script] Fill inventory: Potion..GuideBook + all weapons/armor/acc ×99"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+-- Fills slots 0.. with consecutive item IDs (skips unused 105-127 gap for simplicity: writes 0-104 then 128-319)
+local base = getAddress("ff7_en.exe")+0x9BFD38+0x4FC
+local slot = 0
+local function put(id)
+  if slot &gt;= 320 then return end
+  writeSmallInteger(base + slot*2, ((99 &lt;&lt; 9) &amp; 0xFE00) | (id &amp; 0x1FF))
+  slot = slot + 1
+end
+for id=0,104 do put(id) end
+for id=128,319 do put(id) end
+while slot &lt; 320 do
+  writeSmallInteger(base + slot*2, 0xFFFF)
+  slot = slot + 1
+end
+showMessage("Filled inventory with all real items ×99. Open/close menu to refresh.")
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+
+      </CheatEntries>
+    </CheatEntry>
+
+    <!-- ===================== MATERIA ===================== -->
+    <CheatEntry>
+      <ID>400</ID>
+      <Description>"Materia (200 slots @ +0x77C) — byte ID + 3-byte AP"</Description>
+      <Options moHideChildren="1" moManualExpandCollapse="1"/>
+      <Color>00A040C0</Color>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+
+        <CheatEntry>
+          <ID>401</ID>
+          <Description>"Materia 1 ID (FF=empty)"</Description>
+          <ShowAsHex>1</ShowAsHex>
+          <VariableType>Byte</VariableType>
+          <Address>ff7_en.exe+9BFD38+77C</Address>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>402</ID>
+          <Description>"Materia 1 AP (master=16777215)"</Description>
+          <VariableType>4 Bytes</VariableType>
+          <Address>ff7_en.exe+9BFD38+77D</Address>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>403</ID>
+          <Description>"Materia 2 ID"</Description>
+          <ShowAsHex>1</ShowAsHex>
+          <VariableType>Byte</VariableType>
+          <Address>ff7_en.exe+9BFD38+780</Address>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>404</ID>
+          <Description>"Materia 2 AP"</Description>
+          <VariableType>4 Bytes</VariableType>
+          <Address>ff7_en.exe+9BFD38+781</Address>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>410</ID>
+          <Description>"[Script] Master all owned materia (AP=0xFFFFFF)"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local base = getAddress("ff7_en.exe")+0x9BFD38+0x77C
+local n = 0
+for i=0,199 do
+  local p = base + i*4
+  local id = readByte(p)
+  if id and id ~= 0xFF then
+    writeBytes(p+1, {0xFF, 0xFF, 0xFF})
+    n = n + 1
+  end
+end
+showMessage(string.format("Mastered %d materia.", n))
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>411</ID>
+          <Description>"[Script] Add all materia (mastered) into inventory"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local ids = {
+  0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0A,0x0B,0x0C,0x0D,0x0E,0x0F,
+  0x10,0x11,0x12,0x13,0x14,0x15,0x17,0x18,0x19,0x1A,0x1B,0x1C,0x1D,0x1E,0x1F,
+  0x20,0x21,0x22,0x23,0x24,0x25,0x27,0x28,0x29,0x2A,0x2B,0x2C,0x30,
+  0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x3A,0x3B,0x3C,0x3D,0x3E,
+  0x40,0x41,0x44,0x45,0x46,0x47,0x48,0x49,
+  0x4A,0x4B,0x4C,0x4D,0x4E,0x4F,0x50,0x51,0x52,0x53,0x54,0x55,0x56,0x57,0x58,0x59,0x5A
+}
+local base = getAddress("ff7_en.exe")+0x9BFD38+0x77C
+for i=0,199 do
+  writeBytes(base+i*4, {0xFF, 0xFF, 0xFF, 0xFF})
+end
+for i,id in ipairs(ids) do
+  local p = base + (i-1)*4
+  writeBytes(p, {id, 0xFF, 0xFF, 0xFF})
+end
+showMessage(string.format("Added %d mastered materia.", #ids))
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+
+      </CheatEntries>
+    </CheatEntry>
+
+    <!-- ===================== CHOCOBOS ===================== -->
+    <CheatEntry>
+      <ID>500</ID>
+      <Description>"Chocobos"</Description>
+      <Options moHideChildren="1" moManualExpandCollapse="1"/>
+      <Color>00C0C040</Color>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+
+        <CheatEntry>
+          <ID>501</ID>
+          <Description>"Stables owned"</Description>
+          <VariableType>Byte</VariableType>
+          <Address>ff7_en.exe+9BFD38+CFC</Address>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>502</ID>
+          <Description>"Stables occupied count"</Description>
+          <VariableType>Byte</VariableType>
+          <Address>ff7_en.exe+9BFD38+CFD</Address>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>503</ID>
+          <Description>"Occupied mask (bits 0-5)"</Description>
+          <ShowAsHex>1</ShowAsHex>
+          <VariableType>Byte</VariableType>
+          <Address>ff7_en.exe+9BFD38+CFF</Address>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>510</ID>
+          <Description>"Chocobo 1 sprint"</Description>
+          <VariableType>2 Bytes</VariableType>
+          <Address>ff7_en.exe+9BFD38+DC4</Address>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>511</ID>
+          <Description>"Chocobo 1 max sprint"</Description>
+          <VariableType>2 Bytes</VariableType>
+          <Address>ff7_en.exe+9BFD38+DC6</Address>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>512</ID>
+          <Description>"Chocobo 1 speed"</Description>
+          <VariableType>2 Bytes</VariableType>
+          <Address>ff7_en.exe+9BFD38+DC8</Address>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>513</ID>
+          <Description>"Chocobo 1 max speed"</Description>
+          <VariableType>2 Bytes</VariableType>
+          <Address>ff7_en.exe+9BFD38+DCA</Address>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>514</ID>
+          <Description>"Chocobo 1 type (0=Y 1=G 2=B 3=Blk 4=Gold)"</Description>
+          <VariableType>Byte</VariableType>
+          <Address>ff7_en.exe+9BFD38+DD3</Address>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>515</ID>
+          <Description>"Chocobo 1 stamina"</Description>
+          <VariableType>2 Bytes</VariableType>
+          <Address>ff7_en.exe+9BFD38+EE8</Address>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>520</ID>
+          <Description>"[Script] Fill 6 max gold chocobos"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local base = getAddress("ff7_en.exe")+0x9BFD38
+local offs = {0xDC4,0xDD4,0xDE4,0xDF4,0x1084,0x1094}
+for i,o in ipairs(offs) do
+  local p = base + o
+  writeSmallInteger(p+0, 255) -- sprint
+  writeSmallInteger(p+2, 255)
+  writeSmallInteger(p+4, 255) -- speed
+  writeSmallInteger(p+6, 255)
+  writeByte(p+8, 100)  -- accel
+  writeByte(p+9, 100)  -- coop
+  writeByte(p+10, 100) -- intel
+  writeByte(p+11, 0)   -- personality
+  writeByte(p+12, 0)
+  writeByte(p+13, 0)   -- races
+  writeByte(p+14, (i-1)%2) -- sex
+  writeByte(p+15, 4)   -- gold
+  writeSmallInteger(base+0xEE8+(i-1)*2, 9999)
+end
+writeByte(base+0xCFC, 6)
+writeByte(base+0xCFD, 6)
+writeByte(base+0xCFF, 0x3F)
+writeByte(base+0xD00, 0)
+showMessage("6 gold chocobos filled. Visit the ranch / save to confirm.")
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+
+      </CheatEntries>
+    </CheatEntry>
+
+  </CheatEntries>
+  <UserdefinedSymbols/>
+</CheatTable>

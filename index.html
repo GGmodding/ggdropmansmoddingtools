@@ -3,173 +3,512 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ggdropmansmoddingtools</title>
+  <title>GGdropmans Modding Tools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
+    :root {
+      --ink: #0b0e14;
+      --fog: rgba(255, 255, 255, 0.72);
+      --line: rgba(255, 255, 255, 0.16);
+      --gold: #f0c14a;
+      --mako: #3dffb0;
+      --vault: #ffd200;
+      --pal: #6ee7ff;
+      --epoch: #ffb454;
+      --hades: #ff5a3d;
+      --diablo: #c45a2d;
+      --schedule: #7ec8ff;
+      --font-display: "Bungee", cursive;
+      --font-ui: "Chakra Petch", sans-serif;
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
 
     body {
       min-height: 100vh;
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      font-family: var(--font-ui);
       color: #fff;
-      background:
-        radial-gradient(ellipse 80% 50% at 50% 0%, rgba(80, 120, 255, 0.12), transparent 55%),
-        radial-gradient(ellipse 60% 40% at 90% 80%, rgba(255, 80, 160, 0.08), transparent 50%),
-        radial-gradient(ellipse 50% 40% at 10% 70%, rgba(60, 220, 160, 0.08), transparent 50%),
-        #1a1d24;
-      background-attachment: fixed;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 48px 16px 80px;
-      position: relative;
+      background: var(--ink);
       overflow-x: hidden;
     }
 
-    body::before {
-      content: "";
+    /* Layered world backdrop */
+    .world {
       position: fixed;
       inset: 0;
-      background-image:
-        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-      background-size: 48px 48px;
-      mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 20%, transparent 75%);
-      pointer-events: none;
       z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 90% 55% at 50% -10%, rgba(62, 255, 176, 0.14), transparent 55%),
+        radial-gradient(ellipse 50% 40% at 0% 30%, rgba(110, 231, 255, 0.12), transparent 50%),
+        radial-gradient(ellipse 45% 35% at 100% 20%, rgba(255, 210, 0, 0.1), transparent 50%),
+        radial-gradient(ellipse 55% 45% at 80% 90%, rgba(255, 90, 61, 0.1), transparent 55%),
+        radial-gradient(ellipse 50% 40% at 15% 85%, rgba(126, 200, 255, 0.08), transparent 50%),
+        linear-gradient(180deg, #10141c 0%, #0b0e14 40%, #0a1018 100%);
+    }
+
+    .world__grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: radial-gradient(ellipse 75% 65% at 50% 35%, #000 15%, transparent 80%);
+      animation: grid-drift 40s linear infinite;
+    }
+
+    .world__orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(40px);
+      opacity: 0.55;
+      animation: orb-float 14s ease-in-out infinite;
+    }
+
+    .world__orb--mako {
+      width: 280px; height: 280px;
+      top: 12%; left: 8%;
+      background: radial-gradient(circle, rgba(61, 255, 176, 0.45), transparent 70%);
+    }
+
+    .world__orb--pal {
+      width: 220px; height: 220px;
+      top: 18%; right: 6%;
+      background: radial-gradient(circle, rgba(110, 231, 255, 0.4), transparent 70%);
+      animation-delay: -4s;
+    }
+
+    .world__orb--vault {
+      width: 260px; height: 260px;
+      bottom: 18%; left: 35%;
+      background: radial-gradient(circle, rgba(255, 210, 0, 0.28), transparent 70%);
+      animation-delay: -8s;
+    }
+
+    @keyframes grid-drift {
+      from { transform: translateY(0); }
+      to { transform: translateY(56px); }
+    }
+
+    @keyframes orb-float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(18px, -24px) scale(1.08); }
+    }
+
+    @keyframes rise-in {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
     }
 
     .credits-button {
       position: fixed;
       top: 16px;
       right: 16px;
-      z-index: 20;
-      padding: 8px 14px;
-      border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      background: rgba(20, 24, 36, 0.75);
+      z-index: 30;
+      padding: 9px 16px;
+      border-radius: 6px;
+      border: 2px solid rgba(255, 255, 255, 0.22);
+      background: rgba(10, 12, 18, 0.78);
       color: #fff;
+      font-family: var(--font-ui);
       font-weight: 700;
-      font-size: 0.85rem;
-      letter-spacing: 0.04em;
+      font-size: 0.82rem;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       cursor: pointer;
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(12px);
+      transition: border-color 0.2s ease, transform 0.2s ease;
     }
 
     .credits-button:hover {
-      border-color: rgba(255, 255, 255, 0.4);
-      background: rgba(30, 36, 52, 0.9);
+      border-color: var(--gold);
+      transform: translateY(-1px);
     }
 
-    .hud-shell {
-      width: 100%;
-      max-width: 920px;
+    .page {
       position: relative;
       z-index: 1;
+      width: min(1080px, 100%);
+      margin: 0 auto;
+      padding: 28px 18px 120px;
+    }
+
+    /* —— Hero —— */
+    .hero {
+      min-height: min(72vh, 640px);
+      display: grid;
+      align-content: end;
+      gap: 22px;
+      padding: 72px 0 48px;
+      animation: rise-in 0.7s ease both;
+    }
+
+    .hero__brand {
+      font-family: var(--font-display);
+      font-size: clamp(2.4rem, 8vw, 5.2rem);
+      line-height: 0.95;
+      letter-spacing: 0.02em;
+      background: linear-gradient(110deg, #fff 10%, var(--mako) 35%, var(--vault) 55%, var(--pal) 75%, #fff 95%);
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: shimmer 8s linear infinite;
+      text-shadow: none;
+      filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.45));
+    }
+
+    .hero__tag {
+      max-width: 34rem;
+      font-size: clamp(1.05rem, 2.4vw, 1.35rem);
+      font-weight: 600;
+      line-height: 1.35;
+      color: rgba(255, 255, 255, 0.88);
+    }
+
+    .hero__sub {
+      max-width: 32rem;
+      font-size: 1rem;
+      line-height: 1.55;
+      color: var(--fog);
+    }
+
+    .hero__cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      width: fit-content;
+      margin-top: 6px;
+      padding: 14px 22px;
+      border-radius: 6px;
+      border: 2px solid rgba(255, 210, 0, 0.65);
+      background: linear-gradient(180deg, rgba(255, 210, 0, 0.22), rgba(255, 140, 0, 0.12));
+      color: #fff;
+      font-family: var(--font-ui);
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .hero__cta:hover {
+      transform: translateY(-2px);
+      border-color: #ffe56a;
+      background: linear-gradient(180deg, rgba(255, 210, 0, 0.35), rgba(255, 140, 0, 0.18));
+    }
+
+    .hero__cta span {
+      opacity: 0.7;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    .hero__cta:hover span {
+      transform: translateY(2px);
+      opacity: 1;
+    }
+
+    /* —— Sections —— */
+    .hud-section {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 36px;
+      animation: rise-in 0.7s ease both;
+      animation-delay: 0.12s;
+    }
+
+    .hud-section:nth-of-type(2) { animation-delay: 0.22s; }
+    .hud-section:nth-of-type(3) { animation-delay: 0.32s; }
+
+    .hud-section__head {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 0 2px;
+    }
+
+    .hud-section__title {
+      font-family: var(--font-display);
+      font-size: clamp(1.15rem, 3vw, 1.55rem);
+      letter-spacing: 0.04em;
+      color: #fff;
+    }
+
+    .hud-section__sub {
+      font-size: 0.95rem;
+      color: rgba(255, 255, 255, 0.55);
+      line-height: 1.45;
+      max-width: 40rem;
     }
 
     .hud-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
     }
 
-    .hud-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      min-height: 96px;
-      padding: 0;
-      font-family: inherit;
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: #fff;
-      text-align: center;
-      text-decoration: none;
-      border-radius: 8px;
-      cursor: pointer;
-      letter-spacing: 0.04em;
-      text-shadow: 0 0 2px #000, 0 2px 12px rgba(0, 0, 0, 0.9);
-      border: 1px solid rgba(255, 255, 255, 0.22);
-      background: rgba(15, 20, 40, 0.45);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, filter 0.2s ease;
+    /* —— Tiles —— */
+    .tile {
+      --accent: #88a;
       position: relative;
-      isolation: isolate;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      min-height: 148px;
+      padding: 0;
       overflow: hidden;
+      isolation: isolate;
+      border-radius: 10px;
+      border: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+      background: #12161f;
+      color: #fff;
+      text-decoration: none;
+      text-align: left;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      transition: transform 0.22s ease, border-color 0.22s ease, filter 0.22s ease;
     }
 
-    .hud-btn:hover {
-      transform: translateY(-2px);
-      border-color: rgba(255, 255, 255, 0.4);
-      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    .tile::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background:
+        linear-gradient(180deg, rgba(8, 10, 16, 0.15) 0%, rgba(8, 10, 16, 0.72) 62%, rgba(8, 10, 16, 0.92) 100%),
+        var(--art) center / cover no-repeat;
+      transition: transform 0.45s ease;
     }
 
-    .hud-btn:active { transform: translateY(0); }
+    .tile::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background: linear-gradient(125deg, color-mix(in srgb, var(--accent) 28%, transparent), transparent 45%);
+      opacity: 0.85;
+      pointer-events: none;
+    }
 
-    .hud-btn__label {
+    .tile:hover {
+      transform: translateY(-4px) scale(1.01);
+      border-color: color-mix(in srgb, var(--accent) 90%, #fff);
+      filter: brightness(1.05);
+    }
+
+    .tile:hover::before { transform: scale(1.06); }
+
+    .tile:active { transform: translateY(-1px) scale(1); }
+
+    .tile__body {
       position: relative;
       z-index: 1;
-      padding: 14px 16px;
-      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 16px 16px 18px;
     }
 
-    .hud-btn--featured {
-      grid-column: 1 / -1;
-      min-height: 120px;
-      border-color: rgba(226, 168, 58, 0.75);
-      background:
-        linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.55) 100%),
-        url("https://cdn.cloudflare.steamstatic.com/steam/apps/3070070/header.jpg") center 40% / cover no-repeat;
-      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 215, 120, 0.15);
+    .tile__game {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: color-mix(in srgb, var(--accent) 80%, #fff);
     }
 
-    .hud-btn--featured:hover {
-      border-color: rgba(255, 220, 120, 0.9);
-      filter: brightness(1.06);
+    .tile__name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
     }
 
-    .hud-btn--soon {
-      min-height: 96px;
-      border-color: rgba(120, 140, 180, 0.35);
-      background: linear-gradient(145deg, rgba(40, 48, 70, 0.85), rgba(18, 22, 34, 0.95));
+    .tile__meta {
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .tile__badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 2;
+      padding: 4px 9px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      background: rgba(0, 0, 0, 0.55);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      backdrop-filter: blur(6px);
+    }
+
+    .tile__badge--live {
+      border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+      color: #fff;
+    }
+
+    .tile__badge--soon {
       color: rgba(255, 255, 255, 0.75);
     }
 
-    .hud-btn--banner {
+    /* Theme accents + art */
+    .tile--tcg {
+      --accent: #f0c14a;
+      --art: url("https://cdn.cloudflare.steamstatic.com/steam/apps/3070070/header.jpg");
       grid-column: 1 / -1;
-      min-height: 64px;
-      border-color: rgba(100, 160, 255, 0.35);
-      background: linear-gradient(90deg, rgba(30, 60, 120, 0.55), rgba(20, 24, 40, 0.85) 40%, rgba(80, 40, 100, 0.45));
-      letter-spacing: 0.06em;
+      min-height: 176px;
+    }
+
+    .tile--ff7 {
+      --accent: var(--mako);
+      --art: url("https://cdn.cloudflare.steamstatic.com/steam/apps/39140/header.jpg");
+    }
+
+    .tile--ff7::after {
+      background:
+        radial-gradient(circle at 85% 20%, rgba(61, 255, 176, 0.35), transparent 35%),
+        linear-gradient(125deg, rgba(61, 255, 176, 0.22), transparent 48%);
+    }
+
+    .tile--epoch {
+      --accent: var(--epoch);
+      --art: url("https://cdn.cloudflare.steamstatic.com/steam/apps/899770/header.jpg");
+    }
+
+    .tile--palworld {
+      --accent: var(--pal);
+      --art: url("https://cdn.cloudflare.steamstatic.com/steam/apps/1623730/header.jpg");
+    }
+
+    .tile--palworld::after {
+      background:
+        radial-gradient(circle at 20% 30%, rgba(255, 190, 120, 0.25), transparent 40%),
+        linear-gradient(125deg, rgba(110, 231, 255, 0.3), transparent 50%);
+    }
+
+    .tile--borderlands {
+      --accent: var(--vault);
+      --art: url("https://cdn.cloudflare.steamstatic.com/steam/apps/49520/header.jpg");
+      border-width: 3px;
+      border-radius: 4px;
+      box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.55);
+    }
+
+    .tile--borderlands .tile__name {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      letter-spacing: 0.01em;
+      -webkit-text-stroke: 0.5px #000;
+    }
+
+    .tile--borderlands:hover {
+      transform: translate(-2px, -4px);
+      box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.55);
+    }
+
+    .tile--hades {
+      --accent: var(--hades);
+      --art: url("https://cdn.cloudflare.steamstatic.com/steam/apps/1145360/header.jpg");
+    }
+
+    .tile--hades::after {
+      background:
+        radial-gradient(circle at 70% 80%, rgba(255, 90, 61, 0.4), transparent 40%),
+        linear-gradient(125deg, rgba(180, 40, 20, 0.35), transparent 50%);
+    }
+
+    .tile--diablo {
+      --accent: var(--diablo);
+      --art: url("https://cdn.cloudflare.steamstatic.com/steam/apps/2344520/header.jpg");
+    }
+
+    .tile--diablo::after {
+      background:
+        radial-gradient(circle at 75% 70%, rgba(196, 90, 45, 0.45), transparent 42%),
+        linear-gradient(125deg, rgba(120, 20, 10, 0.4), transparent 50%);
+    }
+
+    .tile--schedule {
+      --accent: var(--schedule);
+      --art: url("https://cdn.cloudflare.steamstatic.com/steam/apps/3164500/header.jpg");
+    }
+
+    .tile--schedule::after {
+      background:
+        radial-gradient(circle at 25% 30%, rgba(255, 180, 80, 0.22), transparent 40%),
+        linear-gradient(125deg, rgba(126, 200, 255, 0.3), transparent 50%);
+    }
+
+    .tile--soon {
+      opacity: 0.92;
+    }
+
+    .tile--soon:hover { opacity: 1; }
+
+    .tile--banner {
+      grid-column: 1 / -1;
+      min-height: 72px;
+      justify-content: center;
+      --accent: #6a9dff;
+      border-style: dashed;
+      background:
+        linear-gradient(90deg, rgba(30, 70, 140, 0.55), rgba(12, 16, 28, 0.9) 45%, rgba(120, 50, 40, 0.4));
+    }
+
+    .tile--banner::before,
+    .tile--banner::after { display: none; }
+
+    .tile--banner .tile__body {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 18px 20px;
+    }
+
+    .tile--banner .tile__name {
+      font-size: 0.95rem;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      font-size: 0.85rem;
     }
 
     .visitor-count {
       position: fixed;
       left: 14px;
       bottom: 14px;
-      z-index: 20;
+      z-index: 30;
       display: flex;
       align-items: center;
       gap: 8px;
       padding: 8px 12px;
-      border-radius: 8px;
-      border: 1px solid rgba(255, 220, 100, 0.25);
-      background: rgba(12, 14, 20, 0.8);
+      border-radius: 6px;
+      border: 1px solid rgba(255, 210, 0, 0.28);
+      background: rgba(8, 10, 14, 0.82);
       backdrop-filter: blur(10px);
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       font-weight: 700;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
     }
 
-    .visitor-count-label { color: rgba(255, 255, 255, 0.55); }
-    .visitor-count-num { color: #ffd24a; }
-    .visitor-count-sep { color: rgba(255, 255, 255, 0.35); margin: 0 2px; }
+    .visitor-count-label { color: rgba(255, 255, 255, 0.5); }
+    .visitor-count-num { color: var(--gold); }
+    .visitor-count-sep { color: rgba(255, 255, 255, 0.3); margin: 0 2px; }
     .visitor-count-stats { display: inline-flex; align-items: center; gap: 6px; }
 
     .modal-overlay {
@@ -179,18 +518,19 @@
       display: grid;
       place-items: center;
       padding: 16px;
-      background: rgba(0, 0, 0, 0.65);
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
     }
 
     .modal-overlay[hidden] { display: none !important; }
 
     .modal {
       width: min(480px, 100%);
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      background: #161a24;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-      padding: 1rem 1.15rem 1.2rem;
+      border-radius: 10px;
+      border: 2px solid rgba(255, 255, 255, 0.16);
+      background: #12161f;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+      padding: 1.1rem 1.2rem 1.25rem;
     }
 
     .modal-header {
@@ -200,7 +540,11 @@
       margin-bottom: 0.85rem;
     }
 
-    .modal-title { font-size: 1.15rem; letter-spacing: 0.03em; }
+    .modal-title {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      letter-spacing: 0.03em;
+    }
 
     .modal-close {
       border: none;
@@ -222,13 +566,14 @@
 
     .credits-body p + p,
     .credits-body ul { margin-top: 0.65rem; }
-    .credits-body a { color: #ffd24a; }
+    .credits-body a { color: var(--gold); }
     .credits-body ul { padding-left: 1.1rem; }
 
-    @media (max-width: 640px) {
+    @media (max-width: 700px) {
       .hud-grid { grid-template-columns: 1fr; }
-      .hud-btn--featured,
-      .hud-btn--banner { grid-column: auto; }
+      .tile--tcg,
+      .tile--banner { grid-column: auto; }
+      .hero { min-height: auto; padding-top: 88px; }
       .visitor-count {
         left: 10px;
         right: 10px;
@@ -236,36 +581,136 @@
         justify-content: center;
       }
     }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
   </style>
 </head>
 <body>
+  <div class="world" aria-hidden="true">
+    <div class="world__grid"></div>
+    <div class="world__orb world__orb--mako"></div>
+    <div class="world__orb world__orb--pal"></div>
+    <div class="world__orb world__orb--vault"></div>
+  </div>
+
   <button type="button" class="credits-button" id="credits-btn">Credits</button>
 
-  <div class="hud-shell">
-    <nav class="hud-grid" aria-label="Editors">
-      <a class="hud-btn hud-btn--featured" href="tools/tcg-editor/editor.html">
-        <span class="hud-btn__label">TCG Card Shop Simulator</span>
-      </a>
+  <div class="page">
+    <header class="hero">
+      <h1 class="hero__brand">GGdropmans</h1>
+      <p class="hero__tag">Save editors &amp; cheat tables for the games you actually grind.</p>
+      <p class="hero__sub">Pick a portal below — Midgar mako, Palworld skies, Borderlands vaults, and more on the way.</p>
+      <a class="hero__cta" href="#editors">Browse tools <span aria-hidden="true">↓</span></a>
+    </header>
 
-      <a class="hud-btn" href="tools/ff7-editor/editor.html" style="background: linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.55) 100%), url('https://cdn.cloudflare.steamstatic.com/steam/apps/39140/header.jpg') center 35% / cover no-repeat; border-color: rgba(62, 207, 142, 0.55);">
-        <span class="hud-btn__label">Final Fantasy VII (Steam)</span>
-      </a>
-      <button type="button" class="hud-btn hud-btn--soon" onclick="showComingSoon()">
-        <span class="hud-btn__label">Coming Soon</span>
-      </button>
-      <button type="button" class="hud-btn hud-btn--soon" onclick="showComingSoon()">
-        <span class="hud-btn__label">Coming Soon</span>
-      </button>
-      <button type="button" class="hud-btn hud-btn--soon" onclick="showComingSoon()">
-        <span class="hud-btn__label">Coming Soon</span>
-      </button>
-      <button type="button" class="hud-btn hud-btn--soon" onclick="showComingSoon()">
-        <span class="hud-btn__label">Coming Soon</span>
-      </button>
-      <button type="button" class="hud-btn hud-btn--banner" onclick="showComingSoon()" aria-label="More coming soon">
-        <span class="hud-btn__label">ggdropmansmoddingtools — more coming soon</span>
-      </button>
-    </nav>
+    <section class="hud-section" id="editors" aria-labelledby="editors-title">
+      <div class="hud-section__head">
+        <h2 class="hud-section__title" id="editors-title">Save Editors</h2>
+        <p class="hud-section__sub">Browser tools for editing save files offline. Load, tweak, download.</p>
+      </div>
+      <nav class="hud-grid" aria-label="Save editors">
+        <a class="tile tile--tcg" href="tools/tcg-editor/editor.html">
+          <span class="tile__badge tile__badge--live">Live</span>
+          <span class="tile__body">
+            <span class="tile__game">Card Shop</span>
+            <span class="tile__name">TCG Card Shop Simulator</span>
+            <span class="tile__meta">Money · inventory · binders</span>
+          </span>
+        </a>
+
+        <a class="tile tile--ff7" href="tools/ff7-editor/editor.html">
+          <span class="tile__badge tile__badge--live">Live</span>
+          <span class="tile__body">
+            <span class="tile__game">Mako Reactor</span>
+            <span class="tile__name">Final Fantasy VII</span>
+            <span class="tile__meta">Steam · gil · materia · limits</span>
+          </span>
+        </a>
+
+        <a class="tile tile--epoch" href="tools/last-epoch-editor/editor.html">
+          <span class="tile__badge tile__badge--live">Live</span>
+          <span class="tile__body">
+            <span class="tile__game">Timeline</span>
+            <span class="tile__name">Last Epoch</span>
+            <span class="tile__meta">Offline · gold · characters</span>
+          </span>
+        </a>
+
+        <button type="button" class="tile tile--palworld tile--soon" onclick="showComingSoon()">
+          <span class="tile__badge tile__badge--soon">Soon</span>
+          <span class="tile__body">
+            <span class="tile__game">Palpagos</span>
+            <span class="tile__name">Palworld</span>
+            <span class="tile__meta">Pals · bases · inventory</span>
+          </span>
+        </button>
+
+        <button type="button" class="tile tile--borderlands tile--soon" onclick="showComingSoon()">
+          <span class="tile__badge tile__badge--soon">Soon</span>
+          <span class="tile__body">
+            <span class="tile__game">Pandora</span>
+            <span class="tile__name">Borderlands</span>
+            <span class="tile__meta">Guns · vault · badass rank</span>
+          </span>
+        </button>
+      </nav>
+    </section>
+
+    <section class="hud-section" id="cheats" aria-labelledby="cheats-title">
+      <div class="hud-section__head">
+        <h2 class="hud-section__title" id="cheats-title">Cheat Tables</h2>
+        <p class="hud-section__sub">Cheat Engine .CT files for live RAM edits while the game is running.</p>
+      </div>
+      <nav class="hud-grid" aria-label="Cheat tables">
+        <a class="tile tile--ff7" href="tools/ff7-editor/GGdropmans_FF7_Steam.CT" download>
+          <span class="tile__badge tile__badge--live">.CT</span>
+          <span class="tile__body">
+            <span class="tile__game">Mako Reactor</span>
+            <span class="tile__name">FF7 Steam Table</span>
+            <span class="tile__meta">Cheat Engine · ff7_en.exe</span>
+          </span>
+        </a>
+
+        <button type="button" class="tile tile--hades tile--soon" onclick="showComingSoon()">
+          <span class="tile__badge tile__badge--soon">Soon</span>
+          <span class="tile__body">
+            <span class="tile__game">Underworld</span>
+            <span class="tile__name">Hades</span>
+            <span class="tile__meta">Darkness · nectar · keepsakes</span>
+          </span>
+        </button>
+
+        <button type="button" class="tile tile--diablo tile--soon" onclick="showComingSoon()">
+          <span class="tile__badge tile__badge--soon">Soon</span>
+          <span class="tile__body">
+            <span class="tile__game">Sanctuary</span>
+            <span class="tile__name">Diablo II</span>
+            <span class="tile__meta">Gold · items · characters</span>
+          </span>
+        </button>
+
+        <button type="button" class="tile tile--schedule tile--soon" onclick="showComingSoon()">
+          <span class="tile__badge tile__badge--soon">Soon</span>
+          <span class="tile__body">
+            <span class="tile__game">Hyland Point</span>
+            <span class="tile__name">Schedule I</span>
+            <span class="tile__meta">Cash · product · properties</span>
+          </span>
+        </button>
+
+        <button type="button" class="tile tile--banner" onclick="showComingSoon()" aria-label="More coming soon">
+          <span class="tile__body">
+            <span class="tile__name">More worlds incoming</span>
+            <span class="tile__meta">Request a game in credits vibes</span>
+          </span>
+        </button>
+      </nav>
+    </section>
   </div>
 
   <div class="visitor-count" id="visitor-count">
@@ -287,11 +732,18 @@
       <div class="credits-body">
         <p><strong>Site:</strong> ggdropmansmoddingtools</p>
         <p><strong>Creator:</strong> GGdropman</p>
-        <p><strong>Editors:</strong></p>
+        <p><strong>Partner / close friend:</strong> <a href="https://ynot-gzo.github.io/GameZoneOfficial/" target="_blank" rel="noopener noreferrer">GameZone Official</a></p>
+        <p><strong>Save Editors:</strong></p>
         <ul>
           <li><a href="tools/tcg-editor/editor.html">TCG Card Shop Save Editor</a> — GGdropman</li>
           <li><a href="tools/ff7-editor/editor.html">Final Fantasy VII Steam Save Editor</a> — GGdropman</li>
+          <li><a href="tools/last-epoch-editor/editor.html">Last Epoch Offline Save Editor</a> — GGdropman</li>
         </ul>
+        <p><strong>Cheat Tables:</strong></p>
+        <ul>
+          <li><a href="tools/ff7-editor/GGdropmans_FF7_Steam.CT" download>Final Fantasy VII Steam (.CT)</a> — GGdropman</li>
+        </ul>
+        <p><strong>Art:</strong> Steam header images used as tile atmosphere only.</p>
       </div>
     </div>
   </div>
@@ -302,7 +754,7 @@
         <h2 class="modal-title" id="soon-title">Coming Soon</h2>
         <button type="button" class="modal-close" id="soon-close" aria-label="Close">×</button>
       </div>
-      <p class="credits-body">More save editors will show up here as they’re built. TCG Card Shop and Final Fantasy VII (Steam) are ready now.</p>
+      <p class="credits-body">That world’s still locked. Palworld, Borderlands, Hades, Diablo II, and Schedule I are on the radar — TCG, FF7, and Last Epoch are ready now.</p>
     </div>
   </div>
 
