@@ -20,6 +20,8 @@
       --hades: #ff5a3d;
       --diablo: #c45a2d;
       --schedule: #7ec8ff;
+      --sod2: #c45a2a;
+      --steam: #66c0f4;
       --font-display: "Bungee", cursive;
       --font-ui: "Chakra Petch", sans-serif;
     }
@@ -390,15 +392,26 @@
       --art: url("https://cdn.cloudflare.steamstatic.com/steam/apps/899770/header.jpg");
     }
 
-    .tile--palworld {
-      --accent: var(--pal);
-      --art: url("https://cdn.cloudflare.steamstatic.com/steam/apps/1623730/header.jpg");
+    .tile--sod2 {
+      --accent: var(--sod2);
+      --art: url("https://cdn.cloudflare.steamstatic.com/steam/apps/495720/header.jpg");
     }
 
-    .tile--palworld::after {
+    .tile--sod2::after {
       background:
-        radial-gradient(circle at 20% 30%, rgba(255, 190, 120, 0.25), transparent 40%),
-        linear-gradient(125deg, rgba(110, 231, 255, 0.3), transparent 50%);
+        radial-gradient(circle at 20% 30%, rgba(232, 184, 74, 0.22), transparent 40%),
+        linear-gradient(125deg, rgba(196, 90, 42, 0.35), transparent 50%);
+    }
+
+    .tile--steam {
+      --accent: var(--steam);
+      --art: url("https://cdn.cloudflare.steamstatic.com/steam/apps/495720/header.jpg");
+    }
+
+    .tile--steam::after {
+      background:
+        radial-gradient(circle at 80% 25%, rgba(102, 192, 244, 0.35), transparent 40%),
+        linear-gradient(125deg, rgba(30, 80, 120, 0.4), transparent 50%);
     }
 
     .tile--borderlands {
@@ -604,7 +617,7 @@
     <header class="hero">
       <h1 class="hero__brand">GGdropmans</h1>
       <p class="hero__tag">Save editors &amp; cheat tables for the games you actually grind.</p>
-      <p class="hero__sub">Pick a portal below — Midgar mako, Palworld skies, Borderlands vaults, and more on the way.</p>
+      <p class="hero__sub">Pick a portal below — Midgar mako, Trumbull Valley, Borderlands vaults, and more on the way.</p>
       <a class="hero__cta" href="#editors">Browse tools <span aria-hidden="true">↓</span></a>
     </header>
 
@@ -641,14 +654,23 @@
           </span>
         </a>
 
-        <button type="button" class="tile tile--palworld tile--soon" onclick="showComingSoon()">
-          <span class="tile__badge tile__badge--soon">Soon</span>
+        <a class="tile tile--schedule" href="tools/schedule1-editor/editor.html">
+          <span class="tile__badge tile__badge--live">Live</span>
           <span class="tile__body">
-            <span class="tile__game">Palpagos</span>
-            <span class="tile__name">Palworld</span>
-            <span class="tile__meta">Pals · bases · inventory</span>
+            <span class="tile__game">Hyland Point</span>
+            <span class="tile__name">Schedule I</span>
+            <span class="tile__meta">Bank · rank · products</span>
           </span>
-        </button>
+        </a>
+
+        <a class="tile tile--sod2" href="tools/sod2-editor/editor.html">
+          <span class="tile__badge tile__badge--live">Live</span>
+          <span class="tile__body">
+            <span class="tile__game">Trumbull Valley</span>
+            <span class="tile__name">State of Decay 2</span>
+            <span class="tile__meta">Influence · stockpile · plague hearts</span>
+          </span>
+        </a>
 
         <button type="button" class="tile tile--borderlands tile--soon" onclick="showComingSoon()">
           <span class="tile__badge tile__badge--soon">Soon</span>
@@ -676,6 +698,24 @@
           </span>
         </a>
 
+        <a class="tile tile--tcg" href="tools/tcg-editor/GGdropmanTCG_v1.0.CT" download>
+          <span class="tile__badge tile__badge--live">.CT</span>
+          <span class="tile__body">
+            <span class="tile__game">Card Shop</span>
+            <span class="tile__name">TCG Mono Table v1.0</span>
+            <span class="tile__meta">Cheat Engine · Card Shop Simulator.exe</span>
+          </span>
+        </a>
+
+        <a class="tile tile--steam" href="tools/steam-achievement-unlocker/guide.html">
+          <span class="tile__badge tile__badge--live">CLI</span>
+          <span class="tile__body">
+            <span class="tile__game">Steamworks</span>
+            <span class="tile__name">Achievement Unlocker</span>
+            <span class="tile__meta">Node · SoD2 default · any AppID</span>
+          </span>
+        </a>
+
         <button type="button" class="tile tile--hades tile--soon" onclick="showComingSoon()">
           <span class="tile__badge tile__badge--soon">Soon</span>
           <span class="tile__body">
@@ -691,15 +731,6 @@
             <span class="tile__game">Sanctuary</span>
             <span class="tile__name">Diablo II</span>
             <span class="tile__meta">Gold · items · characters</span>
-          </span>
-        </button>
-
-        <button type="button" class="tile tile--schedule tile--soon" onclick="showComingSoon()">
-          <span class="tile__badge tile__badge--soon">Soon</span>
-          <span class="tile__body">
-            <span class="tile__game">Hyland Point</span>
-            <span class="tile__name">Schedule I</span>
-            <span class="tile__meta">Cash · product · properties</span>
           </span>
         </button>
 
@@ -738,10 +769,17 @@
           <li><a href="tools/tcg-editor/editor.html">TCG Card Shop Save Editor</a> — GGdropman</li>
           <li><a href="tools/ff7-editor/editor.html">Final Fantasy VII Steam Save Editor</a> — GGdropman</li>
           <li><a href="tools/last-epoch-editor/editor.html">Last Epoch Offline Save Editor</a> — GGdropman</li>
+          <li><a href="tools/schedule1-editor/editor.html">Schedule I Save Editor</a> — GGdropman</li>
+          <li><a href="tools/sod2-editor/editor.html">State of Decay 2 Community Save Editor</a> — GGdropman</li>
         </ul>
         <p><strong>Cheat Tables:</strong></p>
         <ul>
           <li><a href="tools/ff7-editor/GGdropmanFF7V1.0.CT" download>Final Fantasy VII Steam (.CT) v1.0</a> — GGdropman</li>
+          <li><a href="tools/tcg-editor/GGdropmanTCG_v1.0.CT" download>TCG Card Shop Simulator Mono (.CT) v1.0</a> — GGdropman</li>
+        </ul>
+        <p><strong>Steam tools:</strong></p>
+        <ul>
+          <li><a href="tools/steam-achievement-unlocker/guide.html">Steam Achievement Unlocker</a> — GGdropman (local Node CLI)</li>
         </ul>
         <p><strong>Art:</strong> Steam header images used as tile atmosphere only.</p>
       </div>
@@ -754,7 +792,7 @@
         <h2 class="modal-title" id="soon-title">Coming Soon</h2>
         <button type="button" class="modal-close" id="soon-close" aria-label="Close">×</button>
       </div>
-      <p class="credits-body">That world’s still locked. Palworld, Borderlands, Hades, Diablo II, and Schedule I are on the radar — TCG, FF7, and Last Epoch are ready now.</p>
+      <p class="credits-body">That world’s still locked. Borderlands, Hades, and Diablo II are on the radar — TCG, FF7, Last Epoch, Schedule I, and State of Decay 2 are ready now.</p>
     </div>
   </div>
 

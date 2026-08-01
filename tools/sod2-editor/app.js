@@ -1,0 +1,2029 @@
+(() => {
+  "use strict";
+
+  const S = window.Sod2Save;
+  const $ = (id) => document.getElementById(id);
+
+  const state = {
+    saves: [],
+    active: 0,
+    dirty: false,
+    survivorIndex: 0,
+    enclaveIndex: 0,
+    lockerIndex: 0,
+    invCategory: "ammo",
+    vehicleIndex: 0,
+  };
+
+  function current() {
+    return state.saves[state.active] || null;
+  }
+
+  function setStatus(msg) {
+    $("status").textContent = msg;
+  }
+
+  function setDirty(dirty) {
+    state.dirty = dirty;
+    if (current()) current().save.dirty = dirty;
+    $("dirty-pill").hidden = !dirty;
+    const has = state.saves.length > 0;
+    $("btn-save").disabled = !has;
+    $("btn-backup").disabled = !has;
+    $("btn-save-all").disabled = state.saves.length < 2;
+  }
+
+  function showEditor(show) {
+    $("empty-state").hidden = show;
+    $("tabs").hidden = !show;
+    $("slot-bar").hidden = !show || state.saves.length < 2;
+    ["community", "survivors", "enclaves", "inventory", "map", "vehicles", "diff", "scan"].forEach((id) => {
+      $("panel-" + id).hidden = !show;
+    });
+  }
+
+  function switchTab(tab) {
+    document.querySelectorAll(".tab").forEach((btn) => {
+      btn.classList.toggle("is-active", btn.dataset.tab === tab);
+    });
+    document.querySelectorAll(".panel").forEach((panel) => {
+      panel.classList.toggle("is-active", panel.id === "panel-" + tab);
+    });
+    if (tab === "diff") renderDiff();
+    if (tab === "enclaves") renderEnclaves();
+    if (tab === "inventory") renderInventory();
+    if (tab === "survivors") renderSurvivors();
+    if (tab === "map") renderMapQuest();
+    if (tab === "vehicles") renderVehicles();
+  }
+
+  function formatValue(v) {
+    if (v == null || Number.isNaN(v)) return "";
+    if (typeof v === "number" && !Number.isInteger(v)) {
+      return String(Math.round(v * 1000) / 1000);
+    }
+    return String(v);
+  }
+
+  function renderSlots() {
+    const bar = $("slot-bar");
+    if (state.saves.length < 2) {
+      bar.hidden = true;
+      bar.innerHTML = "";
+      return;
+    }
+    bar.hidden = false;
+    bar.innerHTML = state.saves
+      .map((slot, i) => {
+        const active = i === state.active ? " is-active" : "";
+        const dirty = slot.save.dirty ? " · edited" : "";
+        return `<button type="button" class="slot-chip${active}" data-slot="${i}">${escapeHtml(
+          slot.save.fileName
+        )}${dirty}</button>`;
+      })
+      .join("");
+    bar.querySelectorAll(".slot-chip").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        state.active = Number(btn.dataset.slot);
+        refreshAll();
+        setDirty(!!current().save.dirty);
+      });
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function renderFieldGroup(groupId, groupName) {
+    const box = $("fields-" + groupId);
+    if (!box) return;
+    box.innerHTML = "";
+    const save = current().save;
+    const defs = S.COMMUNITY_FIELDS.filter((d) => d.group === groupId);
+    for (const def of defs) {
+      const entry = save.fields[def.id];
+      const label = document.createElement("label");
+      if (!entry || !entry.available) label.classList.add("is-missing");
+      const title = document.createElement("span");
+      title.textContent = def.label + (entry && entry.available ? "" : " (n/a)");
+      if (def.hint) title.title = def.hint;
+      label.appendChild(title);
+      const input = document.createElement("input");
+      input.type = "number";
+      input.id = "f-" + def.id;
+      input.step = def.kind === "resource" || def.kind === "floatName" ? "0.1" : "1";
+      if (def.min != null) input.min = String(def.min);
+      if (def.max != null) input.max = String(def.max);
+      input.disabled = !entry || !entry.available;
+      input.value = entry && entry.available ? formatValue(entry.value) : "";
+      input.addEventListener("change", () => {
+        try {
+          S.setFieldValue(save, def.id, input.value);
+          input.value = formatValue(save.fields[def.id].value);
+          setDirty(true);
+          setStatus("Updated " + def.label);
+          renderDiff();
+        } catch (err) {
+          setStatus(err.message || String(err));
+        }
+      });
+      label.appendChild(input);
+      box.appendChild(label);
+    }
+  }
+
+  function renderCommunityFields() {
+    const save = current().save;
+    renderFieldGroup("core");
+    renderFieldGroup("stockpile");
+    renderFieldGroup("threats");
+
+    const nameEl = $("community-name");
+    if (save.communityName && save.communityName.key) {
+      nameEl.hidden = false;
+      nameEl.innerHTML =
+        "<strong>Community name key</strong> <code>" +
+        escapeHtml(save.communityName.key) +
+        "</code> <span class=\"muted\">(localization TextProperty — read-only)</span>";
+    } else {
+      nameEl.hidden = true;
+      nameEl.textContent = "";
+    }
+
+    const avail = S.COMMUNITY_FIELDS.filter((d) => save.fields[d.id] && save.fields[d.id].available).length;
+    $("save-meta").textContent =
+      save.fileName +
+      " · " +
+      save.properties.length.toLocaleString() +
+      " property bytes · " +
+      avail +
+      "/" +
+      S.COMMUNITY_FIELDS.length +
+      " fields mapped" +
+      (state.saves.length > 1 ? " · slot " + (state.active + 1) + "/" + state.saves.length : "");
+  }
+
+  function renderInfluenceTable() {
+    const save = current().save;
+    const tbody = $("influence-table").querySelector("tbody");
+    tbody.innerHTML = "";
+    const infl = save.fields.influence;
+    if (!infl || !infl.hits.length) {
+      tbody.innerHTML = '<tr><td colspan="4">No Influence fields found.</td></tr>';
+      return;
+    }
+    infl.hits.forEach((hit, i) => {
+      const tr = document.createElement("tr");
+      const isCommunity = infl.hit && hit.valueOffset === infl.hit.valueOffset;
+      tr.innerHTML = `<td>${i + 1}</td><td></td><td><code>0x${hit.valueOffset.toString(16)}</code></td><td>${
+        isCommunity ? '<span class="tag">Community target</span>' : "Enclave / other"
+      }</td>`;
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = "0";
+      input.max = "9999";
+      input.value = String(hit.value);
+      input.addEventListener("change", () => {
+        try {
+          S.setInfluenceAt(save, i, input.value);
+          input.value = String(save.fields.influence.hits[i].value);
+          const communityInput = $("f-influence");
+          if (communityInput && save.fields.influence.available) {
+            communityInput.value = formatValue(save.fields.influence.value);
+          }
+          setDirty(true);
+          setStatus("Updated Influence #" + (i + 1));
+          renderDiff();
+          if (save.enclaves) renderEnclaves();
+        } catch (err) {
+          setStatus(err.message || String(err));
+        }
+      });
+      tr.children[1].appendChild(input);
+      tbody.appendChild(tr);
+    });
+  }
+
+  function enclaveTypeLabel(v) {
+    if (!v) return "—";
+    return String(v).replace(/^EEnclaveType::/, "");
+  }
+
+  function renderEnclaves() {
+    const save = current().save;
+    if (!save.enclaves) {
+      try {
+        S.discoverEnclaves(save);
+      } catch (err) {
+        console.warn(err);
+        save.enclaves = [];
+      }
+    }
+    renderInfluenceTable();
+
+    const list = $("enclave-list");
+    list.innerHTML = "";
+    if (!save.enclaves.length) {
+      list.innerHTML = '<p class="panel-note">No enclaves found (no BaseGuid + Influence pairs).</p>';
+      $("enclave-title").textContent = "No enclaves";
+      $("enclave-sub").textContent = "";
+      $("enclave-form").hidden = true;
+      return;
+    }
+
+    if (state.enclaveIndex >= save.enclaves.length) state.enclaveIndex = 0;
+
+    save.enclaves.forEach((e, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "survivor-chip" + (i === state.enclaveIndex ? " is-active" : "");
+      const bits = [];
+      if (e.isCommunity) bits.push("community");
+      bits.push("infl " + (e.influence ? e.influence.value : "?"));
+      if (e.enclaveType) bits.push(enclaveTypeLabel(e.enclaveType.value));
+      if (e.relationshipHint) bits.push(e.relationshipHint);
+      btn.innerHTML = escapeHtml(e.label) + "<small>" + escapeHtml(bits.join(" · ")) + "</small>";
+      btn.addEventListener("click", () => {
+        state.enclaveIndex = i;
+        renderEnclaves();
+      });
+      list.appendChild(btn);
+    });
+
+    const e = save.enclaves[state.enclaveIndex];
+    $("enclave-title").textContent = e.label;
+    $("enclave-sub").textContent =
+      (e.isCommunity ? "Your community enclave · " : "") +
+      (e.tag && e.tag.value && e.tag.value !== "None" ? "Tag " + e.tag.value + " · " : "") +
+      (e.id ? "ID " + e.id.value : "");
+    $("enclave-form").hidden = false;
+
+    const fields = $("enclave-fields");
+    fields.innerHTML = "";
+
+    function addNumber(label, field, max) {
+      if (!e[field]) return;
+      const lab = document.createElement("label");
+      lab.textContent = label;
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = "0";
+      input.max = String(max || 9999);
+      input.value = String(e[field].value);
+      input.addEventListener("change", () => {
+        try {
+          S.setEnclaveInt(save, state.enclaveIndex, field, input.value);
+          setDirty(true);
+          setStatus("Updated " + label);
+          renderCommunityFields();
+          renderEnclaves();
+          renderDiff();
+        } catch (err) {
+          setStatus(err.message || String(err));
+        }
+      });
+      lab.appendChild(input);
+      fields.appendChild(lab);
+    }
+
+    function addBool(label, field) {
+      if (!e[field]) return;
+      const lab = document.createElement("label");
+      lab.className = "check-label";
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.checked = !!e[field].value;
+      input.addEventListener("change", () => {
+        try {
+          S.setEnclaveBool(save, state.enclaveIndex, field, input.checked);
+          setDirty(true);
+          setStatus("Updated " + label);
+          renderEnclaves();
+          renderDiff();
+        } catch (err) {
+          setStatus(err.message || String(err));
+        }
+      });
+      lab.appendChild(input);
+      lab.appendChild(document.createTextNode(" " + label));
+      fields.appendChild(lab);
+    }
+
+    addNumber("Influence", "influence", 9999);
+    addNumber("Member departures", "departures", 9999);
+    addNumber("Member deaths", "deaths", 9999);
+
+    if (e.displayName && e.displayName.displayOff != null) {
+      const lab = document.createElement("label");
+      lab.textContent = "Display name";
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = e.displayName.display || "";
+      input.addEventListener("change", () => {
+        try {
+          S.setEnclaveDisplayName(save, state.enclaveIndex, input.value);
+          setDirty(true);
+          setStatus("Updated display name");
+          renderEnclaves();
+          renderDiff();
+        } catch (err) {
+          setStatus(err.message || String(err));
+        }
+      });
+      lab.appendChild(input);
+      fields.appendChild(lab);
+    }
+
+    if (e.enclaveType) {
+      const lab = document.createElement("label");
+      lab.textContent = "Enclave type";
+      const sel = document.createElement("select");
+      const cur = e.enclaveType.value || "";
+      const opts = S.ENCLAVE_TYPES.slice();
+      if (cur && !opts.includes(cur)) opts.unshift(cur);
+      for (const t of opts) {
+        const opt = document.createElement("option");
+        opt.value = t;
+        opt.textContent = enclaveTypeLabel(t);
+        if (t === cur) opt.selected = true;
+        sel.appendChild(opt);
+      }
+      sel.addEventListener("change", () => {
+        try {
+          S.setEnclaveType(save, state.enclaveIndex, sel.value);
+          setDirty(true);
+          setStatus("Updated enclave type");
+          renderEnclaves();
+          renderDiff();
+        } catch (err) {
+          setStatus(err.message || String(err));
+        }
+      });
+      lab.appendChild(sel);
+      fields.appendChild(lab);
+    }
+
+    addBool("Show on map", "displayOnMap");
+    addBool("Trade using prestige only", "tradesPrestige");
+    addBool("Disband on any recruit", "disbandsOnRecruit");
+    addBool("Hide recruitability", "hideRecruitability");
+
+    const meta = [];
+    if (e.relationshipHint) meta.push("Relationship hint: " + e.relationshipHint + " (from restock/schema path)");
+    if (e.source) meta.push("Source: " + e.source.value);
+    if (e.schema) meta.push("Schema: " + e.schema.value);
+    if (e.restock && e.restock.value) meta.push("Restock: " + e.restock.value);
+    if (e.displayName && e.displayName.locKey) meta.push("Loc key: " + e.displayName.locKey);
+    if (e.description) meta.push("Description: " + e.description);
+    $("enclave-meta").textContent = meta.join(" · ");
+  }
+
+  function renderItemCatalog(save, categoryId) {
+    const list = $("item-catalog");
+    list.innerHTML = "";
+    const inv = save.inventories[state.lockerIndex];
+    const seen = new Set();
+    if (inv && inv.categories[categoryId]) {
+      for (const c of inv.categories[categoryId].classes.items || []) {
+        if (!c.path || seen.has(c.path)) continue;
+        seen.add(c.path);
+        const opt = document.createElement("option");
+        opt.value = c.path;
+        opt.label = c.shortName;
+        list.appendChild(opt);
+      }
+    }
+    for (const c of save.itemCatalog || []) {
+      if (categoryId && c.categoryId !== categoryId) continue;
+      if (seen.has(c.path)) continue;
+      seen.add(c.path);
+      const opt = document.createElement("option");
+      opt.value = c.path;
+      opt.label = c.shortName;
+      list.appendChild(opt);
+    }
+  }
+
+  function renderInventory() {
+    const save = current().save;
+    if (!save.inventories) {
+      try {
+        S.discoverInventories(save);
+      } catch (err) {
+        console.warn(err);
+        save.inventories = [];
+      }
+    }
+
+    const list = $("locker-list");
+    list.innerHTML = "";
+    if (!save.inventories.length) {
+      list.innerHTML = '<p class="panel-note">No ItemLibrary lockers found.</p>';
+      $("locker-title").textContent = "No lockers";
+      $("locker-sub").textContent = "";
+      $("inv-toolbar").hidden = true;
+      $("inv-table").querySelector("tbody").innerHTML = "";
+      return;
+    }
+
+    if (state.lockerIndex >= save.inventories.length) state.lockerIndex = 0;
+    const inv = save.inventories[state.lockerIndex];
+
+    save.inventories.forEach((locker, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "survivor-chip" + (i === state.lockerIndex ? " is-active" : "");
+      btn.innerHTML =
+        escapeHtml(locker.label || "Locker #" + (i + 1)) +
+        "<small>" +
+        locker.dataLen.toLocaleString() +
+        " bytes</small>";
+      btn.addEventListener("click", () => {
+        state.lockerIndex = i;
+        renderInventory();
+      });
+      list.appendChild(btn);
+    });
+
+    $("locker-title").textContent = inv.label || "Locker";
+    $("locker-sub").textContent = inv.totalItems + " instances across categories";
+    $("inv-toolbar").hidden = false;
+
+    const catSelect = $("inv-category");
+    const prevCat = state.invCategory;
+    catSelect.innerHTML = "";
+    const available = S.INVENTORY_CATEGORIES.filter((c) => inv.categories[c.id]);
+    if (!available.some((c) => c.id === prevCat) && available[0]) state.invCategory = available[0].id;
+    for (const c of available) {
+      const opt = document.createElement("option");
+      opt.value = c.id;
+      const count = (inv.categories[c.id].instances && inv.categories[c.id].instances.count) || 0;
+      opt.textContent = c.label + " (" + count + ")";
+      if (c.id === state.invCategory) opt.selected = true;
+      catSelect.appendChild(opt);
+    }
+
+    renderItemCatalog(save, state.invCategory);
+
+    const cat = inv.categories[state.invCategory];
+    const tbody = $("inv-table").querySelector("tbody");
+    tbody.innerHTML = "";
+    if (!cat || !cat.instances.items.length) {
+      tbody.innerHTML = '<tr><td colspan="5">No items in this category.</td></tr>';
+      return;
+    }
+
+    cat.instances.items.forEach((item, i) => {
+      const cls = cat.classes.items[item.classIndex];
+      const tr = document.createElement("tr");
+      const nameCell = document.createElement("td");
+      nameCell.textContent = cls ? cls.shortName : "(class " + item.classIndex + ")";
+      if (cls && cls.path) nameCell.title = cls.path;
+
+      const qtyCell = document.createElement("td");
+      if (item.stackCountOff != null) {
+        const input = document.createElement("input");
+        input.type = "number";
+        input.min = "0";
+        input.max = "999999";
+        input.value = String(item.stackCount);
+        input.addEventListener("change", () => {
+          try {
+            S.setInventoryStackCount(save, state.lockerIndex, state.invCategory, i, input.value);
+            setDirty(true);
+            setStatus("Updated stack");
+            renderInventory();
+            renderDiff();
+          } catch (err) {
+            setStatus(err.message || String(err));
+          }
+        });
+        qtyCell.appendChild(input);
+      } else if (item.durabilityOff != null) {
+        const input = document.createElement("input");
+        input.type = "number";
+        input.min = "0";
+        input.max = "999999";
+        input.value = String(item.durability);
+        input.title = "Durability" + (item.maxDurability != null ? " / max " + item.maxDurability : "");
+        input.addEventListener("change", () => {
+          try {
+            S.setInventoryDurability(save, state.lockerIndex, state.invCategory, i, input.value);
+            setDirty(true);
+            setStatus("Updated durability");
+            renderInventory();
+            renderDiff();
+          } catch (err) {
+            setStatus(err.message || String(err));
+          }
+        });
+        qtyCell.appendChild(input);
+      } else {
+        qtyCell.textContent = "—";
+      }
+
+      const classCell = document.createElement("td");
+      const sel = document.createElement("select");
+      cat.classes.items.forEach((c) => {
+        const opt = document.createElement("option");
+        opt.value = String(c.index);
+        opt.textContent = c.index + ": " + c.shortName;
+        if (c.index === item.classIndex) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      sel.addEventListener("change", () => {
+        try {
+          S.setInventoryClassIndex(save, state.lockerIndex, state.invCategory, i, sel.value);
+          setDirty(true);
+          setStatus("Changed item class");
+          renderInventory();
+          renderDiff();
+        } catch (err) {
+          setStatus(err.message || String(err));
+        }
+      });
+      classCell.appendChild(sel);
+
+      const act = document.createElement("td");
+      act.className = "row-actions";
+      const dup = document.createElement("button");
+      dup.type = "button";
+      dup.className = "btn";
+      dup.textContent = "Dup";
+      dup.addEventListener("click", () => {
+        try {
+          S.duplicateInventoryItem(save, state.lockerIndex, state.invCategory, i);
+          setDirty(true);
+          setStatus("Duplicated item");
+          renderInventory();
+          renderDiff();
+        } catch (err) {
+          setStatus(err.message || String(err));
+        }
+      });
+      const rm = document.createElement("button");
+      rm.type = "button";
+      rm.className = "btn";
+      rm.textContent = "Remove";
+      rm.addEventListener("click", () => {
+        try {
+          S.removeInventoryItem(save, state.lockerIndex, state.invCategory, i);
+          setDirty(true);
+          setStatus("Removed item");
+          renderInventory();
+          renderDiff();
+        } catch (err) {
+          setStatus(err.message || String(err));
+        }
+      });
+      act.appendChild(dup);
+      act.appendChild(rm);
+
+      tr.appendChild(document.createElement("td")).textContent = String(i + 1);
+      tr.appendChild(nameCell);
+      tr.appendChild(qtyCell);
+      tr.appendChild(classCell);
+      tr.appendChild(act);
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderTraitCatalog() {
+    const save = current().save;
+    const list = $("trait-catalog");
+    list.innerHTML = "";
+    for (const id of save.traitCatalog || []) {
+      const opt = document.createElement("option");
+      opt.value = id;
+      list.appendChild(opt);
+    }
+  }
+
+  function renderSkillCatalog() {
+    const save = current().save;
+    const list = $("skill-catalog");
+    if (!list) return;
+    list.innerHTML = "";
+    for (const id of save.skillCatalog || S.COMMON_SKILLS || []) {
+      const opt = document.createElement("option");
+      opt.value = id;
+      list.appendChild(opt);
+    }
+  }
+
+  function renderSurvivors() {
+    const save = current().save;
+    if (!save.survivors) S.discoverSurvivors(save);
+    else if (S.attachSkillsToSurvivors && (!save.survivors[0] || !save.survivors[0].skills)) {
+      S.attachSkillsToSurvivors(save);
+    }
+    if (!save.inventories && S.discoverInventories) {
+      try {
+        S.discoverInventories(save);
+      } catch (err) {
+        console.warn(err);
+      }
+    }
+    if (S.attachSurvivorInventories && save.survivors[0] && !save.survivors[0].equipmentSlots) {
+      try {
+        S.attachSurvivorInventories(save);
+      } catch (err) {
+        console.warn(err);
+      }
+    }
+    renderTraitCatalog();
+    renderSkillCatalog();
+
+    const list = $("survivor-list");
+    list.innerHTML = "";
+    if (!save.survivors.length) {
+      list.innerHTML = "<p class=\"panel-note\">No survivors with Traits arrays found.</p>";
+      $("survivor-title").textContent = "No survivors";
+      $("survivor-sub").textContent = "";
+      $("trait-table").querySelector("tbody").innerHTML = "";
+      $("skill-table").querySelector("tbody").innerHTML = "";
+      if ($("equip-table")) $("equip-table").querySelector("tbody").innerHTML = "";
+      if ($("bag-table")) $("bag-table").querySelector("tbody").innerHTML = "";
+      $("btn-add-trait").disabled = true;
+      $("btn-add-skill").disabled = true;
+      $("btn-max-skills").disabled = true;
+      return;
+    }
+
+    if (state.survivorIndex >= save.survivors.length) state.survivorIndex = 0;
+
+    save.survivors.forEach((s, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "survivor-chip" + (i === state.survivorIndex ? " is-active" : "");
+      const skillCount = (s.skills && s.skills.length) || 0;
+      const bagFilled = (s.bagSlots || []).filter((x) => x.itemIndex >= 0).length;
+      btn.innerHTML =
+        escapeHtml(s.displayName) +
+        "<small>" +
+        s.traits.length +
+        " traits · " +
+        skillCount +
+        " skills · " +
+        bagFilled +
+        " bag</small>";
+      btn.addEventListener("click", () => {
+        state.survivorIndex = i;
+        renderSurvivors();
+      });
+      list.appendChild(btn);
+    });
+
+    const survivor = save.survivors[state.survivorIndex];
+    const bagFilled = (survivor.bagSlots || []).filter((x) => x.itemIndex >= 0).length;
+    $("survivor-title").textContent = survivor.displayName;
+    $("survivor-sub").textContent =
+      survivor.traits.length +
+      " traits · " +
+      ((survivor.skills && survivor.skills.length) || 0) +
+      " skills · " +
+      bagFilled +
+      "/" +
+      ((survivor.bagSlots && survivor.bagSlots.length) || 0) +
+      " bag slots";
+    $("btn-add-trait").disabled = false;
+    $("btn-add-skill").disabled = !(survivor.skills && survivor.skillsOffset != null);
+    $("btn-max-skills").disabled = !(survivor.skills && survivor.skills.length);
+
+    const tbody = $("trait-table").querySelector("tbody");
+    tbody.innerHTML = "";
+    survivor.traits.forEach((trait, ti) => {
+      const tr = document.createElement("tr");
+      const tdIdx = document.createElement("td");
+      tdIdx.textContent = String(ti + 1);
+      const tdId = document.createElement("td");
+      const input = document.createElement("input");
+      input.className = "trait-row-input";
+      input.type = "text";
+      input.setAttribute("list", "trait-catalog");
+      input.value = trait.id;
+      input.addEventListener("change", () => {
+        try {
+          S.setSurvivorTraitId(save, state.survivorIndex, ti, input.value);
+          setDirty(true);
+          setStatus("Updated trait on " + survivor.displayName);
+          renderSurvivors();
+          renderDiff();
+        } catch (err) {
+          setStatus(err.message || String(err));
+          input.value = trait.id;
+        }
+      });
+      tdId.appendChild(input);
+      const tdAct = document.createElement("td");
+      const actions = document.createElement("div");
+      actions.className = "trait-actions";
+      const btnApply = document.createElement("button");
+      btnApply.type = "button";
+      btnApply.className = "btn";
+      btnApply.textContent = "Set";
+      btnApply.addEventListener("click", () => {
+        input.dispatchEvent(new Event("change"));
+      });
+      const btnDel = document.createElement("button");
+      btnDel.type = "button";
+      btnDel.className = "btn btn--danger";
+      btnDel.textContent = "Remove";
+      btnDel.addEventListener("click", () => {
+        try {
+          S.removeSurvivorTrait(save, state.survivorIndex, ti);
+          setDirty(true);
+          setStatus("Removed trait from " + survivor.displayName);
+          renderSurvivors();
+        } catch (err) {
+          setStatus(err.message || String(err));
+        }
+      });
+      actions.appendChild(btnApply);
+      actions.appendChild(btnDel);
+      tdAct.appendChild(actions);
+      tr.appendChild(tdIdx);
+      tr.appendChild(tdId);
+      tr.appendChild(tdAct);
+      tbody.appendChild(tr);
+    });
+
+    const skillBody = $("skill-table").querySelector("tbody");
+    skillBody.innerHTML = "";
+    const skills = survivor.skills || [];
+    if (!skills.length) {
+      skillBody.innerHTML = '<tr><td colspan="5">No Skills array found for this survivor.</td></tr>';
+    }
+    skills.forEach((skill, si) => {
+      const tr = document.createElement("tr");
+
+      const tdIdx = document.createElement("td");
+      tdIdx.textContent = String(si + 1);
+
+      const tdId = document.createElement("td");
+      const idInput = document.createElement("input");
+      idInput.className = "trait-row-input";
+      idInput.type = "text";
+      idInput.setAttribute("list", "skill-catalog");
+      idInput.value = skill.id;
+      idInput.addEventListener("change", () => {
+        try {
+          S.setSkillId(save, state.survivorIndex, si, idInput.value);
+          setDirty(true);
+          setStatus("Updated skill ID on " + survivor.displayName);
+          renderSurvivors();
+        } catch (err) {
+          setStatus(err.message || String(err));
+          idInput.value = skill.id;
+        }
+      });
+      tdId.appendChild(idInput);
+
+      const tdLvl = document.createElement("td");
+      const lvlInput = document.createElement("input");
+      lvlInput.className = "trait-row-input";
+      lvlInput.type = "number";
+      lvlInput.min = "0";
+      lvlInput.max = "99";
+      lvlInput.value = skill.level != null ? String(skill.level) : "";
+      lvlInput.addEventListener("change", () => {
+        try {
+          S.setSkillLevel(save, state.survivorIndex, si, lvlInput.value);
+          setDirty(true);
+          setStatus("Updated " + skill.id + " level");
+          renderSurvivors();
+        } catch (err) {
+          setStatus(err.message || String(err));
+        }
+      });
+      tdLvl.appendChild(lvlInput);
+
+      const tdXp = document.createElement("td");
+      const xpInput = document.createElement("input");
+      xpInput.className = "trait-row-input";
+      xpInput.type = "number";
+      xpInput.min = "0";
+      xpInput.step = "0.1";
+      xpInput.value = skill.xp != null ? formatValue(skill.xp) : "";
+      xpInput.addEventListener("change", () => {
+        try {
+          S.setSkillXp(save, state.survivorIndex, si, xpInput.value);
+          setDirty(true);
+          setStatus("Updated " + skill.id + " XP");
+          renderSurvivors();
+        } catch (err) {
+          setStatus(err.message || String(err));
+        }
+      });
+      tdXp.appendChild(xpInput);
+
+      const tdAct = document.createElement("td");
+      const actions = document.createElement("div");
+      actions.className = "trait-actions";
+      const btnDel = document.createElement("button");
+      btnDel.type = "button";
+      btnDel.className = "btn btn--danger";
+      btnDel.textContent = "Remove";
+      btnDel.addEventListener("click", () => {
+        try {
+          S.removeSkill(save, state.survivorIndex, si);
+          setDirty(true);
+          setStatus("Removed skill from " + survivor.displayName);
+          renderSurvivors();
+        } catch (err) {
+          setStatus(err.message || String(err));
+        }
+      });
+      actions.appendChild(btnDel);
+      tdAct.appendChild(actions);
+
+      tr.appendChild(tdIdx);
+      tr.appendChild(tdId);
+      tr.appendChild(tdLvl);
+      tr.appendChild(tdXp);
+      tr.appendChild(tdAct);
+      skillBody.appendChild(tr);
+    });
+
+    renderSurvivorSlots(save, survivor);
+  }
+
+  function slotItemLabel(resolved) {
+    if (!resolved || resolved.empty) return "(empty)";
+    const bits = [resolved.name || "Item"];
+    if (resolved.stackCount != null) bits.push("×" + resolved.stackCount);
+    if (resolved.durability != null) bits.push("dur " + resolved.durability);
+    return bits.join(" · ");
+  }
+
+  function renderSurvivorSlots(save, survivor) {
+    const equipBody = $("equip-table") && $("equip-table").querySelector("tbody");
+    const bagBody = $("bag-table") && $("bag-table").querySelector("tbody");
+    if (!equipBody || !bagBody) return;
+    equipBody.innerHTML = "";
+    bagBody.innerHTML = "";
+
+    if (!survivor.equipmentSlots && !survivor.bagSlots) {
+      equipBody.innerHTML = '<tr><td colspan="4">No equipment data on this survivor.</td></tr>';
+      bagBody.innerHTML = '<tr><td colspan="4">No bag inventory found.</td></tr>';
+      return;
+    }
+
+    function bindIndexInput(input, target, previous) {
+      input.addEventListener("change", () => {
+        try {
+          S.setSurvivorItemIndex(save, state.survivorIndex, target, input.value);
+          setDirty(true);
+          setStatus("Updated survivor slot");
+          renderSurvivors();
+          renderDiff();
+        } catch (err) {
+          setStatus(err.message || String(err));
+          input.value = String(previous);
+        }
+      });
+    }
+
+    (survivor.equipmentSlots || []).forEach((slot) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${escapeHtml(slot.label)}</td><td></td><td></td><td class="row-actions"></td>`;
+      tr.children[1].textContent = slotItemLabel(slot.resolved);
+      if (slot.resolved && slot.resolved.path) tr.children[1].title = slot.resolved.path;
+
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = "-1";
+      input.value = String(slot.itemIndex);
+      input.disabled = slot.itemIndexOff == null;
+      bindIndexInput(input, { kind: "equipment", id: slot.id }, slot.itemIndex);
+      tr.children[2].appendChild(input);
+
+      const clear = document.createElement("button");
+      clear.type = "button";
+      clear.className = "btn";
+      clear.textContent = "Clear";
+      clear.disabled = slot.itemIndexOff == null || slot.itemIndex < 0;
+      clear.addEventListener("click", () => {
+        try {
+          S.clearSurvivorSlot(save, state.survivorIndex, { kind: "equipment", id: slot.id });
+          setDirty(true);
+          setStatus("Cleared " + slot.label);
+          renderSurvivors();
+          renderDiff();
+        } catch (err) {
+          setStatus(err.message || String(err));
+        }
+      });
+      tr.children[3].appendChild(clear);
+      equipBody.appendChild(tr);
+    });
+
+    if (!(survivor.bagSlots && survivor.bagSlots.length)) {
+      bagBody.innerHTML = '<tr><td colspan="4">No bag slots.</td></tr>';
+      return;
+    }
+
+    survivor.bagSlots.forEach((slot) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${slot.index + 1}</td><td></td><td></td><td class="row-actions"></td>`;
+      tr.children[1].textContent = slotItemLabel(slot.resolved);
+      if (slot.resolved && slot.resolved.path) tr.children[1].title = slot.resolved.path;
+
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = "-1";
+      input.value = String(slot.itemIndex);
+      input.disabled = slot.itemIndexOff == null;
+      bindIndexInput(input, { kind: "bag", index: slot.index }, slot.itemIndex);
+      tr.children[2].appendChild(input);
+
+      const clear = document.createElement("button");
+      clear.type = "button";
+      clear.className = "btn";
+      clear.textContent = "Clear";
+      clear.disabled = slot.itemIndexOff == null || slot.itemIndex < 0;
+      clear.addEventListener("click", () => {
+        try {
+          S.clearSurvivorSlot(save, state.survivorIndex, { kind: "bag", index: slot.index });
+          setDirty(true);
+          setStatus("Cleared bag slot");
+          renderSurvivors();
+          renderDiff();
+        } catch (err) {
+          setStatus(err.message || String(err));
+        }
+      });
+      tr.children[3].appendChild(clear);
+      bagBody.appendChild(tr);
+    });
+  }
+
+  function renderMapQuest() {
+    const save = current() && current().save;
+    if (!save) return;
+    if (!save.mapSites && S.discoverMapQuest) {
+      try {
+        S.discoverMapQuest(save);
+      } catch (err) {
+        console.warn(err);
+        save.mapSites = [];
+        save.radioCommands = [];
+        save.missions = [];
+      }
+    }
+
+    const stats = save.mapSiteStats || { total: 0, byLevel: {} };
+    const levelBits = Object.keys(stats.byLevel || {})
+      .map((k) => S.scoutedLevelLabel(k) + " " + stats.byLevel[k])
+      .join(" · ");
+    const summary = $("map-summary");
+    if (summary) {
+      summary.hidden = false;
+      summary.innerHTML =
+        "<strong>" +
+        (stats.total || 0) +
+        " map sites</strong> " +
+        escapeHtml(levelBits || "none") +
+        " · <strong>" +
+        ((save.radioCommands && save.radioCommands.length) || 0) +
+        " radio cmds</strong> · maps scouted flag: " +
+        (save.areMapsScouted ? (save.areMapsScouted.value ? "true" : "false") : "n/a");
+    }
+
+    const siteBody = $("map-site-table").querySelector("tbody");
+    siteBody.innerHTML = "";
+    const sites = save.mapSites || [];
+    if (!sites.length) {
+      siteBody.innerHTML = '<tr><td colspan="4">No MapSiteSaves found.</td></tr>';
+    } else {
+      // Show a compact sample: first 40 + note
+      const show = sites.slice(0, 40);
+      show.forEach((site) => {
+        const tr = document.createElement("tr");
+        const sel = document.createElement("select");
+        for (const lvl of S.SCOUTED_LEVELS) {
+          const opt = document.createElement("option");
+          opt.value = lvl;
+          opt.textContent = S.scoutedLevelLabel(lvl);
+          if (lvl === site.scoutedLevel) opt.selected = true;
+          sel.appendChild(opt);
+        }
+        if (site.scoutedLevel && !S.SCOUTED_LEVELS.includes(site.scoutedLevel)) {
+          const opt = document.createElement("option");
+          opt.value = site.scoutedLevel;
+          opt.textContent = S.scoutedLevelLabel(site.scoutedLevel);
+          opt.selected = true;
+          sel.appendChild(opt);
+        }
+        sel.disabled = !site.scouted;
+        sel.addEventListener("change", () => {
+          try {
+            S.setSiteScoutedLevel(save, site.index, sel.value);
+            setDirty(true);
+            setStatus("Updated site #" + (site.index + 1));
+            renderMapQuest();
+            renderDiff();
+          } catch (err) {
+            setStatus(err.message || String(err));
+          }
+        });
+        tr.innerHTML = `<td>${site.index + 1}</td><td></td><td>${escapeHtml(
+          site.outpostId && site.outpostId !== "None" ? site.outpostId : "—"
+        )}</td><td>${
+          site.surveyingComplete && site.surveyingComplete.value ? "yes" : "no"
+        }</td>`;
+        tr.children[1].appendChild(sel);
+        siteBody.appendChild(tr);
+      });
+      if (sites.length > show.length) {
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+          '<td colspan="4">… and ' +
+          (sites.length - show.length) +
+          " more (use Reveal all to change every site)</td>";
+        siteBody.appendChild(tr);
+      }
+    }
+
+    const radioBody = $("radio-table").querySelector("tbody");
+    radioBody.innerHTML = "";
+    const radios = save.radioCommands || [];
+    if (!radios.length) {
+      radioBody.innerHTML = '<tr><td colspan="4">No radio Availability list found.</td></tr>';
+    } else {
+      const show = radios.slice(0, 50);
+      show.forEach((cmd) => {
+        const tr = document.createElement("tr");
+        const charges = document.createElement("input");
+        charges.type = "number";
+        charges.min = "0";
+        charges.max = "9999";
+        charges.value = String(cmd.charges != null ? cmd.charges : 0);
+        charges.disabled = cmd.chargesOff == null;
+        charges.addEventListener("change", () => {
+          try {
+            writeRadioCharge(save, cmd, charges.value);
+            setDirty(true);
+            setStatus("Updated charges for " + cmd.id);
+            renderMapQuest();
+          } catch (err) {
+            setStatus(err.message || String(err));
+          }
+        });
+        const cd = document.createElement("input");
+        cd.type = "number";
+        cd.min = "0";
+        cd.step = "0.1";
+        cd.value = formatValue(cmd.cooldown != null ? cmd.cooldown : 0);
+        cd.disabled = cmd.cooldownOff == null;
+        cd.addEventListener("change", () => {
+          try {
+            writeRadioCooldown(save, cmd, cd.value);
+            setDirty(true);
+            setStatus("Updated cooldown for " + cmd.id);
+            renderMapQuest();
+          } catch (err) {
+            setStatus(err.message || String(err));
+          }
+        });
+        tr.innerHTML = `<td>${cmd.index + 1}</td><td><code>${escapeHtml(cmd.id || "")}</code></td><td></td><td></td>`;
+        tr.children[2].appendChild(charges);
+        tr.children[3].appendChild(cd);
+        radioBody.appendChild(tr);
+      });
+      if (radios.length > show.length) {
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+          '<td colspan="4">… and ' +
+          (radios.length - show.length) +
+          " more (bulk buttons affect all)</td>";
+        radioBody.appendChild(tr);
+      }
+    }
+
+    const missionBody = $("mission-table").querySelector("tbody");
+    missionBody.innerHTML = "";
+    const missions = save.missions || [];
+    if (!missions.length) {
+      missionBody.innerHTML = '<tr><td colspan="3">No loose missions in this save.</td></tr>';
+    } else {
+      missions.forEach((m) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${m.index + 1}</td><td>${escapeHtml(m.label || "")}</td><td><code>${escapeHtml(
+          m.assetName || ""
+        )}</code></td>`;
+        missionBody.appendChild(tr);
+      });
+    }
+  }
+
+  function pct(v) {
+    if (v == null || !Number.isFinite(v)) return "—";
+    return Math.round(v * 100) + "%";
+  }
+
+  function renderVehicles() {
+    const save = current() && current().save;
+    if (!save) return;
+    if (!save.vehicles && S.discoverVehicles) {
+      try {
+        if (S.discoverInventories && !save.inventories) S.discoverInventories(save);
+        S.discoverVehicles(save);
+      } catch (err) {
+        console.warn(err);
+        save.vehicles = [];
+        save.vehicleClasses = [];
+      }
+    }
+
+    const vehicles = save.vehicles || [];
+    const summary = $("veh-summary");
+    if (summary) {
+      summary.hidden = false;
+      summary.innerHTML =
+        "<strong>" +
+        vehicles.length +
+        " vehicles</strong> · " +
+        ((save.vehicleClasses && save.vehicleClasses.length) || 0) +
+        " class paths · trunk library: " +
+        (save.vehicleTrunkLibraryIndex != null ? "#" + (save.vehicleTrunkLibraryIndex + 1) : "n/a");
+    }
+
+    const list = $("veh-list");
+    list.innerHTML = "";
+    if (!vehicles.length) {
+      list.innerHTML = '<p class="panel-note">No VehicleSaves in this file.</p>';
+      $("veh-title").textContent = "No vehicles";
+      $("veh-sub").textContent = "";
+      $("veh-fields").innerHTML = "";
+      $("veh-trunk-table").querySelector("tbody").innerHTML = "";
+      $("veh-detail-actions").hidden = true;
+      return;
+    }
+
+    if (state.vehicleIndex >= vehicles.length) state.vehicleIndex = 0;
+
+    vehicles.forEach((v, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "survivor-chip" + (i === state.vehicleIndex ? " is-active" : "");
+      btn.innerHTML =
+        "<strong>" +
+        escapeHtml(v.shortName || "Vehicle " + (i + 1)) +
+        "</strong><span>" +
+        pct(v.fuel) +
+        " fuel · " +
+        pct(v.engine) +
+        " eng · " +
+        S.vehicleScoutedLevelLabel(v.scoutedLevel) +
+        "</span>";
+      btn.addEventListener("click", () => {
+        state.vehicleIndex = i;
+        renderVehicles();
+      });
+      list.appendChild(btn);
+    });
+
+    const v = vehicles[state.vehicleIndex];
+    $("veh-detail-actions").hidden = false;
+    $("veh-title").textContent = v.shortName || "Vehicle #" + (v.index + 1);
+    $("veh-sub").textContent =
+      (v.classPath || "") +
+      (v.guidHex ? " · " + v.guidHex.slice(0, 8) + "…" : "") +
+      " · trunk " +
+      v.filledSlots +
+      "/" +
+      ((v.trunk && v.trunk.slots && v.trunk.slots.length) || 0);
+
+    const fields = $("veh-fields");
+    fields.innerHTML = "";
+
+    function addNum(label, value, onChange, step) {
+      const wrap = document.createElement("label");
+      wrap.textContent = label;
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = "0";
+      input.max = "1";
+      input.step = step || "0.01";
+      input.value = value == null ? "" : formatValue(value);
+      input.addEventListener("change", () => {
+        try {
+          onChange(input.value);
+          setDirty(true);
+          renderVehicles();
+          renderDiff();
+        } catch (err) {
+          setStatus(err.message || String(err));
+        }
+      });
+      wrap.appendChild(input);
+      fields.appendChild(wrap);
+    }
+
+    addNum("Fuel", v.fuel, (val) => {
+      S.setVehicleFuel(save, state.vehicleIndex, val);
+      setStatus("Fuel updated");
+    });
+    addNum("Engine", v.engine, (val) => {
+      S.setVehicleEngine(save, state.vehicleIndex, val);
+      setStatus("Engine updated");
+    });
+    addNum("Frame", v.frame, (val) => {
+      S.setVehicleFrame(save, state.vehicleIndex, val);
+      setStatus("Frame updated");
+    });
+    addNum("Gas tank", v.gasTank, (val) => {
+      S.setVehicleGasTank(save, state.vehicleIndex, val);
+      setStatus("Gas tank updated");
+    });
+
+    const classWrap = document.createElement("label");
+    classWrap.textContent = "Class";
+    const classSel = document.createElement("select");
+    (save.vehicleClasses || []).forEach((c) => {
+      const opt = document.createElement("option");
+      opt.value = String(c.index);
+      opt.textContent = c.shortName + " [" + c.index + "]";
+      if (c.index === v.classIndex) opt.selected = true;
+      classSel.appendChild(opt);
+    });
+    classSel.addEventListener("change", () => {
+      try {
+        S.setVehicleClassIndex(save, state.vehicleIndex, classSel.value);
+        setDirty(true);
+        setStatus("Class → " + classSel.options[classSel.selectedIndex].textContent);
+        renderVehicles();
+        renderDiff();
+      } catch (err) {
+        setStatus(err.message || String(err));
+      }
+    });
+    classWrap.appendChild(classSel);
+    fields.appendChild(classWrap);
+
+    const scoutWrap = document.createElement("label");
+    scoutWrap.textContent = "Map scout";
+    const scoutSel = document.createElement("select");
+    for (const lvl of S.VEHICLE_SCOUTED_LEVELS || S.SCOUTED_LEVELS || []) {
+      const opt = document.createElement("option");
+      opt.value = lvl;
+      opt.textContent = S.vehicleScoutedLevelLabel(lvl);
+      if (lvl === v.scoutedLevel) opt.selected = true;
+      scoutSel.appendChild(opt);
+    }
+    scoutSel.disabled = !v.scouted;
+    scoutSel.addEventListener("change", () => {
+      try {
+        S.setVehicleScoutedLevel(save, state.vehicleIndex, scoutSel.value);
+        setDirty(true);
+        setStatus("Scout level updated");
+        renderVehicles();
+        renderDiff();
+      } catch (err) {
+        setStatus(err.message || String(err));
+      }
+    });
+    scoutWrap.appendChild(scoutSel);
+    fields.appendChild(scoutWrap);
+
+    const xyz = v.transform && v.transform.xyz;
+    ["X", "Y", "Z"].forEach((axis, ai) => {
+      const wrap = document.createElement("label");
+      wrap.textContent = "Pos " + axis;
+      const input = document.createElement("input");
+      input.type = "number";
+      input.step = "1";
+      const key = axis.toLowerCase();
+      input.value = xyz ? formatValue(xyz[key]) : "";
+      input.disabled = !xyz;
+      input.addEventListener("change", () => {
+        try {
+          const nx = ai === 0 ? Number(input.value) : xyz.x;
+          const ny = ai === 1 ? Number(input.value) : xyz.y;
+          const nz = ai === 2 ? Number(input.value) : xyz.z;
+          S.setVehicleTranslation(save, state.vehicleIndex, nx, ny, nz);
+          setDirty(true);
+          setStatus("Position updated");
+          renderVehicles();
+          renderDiff();
+        } catch (err) {
+          setStatus(err.message || String(err));
+        }
+      });
+      wrap.appendChild(input);
+      fields.appendChild(wrap);
+    });
+
+    const trunkBody = $("veh-trunk-table").querySelector("tbody");
+    trunkBody.innerHTML = "";
+    const slots = (v.trunk && v.trunk.slots) || [];
+    if (!slots.length) {
+      trunkBody.innerHTML = '<tr><td colspan="3">No trunk slots.</td></tr>';
+    } else {
+      slots.forEach((slot) => {
+        const tr = document.createElement("tr");
+        const label = S.resolveTrunkItemLabel(save, slot.itemIndex);
+        const input = document.createElement("input");
+        input.type = "number";
+        input.min = "-1";
+        input.value = String(slot.itemIndex != null ? slot.itemIndex : -1);
+        input.disabled = slot.itemIndexOff == null;
+        input.addEventListener("change", () => {
+          try {
+            S.setTrunkSlotIndex(save, state.vehicleIndex, slot.index, input.value);
+            setDirty(true);
+            setStatus("Trunk slot " + (slot.index + 1) + " → " + input.value);
+            renderVehicles();
+            renderDiff();
+          } catch (err) {
+            setStatus(err.message || String(err));
+          }
+        });
+        tr.innerHTML = `<td>${slot.index + 1}</td><td>${escapeHtml(label)}</td><td></td>`;
+        tr.children[2].appendChild(input);
+        trunkBody.appendChild(tr);
+      });
+    }
+  }
+
+  function writeRadioCharge(save, cmd, value) {
+    if (cmd.chargesOff == null) throw new Error("No charges field");
+    const n = Math.max(0, Math.min(9999, Number(value) | 0));
+    const buf = save.properties;
+    buf[cmd.chargesOff] = n & 0xff;
+    buf[cmd.chargesOff + 1] = (n >>> 8) & 0xff;
+    buf[cmd.chargesOff + 2] = (n >>> 16) & 0xff;
+    buf[cmd.chargesOff + 3] = (n >>> 24) & 0xff;
+    cmd.charges = n;
+    save.dirty = true;
+  }
+
+  function writeRadioCooldown(save, cmd, value) {
+    if (cmd.cooldownOff == null) throw new Error("No cooldown field");
+    const v = Number(value);
+    if (!Number.isFinite(v) || v < 0) throw new Error("Invalid cooldown");
+    const tmp = new ArrayBuffer(4);
+    new DataView(tmp).setFloat32(0, v, true);
+    const b = new Uint8Array(tmp);
+    save.properties[cmd.cooldownOff] = b[0];
+    save.properties[cmd.cooldownOff + 1] = b[1];
+    save.properties[cmd.cooldownOff + 2] = b[2];
+    save.properties[cmd.cooldownOff + 3] = b[3];
+    cmd.cooldown = v;
+    save.dirty = true;
+  }
+
+  function renderDiff() {
+    const save = current().save;
+    const rows = S.getDiff(save);
+    const tbody = $("diff-table").querySelector("tbody");
+    const empty = $("diff-empty");
+    tbody.innerHTML = "";
+    if (!rows.length) {
+      empty.hidden = false;
+      return;
+    }
+    empty.hidden = true;
+    for (const row of rows) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${escapeHtml(row.label)}</td><td>${escapeHtml(
+        formatValue(row.before)
+      )}</td><td>${escapeHtml(formatValue(row.after))}</td>`;
+      tbody.appendChild(tr);
+    }
+  }
+
+  function renderScan() {
+    const save = current().save;
+    const lines = [];
+    if (save.communityName) {
+      lines.push("CommunityDisplayName: " + save.communityName.key);
+      lines.push("");
+    }
+    const cr = save.communityResources || [];
+    lines.push("CommunityResources map:");
+    if (!cr.length) lines.push("  (none)");
+    for (const e of cr) {
+      lines.push("  key " + e.key + " = " + formatValue(e.value) + " @ 0x" + e.valueOffset.toString(16));
+    }
+    lines.push("");
+    lines.push("Influence IntProperty hits:");
+    const infl = save.fields.influence;
+    if (!infl || !infl.hits.length) lines.push("  (none)");
+    else {
+      for (const h of infl.hits) {
+        const mark = infl.hit && h.valueOffset === infl.hit.valueOffset ? " ← community target" : "";
+        lines.push("  " + h.value + " @ 0x" + h.valueOffset.toString(16) + mark);
+      }
+    }
+    lines.push("");
+    lines.push("Interesting IntProperty scan:");
+    const scan = S.scanInterestingInts(save, 60);
+    if (!scan.length) lines.push("  (none)");
+    for (const row of scan) {
+      lines.push("  " + row.name + " = " + row.value);
+    }
+    $("scan-out").textContent = lines.join("\n");
+  }
+
+  function refreshAll() {
+    renderSlots();
+    renderCommunityFields();
+    renderSurvivors();
+    renderEnclaves();
+    renderInventory();
+    renderMapQuest();
+    renderVehicles();
+    renderDiff();
+    renderScan();
+  }
+
+  function loadBuffer(arrayBuffer, fileName) {
+    const save = S.openSave(arrayBuffer, fileName);
+    S.discoverCommunityFields(save);
+    try {
+      S.discoverSurvivors(save);
+    } catch (err) {
+      console.warn(err);
+      save.survivors = [];
+      save.traitCatalog = S.COMMON_TRAITS.slice();
+    }
+    try {
+      S.discoverEnclaves(save);
+    } catch (err) {
+      console.warn(err);
+      save.enclaves = [];
+    }
+    try {
+      S.discoverInventories(save);
+      S.attachSurvivorInventories(save);
+    } catch (err) {
+      console.warn(err);
+      save.inventories = save.inventories || [];
+      save.itemCatalog = save.itemCatalog || [];
+    }
+    try {
+      S.discoverMapQuest(save);
+    } catch (err) {
+      console.warn(err);
+      save.mapSites = [];
+      save.radioCommands = [];
+      save.missions = [];
+    }
+    try {
+      S.discoverVehicles(save);
+    } catch (err) {
+      console.warn(err);
+      save.vehicles = [];
+      save.vehicleClasses = [];
+    }
+    return {
+      save,
+      backup: new Uint8Array(save.original),
+    };
+  }
+
+  async function loadFiles(fileList) {
+    const files = [...fileList].filter(Boolean);
+    if (!files.length) return;
+    try {
+      const loaded = [];
+      for (const file of files) {
+        const buf = await file.arrayBuffer();
+        loaded.push(loadBuffer(buf, file.name || "SaveGame.sav"));
+      }
+      state.saves = loaded;
+      state.active = 0;
+      state.survivorIndex = 0;
+      state.enclaveIndex = 0;
+      state.lockerIndex = 0;
+      state.vehicleIndex = 0;
+      showEditor(true);
+      switchTab("community");
+      refreshAll();
+      setDirty(false);
+      setStatus(
+        loaded.length === 1
+          ? "Loaded " + loaded[0].save.fileName
+          : "Loaded " + loaded.length + " saves — use slot chips to switch"
+      );
+    } catch (err) {
+      console.error(err);
+      setStatus(err.message || String(err));
+      showEditor(false);
+      state.saves = [];
+      setDirty(false);
+    }
+  }
+
+  function flushCommunityInputs(save) {
+    for (const def of S.COMMUNITY_FIELDS) {
+      const input = $("f-" + def.id);
+      if (!input || input.disabled) continue;
+      S.setFieldValue(save, def.id, input.value);
+    }
+  }
+
+  $("file-input").addEventListener("change", (e) => {
+    loadFiles(e.target.files);
+    e.target.value = "";
+  });
+
+  $("btn-backup").addEventListener("click", () => {
+    const slot = current();
+    if (!slot) return;
+    const name = slot.save.fileName.replace(/\.sav$/i, "") + ".backup.sav";
+    S.downloadBytes(slot.backup, name);
+    setStatus("Backup downloaded");
+  });
+
+  $("btn-save").addEventListener("click", () => {
+    const slot = current();
+    if (!slot) return;
+    try {
+      flushCommunityInputs(slot.save);
+      const bytes = S.buildSave(slot.save);
+      S.downloadBytes(bytes, slot.save.fileName);
+      setDirty(false);
+      $("install-modal").hidden = false;
+      setStatus("Downloaded " + slot.save.fileName);
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-save-all").addEventListener("click", () => {
+    const src = current();
+    if (!src || state.saves.length < 2) return;
+    try {
+      flushCommunityInputs(src.save);
+      let n = 0;
+      state.saves.forEach((slot, i) => {
+        if (i !== state.active) {
+          S.applyCommunityValues(src.save, slot.save);
+          slot.save.dirty = true;
+        }
+        const bytes = S.buildSave(slot.save);
+        S.downloadBytes(bytes, slot.save.fileName);
+        n++;
+      });
+      setDirty(false);
+      $("install-modal").hidden = false;
+      setStatus("Downloaded " + n + " saves (community values synced from active slot)");
+      refreshAll();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-close-modal").addEventListener("click", () => {
+    $("install-modal").hidden = true;
+  });
+
+  $("btn-max-influence").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save || !save.fields.influence.available) return;
+    S.setFieldValue(save, "influence", 9999);
+    $("f-influence").value = "9999";
+    setDirty(true);
+    setStatus("Influence set to 9999");
+    renderDiff();
+    renderInfluenceTable();
+    if (save.enclaves) renderEnclaves();
+  });
+
+  $("btn-all-influence").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save || !save.fields.influence.available) return;
+    const v = $("f-influence").value || "9999";
+    S.setAllInfluence(save, v);
+    $("f-influence").value = formatValue(save.fields.influence.value);
+    setDirty(true);
+    setStatus("Wrote Influence on " + save.fields.influence.hits.length + " fields");
+    renderDiff();
+    renderInfluenceTable();
+    renderScan();
+    if (save.enclaves) renderEnclaves();
+  });
+
+  function fillResources(amount, ids) {
+    const save = current() && current().save;
+    if (!save) return;
+    let n = 0;
+    for (const id of ids) {
+      if (!save.fields[id] || !save.fields[id].available) continue;
+      S.setFieldValue(save, id, amount);
+      const input = $("f-" + id);
+      if (input) input.value = formatValue(save.fields[id].value);
+      n++;
+    }
+    setDirty(true);
+    setStatus("Updated " + n + " resource fields");
+    renderDiff();
+  }
+
+  $("btn-fill-resources").addEventListener("click", () => {
+    fillResources(500, [...S.STOCKPILE_IDS, "prestige"]);
+  });
+
+  $("btn-fill-stockpile").addEventListener("click", () => {
+    fillResources(999, S.STOCKPILE_IDS);
+  });
+
+  $("btn-zero-threats").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    let n = 0;
+    for (const id of ["plagueHearts", "plagueWallSightings", "infestationsToday"]) {
+      if (!save.fields[id] || !save.fields[id].available) continue;
+      S.setFieldValue(save, id, 0);
+      const input = $("f-" + id);
+      if (input) input.value = "0";
+      n++;
+    }
+    setDirty(true);
+    setStatus("Zeroed " + n + " threat fields");
+    renderDiff();
+  });
+
+  $("btn-noon").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save || !save.fields.timeOfDay || !save.fields.timeOfDay.available) return;
+    // Midday-ish for minute-scale clocks (12 * 60 = 720)
+    S.setFieldValue(save, "timeOfDay", 720);
+    $("f-timeOfDay").value = formatValue(save.fields.timeOfDay.value);
+    setDirty(true);
+    setStatus("Time of day set to 720 (try in-game; units vary)");
+    renderDiff();
+  });
+
+  $("btn-infl-table-all").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save || !save.fields.influence.hits.length) return;
+    const first = save.fields.influence.hits[0].value;
+    S.setAllInfluence(save, first);
+    if ($("f-influence")) $("f-influence").value = formatValue(save.fields.influence.value);
+    setDirty(true);
+    setStatus("All Influence fields set to " + first);
+    renderInfluenceTable();
+    renderEnclaves();
+    renderDiff();
+  });
+
+  function encBulk(fn, okMsg) {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      const n = fn(save);
+      setDirty(true);
+      setStatus(okMsg(n));
+      renderEnclaves();
+      renderCommunityFields();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  }
+
+  $("btn-enc-max-infl").addEventListener("click", () => {
+    encBulk((save) => S.bulkSetEnclaveInfluence(save, 9999, { skipCommunity: false }), (n) => "Set influence on " + n + " enclaves");
+  });
+  $("btn-enc-show-map").addEventListener("click", () => {
+    encBulk((save) => S.bulkSetEnclaveBools(save, { displayOnMap: true }), (n) => "Updated " + n + " map flags");
+  });
+  $("btn-enc-no-prestige").addEventListener("click", () => {
+    encBulk((save) => S.bulkSetEnclaveBools(save, { tradesPrestige: false }), (n) => "Updated " + n + " prestige-trade flags");
+  });
+  $("btn-enc-keep-alive").addEventListener("click", () => {
+    encBulk((save) => S.bulkSetEnclaveBools(save, { disbandsOnRecruit: false }), (n) => "Updated " + n + " disband flags");
+  });
+  $("btn-enc-show-recruit").addEventListener("click", () => {
+    encBulk((save) => S.bulkSetEnclaveBools(save, { hideRecruitability: false }), (n) => "Updated " + n + " recruitability flags");
+  });
+
+  $("inv-category").addEventListener("change", () => {
+    state.invCategory = $("inv-category").value;
+    renderInventory();
+  });
+
+  $("btn-inv-add").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    const raw = ($("inv-new-class").value || "").trim();
+    const stack = $("inv-new-stack").value;
+    if (!raw) {
+      setStatus("Enter a class path or pick from the catalog");
+      return;
+    }
+    try {
+      const inv = save.inventories[state.lockerIndex];
+      const cat = inv && inv.categories[state.invCategory];
+      let arg = raw;
+      if (cat) {
+        const byShort = cat.classes.items.find((c) => c.shortName === raw || c.path === raw);
+        if (byShort) arg = byShort.index;
+        else if (/^[0-9]+$/.test(raw)) arg = Number(raw);
+        else {
+          const fromCatalog = (save.itemCatalog || []).find(
+            (c) => c.shortName === raw || c.path === raw || c.shortName.replace(/\s\/\s/g, ".") === raw
+          );
+          if (fromCatalog) arg = fromCatalog.path;
+        }
+      }
+      S.addInventoryItem(save, state.lockerIndex, state.invCategory, arg, stack);
+      setDirty(true);
+      setStatus("Added item");
+      $("inv-new-class").value = "";
+      renderInventory();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-inv-max-stacks").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      const n = S.maxAllInventoryStacks(save, state.lockerIndex, 999);
+      setDirty(true);
+      setStatus("Maxed " + n + " stacks");
+      renderInventory();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-inv-repair").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      const n = S.repairAllInventoryWeapons(save, state.lockerIndex, 9999);
+      setDirty(true);
+      setStatus("Repaired " + n + " weapons");
+      renderInventory();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-map-reveal").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      const n = S.revealAllMapSites(save, "EScoutedLevel::Advanced");
+      setDirty(true);
+      setStatus("Revealed " + n + " map sites (Advanced)");
+      renderMapQuest();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-map-scouted").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      const n = S.revealAllMapSites(save, "EScoutedLevel::Scouted");
+      setDirty(true);
+      setStatus("Set " + n + " sites to Scouted");
+      renderMapQuest();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-radio-reset").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      const n = S.resetRadioCooldowns(save);
+      setDirty(true);
+      setStatus("Reset cooldown on " + n + " radio commands");
+      renderMapQuest();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-radio-charges").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      const n = S.setAllRadioCharges(save, 99);
+      setDirty(true);
+      setStatus("Set charges=99 on " + n + " radio commands");
+      renderMapQuest();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-veh-repair-all").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      const n = S.repairAllVehicles(save);
+      setDirty(true);
+      setStatus("Repaired/refueled " + n + " vehicles");
+      renderVehicles();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-veh-refuel-all").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      const n = S.refuelAllVehicles(save, 1);
+      setDirty(true);
+      setStatus("Refueled " + n + " vehicles");
+      renderVehicles();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-veh-reveal").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      const n = S.revealAllVehicles(save, "EScoutedLevel::Advanced");
+      setDirty(true);
+      setStatus("Revealed " + n + " vehicles on map");
+      renderVehicles();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-veh-teleport").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      const r = S.teleportVehiclesNearBase(save);
+      setDirty(true);
+      setStatus("Teleported " + r.count + " vehicles near base cluster (" + r.anchor.clusterSize + ")");
+      renderVehicles();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-veh-repair").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      S.repairVehicle(save, state.vehicleIndex);
+      setDirty(true);
+      setStatus("Repaired vehicle #" + (state.vehicleIndex + 1));
+      renderVehicles();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-veh-clear-trunk").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      const n = S.clearTrunk(save, state.vehicleIndex);
+      setDirty(true);
+      setStatus("Cleared " + n + " trunk slots");
+      renderVehicles();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-veh-dup").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      const idx = S.duplicateVehicle(save, state.vehicleIndex);
+      state.vehicleIndex = idx;
+      setDirty(true);
+      setStatus("Duplicated vehicle → #" + (idx + 1));
+      renderVehicles();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-veh-del").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    if (!window.confirm("Delete this vehicle from the save?")) return;
+    try {
+      S.removeVehicle(save, state.vehicleIndex);
+      if (state.vehicleIndex >= (save.vehicles || []).length) state.vehicleIndex = 0;
+      setDirty(true);
+      setStatus("Vehicle deleted");
+      renderVehicles();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-add-trait").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    const id = ($("new-trait-id").value || "Filler1").trim();
+    try {
+      S.addSurvivorTrait(save, state.survivorIndex, id);
+      setDirty(true);
+      setStatus("Added trait " + id);
+      $("new-trait-id").value = "";
+      renderSurvivors();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-add-skill").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    const id = ($("new-skill-id").value || "Cardio").trim();
+    try {
+      S.addSkill(save, state.survivorIndex, id);
+      setDirty(true);
+      setStatus("Added skill " + id);
+      $("new-skill-id").value = "";
+      renderSurvivors();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-max-skills").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      S.maxAllSkills(save, state.survivorIndex);
+      setDirty(true);
+      setStatus("Maxed skills to level 7");
+      renderSurvivors();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  document.querySelectorAll(".tab").forEach((btn) => {
+    btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+  });
+
+  const overlay = $("drop-overlay");
+  let dragDepth = 0;
+
+  function hasFiles(e) {
+    return e.dataTransfer && [...(e.dataTransfer.types || [])].includes("Files");
+  }
+
+  window.addEventListener("dragenter", (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth++;
+    overlay.hidden = false;
+  });
+
+  window.addEventListener("dragleave", (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0) overlay.hidden = true;
+  });
+
+  window.addEventListener("dragover", (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+  });
+
+  window.addEventListener("drop", (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth = 0;
+    overlay.hidden = true;
+    loadFiles(e.dataTransfer.files);
+  });
+})();

@@ -1,0 +1,21 @@
+{
+  "name": "ggdropman-steam-achievement-unlocker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local Steam achievement list/unlock/lock CLI (requires Steam client + owned AppID)",
+  "main": "unlock.js",
+  "bin": {
+    "gg-steam-achievements": "./unlock.js"
+  },
+  "scripts": {
+    "list": "node unlock.js --list",
+    "unlock-all": "node unlock.js --unlock-all",
+    "lock-all": "node unlock.js --lock-all"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "steamworks.js": "^0.4.0"
+  }
+}

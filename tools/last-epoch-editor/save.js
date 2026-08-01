@@ -220,6 +220,34 @@
     return unlockWaypoints(data, ids);
   }
 
+  /**
+   * Unlock the Epoch mastery selection (all three mastery passive trees).
+   * Does not force a chosenMastery — pick one in the Character panel if needed.
+   */
+  function unlockMasteries(data) {
+    if (!data || typeof data !== "object") return { ok: false };
+    data.clickedUnlockMasteriesButton = true;
+
+    const events = ensureOneTimeEvents(data);
+    let eventsAdded = 0;
+    if (!events.includes("EpochMasteryUnlock")) {
+      events.push("EpochMasteryUnlock");
+      eventsAdded = 1;
+    }
+    data.oneTimeEvents = events;
+
+    const waypointsAdded = unlockWaypoints(data, ["Mastery"]);
+
+    // Keep originalMastery in sync when a mastery is already chosen
+    if (data.chosenMastery != null && Number(data.chosenMastery) >= 0) {
+      if (data.originalMastery == null || Number(data.originalMastery) < 0) {
+        data.originalMastery = Number(data.chosenMastery);
+      }
+    }
+
+    return { ok: true, eventsAdded, waypointsAdded };
+  }
+
   function applyCampaignQuests(data) {
     const template = (window.LEProgress && window.LEProgress.CAMPAIGN_QUESTS) || [];
     if (!template.length) return 0;
@@ -291,6 +319,7 @@
     unlockWaypoints,
     setWaypoints,
     unlockAllKnownWaypoints,
+    unlockMasteries,
     applyCampaignQuests,
     mergeCampaignFlags,
     emptyPassiveTree,

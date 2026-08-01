@@ -2267,6 +2267,24 @@
     setStatus("Level set to 100.", "is-ok");
   });
 
+  $("btn-unlock-masteries").addEventListener("click", () => {
+    if (!state.data) return;
+    LESave.unlockMasteries(state.data);
+    setDirty(true);
+    renderCharacter();
+    if (typeof renderProgress === "function") {
+      try {
+        renderProgress();
+      } catch (_) {
+        /* ignore if progress UI not ready */
+      }
+    }
+    setStatus(
+      "Masteries unlocked (Epoch quest + Mastery hub). Spend points in all three trees; pick a mastery above for skills/identity.",
+      "is-ok"
+    );
+  });
+
   $("btn-add-respecs").addEventListener("click", () => {
     els.fRespecs.value = String((Number(els.fRespecs.value) || 0) + 50);
     applyCharacterFromForm();

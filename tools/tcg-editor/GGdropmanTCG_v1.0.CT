@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="45">
+  <CheatEntries>
+
+    <CheatEntry>
+      <ID>1</ID>
+      <Description>"=== GGdropmans TCG Card Shop Simulator v1.0 ==="</Description>
+      <Options moHideChildren="1"/>
+      <Color>00C08040</Color>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+
+        <CheatEntry>
+          <ID>2</ID>
+          <Description>"README — how to use"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{
+GGdropmans TCG Cheat Table v1.0
+================================
+Process: "Card Shop Simulator.exe"  (Steam / Unity Mono)
+
+Why this isn't like the FF7 table:
+- FF7 uses a fixed savemap at ff7_en.exe+offset (documented for decades).
+- TCG is Unity Mono — money lives on the heap and moves every launch.
+  This table resolves CGameData fields through Mono at runtime.
+
+1. Start TCG Card Shop Simulator and load a save (be in the shop)
+2. Open Cheat Engine → attach to "Card Shop Simulator.exe"
+3. File → Open this .CT
+4. Tick "ENABLE — Resolve CGameData (Mono)"
+5. Wait for the Lua message (success / failure)
+6. Edit Coins / Level / Exp / Fame / Day below
+
+If resolve fails:
+- Make sure you are fully in-game (not only the title screen)
+- Untick, wait 2s, tick again
+- Update CE to 7.5+
+
+Coins: edit m_CoinAmountDouble (and the int twin is kept in sync by the freeze script if you enable it).
+}
+[ENABLE]
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>3</ID>
+          <Description>"ENABLE — Resolve CGameData (Mono)"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+
+local function fail(msg)
+  showMessage('GGdropman TCG: '..tostring(msg))
+  error(msg, 0)
+end
+
+-- Mono collector
+if type(LaunchMonoDataCollector) ~= 'function' then
+  fail('Mono API missing. Use Cheat Engine 7.5+ and attach to Card Shop Simulator.exe')
+end
+
+local monoOk = false
+for i = 1, 40 do
+  local r = LaunchMonoDataCollector()
+  if r ~= nil and r ~= 0 then monoOk = true break end
+  sleep(150)
+end
+if not monoOk then
+  fail('Mono data collector did not start. Attach to the game first, then re-enable.')
+end
+
+local function findClass(name)
+  local c = mono_findClass('', name)
+  if c == nil or c == 0 then c = mono_findClass(nil, name) end
+  return c
+end
+
+local function findField(class, names)
+  if class == nil or class == 0 then return nil end
+  for _, n in ipairs(names) do
+    local f = mono_class_findField(class, n)
+    if f ~= nil and f ~= 0 then return f, n end
+  end
+  return nil
+end
+
+local function readPtr(addr)
+  if addr == nil or addr == 0 then return 0 end
+  if targetIs64Bit() then return readQword(addr) else return readInteger(addr) end
+end
+
+-- Resolve GameInstance singleton → m_GameData (CGameData)
+local giClass = findClass('GameInstance')
+if giClass == nil or giClass == 0 then fail('Class GameInstance not found') end
+
+local instField = select(1, findField(giClass, {
+  'm_Instance', '<Instance>k__BackingField', 'Instance'
+}))
+if instField == nil then fail('GameInstance.Instance static field not found') end
+
+local staticAddr = mono_field_getStaticAddress(instField)
+if staticAddr == nil or staticAddr == 0 then fail('Could not read GameInstance static address') end
+
+local gameInstance = readPtr(staticAddr)
+if gameInstance == nil or gameInstance == 0 then
+  fail('GameInstance is null — load a save and stand in the shop, then re-enable')
+end
+
+local gdField = select(1, findField(giClass, {
+  'm_GameData', '<m_GameData>k__BackingField', 'gameData'
+}))
+
+local gameData = 0
+if gdField ~= nil then
+  local off = mono_field_getOffset(gdField)
+  gameData = readPtr(gameInstance + off)
+end
+
+-- Fallback: some builds hang CGameData off CPlayerData / other managers
+if gameData == nil or gameData == 0 then
+  local pdClass = findClass('CPlayerData')
+  if pdClass ~= nil and pdClass ~= 0 then
+    local pdField = select(1, findField(giClass, {'m_PlayerData','<m_PlayerData>k__BackingField','playerData'}))
+    if pdField ~= nil then
+      local pd = readPtr(gameInstance + mono_field_getOffset(pdField))
+      local nested = select(1, findField(pdClass, {'m_GameData','<m_GameData>k__BackingField'}))
+      if pd ~= 0 and nested ~= nil then
+        gameData = readPtr(pd + mono_field_getOffset(nested))
+      end
+    end
+  end
+end
+
+if gameData == nil or gameData == 0 then
+  fail('CGameData pointer is null. Load a save fully, then re-enable this script.')
+end
+
+local cgClass = findClass('CGameData')
+if cgClass == nil or cgClass == 0 then fail('Class CGameData not found') end
+
+local function offsetOf(fieldNames)
+  local f, used = findField(cgClass, fieldNames)
+  if f == nil then return nil, nil end
+  return mono_field_getOffset(f), used
+end
+
+local map = {
+  { sym = 'TCG_CoinDouble', names = {'m_CoinAmountDouble','<m_CoinAmountDouble>k__BackingField'} },
+  { sym = 'TCG_CoinInt',    names = {'m_CoinAmount','<m_CoinAmount>k__BackingField'} },
+  { sym = 'TCG_ShopLevel',  names = {'m_ShopLevel','<m_ShopLevel>k__BackingField'} },
+  { sym = 'TCG_ShopExp',    names = {'m_ShopExpPoint','<m_ShopExpPoint>k__BackingField'} },
+  { sym = 'TCG_Fame',       names = {'m_FamePoint','<m_FamePoint>k__BackingField'} },
+  { sym = 'TCG_TotalFame',  names = {'m_TotalFameAdd','<m_TotalFameAdd>k__BackingField'} },
+  { sym = 'TCG_Day',        names = {'m_CurrentDay','<m_CurrentDay>k__BackingField'} },
+  { sym = 'TCG_ReviewAvg',  names = {'m_CustomerReviewScoreAverage','<m_CustomerReviewScoreAverage>k__BackingField'} },
+  { sym = 'TCG_ReviewCnt',  names = {'m_CustomerReviewCount','<m_CustomerReviewCount>k__BackingField'} },
+  { sym = 'TCG_Rooms',      names = {'m_UnlockRoomCount','<m_UnlockRoomCount>k__BackingField'} },
+}
+
+local resolved = {}
+for _, e in ipairs(map) do
+  local off, used = offsetOf(e.names)
+  if off ~= nil then
+    local addr = gameData + off
+    registerSymbol(e.sym, addr, true)
+    resolved[#resolved+1] = string.format('%s (%s) @ %X', e.sym, tostring(used), addr)
+  end
+end
+
+registerSymbol('TCG_GameData', gameData, true)
+registerSymbol('TCG_GameInstance', gameInstance, true)
+
+if #resolved < 3 then
+  fail('Too few fields resolved. Game update may have renamed fields.\n'..table.concat(resolved, '\n'))
+end
+
+showMessage('GGdropman TCG: OK\nGameData @ '..string.format('%X', gameData)..'\n\n'..table.concat(resolved, '\n'))
+
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local syms = {
+  'TCG_CoinDouble','TCG_CoinInt','TCG_ShopLevel','TCG_ShopExp','TCG_Fame',
+  'TCG_TotalFame','TCG_Day','TCG_ReviewAvg','TCG_ReviewCnt','TCG_Rooms',
+  'TCG_GameData','TCG_GameInstance'
+}
+for _, s in ipairs(syms) do
+  pcall(unregisterSymbol, s)
+end
+</AssemblerScript>
+        </CheatEntry>
+
+      </CheatEntries>
+    </CheatEntry>
+
+    <!-- ===================== PLAYER / SHOP ===================== -->
+    <CheatEntry>
+      <ID>10</ID>
+      <Description>"Player &amp; Shop (after ENABLE)"</Description>
+      <Options moHideChildren="1" moManualExpandCollapse="1"/>
+      <Color>0040C080</Color>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+
+        <CheatEntry>
+          <ID>11</ID>
+          <Description>"Coins (Double) — main"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>Double</VariableType>
+          <Address>TCG_CoinDouble</Address>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>12</ID>
+          <Description>"Coins (Int twin)"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>TCG_CoinInt</Address>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>13</ID>
+          <Description>"Sync coin int ← double (freeze while on)"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+-- Keep m_CoinAmount matching m_CoinAmountDouble while enabled
+gg_tcg_coin_timer = createTimer(nil, false)
+gg_tcg_coin_timer.Interval = 200
+gg_tcg_coin_timer.OnTimer = function(t)
+  local dAddr = getAddressSafe('TCG_CoinDouble')
+  local iAddr = getAddressSafe('TCG_CoinInt')
+  if dAddr == nil or iAddr == nil then return end
+  local v = readDouble(dAddr)
+  if v ~= nil then
+    writeInteger(iAddr, math.floor(v))
+  end
+end
+gg_tcg_coin_timer.Enabled = true
+
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+if gg_tcg_coin_timer ~= nil then
+  gg_tcg_coin_timer.Enabled = false
+  gg_tcg_coin_timer.destroy()
+  gg_tcg_coin_timer = nil
+end
+</AssemblerScript>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>14</ID>
+          <Description>"Shop Level"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>TCG_ShopLevel</Address>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>15</ID>
+          <Description>"Shop Exp"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>TCG_ShopExp</Address>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>16</ID>
+          <Description>"Fame"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>TCG_Fame</Address>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>17</ID>
+          <Description>"Total Fame"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>TCG_TotalFame</Address>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>18</ID>
+          <Description>"Current Day"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>TCG_Day</Address>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>19</ID>
+          <Description>"Review Average"</Description>
+          <VariableType>Float</VariableType>
+          <Address>TCG_ReviewAvg</Address>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>20</ID>
+          <Description>"Review Count"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>TCG_ReviewCnt</Address>
+        </CheatEntry>
+
+        <CheatEntry>
+          <ID>21</ID>
+          <Description>"Unlocked Rooms"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>TCG_Rooms</Address>
+        </CheatEntry>
+
+      </CheatEntries>
+    </CheatEntry>
+
+    <CheatEntry>
+      <ID>30</ID>
+      <Description>"Debug pointers"</Description>
+      <Options moHideChildren="1" moManualExpandCollapse="1"/>
+      <Color>00808080</Color>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>31</ID>
+          <Description>"GameInstance"</Description>
+          <ShowAsHex>1</ShowAsHex>
+          <VariableType>8 Bytes</VariableType>
+          <Address>TCG_GameInstance</Address>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>32</ID>
+          <Description>"CGameData"</Description>
+          <ShowAsHex>1</ShowAsHex>
+          <VariableType>8 Bytes</VariableType>
+          <Address>TCG_GameData</Address>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+
+  </CheatEntries>
+</CheatTable>
