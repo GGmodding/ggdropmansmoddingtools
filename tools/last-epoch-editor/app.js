@@ -2236,6 +2236,15 @@
     els.fileInput.value = "";
   });
 
+  if (window.GGSaveFolders) {
+    GGSaveFolders.wireEditor("last-epoch", {
+      setStatus: (msg) => setStatus(msg, "is-ok"),
+      async onFile(file) {
+        await loadFile(file);
+      },
+    });
+  }
+
   els.btnBackup.addEventListener("click", () => {
     if (!state.originalText) return;
     downloadText(state.fileName + ".bak", state.originalText);

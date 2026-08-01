@@ -29,6 +29,8 @@
         Load Save
         <input id="file-input" type="file" hidden />
       </label>
+      <button id="btn-find-save" class="btn" type="button" title="Remembered Chrome/Edge picker">Find Save</button>
+      <button id="btn-open-save-folder" class="btn" type="button" title="Copy path + download Explorer shortcut">Open Folder</button>
       <button id="btn-backup" class="btn" type="button" disabled>Download Backup</button>
       <button id="btn-save" class="btn btn--accent" type="button" disabled>Save Changes</button>
       <span id="dirty-pill" class="pill" hidden>Unsaved</span>
@@ -37,7 +39,7 @@
 
   <section class="path-banner">
     <strong>Offline only</strong>
-    <span>Close Last Epoch fully. Saves live in <code>%USERPROFILE%\AppData\LocalLow\Eleventh Hour Games\Last Epoch\Saves</code> as extensionless <code>CHARACTERSLOT_*</code> files. Backup before overwrite. Never edit online / cloud characters.</span>
+    <span>Close Last Epoch fully. Use <strong>Open Folder</strong> / <strong>Find Save</strong> for <code>%USERPROFILE%\AppData\LocalLow\Eleventh Hour Games\Last Epoch\Saves</code> (<code>CHARACTERSLOT_*</code>). Backup before overwrite. Never edit online / cloud characters.</span>
   </section>
 
   <div id="install-modal" class="modal" hidden>
@@ -49,6 +51,7 @@
         <li>Launch offline mode and confirm the character loads.</li>
       </ol>
       <div class="modal__actions">
+        <button type="button" class="btn" id="btn-open-save-folder-modal">Open Folder</button>
         <button type="button" class="btn btn--accent" id="btn-close-modal">Got it</button>
       </div>
     </div>
@@ -412,6 +415,7 @@
 
   <div class="status" id="status">No save loaded.</div>
 
+  <script src="../shared/save-folders.js"></script>
   <script src="data.js"></script>
   <script src="skills-db.js"></script>
   <script src="passive-sections.js"></script>

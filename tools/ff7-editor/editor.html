@@ -27,15 +27,20 @@
         Load Save
         <input id="file-input" type="file" accept=".ff7,application/octet-stream" hidden />
       </label>
+      <button id="btn-find-save" class="btn" type="button" title="Remembered Chrome/Edge picker for your Steam saves">Find Save</button>
+      <button id="btn-open-save-folder" class="btn" type="button" title="Copy path + download Explorer shortcut">Open Folder</button>
       <button id="btn-backup" class="btn" type="button" disabled>Download Backup</button>
+      <button id="btn-undo" class="btn" type="button" disabled title="Undo">Undo</button>
+      <button id="btn-redo" class="btn" type="button" disabled title="Redo">Redo</button>
       <button id="btn-save" class="btn btn--accent" type="button" disabled>Save Changes</button>
+      <button id="btn-save-inplace" class="btn" type="button" disabled title="Overwrite via File System Access">Save in place</button>
       <span id="dirty-pill" class="pill" hidden>Unsaved</span>
     </div>
   </header>
 
   <section class="path-banner">
     <strong>Steam tip</strong>
-    <span>Close the game first. Saves live in <code>Documents\Square Enix\FINAL FANTASY VII Steam\user_&lt;ID&gt;\</code> as <code>save00.ff7</code>–<code>save09.ff7</code>. Turn off Steam Cloud while testing edits, or sync may overwrite your file. For live RAM edits while playing, use <a href="GGdropmanFF7V1.0.CT" download>GGdropmanFF7V1.0.CT</a> (Cheat Engine).</span>
+    <span>Close the game first. Use <strong>Open Folder</strong> for an Explorer shortcut, or <strong>Find Save</strong> to pick <code>save00.ff7</code>–<code>save09.ff7</code> (enables Save in place). Path: <code>Documents\Square Enix\FINAL FANTASY VII Steam\user_&lt;ID&gt;\</code>. Turn off Steam Cloud while testing. Live RAM: <a href="GGdropmanFF7V1.0.CT" download>GGdropmanFF7V1.0.CT</a> · Hub: <a href="../../index.html">ggdropmansmoddingtools</a>.</span>
   </section>
 
   <div id="install-modal" class="modal" hidden>
@@ -47,6 +52,7 @@
         <li>If Steam Cloud is on, keep it off until you confirm the load works.</li>
       </ol>
       <div class="modal__actions">
+        <button type="button" class="btn" id="btn-open-save-folder-modal">Open Folder</button>
         <button type="button" class="btn btn--accent" id="btn-close-modal">Got it</button>
       </div>
     </div>
@@ -58,8 +64,13 @@
     <button class="tab is-active" data-tab="party" type="button">Gil &amp; Party</button>
     <button class="tab" data-tab="chars" type="button">Characters</button>
     <button class="tab" data-tab="items" type="button">Items</button>
+    <button class="tab" data-tab="keyitems" type="button">Key Items</button>
+    <button class="tab" data-tab="missables" type="button">Missables</button>
     <button class="tab" data-tab="materia" type="button">Materia</button>
+    <button class="tab" data-tab="progress" type="button">Progress</button>
     <button class="tab" data-tab="chocobos" type="button">Chocobos</button>
+    <button class="tab" data-tab="tools" type="button">Tools</button>
+    <button class="tab" data-tab="diff" type="button">Compare</button>
   </nav>
 
   <main class="main">
@@ -89,8 +100,49 @@
       <div class="quick-actions">
         <button type="button" class="btn" id="btn-max-gil">Set gil to 99999999</button>
         <button type="button" class="btn btn--accent" id="btn-enable-sephiroth">Enable Sephiroth in party</button>
+        <button type="button" class="btn btn--accent" id="btn-enable-young-cloud">Enable Young Cloud</button>
+        <button type="button" class="btn" id="btn-max-everything">Max everything</button>
       </div>
       <p class="panel-note">Sephiroth replaces Vincent’s character slot (game limitation). Young Cloud / Sephiroth also appear in the party dropdowns.</p>
+
+      <h3 class="subhead">PHS (Party Select)</h3>
+      <p class="panel-note">Allowed = can add via PHS. Visible = shows in the PHS list. Vincent’s bit is shared with Sephiroth.</p>
+      <div class="table-wrap">
+        <table class="data-table" id="phs-table">
+          <thead>
+            <tr><th>Character</th><th>Allowed</th><th>Visible</th></tr>
+          </thead>
+          <tbody id="phs-body"></tbody>
+        </table>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-phs-unlock-all">Unlock all in PHS</button>
+        <button type="button" class="btn" id="btn-phs-show-all">Show all in PHS</button>
+      </div>
+
+      <h3 class="subhead">Love Points (Gold Saucer date)</h3>
+      <p class="panel-note">Highest total (field + battle love) usually wins the date. Barret can win too.</p>
+      <div class="grid form-grid">
+        <label>Aeris<input id="f-love-aeris" type="number" min="0" max="255" step="1" /></label>
+        <label>Tifa<input id="f-love-tifa" type="number" min="0" max="255" step="1" /></label>
+        <label>Yuffie<input id="f-love-yuffie" type="number" min="0" max="255" step="1" /></label>
+        <label>Barret<input id="f-love-barret" type="number" min="0" max="255" step="1" /></label>
+        <label>Aeris (battle)<input id="f-love-battle-aeris" type="number" min="0" max="255" step="1" /></label>
+        <label>Tifa (battle)<input id="f-love-battle-tifa" type="number" min="0" max="255" step="1" /></label>
+        <label>Yuffie (battle)<input id="f-love-battle-yuffie" type="number" min="0" max="255" step="1" /></label>
+        <label>Barret (battle)<input id="f-love-battle-barret" type="number" min="0" max="255" step="1" /></label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn" id="btn-love-aeris">Date Aeris</button>
+        <button type="button" class="btn" id="btn-love-tifa">Date Tifa</button>
+        <button type="button" class="btn" id="btn-love-yuffie">Date Yuffie</button>
+        <button type="button" class="btn" id="btn-love-barret">Date Barret</button>
+      </div>
+      <div id="date-predictor" class="date-predictor" aria-live="polite">
+        <strong>Date predictor</strong>
+        <p id="date-predictor-result">Load a save to predict the Gold Saucer date.</p>
+        <ul id="date-predictor-scores" class="date-predictor__scores"></ul>
+      </div>
     </section>
 
     <section id="panel-chars" class="panel" hidden>
@@ -135,6 +187,7 @@
       <div class="quick-actions">
         <button type="button" class="btn" id="btn-max-stats">Max base stats (255)</button>
         <button type="button" class="btn" id="btn-fill-hpmp">Fill HP/MP to max</button>
+        <button type="button" class="btn btn--accent" id="btn-apply-level-exp">Apply level → EXP (Cloud curve)</button>
       </div>
     </section>
 
@@ -169,6 +222,37 @@
       </div>
     </section>
 
+    <section id="panel-keyitems" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Key Items</h2>
+        <p>Story / progression key items (savemap bitmask @ 0xBE4). Some unlock story sequences — use carefully.</p>
+      </div>
+      <div class="toolbar">
+        <button type="button" class="btn btn--accent" id="btn-keyitems-all">Give all key items</button>
+        <button type="button" class="btn btn--danger" id="btn-keyitems-clear">Clear all key items</button>
+      </div>
+      <div class="checks" id="keyitems-checks"></div>
+    </section>
+
+    <section id="panel-missables" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Missables Tracker</h2>
+        <p>Turtle Paradise flyers and story key items with location tips. Black Chocobo doesn’t coach you like this.</p>
+      </div>
+
+      <h3 class="subhead">Turtle Paradise flyers</h3>
+      <p class="panel-note" id="flyer-summary">Find all 7 flyers, then claim the reward in Wutai.</p>
+      <div class="checks" id="flyer-checks"></div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-flyers-all">Mark all flyers seen</button>
+        <button type="button" class="btn" id="btn-flyers-clear">Clear flyers</button>
+      </div>
+
+      <h3 class="subhead">Key items with tips</h3>
+      <p class="panel-note">Same bits as the Key Items tab — tips highlight commonly missed progression pieces.</p>
+      <div id="missable-keyitems" class="missable-list"></div>
+    </section>
+
     <section id="panel-materia" class="panel" hidden>
       <div class="panel__head">
         <h2>Party Materia</h2>
@@ -191,6 +275,116 @@
             <tr><th>Slot</th><th>Materia</th><th>AP</th><th></th></tr>
           </thead>
           <tbody id="materia-body"></tbody>
+        </table>
+      </div>
+
+      <h3 class="subhead">Enemy Skill Materia</h3>
+      <p class="panel-note">Edits every Enemy Skill materia in inventory and equipped on characters. AP bits = learned skills. Tips show common teachers.</p>
+      <div class="checks" id="eskill-checks"></div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-eskill-all">Learn all Enemy Skills</button>
+        <button type="button" class="btn" id="btn-eskill-clear">Clear Enemy Skills</button>
+      </div>
+    </section>
+
+    <section id="panel-progress" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Progress &amp; World</h2>
+        <p>Gold Saucer currency, vehicles, disc/map location, and Yuffie’s stolen materia stash.</p>
+      </div>
+
+      <h3 class="subhead">Gold Saucer</h3>
+      <div class="grid form-grid">
+        <label>GP (0–10000)<input id="f-gp" type="number" min="0" max="10000" step="1" /></label>
+        <label>Battle Points<input id="f-bp" type="number" min="0" max="65535" step="1" /></label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn" id="btn-max-gp">Max GP</button>
+        <button type="button" class="btn" id="btn-max-bp">Max Battle Points</button>
+      </div>
+
+      <h3 class="subhead">Vehicles (world map enabler)</h3>
+      <div class="checks" id="vehicle-checks"></div>
+
+      <h3 class="subhead">Location (advanced — can softlock)</h3>
+      <p class="panel-note">Wrong map/location IDs can softlock. Prefer known-good saves. Disc 1–3.</p>
+      <div id="softlock-warn" class="softlock-warn" hidden>Warning: these values look risky. Prefer a Safe preset below unless you know the IDs.</div>
+      <div class="grid form-grid">
+        <label>Disc<input id="f-disc" type="number" min="1" max="3" step="1" /></label>
+        <label>Map ID<input id="f-map-id" type="number" min="0" max="65535" step="1" /></label>
+        <label>Location ID<input id="f-loc-id" type="number" min="0" max="65535" step="1" /></label>
+        <label>World X<input id="f-world-x" type="number" min="0" max="65535" step="1" /></label>
+        <label>World Y<input id="f-world-y" type="number" min="0" max="65535" step="1" /></label>
+        <label>World Z<input id="f-world-z" type="number" min="0" max="65535" step="1" /></label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn" id="btn-safe-kalm" data-safe="kalm">Safe: Kalm (field)</button>
+        <button type="button" class="btn" id="btn-safe-world" data-safe="world">Safe: World map Midgar area</button>
+      </div>
+      <h3 class="subhead">Stolen materia (Yuffie)</h3>
+      <p class="panel-note">48 slots held while Yuffie has stolen the party’s materia. Return moves them into empty inventory slots.</p>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-return-stolen">Return stolen → inventory</button>
+        <button type="button" class="btn btn--danger" id="btn-clear-stolen">Clear stolen stash</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Materia</th><th>AP</th></tr></thead>
+          <tbody id="stolen-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-tools" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Slot Tools &amp; Export</h2>
+        <p>Copy/clear save slots inside this .ff7 file, or export character JSON.</p>
+      </div>
+      <div class="grid form-grid">
+        <label>Source slot
+          <select id="f-slot-src"></select>
+        </label>
+        <label>Destination slot
+          <select id="f-slot-dst"></select>
+        </label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-slot-copy">Copy source → destination</button>
+        <button type="button" class="btn btn--danger" id="btn-slot-clear">Clear destination slot</button>
+        <button type="button" class="btn" id="btn-export-char">Export current character JSON</button>
+        <button type="button" class="btn" id="btn-export-slot">Export current slot JSON</button>
+        <button type="button" class="btn btn--accent" id="btn-party-card">Export party card PNG</button>
+        <button type="button" class="btn" id="btn-share-build">Copy shareable build link</button>
+        <button type="button" class="btn" id="btn-ct-offsets">Copy CT companion offsets</button>
+      </div>
+
+      <h3 class="subhead">Named loadout presets</h3>
+      <p class="panel-note">One-click kits Black Chocobo doesn’t ship. Applies to the active save slot.</p>
+      <div class="quick-actions" id="preset-buttons"></div>
+      <div class="quick-actions">
+        <button type="button" class="btn" id="btn-save-custom-preset">Save current slot as custom preset</button>
+        <button type="button" class="btn btn--danger" id="btn-clear-custom-presets">Clear custom presets</button>
+      </div>
+      <p class="panel-note" id="tools-note">Slot tools rewrite the in-memory save. Download with Save Changes when ready.</p>
+    </section>
+
+    <section id="panel-diff" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Compare Saves</h2>
+        <p>Load a second .ff7 and see gil / party / key fields that differ from the active slot.</p>
+      </div>
+      <div class="toolbar">
+        <label class="btn">
+          Load comparison save
+          <input id="diff-file-input" type="file" accept=".ff7,application/octet-stream" hidden />
+        </label>
+        <button type="button" class="btn" id="btn-diff-run">Refresh diff</button>
+      </div>
+      <div id="diff-meta" class="panel-note">No comparison save loaded.</div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Field</th><th>Current</th><th>Other</th></tr></thead>
+          <tbody id="diff-body"></tbody>
         </table>
       </div>
     </section>
@@ -217,6 +411,7 @@
 
   <div class="status" id="status">No save loaded.</div>
 
+  <script src="../shared/save-folders.js"></script>
   <script src="data.js"></script>
   <script src="save.js"></script>
   <script src="app.js"></script>

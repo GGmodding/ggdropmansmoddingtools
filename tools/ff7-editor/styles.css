@@ -257,6 +257,86 @@ code {
   line-height: 1.45;
 }
 
+.date-predictor {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(62, 207, 142, 0.06);
+}
+
+.date-predictor strong {
+  color: var(--accent);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+}
+
+.date-predictor p {
+  margin: 0.45rem 0 0.65rem;
+  color: var(--text);
+}
+
+.date-predictor__scores {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.date-predictor__scores li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.88rem;
+}
+
+.date-predictor__scores li.is-winner {
+  background: rgba(62, 207, 142, 0.14);
+  color: var(--text);
+  border: 1px solid rgba(62, 207, 142, 0.35);
+}
+
+.missable-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.missable-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+}
+
+.missable-row__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.missable-row__text strong { color: var(--text); }
+.missable-row__text small { color: var(--muted); line-height: 1.4; }
+
+.softlock-warn {
+  margin: 0 0 0.85rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid rgba(227, 107, 107, 0.45);
+  background: rgba(227, 107, 107, 0.12);
+  color: #ffc9c9;
+  font-size: 0.88rem;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -313,6 +393,24 @@ textarea:focus {
   gap: 0.45rem;
   color: var(--text);
   font-size: 0.92rem;
+}
+
+.check--eskill {
+  align-items: flex-start;
+  min-width: min(100%, 280px);
+}
+
+.check--eskill span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.check--eskill small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  font-weight: 400;
 }
 
 .char-tabs {

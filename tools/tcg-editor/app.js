@@ -660,18 +660,14 @@
   $("btn-close-modal").addEventListener("click", () => {
     $("install-modal").hidden = true;
   });
-  $("btn-open-save-folder").addEventListener("click", () => {
-    // Browsers can't open arbitrary folders; copy path for the user.
-    const path = "%USERPROFILE%\\AppData\\LocalLow\\OPNeonGames\\Card Shop Simulator";
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(path).then(
-        () => setStatus("Save folder path copied to clipboard — paste into Explorer."),
-        () => prompt("Copy this path into Explorer:", path)
-      );
-    } else {
-      prompt("Copy this path into Explorer:", path);
-    }
-  });
+  if (window.GGSaveFolders) {
+    GGSaveFolders.wireEditor("tcg", {
+      setStatus,
+      async onFile(file) {
+        await loadFile(file);
+      },
+    });
+  }
 
   // Player quick actions + dirty tracking
   ["f-playerName","f-coins","f-shopLevel","f-shopExp","f-fame","f-totalFame","f-day","f-reviewAvg","f-reviewCount","f-unlockRooms","f-unlockWarehouse","f-tutorialIndex","f-shopOpen","f-tutorialDone","f-warehouse","f-scanner"]

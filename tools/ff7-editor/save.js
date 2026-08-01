@@ -25,13 +25,33 @@
     materia: 0x077c,
     gil: 0x0b7c,
     playTime: 0x0b80,
+    mapId: 0x0b94,
+    locationId: 0x0b96,
+    worldX: 0x0b9a,
+    worldY: 0x0b9c,
+    worldZ: 0x0b9e,
+    loveAeris: 0x0ba7,
+    loveTifa: 0x0ba8,
+    loveYuffie: 0x0ba9,
+    loveBarret: 0x0baa,
+    keyItems: 0x0be4,
+    battleLoveAeris: 0x0bf4,
+    battleLoveTifa: 0x0bf5,
+    battleLoveYuffie: 0x0bf6,
+    battleLoveBarret: 0x0bf7,
+    battlePoints: 0x0c14,
     fieldParty: 0x0cad,
+    gp: 0x0cee,
     stablesOwned: 0x0cfc,
     stablesOccupied: 0x0cfd,
     stablesMask: 0x0cff,
     cantMateMask: 0x0d00,
+    turtleFlyers: 0x0d66,
+    disc: 0x0ea4,
     chocoboNames: 0x0ec4,
     chocoboStamina: 0x0ee8,
+    vehicles: 0x0efd,
+    stolenMateria: 0x0a9c,
     phsAllowed: 0x10a4,
     phsVisible: 0x10a6,
   };
@@ -44,6 +64,7 @@
   const CHAR_COUNT = 9;
   const ITEM_SLOTS = 320;
   const MATERIA_SLOTS = 200;
+  const STOLEN_MATERIA_SLOTS = 48;
 
   const CHAR_OFF = {
     id: 0x00,
@@ -345,8 +366,16 @@
       materia.push(decodeMateria(slotBytes, OFF.materia + i * 4));
     }
 
+    const stolenMateria = [];
+    for (let i = 0; i < STOLEN_MATERIA_SLOTS; i++) {
+      stolenMateria.push(decodeMateria(slotBytes, OFF.stolenMateria + i * 4));
+    }
+
     const chocobos = [];
     for (let i = 0; i < CHOCO_COUNT; i++) chocobos.push(readChocobo(view, i));
+
+    const keyItems = new Uint8Array(8);
+    for (let i = 0; i < 8; i++) keyItems[i] = view.getUint8(OFF.keyItems + i);
 
     const locBytes = new Uint8Array(32);
     for (let i = 0; i < 32; i++) locBytes[i] = view.getUint8(OFF.previewLocation + i);
@@ -355,6 +384,15 @@
       empty: false,
       gil: u32(view, OFF.gil),
       playTime: u32(view, OFF.playTime),
+      gp: u16(view, OFF.gp),
+      battlePoints: u16(view, OFF.battlePoints),
+      mapId: u16(view, OFF.mapId),
+      locationId: u16(view, OFF.locationId),
+      worldX: u16(view, OFF.worldX),
+      worldY: u16(view, OFF.worldY),
+      worldZ: u16(view, OFF.worldZ),
+      disc: view.getUint8(OFF.disc),
+      vehicles: view.getUint8(OFF.vehicles),
       party: [
         view.getUint8(OFF.party),
         view.getUint8(OFF.party + 1),
@@ -368,12 +406,25 @@
       chars,
       items,
       materia,
+      stolenMateria,
       stablesOwned: view.getUint8(OFF.stablesOwned),
       stablesOccupied: view.getUint8(OFF.stablesOccupied),
       stablesMask: view.getUint8(OFF.stablesMask),
       cantMateMask: view.getUint8(OFF.cantMateMask),
       phsAllowed: u16(view, OFF.phsAllowed),
       phsVisible: u16(view, OFF.phsVisible),
+      love: {
+        aeris: view.getUint8(OFF.loveAeris),
+        tifa: view.getUint8(OFF.loveTifa),
+        yuffie: view.getUint8(OFF.loveYuffie),
+        barret: view.getUint8(OFF.loveBarret),
+        battleAeris: view.getUint8(OFF.battleLoveAeris),
+        battleTifa: view.getUint8(OFF.battleLoveTifa),
+        battleYuffie: view.getUint8(OFF.battleLoveYuffie),
+        battleBarret: view.getUint8(OFF.battleLoveBarret),
+      },
+      keyItems,
+      turtleFlyers: view.getUint8(OFF.turtleFlyers),
       chocobos,
       _bytes: slotBytes,
     };
@@ -432,12 +483,48 @@
       bytes[base + 3] = enc[3];
     }
 
+    if (slot.stolenMateria) {
+      for (let i = 0; i < STOLEN_MATERIA_SLOTS; i++) {
+        const m = slot.stolenMateria[i] || { id: 0xff, ap: 0xffffff };
+        const enc = encodeMateria(m.id, m.ap);
+        const base = OFF.stolenMateria + i * 4;
+        bytes[base] = enc[0];
+        bytes[base + 1] = enc[1];
+        bytes[base + 2] = enc[2];
+        bytes[base + 3] = enc[3];
+      }
+    }
+
+    setU16(view, OFF.gp, clamp(slot.gp ?? 0, 0, 10000));
+    setU16(view, OFF.battlePoints, clamp(slot.battlePoints ?? 0, 0, 65535));
+    setU16(view, OFF.mapId, clamp(slot.mapId ?? 0, 0, 65535));
+    setU16(view, OFF.locationId, clamp(slot.locationId ?? 0, 0, 65535));
+    setU16(view, OFF.worldX, clamp(slot.worldX ?? 0, 0, 65535));
+    setU16(view, OFF.worldY, clamp(slot.worldY ?? 0, 0, 65535));
+    setU16(view, OFF.worldZ, clamp(slot.worldZ ?? 0, 0, 65535));
+    view.setUint8(OFF.disc, clamp(slot.disc ?? 1, 1, 3));
+    view.setUint8(OFF.vehicles, (slot.vehicles ?? 0) & 0xff);
+
     view.setUint8(OFF.stablesOwned, clamp(slot.stablesOwned, 0, 6));
     view.setUint8(OFF.stablesOccupied, clamp(slot.stablesOccupied, 0, 6));
     view.setUint8(OFF.stablesMask, slot.stablesMask & 0x3f);
     view.setUint8(OFF.cantMateMask, slot.cantMateMask & 0x3f);
     setU16(view, OFF.phsAllowed, slot.phsAllowed & 0xffff);
     setU16(view, OFF.phsVisible, slot.phsVisible & 0xffff);
+    if (slot.love) {
+      view.setUint8(OFF.loveAeris, clamp(slot.love.aeris, 0, 255));
+      view.setUint8(OFF.loveTifa, clamp(slot.love.tifa, 0, 255));
+      view.setUint8(OFF.loveYuffie, clamp(slot.love.yuffie, 0, 255));
+      view.setUint8(OFF.loveBarret, clamp(slot.love.barret, 0, 255));
+      view.setUint8(OFF.battleLoveAeris, clamp(slot.love.battleAeris, 0, 255));
+      view.setUint8(OFF.battleLoveTifa, clamp(slot.love.battleTifa, 0, 255));
+      view.setUint8(OFF.battleLoveYuffie, clamp(slot.love.battleYuffie, 0, 255));
+      view.setUint8(OFF.battleLoveBarret, clamp(slot.love.battleBarret, 0, 255));
+    }
+    if (slot.keyItems) {
+      for (let i = 0; i < 8; i++) view.setUint8(OFF.keyItems + i, slot.keyItems[i] ?? 0);
+    }
+    view.setUint8(OFF.turtleFlyers, (slot.turtleFlyers ?? 0) & 0xff);
     for (const choco of slot.chocobos) writeChocobo(view, choco);
 
     writeChecksum(bytes);
@@ -526,6 +613,7 @@
     CHOCO_COUNT,
     ITEM_SLOTS,
     MATERIA_SLOTS,
+    STOLEN_MATERIA_SLOTS,
     ALL_LIMITS_MASK: 0x02db, // 1-1,1-2,2-1,2-2,3-1,3-2,4
     parseFile,
     buildFile,

@@ -865,6 +865,32 @@
       if (e.target === $("install-modal")) $("install-modal").hidden = true;
     });
 
+    if (window.GGSaveFolders) {
+      GGSaveFolders.wireEditor("schedule1", {
+        setStatus,
+        async onDirectory(handle) {
+          const collected = await GGSaveFolders.collectFilesFromDirectory(
+            handle,
+            (name) => /\.json$/i.test(name)
+          );
+          if (!collected.length) throw new Error("No .json files in that folder.");
+          const entries = [];
+          for (const item of collected) {
+            entries.push({
+              relativePath: item.relativePath,
+              text: await item.file.text(),
+            });
+          }
+          const built = S.buildFromFileList(entries, {});
+          state.files = built.files;
+          state.folderName = built.rootName || handle.name;
+          state.rawEntries = built.rawEntries;
+          state.availableSlots = built.availableSlots || [];
+          afterLoad(handle.name + " · " + collected.length + " JSON");
+        },
+      });
+    }
+
     const overlay = $("drop-overlay");
     let dragDepth = 0;
     const hasFiles = (e) => e.dataTransfer && [...(e.dataTransfer.types || [])].includes("Files");

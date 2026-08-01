@@ -2521,6 +2521,15 @@
     e.target.value = "";
   });
 
+  if (window.GGSaveFolders) {
+    GGSaveFolders.wireEditor("sod2", {
+      setStatus,
+      async onFile(file) {
+        await loadFiles([file]);
+      },
+    });
+  }
+
   $("btn-backup").addEventListener("click", () => {
     const slot = current();
     if (!slot) return;

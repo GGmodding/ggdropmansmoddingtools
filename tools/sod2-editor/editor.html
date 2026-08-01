@@ -27,6 +27,8 @@
         Load Save(s)
         <input id="file-input" type="file" accept=".sav,.zip,application/octet-stream" multiple hidden />
       </label>
+      <button id="btn-find-save" class="btn" type="button" title="Remembered Chrome/Edge picker">Find Save</button>
+      <button id="btn-open-save-folder" class="btn" type="button" title="Copy path + download Explorer shortcut">Open Folder</button>
       <button id="btn-backup" class="btn" type="button" disabled>Download Backup</button>
       <button id="btn-undo" class="btn" type="button" disabled title="Revert to last checkpoint">Undo</button>
       <button id="btn-checkpoint" class="btn" type="button" disabled title="Save an undo checkpoint">Checkpoint</button>
@@ -40,11 +42,11 @@
   <section class="path-banner">
     <strong>Save path</strong>
     <span>
-      Close SoD2 fully.
+      Close SoD2 fully. Use <strong>Open Folder</strong> (Steam/Epic) or <strong>Find Save</strong>.
       <strong>Steam:</strong> <code>%LOCALAPPDATA%\StateOfDecay2\Saved\Steam\</code>
       · <strong>Epic:</strong> <code>%LOCALAPPDATA%\StateOfDecay2\Saved\Epic\</code>
-      · Xbox Game Pass: load the WGS folder’s GUID blobs + <code>container.*</code>, or a zip of that folder — the editor maps names and picks <code>DaytonSaveGame</code> files.
-      Load <code>SaveGame_*.sav</code>, edit, overwrite. Always backup first.
+      · Xbox Game Pass: load the WGS folder’s GUID blobs + <code>container.*</code>, or a zip — the editor maps names and picks <code>DaytonSaveGame</code> files.
+      Always backup first.
     </span>
   </section>
 
@@ -57,6 +59,7 @@
         <li>Launch the game and load that community slot.</li>
       </ol>
       <div class="modal__actions">
+        <button type="button" class="btn" id="btn-open-save-folder-modal">Open Folder</button>
         <button type="button" class="btn btn--accent" id="btn-close-modal">Got it</button>
       </div>
     </div>
@@ -579,6 +582,7 @@
 
   <footer class="status-bar" id="status">Ready — load a SaveGame_*.sav.</footer>
 
+  <script src="../shared/save-folders.js"></script>
   <script src="save.js"></script>
   <script src="traits.js"></script>
   <script src="skills.js"></script>

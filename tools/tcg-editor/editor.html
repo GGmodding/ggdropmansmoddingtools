@@ -27,6 +27,8 @@
         Load Save
         <input id="file-input" type="file" accept=".json,application/json" hidden />
       </label>
+      <button id="btn-find-save" class="btn" type="button" title="Remembered Chrome/Edge picker">Find Save</button>
+      <button id="btn-open-save-folder" class="btn" type="button" title="Copy path + download Explorer shortcut">Open Folder</button>
       <button id="btn-backup" class="btn" type="button" disabled>Download Backup</button>
       <button id="btn-save" class="btn btn--accent" type="button" disabled>Save Changes</button>
       <span id="dirty-pill" class="pill" hidden>Unsaved</span>
@@ -35,7 +37,7 @@
 
   <section class="path-banner">
     <strong>Install tip</strong>
-    <span>Save downloads as the exact slot name (e.g. <code>savedGames_Release0.json</code>). Close the game, overwrite that file in the save folder, then load the matching slot.</span>
+    <span>Use <strong>Open Folder</strong> / <strong>Find Save</strong> for <code>%USERPROFILE%\AppData\LocalLow\OPNeonGames\Card Shop Simulator</code>. Downloads keep the exact slot name (e.g. <code>savedGames_Release0.json</code>). Close the game, overwrite, then load that slot.</span>
   </section>
 
   <div id="install-modal" class="modal" hidden>
@@ -43,7 +45,7 @@
       <h2>Save downloaded</h2>
       <ol id="install-steps"></ol>
       <div class="modal__actions">
-        <button type="button" class="btn" id="btn-open-save-folder">Open Save Folder</button>
+        <button type="button" class="btn" id="btn-open-save-folder-modal">Open Folder</button>
         <button type="button" class="btn btn--accent" id="btn-close-modal">Got it</button>
       </div>
     </div>
@@ -317,6 +319,7 @@
     <span id="file-meta"></span>
   </footer>
 
+  <script src="../shared/save-folders.js"></script>
   <script src="data/names.js?v=2"></script>
   <script src="app.js"></script>
 </body>
