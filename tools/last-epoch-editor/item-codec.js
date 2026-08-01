@@ -43,18 +43,31 @@
   function unpackSeason(data) {
     if (!isSeasonLayout(data) || isClassicLayout(data)) return null;
     // Observed Season layout: [era, ?, ?, baseType, subType, quality, fp/uniqueHi, uniqueLo|affixCount, ...]
+    // Prefer offsets that land on known base types when possible.
+    let baseOff = 3;
+    if (window.LEItems && window.LEItems.DB && window.LEItems.DB.bases) {
+      const bases = window.LEItems.DB.bases;
+      const candidates = [3, 1, 2, 4];
+      for (const off of candidates) {
+        if (data.length > off + 2 && bases[String(data[off])]) {
+          baseOff = off;
+          break;
+        }
+      }
+    }
     const versionFlag = data[0];
-    const baseType = data[3];
-    const subType = data[4];
-    const quality = data[5];
-    const fpOrUniqueHi = data[6] || 0;
-    const uniqueOrCount = data[7] || 0;
+    const baseType = data[baseOff];
+    const subType = data[baseOff + 1];
+    const quality = data[baseOff + 2];
+    const fpOrUniqueHi = data[baseOff + 3] || 0;
+    const uniqueOrCount = data[baseOff + 4] || 0;
     const uniqueLike = isUniqueLikeRarity(quality);
     let uniqueId = null;
     let forgingPotential = fpOrUniqueHi;
     let affixes = [];
     let uniqueRolls = [];
     let legendaryPotential = 0;
+    const payloadStart = baseOff + 5;
 
     if (uniqueLike) {
       let cand = null;
@@ -72,17 +85,40 @@
       ) {
         uniqueId = cand;
       }
-      uniqueRolls = data.slice(8, Math.min(data.length, 16));
-      if (data.length > 16) legendaryPotential = data[data.length - 1] || 0;
+      // Also scan later bytes for a known unique id (season noise varies)
+      if (uniqueId == null && window.LEItems && window.LEItems.DB && window.LEItems.DB.uniques) {
+        for (let i = payloadStart; i < Math.min(data.length, payloadStart + 8); i++) {
+          const v = data[i];
+          if (v > 0 && window.LEItems.DB.uniques[v]) {
+            uniqueId = v;
+            break;
+          }
+          if (i + 1 < data.length) {
+            const wide = data[i] * 256 + data[i + 1];
+            if (wide > 0 && window.LEItems.DB.uniques[wide]) {
+              uniqueId = wide;
+              break;
+            }
+          }
+        }
+      }
+      uniqueRolls = data.slice(payloadStart, Math.min(data.length, payloadStart + 8));
+      if (data.length > payloadStart + 8) legendaryPotential = data[data.length - 1] || 0;
     } else {
       const count = Math.min(6, uniqueOrCount);
-      let i = 8;
+      let i = payloadStart;
       for (let n = 0; n < count && i + 2 < data.length; n++, i += 3) {
+        let id = data[i + 1];
+        let sealed = false;
+        if (id >= 256) {
+          sealed = true;
+          id = id - 256;
+        }
         affixes.push({
           tier: data[i],
-          id: data[i + 1],
+          id,
           roll: data[i + 2],
-          sealed: false,
+          sealed,
           speculative: true,
         });
       }
@@ -101,6 +137,7 @@
       uniqueRolls,
       legendaryPotential,
       weaversWill: 0,
+      baseOffset: baseOff,
     };
   }
 

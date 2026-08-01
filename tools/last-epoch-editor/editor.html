@@ -63,7 +63,10 @@
     <button class="tab" data-tab="items" type="button">Items</button>
     <button class="tab" data-tab="stash" type="button">Stash</button>
     <button class="tab" data-tab="progress" type="button">Progress</button>
+    <button class="tab" data-tab="monolith" type="button">Monolith</button>
+    <button class="tab" data-tab="endgame" type="button">Endgame</button>
     <button class="tab" data-tab="currency" type="button">Currency</button>
+    <button class="tab" data-tab="raw" type="button">Raw JSON</button>
   </nav>
 
   <main class="main">
@@ -119,6 +122,14 @@
       </div>
       <p class="panel-note">Unspent points still save separately. Visual trees use datamined layouts; icons come from Last Epoch Tools. List editor is under each tree if you need raw IDs.</p>
       <div id="trees-root" class="tree-list"></div>
+
+      <h3 class="subhead">Ability bar</h3>
+      <p class="panel-note">Main skill bar slots (tree IDs). Form bars appear when present on the save.</p>
+      <div id="ability-bar-root" class="ability-bar-editor"></div>
+
+      <h3 class="subhead">Weaver tree</h3>
+      <p class="panel-note">Edits <code>savedWeaverTree</code> node IDs / points (same shape as skill trees).</p>
+      <div id="weaver-root" class="tree-list"></div>
     </section>
 
     <section id="panel-items" class="panel" hidden>
@@ -162,6 +173,10 @@
               <option value="8">Set</option>
             </select>
           </label>
+          <label>Unique
+            <input id="f-add-unique-search" type="text" placeholder="Search unique name / #" />
+            <select id="f-add-unique-pick"></select>
+          </label>
           <label>Unique ID<input id="f-add-unique" type="number" min="0" step="1" placeholder="e.g. 221" /></label>
           <label>Forging Potential<input id="f-add-fp" type="number" min="0" max="255" value="255" /></label>
           <label>Legendary Potential<input id="f-add-lp" type="number" min="0" max="4" value="4" /></label>
@@ -195,6 +210,16 @@
           <div class="le-bag-wrap">
             <div class="le-bag-label">Bag (12×12)</div>
             <div class="le-bag" id="inv-grid" style="--cols:12;--rows:12"></div>
+          </div>
+        </div>
+        <div class="le-inv-extras">
+          <div class="le-bag-wrap">
+            <div class="le-bag-label">Idols</div>
+            <div class="le-idol-list" id="idol-grid"></div>
+          </div>
+          <div class="le-bag-wrap">
+            <div class="le-bag-label">Blessings</div>
+            <div class="le-bless-list" id="bless-grid"></div>
           </div>
         </div>
       </div>
@@ -287,11 +312,16 @@
         <button type="button" class="btn" id="btn-stash-backup" disabled>Download active tab backup</button>
         <button type="button" class="btn btn--accent" id="btn-stash-save" disabled>Download active tab</button>
         <button type="button" class="btn" id="btn-stash-save-index" disabled>Download stash index</button>
+        <button type="button" class="btn" id="btn-stash-from-char" disabled title="Copy selected character inventory items into active stash tab">Char → Stash</button>
+        <button type="button" class="btn" id="btn-stash-to-char" disabled title="Move selected stash item into character inventory">Stash → Char</button>
+        <button type="button" class="btn" id="btn-stash-create" disabled>Create item in stash</button>
       </div>
       <p class="panel-note">Multi-select the stash index (<code>STASH_CYCLE_N_0</code>) plus its <code>_TAB_*</code> files from your Saves folder. Stash tabs are <strong>12×17</strong> like in-game. Editing writes to the loaded tab in memory — download and overwrite the matching file with the game closed.</p>
       <div class="le-stash-screen" id="stash-screen" hidden>
         <div class="le-stash-screen__top">
           <label class="stash-gold">Stash gold<input id="f-stash-gold" type="number" min="0" step="1" /></label>
+          <button type="button" class="btn" id="btn-gold-to-stash" disabled title="Copy character gold into stash index">Char gold → stash</button>
+          <button type="button" class="btn" id="btn-gold-to-char" disabled title="Copy stash index gold onto character">Stash gold → char</button>
           <div class="le-stash-tabs" id="stash-tabs" role="tablist"></div>
         </div>
         <div class="le-stash-screen__body">
@@ -381,6 +411,84 @@
       </div>
     </section>
 
+    <section id="panel-monolith" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Monolith of Fate</h2>
+        <p id="monolith-meta">Depth, corruption, echoes, and timeline unlocks</p>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-mono-unlock-timelines">Unlock all timelines</button>
+        <button type="button" class="btn" id="btn-mono-complete-timelines">Mark all timelines complete</button>
+        <button type="button" class="btn" id="btn-mono-max-corruption">Set corruption 1000</button>
+      </div>
+      <div class="grid form-grid">
+        <label>Monolith depth<input id="f-mono-depth" type="number" min="0" step="1" /></label>
+        <label>Max corruption<input id="f-mono-corruption" type="number" min="0" step="1" /></label>
+        <label>Echoes conquered<input id="f-mono-echoes" type="number" min="0" step="1" /></label>
+        <label>Timelines conquered<input id="f-mono-timelines" type="number" min="0" step="1" /></label>
+        <label>Current run timeline ID<input id="f-mono-run-timeline" type="number" min="0" step="1" /></label>
+        <label>Current run difficulty<input id="f-mono-run-diff" type="number" min="0" step="1" /></label>
+      </div>
+      <h3 class="subhead">Timeline unlocks</h3>
+      <p class="panel-note">Writes <code>timelineDifficultyUnlocks</code> (and completion arrays when marked complete). Progress[0] ≥ 1 means unlocked for editing purposes.</p>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>ID</th>
+              <th>Timeline</th>
+              <th>Lv</th>
+              <th>Unlock progress</th>
+              <th>Completed</th>
+            </tr>
+          </thead>
+          <tbody id="mono-timelines-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-endgame" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Endgame extras</h2>
+        <p>Arena, dungeons, factions, and soul embers</p>
+      </div>
+      <div class="grid form-grid">
+        <label>Soul embers<input id="f-soul-embers" type="number" min="0" step="1" /></label>
+        <label>Lantern luminance<input id="f-lantern" type="number" min="0" step="0.1" /></label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-arena-complete-all">Complete all arena tiers (0–19)</button>
+        <button type="button" class="btn" id="btn-dungeon-complete-all">Complete known dungeons</button>
+      </div>
+      <h3 class="subhead">Arena tiers completed</h3>
+      <div id="arena-tiers" class="chip-checks"></div>
+      <h3 class="subhead">Dungeon completion</h3>
+      <p class="panel-note">Stores simple <code>{ dungeonID, completed: true }</code> entries when the save uses that shape; otherwise lists raw JSON.</p>
+      <div id="dungeon-list" class="chip-checks"></div>
+      <h3 class="subhead">Factions</h3>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Faction</th>
+              <th>Member</th>
+              <th>Rank</th>
+              <th>Reputation</th>
+              <th>Favor</th>
+            </tr>
+          </thead>
+          <tbody id="factions-body"></tbody>
+        </table>
+      </div>
+      <div class="toolbar">
+        <label>Add faction
+          <select id="f-faction-add"></select>
+        </label>
+        <button type="button" class="btn" id="btn-faction-add">Add / reset</button>
+      </div>
+    </section>
+
     <section id="panel-currency" class="panel" hidden>
       <div class="panel__head">
         <h2>Gold &amp; Currency Stacks</h2>
@@ -411,6 +519,20 @@
         </table>
       </div>
     </section>
+
+    <section id="panel-raw" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Raw JSON</h2>
+        <p>Escape hatch for fields without a dedicated UI. Invalid JSON will not apply.</p>
+      </div>
+      <div class="toolbar">
+        <button type="button" class="btn" id="btn-raw-reload">Reload from memory</button>
+        <button type="button" class="btn btn--accent" id="btn-raw-apply">Apply JSON</button>
+        <button type="button" class="btn" id="btn-raw-format">Format</button>
+      </div>
+      <p class="panel-note" id="raw-note">Edits replace the in-memory character object. Download/save afterward.</p>
+      <textarea id="f-raw-json" class="raw-json" rows="28" spellcheck="false"></textarea>
+    </section>
   </main>
 
   <div class="status" id="status">No save loaded.</div>
@@ -422,8 +544,10 @@
   <script src="items-db.js"></script>
   <script src="affixes-db.js"></script>
   <script src="progress-db.js"></script>
+  <script src="endgame-db.js"></script>
   <script src="item-codec.js"></script>
   <script src="save.js"></script>
   <script src="app.js"></script>
+  <script src="panels-extra.js"></script>
 </body>
 </html>

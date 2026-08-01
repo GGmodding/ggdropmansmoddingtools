@@ -1608,6 +1608,117 @@ code {
 .status.is-ok { color: var(--ok); }
 .status.is-err { color: var(--danger); }
 
+.le-inv-extras {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.le-idol-list,
+.le-bless-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  min-height: 2.5rem;
+  padding: 0.5rem;
+  border: 1px solid rgba(196, 154, 78, 0.25);
+  background: rgba(16, 14, 12, 0.55);
+}
+
+.le-idol-chip,
+.le-bless-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid rgba(196, 154, 78, 0.4);
+  background: rgba(40, 30, 18, 0.9);
+  color: #e8d5b0;
+  padding: 0.25rem 0.45rem;
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+  max-width: 14rem;
+  text-align: left;
+}
+
+.le-idol-chip.is-selected,
+.le-bless-chip.is-selected {
+  border-color: #e8c37a;
+  box-shadow: 0 0 0 1px rgba(232, 195, 122, 0.35);
+}
+
+.ability-bar-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin: 0.75rem 0 1.25rem;
+}
+
+.ability-bar-block__title {
+  font-size: 0.9rem;
+  color: #e8d5b0;
+  margin-bottom: 0.35rem;
+}
+
+.ability-bar-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ability-bar-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  min-width: 10rem;
+}
+
+.ability-bar-slot select {
+  min-width: 10rem;
+}
+
+.chip-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.85rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.chip-checks label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: #d7c4a0;
+}
+
+.raw-json {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: #e8dcc4;
+  background: rgba(8, 10, 14, 0.92);
+  border: 1px solid rgba(196, 154, 78, 0.3);
+  padding: 0.75rem;
+  resize: vertical;
+  min-height: 22rem;
+}
+
+#f-add-unique-search {
+  margin-bottom: 0.35rem;
+}
+
+@media (max-width: 900px) {
+  .le-inv-extras {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 720px) {
   .topbar {
     flex-direction: column;

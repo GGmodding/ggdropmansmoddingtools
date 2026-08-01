@@ -73,6 +73,31 @@
     return { rarity, baseType, subType, uniqueId, label, sprite, matched, packed };
   }
 
+  function listUniques(opts) {
+    opts = opts || {};
+    const q = String(opts.search || "")
+      .trim()
+      .toLowerCase();
+    const limit = opts.limit != null ? Number(opts.limit) : 250;
+    const out = [];
+    for (const [id, u] of Object.entries(DB.uniques || {})) {
+      const base = u.base != null ? DB.bases[u.base] : null;
+      const label =
+        (u.set ? "Set" : "Unique") +
+        " #" +
+        id +
+        (base ? " · " + base.n : "");
+      if (q) {
+        const hay = (label + " " + id + " " + (base && base.n ? base.n : "")).toLowerCase();
+        if (!hay.includes(q)) continue;
+      }
+      out.push({ id: Number(id), label, base: u.base, set: !!u.set, sprite: u.i || null });
+      if (out.length >= limit) break;
+    }
+    out.sort((a, b) => a.id - b.id);
+    return out;
+  }
+
   function spriteToItemIconClass(sprite) {
     if (!sprite || typeof sprite !== "string") return null;
     if (/^I\d+$/i.test(sprite)) return "itemdb itemdb-" + sprite;
@@ -97,6 +122,7 @@
     rarityName,
     baseName,
     decodeItemData,
+    listUniques,
     spriteToItemIconClass,
     maxAffixRolls,
   };

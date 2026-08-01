@@ -111,11 +111,24 @@
     els.dirtyPill.hidden = !state.dirty;
   }
 
+  const EDITOR_PANELS = [
+    "panel-character",
+    "panel-trees",
+    "panel-items",
+    "panel-stash",
+    "panel-progress",
+    "panel-monolith",
+    "panel-endgame",
+    "panel-currency",
+    "panel-raw",
+  ];
+
   function showEditor(show) {
     els.empty.hidden = show;
     els.tabs.hidden = !show;
-    for (const id of ["panel-character", "panel-trees", "panel-items", "panel-stash", "panel-progress", "panel-currency"]) {
-      $(id).hidden = !show;
+    for (const id of EDITOR_PANELS) {
+      const el = $(id);
+      if (el) el.hidden = !show;
     }
     els.btnBackup.disabled = !show;
     els.btnSave.disabled = !show;
@@ -128,6 +141,9 @@
     document.querySelectorAll(".panel").forEach((p) => {
       p.classList.toggle("is-active", p.id === "panel-" + name);
     });
+    if (name === "raw" && window.LEExtra && typeof LEExtra.renderRaw === "function") {
+      LEExtra.renderRaw();
+    }
   }
 
   function fillClassSelect() {
@@ -1348,6 +1364,9 @@
       selectedIndex: state.selectedItemIndex,
       onSelect: selectItemByIndex,
     });
+    if (window.LEExtra && typeof LEExtra.renderIdolsBlessings === "function") {
+      LEExtra.renderIdolsBlessings();
+    }
   }
 
   function getSelectedItemIndices() {
@@ -1611,8 +1630,8 @@
     renderAffixList($("add-affix-list"), state.addAffixes);
   }
 
-  function createItemFromForm() {
-    if (!state.data || !window.LEItemCodec) return;
+  function buildItemFromAddForm() {
+    if (!window.LEItemCodec) throw new Error("Item codec unavailable.");
     const kind = $("f-add-kind").value;
     const quality = Number($("f-add-quality").value);
     const uniqueId = kind === "unique" ? Number($("f-add-unique").value) : null;
@@ -1622,7 +1641,7 @@
     if (kind !== "unique" && state.addAffixes.some((a) => Number(a.id) > 255)) {
       setStatus("Warning: affix IDs > 255 only pack their low byte.", "is-err");
     }
-    const opts = {
+    return LEItemCodec.createSavedItem({
       baseType: Number($("f-add-base").value) || 0,
       subType: Number($("f-add-sub").value) || 0,
       quality: kind === "unique" ? (quality >= 7 ? quality : 7) : quality,
@@ -1636,15 +1655,37 @@
       x: Number($("f-add-x").value) || 0,
       y: Number($("f-add-y").value) || 0,
       quantity: 1,
-    };
-    const item = LEItemCodec.createSavedItem(opts);
-    const items = LESave.ensureSavedItems(state.data);
-    items.push(item);
-    state.selectedItemIndex = items.length - 1;
-    setDirty(true);
-    renderItems();
-    renderCurrency();
-    setStatus(`Created item #${state.selectedItemIndex} in inventory.`, "is-ok");
+    });
+  }
+
+  function createItemInto(targetArray) {
+    if (!Array.isArray(targetArray)) {
+      throw new Error("Target item list missing.");
+    }
+    const item = buildItemFromAddForm();
+    targetArray.push(item);
+    const charItems = state.data ? LESave.ensureSavedItems(state.data) : null;
+    if (charItems && targetArray === charItems) {
+      state.selectedItemIndex = targetArray.length - 1;
+      setDirty(true);
+      renderItems();
+      renderCurrency();
+      setStatus(`Created item #${state.selectedItemIndex} in inventory.`, "is-ok");
+    } else {
+      setStashDirty(true);
+      renderStash();
+      setStatus(`Created item in stash (#${targetArray.length - 1}).`, "is-ok");
+    }
+    return item;
+  }
+
+  function createItemFromForm() {
+    if (!state.data) return;
+    createItemInto(LESave.ensureSavedItems(state.data));
+  }
+
+  function fillAddSubs() {
+    fillSubSelect($("f-add-sub"), Number($("f-add-base").value));
   }
 
   function renderItems() {
@@ -1931,6 +1972,7 @@
     renderProgress();
     renderCurrency();
     renderStash();
+    if (window.LEExtra) LEExtra.renderAll();
   }
 
   function setStashDirty(v) {
@@ -2030,6 +2072,15 @@
       if (els.stashMeta) {
         els.stashMeta.textContent = "Load offline STASH_CYCLE_* index and tab files";
       }
+      const setDisabled = (id, disabled) => {
+        const el = $(id);
+        if (el) el.disabled = !!disabled;
+      };
+      setDisabled("btn-stash-from-char", true);
+      setDisabled("btn-stash-to-char", true);
+      setDisabled("btn-stash-create", true);
+      setDisabled("btn-gold-to-stash", true);
+      setDisabled("btn-gold-to-char", true);
       setStashDirty(state.stashDirty);
       return;
     }
@@ -2085,6 +2136,18 @@
         els.fStashData.value = Array.isArray(item.data) ? item.data.join(", ") : "";
       }
     }
+    const hasTab = !!activeStashTab();
+    const hasChar = !!state.data;
+    const hasIndex = !!state.stashIndex;
+    const setDisabled = (id, disabled) => {
+      const el = $(id);
+      if (el) el.disabled = !!disabled;
+    };
+    setDisabled("btn-stash-from-char", !hasTab || !hasChar);
+    setDisabled("btn-stash-to-char", !hasTab || !hasChar);
+    setDisabled("btn-stash-create", !hasTab);
+    setDisabled("btn-gold-to-stash", !hasIndex || !hasChar);
+    setDisabled("btn-gold-to-char", !hasIndex || !hasChar);
     setStashDirty(state.stashDirty);
   }
 
@@ -2129,8 +2192,9 @@
       // stash-only session: still show tabs UI
       els.empty.hidden = true;
       els.tabs.hidden = false;
-      for (const id of ["panel-character", "panel-trees", "panel-items", "panel-stash", "panel-progress", "panel-currency"]) {
-        $(id).hidden = false;
+      for (const id of EDITOR_PANELS) {
+        const el = $(id);
+        if (el) el.hidden = false;
       }
       els.btnBackup.disabled = true;
       els.btnSave.disabled = true;
@@ -2397,6 +2461,35 @@
     });
   }
 
+  const btnGoldToStash = $("btn-gold-to-stash");
+  if (btnGoldToStash) {
+    btnGoldToStash.addEventListener("click", () => {
+      if (!state.data || !state.stashIndex) {
+        setStatus("Need character + stash index loaded.", "is-err");
+        return;
+      }
+      state.stashIndex.gold = Math.max(0, Number(state.data.gold) || 0);
+      if (els.fStashGold) els.fStashGold.value = String(state.stashIndex.gold);
+      state.stashDirty = true;
+      setStashDirty(true);
+      setStatus("Copied character gold into stash index.", "is-ok");
+    });
+  }
+  const btnGoldToChar = $("btn-gold-to-char");
+  if (btnGoldToChar) {
+    btnGoldToChar.addEventListener("click", () => {
+      if (!state.data || !state.stashIndex) {
+        setStatus("Need character + stash index loaded.", "is-err");
+        return;
+      }
+      state.data.gold = Math.max(0, Number(state.stashIndex.gold) || 0);
+      els.fGold.value = String(state.data.gold);
+      if (els.fGoldCurrency) els.fGoldCurrency.value = String(state.data.gold);
+      setDirty(true);
+      setStatus("Copied stash gold onto character.", "is-ok");
+    });
+  }
+
   const btnStashApply = $("btn-stash-apply");
   if (btnStashApply) {
     btnStashApply.addEventListener("click", () => {
@@ -2496,7 +2589,10 @@
   $("btn-item-add-toggle").addEventListener("click", () => {
     const panel = $("add-item-panel");
     panel.hidden = !panel.hidden;
-    if (!panel.hidden) initAddItemPanel();
+    if (!panel.hidden) {
+      initAddItemPanel();
+      if (window.LEExtra) LEExtra.fillUniquePicker();
+    }
   });
 
   $("f-add-base").addEventListener("change", () => {
@@ -2668,6 +2764,23 @@
   });
 
   fillSkillSelect();
+
+  window.LEApp = {
+    state,
+    setDirty,
+    setStatus,
+    decodeForUi,
+    rarityClass,
+    bindItemTooltip,
+    selectItemByIndex,
+    renderAll,
+    renderStash,
+    activeStashTab,
+    setStashDirty,
+    getSelectedItemIndices,
+    createItemInto,
+    fillAddSubs,
+  };
 
   // Drag & drop
   let dragDepth = 0;
