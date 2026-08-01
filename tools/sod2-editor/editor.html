@@ -25,9 +25,12 @@
     <div class="topbar__actions">
       <label class="btn btn--primary">
         Load Save(s)
-        <input id="file-input" type="file" accept=".sav,application/octet-stream" multiple hidden />
+        <input id="file-input" type="file" accept=".sav,.zip,application/octet-stream" multiple hidden />
       </label>
       <button id="btn-backup" class="btn" type="button" disabled>Download Backup</button>
+      <button id="btn-undo" class="btn" type="button" disabled title="Revert to last checkpoint">Undo</button>
+      <button id="btn-checkpoint" class="btn" type="button" disabled title="Save an undo checkpoint">Checkpoint</button>
+      <button id="btn-validate" class="btn" type="button" disabled title="Round-trip encode/decode check">Validate</button>
       <button id="btn-save" class="btn btn--accent" type="button" disabled>Save Changes</button>
       <button id="btn-save-all" class="btn" type="button" disabled title="Apply this slot’s community values to every loaded save and download each">Save All Loaded</button>
       <span id="dirty-pill" class="pill" hidden>Unsaved</span>
@@ -40,7 +43,7 @@
       Close SoD2 fully.
       <strong>Steam:</strong> <code>%LOCALAPPDATA%\StateOfDecay2\Saved\Steam\</code>
       · <strong>Epic:</strong> <code>%LOCALAPPDATA%\StateOfDecay2\Saved\Epic\</code>
-      · Xbox Game Pass often uses WGS containers (extract a GVAS blob first).
+      · Xbox Game Pass: load the WGS folder’s GUID blobs + <code>container.*</code>, or a zip of that folder — the editor maps names and picks <code>DaytonSaveGame</code> files.
       Load <code>SaveGame_*.sav</code>, edit, overwrite. Always backup first.
     </span>
   </section>
@@ -68,6 +71,8 @@
     <button class="tab" data-tab="inventory" type="button">Inventory</button>
     <button class="tab" data-tab="map" type="button">Map / Quests</button>
     <button class="tab" data-tab="vehicles" type="button">Vehicles</button>
+    <button class="tab" data-tab="facilities" type="button">Base / Facilities</button>
+    <button class="tab" data-tab="presets" type="button">Presets</button>
     <button class="tab" data-tab="diff" type="button">Diff</button>
     <button class="tab" data-tab="scan" type="button">Field scan</button>
   </nav>
@@ -75,7 +80,7 @@
   <main class="main">
     <div id="empty-state" class="empty">
       <h2>Load a SoD2 community save</h2>
-      <p>Drag and drop one or more <code>SaveGame_*.sav</code> files (GVAS / DaytonSaveGame), or click <strong>Load Save(s)</strong>.</p>
+      <p>Drag and drop one or more <code>SaveGame_*.sav</code> files, a Game Pass WGS folder selection (GUID blobs + <code>container.*</code>), or a <code>.zip</code> of that folder.</p>
     </div>
 
     <section id="panel-community" class="panel is-active" hidden>
@@ -94,6 +99,10 @@
       <h3 class="group-title">Threats</h3>
       <div class="form-grid" id="fields-threats"></div>
 
+      <h3 class="group-title">Morale</h3>
+      <div class="form-grid" id="fields-morale"></div>
+      <p class="panel-note">Community morale meters are sparse in saves — many “Morale_*” strings are effect IDs, not editable floats. Survivor fatigue (rest) is under Survivors → Vitals. Difficulty / legacy / map mode are not stored as simple community fields in typical DaytonSaveGame files (often baked into scenario assets).</p>
+
       <div class="quick-actions">
         <button type="button" class="btn" id="btn-max-influence">Influence 9999</button>
         <button type="button" class="btn" id="btn-all-influence">Set all Influence fields</button>
@@ -102,21 +111,49 @@
         <button type="button" class="btn" id="btn-zero-threats">Zero plague / infestations</button>
         <button type="button" class="btn" id="btn-noon">Time → midday</button>
       </div>
-      <p class="panel-note">Community display name is a localization TextProperty (shown read-only). Parts uses CommunityResources key 5 — verify in-game. Unavailable = not in this save.</p>
+      <p class="panel-note">Community display name edits the freeform TextProperty fragment when present (loc key stays). Parts uses CommunityResources key 5 — verify in-game. Unavailable = not in this save.</p>
     </section>
 
     <section id="panel-survivors" class="panel" hidden>
       <div class="panel__head">
-        <h2>Survivors &amp; traits</h2>
-        <p>Edit <code>TraitResourceID</code> values, add by cloning a small template trait, or remove a slot. Use exact internal IDs (from this save’s catalog or Community Editor / wiki).</p>
+        <h2>Survivors</h2>
+        <p>Vitals, identity, traits, skills, and equipment. Names use localization TextProperty — editable when a freeform display fragment exists.</p>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-surv-heal-all">Heal all (full + clear debuffs)</button>
+        <button type="button" class="btn" id="btn-surv-rest-all">Clear all fatigue</button>
+        <button type="button" class="btn" id="btn-surv-hero-all">Promote all to Hero</button>
       </div>
       <div class="survivor-layout">
-        <div class="survivor-list" id="survivor-list"></div>
+        <div class="list-col">
+          <input type="search" class="list-filter" id="filter-survivors" placeholder="Filter survivors…" autocomplete="off" />
+          <div class="survivor-list" id="survivor-list"></div>
+        </div>
         <div class="survivor-detail">
           <div class="panel__head" style="margin:0">
             <h2 id="survivor-title">Select a survivor</h2>
-            <p id="survivor-sub">Traits appear here.</p>
+            <p id="survivor-sub">Details appear here.</p>
           </div>
+
+          <div class="quick-actions" id="surv-detail-actions" hidden>
+            <button type="button" class="btn btn--accent" id="btn-surv-heal">Heal this survivor</button>
+            <button type="button" class="btn" id="btn-surv-dup">Duplicate</button>
+            <button type="button" class="btn" id="btn-surv-del">Delete</button>
+            <label>Transfer to roster
+              <select id="surv-transfer-target"></select>
+            </label>
+            <button type="button" class="btn" id="btn-surv-transfer">Transfer</button>
+          </div>
+
+          <h3 class="group-title">Identity</h3>
+          <div class="form-grid" id="surv-identity-fields"></div>
+          <p class="panel-note">First/Last/Nick only edit when the save stores a plain display string. Voice, culture, body definition, hero bonus, and standing are always writable when present.</p>
+
+          <h3 class="group-title">Vitals</h3>
+          <div class="form-grid" id="surv-vitals-fields"></div>
+          <p class="panel-note">Health/stamina are raw floats (often ~100). Fatigue, addiction, sickness, plague timer, trauma → 0 to clear. Plague rate is the infection pace value from the save.</p>
+
+          <h3 class="group-title">Traits</h3>
           <div class="toolbar trait-toolbar">
             <label>Add trait ID
               <input id="new-trait-id" type="text" list="trait-catalog" placeholder="Filler1" />
@@ -211,7 +248,10 @@
         <button type="button" class="btn" id="btn-enc-show-recruit">Show recruitability</button>
       </div>
       <div class="survivor-layout">
-        <div class="survivor-list" id="enclave-list"></div>
+        <div class="list-col">
+          <input type="search" class="list-filter" id="filter-enclaves" placeholder="Filter enclaves…" autocomplete="off" />
+          <div class="survivor-list" id="enclave-list"></div>
+        </div>
         <div class="survivor-detail">
           <div class="panel__head" style="margin:0">
             <h2 id="enclave-title">Select an enclave</h2>
@@ -253,8 +293,26 @@
         <button type="button" class="btn btn--accent" id="btn-inv-max-stacks">Max stacks 999</button>
         <button type="button" class="btn" id="btn-inv-repair">Repair weapons 9999</button>
       </div>
+      <h3 class="group-title">Item catalog (from this save)</h3>
+      <input type="search" class="list-filter list-filter--wide" id="filter-catalog" placeholder="Filter known item class paths…" autocomplete="off" />
+      <div class="table-wrap">
+        <table class="data-table" id="item-catalog-table">
+          <thead>
+            <tr>
+              <th>Short name</th>
+              <th>Path</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="panel-note">Catalog is harvested from ItemLibrary class lists in this file. Use <strong>Use</strong> to fill the Add class field below. Facility mods appear under the FacilityMod category. Vehicle trunks and survivor bags are separate ItemLibraries in the locker list (look for vehicle/character labels).</p>
       <div class="survivor-layout inv-layout">
-        <div class="survivor-list" id="locker-list"></div>
+        <div class="list-col">
+          <input type="search" class="list-filter" id="filter-lockers" placeholder="Filter lockers…" autocomplete="off" />
+          <div class="survivor-list" id="locker-list"></div>
+        </div>
         <div class="survivor-detail">
           <div class="panel__head" style="margin:0">
             <h2 id="locker-title">Select a locker</h2>
@@ -273,6 +331,7 @@
             </label>
             <button type="button" class="btn btn--accent" id="btn-inv-add">Add item</button>
           </div>
+          <input type="search" class="list-filter list-filter--wide" id="filter-items" placeholder="Filter items in this category…" autocomplete="off" />
           <div class="table-wrap">
             <table class="data-table" id="inv-table">
               <thead>
@@ -303,6 +362,10 @@
         <button type="button" class="btn" id="btn-map-scouted">Set all to Scouted</button>
         <button type="button" class="btn" id="btn-radio-reset">Reset radio cooldowns</button>
         <button type="button" class="btn" id="btn-radio-charges">Radio charges 99</button>
+        <button type="button" class="btn" id="btn-missions-clear">Clear active missions</button>
+        <button type="button" class="btn" id="btn-map-clear-infest">Clear infested outposts</button>
+        <button type="button" class="btn" id="btn-map-survey-all">Mark all surveyed</button>
+        <button type="button" class="btn" id="btn-map-abandon-outposts">Abandon all outposts</button>
       </div>
 
       <div id="map-summary" class="name-banner"></div>
@@ -314,8 +377,9 @@
             <tr>
               <th>#</th>
               <th>Scouted level</th>
-              <th>Outpost</th>
+              <th>Outpost ID</th>
               <th>Surveyed</th>
+              <th>Infested</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -338,9 +402,29 @@
         </table>
       </div>
 
-      <h3 class="group-title">Loose missions</h3>
+      <h3 class="group-title">Active missions (LooseMissionSaves)</h3>
       <div class="table-wrap">
         <table class="data-table" id="mission-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Mission</th>
+              <th>Asset</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="panel-note">Complete moves the mission ID into <code>CompletedMissions</code> and removes casting data. Dismiss drops it without marking complete.</p>
+
+      <h3 class="group-title">Completed missions</h3>
+      <div class="quick-actions">
+        <button type="button" class="btn" id="btn-missions-clear-completed">Clear completed log</button>
+      </div>
+      <div id="completed-mission-summary" class="name-banner"></div>
+      <div class="table-wrap">
+        <table class="data-table" id="completed-mission-table">
           <thead>
             <tr>
               <th>#</th>
@@ -351,7 +435,7 @@
           <tbody></tbody>
         </table>
       </div>
-      <p class="panel-note">Mission list is read-only for now. Map travel flag <code>bAreMapsScouted</code> is set when you reveal all sites.</p>
+      <p class="panel-note">Map travel flag <code>bAreMapsScouted</code> is set when you reveal all sites.</p>
     </section>
 
     <section id="panel-vehicles" class="panel" hidden>
@@ -370,7 +454,10 @@
       <div id="veh-summary" class="name-banner"></div>
 
       <div class="survivor-layout">
-        <div class="survivor-list" id="veh-list"></div>
+        <div class="list-col">
+          <input type="search" class="list-filter" id="filter-vehicles" placeholder="Filter vehicles…" autocomplete="off" />
+          <div class="survivor-list" id="veh-list"></div>
+        </div>
         <div class="survivor-detail">
           <div class="panel__head" style="margin:0">
             <h2 id="veh-title">Select a vehicle</h2>
@@ -402,6 +489,63 @@
           <p class="panel-note">Trunk <code>Index</code> points into the vehicle ItemLibrary ItemOrder (−1 = empty). Duplicate clones the whole vehicle with a new Guid. Teleport parks cars in a grid around a guessed base cluster.</p>
         </div>
       </div>
+    </section>
+
+    <section id="panel-facilities" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Base / Facilities</h2>
+        <p>Edit current homesite <code>FacilitySlotSaves</code>: swap facility asset paths, set state, repair. Homesite slot templates from other bases are listed below (read/edit carefully).</p>
+      </div>
+
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-fac-repair-all">Repair all (Completed)</button>
+        <button type="button" class="btn" id="btn-fac-complete-all">Force all Completed</button>
+      </div>
+
+      <div id="fac-summary" class="name-banner"></div>
+
+      <div class="survivor-layout">
+        <div class="list-col">
+          <input type="search" class="list-filter" id="filter-facilities" placeholder="Filter facilities…" autocomplete="off" />
+          <div class="survivor-list" id="fac-list"></div>
+        </div>
+        <div class="survivor-detail">
+          <div class="panel__head" style="margin:0">
+            <h2 id="fac-title">Select a facility</h2>
+            <p id="fac-sub">Slot details.</p>
+          </div>
+          <div class="quick-actions" id="fac-detail-actions" hidden>
+            <button type="button" class="btn btn--accent" id="btn-fac-repair">Repair slot</button>
+          </div>
+          <div class="form-grid" id="fac-fields"></div>
+          <p class="panel-note">Swapping <code>facility</code> rewrites the AssetObject path (use catalog paths from this save). Built-ins and parking still “work” as slots but odd swaps can clip geometry in-game — backup first. Facility <strong>mods</strong> are inventory items in the FacilityMod category (Inventory tab).</p>
+        </div>
+      </div>
+
+      <h3 class="group-title">Homesite templates</h3>
+      <div class="table-wrap">
+        <table class="data-table" id="homesite-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Slot ID</th>
+              <th>Facility</th>
+              <th>State</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="panel-note"><code>HomesiteSlots</code> stores facility layouts for known bases (often prior homes). Editing here does not always change your current base — use the list above for the live slot set.</p>
+    </section>
+
+    <section id="panel-presets" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Presets</h2>
+        <p>One-click bundles that touch several tabs at once. Always backup first — especially full-comfort.</p>
+      </div>
+      <div class="preset-grid" id="preset-grid"></div>
+      <p class="panel-note">Presets call the same APIs as the manual tabs. Results show in the status bar. Re-open tabs after applying to see updated values.</p>
     </section>
 
     <section id="panel-diff" class="panel" hidden>
@@ -438,10 +582,15 @@
   <script src="save.js"></script>
   <script src="traits.js"></script>
   <script src="skills.js"></script>
+  <script src="vitals.js"></script>
+  <script src="survivors-roster.js"></script>
   <script src="enclaves.js"></script>
   <script src="inventory.js"></script>
   <script src="map.js"></script>
   <script src="vehicles.js"></script>
+  <script src="facilities.js"></script>
+  <script src="presets.js"></script>
+  <script src="wgs.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

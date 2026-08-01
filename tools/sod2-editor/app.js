@@ -13,7 +13,35 @@
     lockerIndex: 0,
     invCategory: "ammo",
     vehicleIndex: 0,
+    facilityIndex: 0,
+    undoStack: [],
+    filters: {
+      survivors: "",
+      enclaves: "",
+      lockers: "",
+      items: "",
+      vehicles: "",
+      facilities: "",
+      catalog: "",
+    },
   };
+
+  function filterQuery(key) {
+    return String(state.filters[key] || "")
+      .trim()
+      .toLowerCase();
+  }
+
+  function matchesFilter(q, ...parts) {
+    if (!q) return true;
+    return parts.some((p) => String(p == null ? "" : p).toLowerCase().includes(q));
+  }
+
+  function pickVisibleIndex(selected, visible) {
+    if (!visible.length) return selected;
+    if (visible.indexOf(selected) >= 0) return selected;
+    return visible[0];
+  }
 
   function current() {
     return state.saves[state.active] || null;
@@ -31,13 +59,57 @@
     $("btn-save").disabled = !has;
     $("btn-backup").disabled = !has;
     $("btn-save-all").disabled = state.saves.length < 2;
+    if ($("btn-checkpoint")) $("btn-checkpoint").disabled = !has;
+    if ($("btn-validate")) $("btn-validate").disabled = !has;
+    if ($("btn-undo")) $("btn-undo").disabled = !has || !state.undoStack.length;
+  }
+
+  function pushCheckpoint(label) {
+    const slot = current();
+    if (!slot) return;
+    state.undoStack.push({
+      label: label || "checkpoint",
+      active: state.active,
+      properties: slot.save.properties.slice(),
+      dirty: !!slot.save.dirty,
+    });
+    if (state.undoStack.length > 20) state.undoStack.shift();
+    if ($("btn-undo")) $("btn-undo").disabled = false;
+  }
+
+  function applyUndo() {
+    const snap = state.undoStack.pop();
+    if (!snap) return;
+    const slot = state.saves[snap.active];
+    if (!slot) {
+      setStatus("Undo target slot missing");
+      return;
+    }
+    state.active = snap.active;
+    slot.save.properties = snap.properties;
+    slot.save.dirty = snap.dirty;
+    // Force rediscovery
+    delete slot.save.survivors;
+    delete slot.save.enclaves;
+    delete slot.save.inventories;
+    delete slot.save.mapSites;
+    delete slot.save.vehicles;
+    delete slot.save.facilitySlots;
+    delete slot.save.missions;
+    delete slot.save.survivorBlocks;
+    try {
+      S.discoverCommunityFields(slot.save);
+    } catch (_) {}
+    refreshAll();
+    setDirty(!!snap.dirty);
+    setStatus("Undo: " + snap.label);
   }
 
   function showEditor(show) {
     $("empty-state").hidden = show;
     $("tabs").hidden = !show;
     $("slot-bar").hidden = !show || state.saves.length < 2;
-    ["community", "survivors", "enclaves", "inventory", "map", "vehicles", "diff", "scan"].forEach((id) => {
+    ["community", "survivors", "enclaves", "inventory", "map", "vehicles", "facilities", "presets", "diff", "scan"].forEach((id) => {
       $("panel-" + id).hidden = !show;
     });
   }
@@ -55,6 +127,8 @@
     if (tab === "survivors") renderSurvivors();
     if (tab === "map") renderMapQuest();
     if (tab === "vehicles") renderVehicles();
+    if (tab === "facilities") renderFacilities();
+    if (tab === "presets") renderPresets();
   }
 
   function formatValue(v) {
@@ -142,14 +216,46 @@
     renderFieldGroup("core");
     renderFieldGroup("stockpile");
     renderFieldGroup("threats");
+    renderFieldGroup("morale");
 
     const nameEl = $("community-name");
-    if (save.communityName && save.communityName.key) {
+    if (save.communityName && (save.communityName.display || save.communityName.key)) {
       nameEl.hidden = false;
-      nameEl.innerHTML =
-        "<strong>Community name key</strong> <code>" +
-        escapeHtml(save.communityName.key) +
-        "</code> <span class=\"muted\">(localization TextProperty — read-only)</span>";
+      nameEl.innerHTML = "";
+      const title = document.createElement("strong");
+      title.textContent = "Community name";
+      nameEl.appendChild(title);
+      if (save.communityName.displayOff != null) {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = save.communityName.display || "";
+        input.maxLength = 80;
+        input.style.marginLeft = "0.65rem";
+        input.addEventListener("change", () => {
+          try {
+            S.setCommunityDisplayName(save, input.value);
+            setDirty(true);
+            setStatus("Community name → " + (save.communityName.display || ""));
+            renderCommunityFields();
+            renderDiff();
+          } catch (err) {
+            setStatus(err.message || String(err));
+          }
+        });
+        nameEl.appendChild(input);
+      } else {
+        const span = document.createElement("span");
+        span.textContent = " (no freeform display fragment)";
+        span.className = "muted";
+        nameEl.appendChild(span);
+      }
+      if (save.communityName.key) {
+        const key = document.createElement("div");
+        key.className = "muted";
+        key.style.marginTop = "0.35rem";
+        key.innerHTML = "Loc key <code>" + escapeHtml(save.communityName.key) + "</code>";
+        nameEl.appendChild(key);
+      }
     } else {
       nameEl.hidden = true;
       nameEl.textContent = "";
@@ -238,14 +344,31 @@
 
     if (state.enclaveIndex >= save.enclaves.length) state.enclaveIndex = 0;
 
+    const qEnc = filterQuery("enclaves");
+    const visibleEnc = [];
     save.enclaves.forEach((e, i) => {
+      const typeLbl = e.enclaveType ? enclaveTypeLabel(e.enclaveType.value) : "";
+      if (
+        !matchesFilter(
+          qEnc,
+          e.label,
+          typeLbl,
+          e.relationshipHint,
+          e.isCommunity ? "community" : "",
+          e.tag && e.tag.value,
+          e.id && e.id.value
+        )
+      ) {
+        return;
+      }
+      visibleEnc.push(i);
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "survivor-chip" + (i === state.enclaveIndex ? " is-active" : "");
       const bits = [];
       if (e.isCommunity) bits.push("community");
       bits.push("infl " + (e.influence ? e.influence.value : "?"));
-      if (e.enclaveType) bits.push(enclaveTypeLabel(e.enclaveType.value));
+      if (e.enclaveType) bits.push(typeLbl);
       if (e.relationshipHint) bits.push(e.relationshipHint);
       btn.innerHTML = escapeHtml(e.label) + "<small>" + escapeHtml(bits.join(" · ")) + "</small>";
       btn.addEventListener("click", () => {
@@ -253,6 +376,15 @@
         renderEnclaves();
       });
       list.appendChild(btn);
+    });
+    if (!visibleEnc.length) {
+      list.innerHTML = '<p class="panel-note">No enclaves match filter.</p>';
+      $("enclave-form").hidden = true;
+      return;
+    }
+    state.enclaveIndex = pickVisibleIndex(state.enclaveIndex, visibleEnc);
+    list.querySelectorAll(".survivor-chip").forEach((btn, idx) => {
+      btn.classList.toggle("is-active", visibleEnc[idx] === state.enclaveIndex);
     });
 
     const e = save.enclaves[state.enclaveIndex];
@@ -409,8 +541,53 @@
     }
   }
 
+  function renderCatalogBrowser(save) {
+    const tbody = $("item-catalog-table") && $("item-catalog-table").querySelector("tbody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    const q = filterQuery("catalog");
+    const rows = (save.itemCatalog || []).filter((c) =>
+      matchesFilter(q, c.shortName, c.path, c.categoryId)
+    );
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="3">No catalog entries' + (q ? " match filter" : "") + ".</td></tr>";
+      return;
+    }
+    const show = rows.slice(0, 80);
+    show.forEach((c) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${escapeHtml(c.shortName || "")}</td><td><code>${escapeHtml(
+        c.path || ""
+      )}</code></td><td class="row-actions"></td>`;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn";
+      btn.textContent = "Use";
+      btn.addEventListener("click", () => {
+        const input = $("inv-new-class");
+        if (input) {
+          input.value = c.path || c.shortName || "";
+          input.focus();
+        }
+        if (c.categoryId) {
+          state.invCategory = c.categoryId;
+          renderInventory();
+        }
+        setStatus("Filled add class: " + (c.shortName || c.path));
+      });
+      tr.querySelector(".row-actions").appendChild(btn);
+      tbody.appendChild(tr);
+    });
+    if (rows.length > show.length) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = '<td colspan="3">… and ' + (rows.length - show.length) + " more (refine filter)</td>";
+      tbody.appendChild(tr);
+    }
+  }
+
   function renderInventory() {
     const save = current().save;
+    renderCatalogBrowser(save);
     if (!save.inventories) {
       try {
         S.discoverInventories(save);
@@ -432,9 +609,12 @@
     }
 
     if (state.lockerIndex >= save.inventories.length) state.lockerIndex = 0;
-    const inv = save.inventories[state.lockerIndex];
 
+    const qLock = filterQuery("lockers");
+    const visibleLock = [];
     save.inventories.forEach((locker, i) => {
+      if (!matchesFilter(qLock, locker.label, "Locker #" + (i + 1))) return;
+      visibleLock.push(i);
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "survivor-chip" + (i === state.lockerIndex ? " is-active" : "");
@@ -449,7 +629,18 @@
       });
       list.appendChild(btn);
     });
+    if (!visibleLock.length) {
+      list.innerHTML = '<p class="panel-note">No lockers match filter.</p>';
+      $("inv-toolbar").hidden = true;
+      $("inv-table").querySelector("tbody").innerHTML = "";
+      return;
+    }
+    state.lockerIndex = pickVisibleIndex(state.lockerIndex, visibleLock);
+    list.querySelectorAll(".survivor-chip").forEach((btn, idx) => {
+      btn.classList.toggle("is-active", visibleLock[idx] === state.lockerIndex);
+    });
 
+    const inv = save.inventories[state.lockerIndex];
     $("locker-title").textContent = inv.label || "Locker";
     $("locker-sub").textContent = inv.totalItems + " instances across categories";
     $("inv-toolbar").hidden = false;
@@ -478,11 +669,16 @@
       return;
     }
 
+    const qItems = filterQuery("items");
+    let shownItems = 0;
     cat.instances.items.forEach((item, i) => {
       const cls = cat.classes.items[item.classIndex];
+      const shortName = cls ? cls.shortName : "(class " + item.classIndex + ")";
+      if (!matchesFilter(qItems, shortName, cls && cls.path, item.classIndex)) return;
+      shownItems++;
       const tr = document.createElement("tr");
       const nameCell = document.createElement("td");
-      nameCell.textContent = cls ? cls.shortName : "(class " + item.classIndex + ")";
+      nameCell.textContent = shortName;
       if (cls && cls.path) nameCell.title = cls.path;
 
       const qtyCell = document.createElement("td");
@@ -591,6 +787,9 @@
       tr.appendChild(act);
       tbody.appendChild(tr);
     });
+    if (!shownItems) {
+      tbody.innerHTML = '<tr><td colspan="5">No items match filter.</td></tr>';
+    }
   }
 
   function renderTraitCatalog() {
@@ -614,6 +813,251 @@
       opt.value = id;
       list.appendChild(opt);
     }
+  }
+
+  function renderSurvivorIdentityVitals(save, survivor) {
+    const idBox = $("surv-identity-fields");
+    const vitBox = $("surv-vitals-fields");
+    if (!idBox || !vitBox) return;
+    idBox.innerHTML = "";
+    vitBox.innerHTML = "";
+    const id = survivor.identity || {};
+    const vit = survivor.vitals || {};
+    const cats = save.survivorCatalogs || {};
+
+    function addText(box, label, value, disabled, onChange) {
+      const wrap = document.createElement("label");
+      const title = document.createElement("span");
+      title.textContent = label;
+      wrap.appendChild(title);
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = value == null ? "" : String(value);
+      input.disabled = !!disabled;
+      if (!disabled) {
+        input.addEventListener("change", () => {
+          try {
+            onChange(input.value);
+            setDirty(true);
+            renderSurvivors();
+            renderDiff();
+          } catch (err) {
+            setStatus(err.message || String(err));
+          }
+        });
+      }
+      wrap.appendChild(input);
+      box.appendChild(wrap);
+    }
+
+    function addNum(box, label, value, disabled, onChange, opts) {
+      opts = opts || {};
+      const wrap = document.createElement("label");
+      const title = document.createElement("span");
+      title.textContent = label;
+      wrap.appendChild(title);
+      const input = document.createElement("input");
+      input.type = "number";
+      if (opts.min != null) input.min = String(opts.min);
+      if (opts.max != null) input.max = String(opts.max);
+      input.step = opts.step || "1";
+      input.value = value == null ? "" : formatValue(value);
+      input.disabled = !!disabled;
+      if (!disabled) {
+        input.addEventListener("change", () => {
+          try {
+            onChange(input.value);
+            setDirty(true);
+            setStatus(label + " updated");
+            renderSurvivors();
+            renderDiff();
+          } catch (err) {
+            setStatus(err.message || String(err));
+          }
+        });
+      }
+      wrap.appendChild(input);
+      box.appendChild(wrap);
+    }
+
+    function addSelect(box, label, value, options, disabled, onChange) {
+      const wrap = document.createElement("label");
+      const title = document.createElement("span");
+      title.textContent = label;
+      wrap.appendChild(title);
+      const sel = document.createElement("select");
+      const opts = options && options.length ? options.slice() : value ? [value] : [];
+      if (value && !opts.includes(value)) opts.unshift(value);
+      for (const optVal of opts) {
+        const opt = document.createElement("option");
+        opt.value = optVal;
+        opt.textContent = S.survivorEnumLabel ? S.survivorEnumLabel(optVal) : optVal;
+        if (optVal === value) opt.selected = true;
+        sel.appendChild(opt);
+      }
+      sel.disabled = !!disabled || !opts.length;
+      if (!disabled) {
+        sel.addEventListener("change", () => {
+          try {
+            onChange(sel.value);
+            setDirty(true);
+            setStatus(label + " updated");
+            renderSurvivors();
+            renderDiff();
+          } catch (err) {
+            setStatus(err.message || String(err));
+          }
+        });
+      }
+      wrap.appendChild(sel);
+      box.appendChild(wrap);
+    }
+
+    function addCheck(box, label, value, disabled, onChange) {
+      const wrap = document.createElement("label");
+      const title = document.createElement("span");
+      title.textContent = label;
+      wrap.appendChild(title);
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.checked = !!value;
+      input.disabled = !!disabled;
+      if (!disabled) {
+        input.addEventListener("change", () => {
+          try {
+            onChange(input.checked);
+            setDirty(true);
+            setStatus(label + " updated");
+            renderSurvivors();
+            renderDiff();
+          } catch (err) {
+            setStatus(err.message || String(err));
+          }
+        });
+      }
+      wrap.appendChild(input);
+      box.appendChild(wrap);
+    }
+
+    addText(idBox, "First name", survivor.firstName, !id.firstNameEditable, (v) => {
+      S.setSurvivorDisplayName(save, state.survivorIndex, "first", v);
+      setStatus("First name → " + v);
+    });
+    addText(idBox, "Last name", survivor.lastName, !id.lastNameEditable, (v) => {
+      S.setSurvivorDisplayName(save, state.survivorIndex, "last", v);
+      setStatus("Last name → " + v);
+    });
+    addText(idBox, "Nickname", survivor.nickName || "", !id.nickNameEditable, (v) => {
+      S.setSurvivorDisplayName(save, state.survivorIndex, "nick", v);
+      setStatus("Nickname → " + v);
+    });
+
+    addSelect(idBox, "Voice", id.voice && id.voice.value, cats.voices || [], !id.voice, (v) => {
+      S.setSurvivorIdentityName(save, state.survivorIndex, "voice", v);
+    });
+    addSelect(idBox, "Culture", id.culture && id.culture.value, cats.cultures || [], !id.culture, (v) => {
+      S.setSurvivorIdentityName(save, state.survivorIndex, "culture", v);
+    });
+    addSelect(
+      idBox,
+      "Body / outfit def",
+      id.humanDefinition && id.humanDefinition.value,
+      cats.humans || [],
+      !id.humanDefinition,
+      (v) => {
+        S.setSurvivorIdentityName(save, state.survivorIndex, "humanDefinition", v);
+      }
+    );
+    addSelect(idBox, "Hero bonus", id.heroBonus && id.heroBonus.value, cats.heroes || [], !id.heroBonus, (v) => {
+      S.setSurvivorIdentityName(save, state.survivorIndex, "heroBonus", v);
+    });
+    addSelect(idBox, "Leader type", id.leaderType && id.leaderType.value, cats.leaders || S.LEADER_TYPES || [], !id.leaderType, (v) => {
+      S.setSurvivorIdentityName(save, state.survivorIndex, "leaderType", v);
+    });
+    addSelect(idBox, "Hat outfit", id.hat && id.hat.value, cats.hats || [], !id.hat, (v) => {
+      S.setSurvivorIdentityName(save, state.survivorIndex, "hat", v);
+    });
+    addSelect(idBox, "Body outfit", id.body && id.body.value, cats.bodies || [], !id.body, (v) => {
+      S.setSurvivorIdentityName(save, state.survivorIndex, "body", v);
+    });
+    addSelect(idBox, "Archetype", id.archetype && id.archetype.value, cats.archetypes || [], !id.archetype, (v) => {
+      S.setSurvivorIdentityName(save, state.survivorIndex, "archetype", v);
+    });
+    addSelect(idBox, "Age", id.ageRange && id.ageRange.value, cats.ages || S.AGE_LEVELS || [], !id.ageRange, (v) => {
+      S.setSurvivorEnum(save, state.survivorIndex, "ageRange", v);
+    });
+    addSelect(idBox, "Pronoun", id.pronoun && id.pronoun.value, cats.pronouns || S.PRONOUNS || [], !id.pronoun, (v) => {
+      S.setSurvivorEnum(save, state.survivorIndex, "pronoun", v);
+    });
+    addSelect(
+      idBox,
+      "Standing",
+      id.standingLevel && id.standingLevel.value,
+      cats.standings || S.STANDING_LEVELS || [],
+      !id.standingLevel,
+      (v) => {
+        S.setSurvivorEnum(save, state.survivorIndex, "standingLevel", v);
+      }
+    );
+    addCheck(idBox, "Male", id.isMale && id.isMale.value, !id.isMale, (v) => {
+      S.setSurvivorBool(save, state.survivorIndex, "isMale", v);
+    });
+    addCheck(idBox, "Homosexual", id.isHomosexual && id.isHomosexual.value, !id.isHomosexual, (v) => {
+      S.setSurvivorBool(save, state.survivorIndex, "isHomosexual", v);
+    });
+    addCheck(idBox, "Recruitable", id.isRecruitable && id.isRecruitable.value, !id.isRecruitable, (v) => {
+      S.setSurvivorBool(save, state.survivorIndex, "isRecruitable", v);
+    });
+
+    addNum(vitBox, "Health", vit.health && vit.health.value, !vit.health, (v) => {
+      S.setSurvivorVitalFloat(save, state.survivorIndex, "health", v);
+    });
+    addNum(vitBox, "Stamina", vit.stamina && vit.stamina.value, !vit.stamina, (v) => {
+      S.setSurvivorVitalFloat(save, state.survivorIndex, "stamina", v);
+    });
+    addNum(vitBox, "Fatigue (rest / tiredness)", vit.fatigue && vit.fatigue.value, !vit.fatigue, (v) => {
+      S.setSurvivorVitalFloat(save, state.survivorIndex, "fatigue", v);
+    });
+    addNum(vitBox, "Painkiller addiction", vit.painkillers && vit.painkillers.value, !vit.painkillers, (v) => {
+      S.setSurvivorVitalFloat(save, state.survivorIndex, "painkillers", v);
+    });
+    addNum(vitBox, "Stimulant addiction", vit.stimulants && vit.stimulants.value, !vit.stimulants, (v) => {
+      S.setSurvivorVitalFloat(save, state.survivorIndex, "stimulants", v);
+    });
+    addNum(vitBox, "Sickness", vit.sickness && vit.sickness.value, !vit.sickness, (v) => {
+      S.setSurvivorVitalFloat(save, state.survivorIndex, "sickness", v);
+    });
+    addNum(vitBox, "Plague timer", vit.plagueTimer && vit.plagueTimer.value, !vit.plagueTimer, (v) => {
+      S.setSurvivorVitalFloat(save, state.survivorIndex, "plagueTimer", v);
+    });
+    addNum(vitBox, "Plague rate", vit.plagueRate && vit.plagueRate.value, !vit.plagueRate, (v) => {
+      S.setSurvivorVitalFloat(save, state.survivorIndex, "plagueRate", v);
+    });
+    addNum(vitBox, "Trauma", vit.trauma && vit.trauma.value, !vit.trauma, (v) => {
+      S.setSurvivorVitalFloat(save, state.survivorIndex, "trauma", v);
+    });
+    addNum(vitBox, "Injury recovery", vit.injuryRecovery && vit.injuryRecovery.value, !vit.injuryRecovery, (v) => {
+      S.setSurvivorVitalFloat(save, state.survivorIndex, "injuryRecovery", v);
+    });
+    addNum(
+      vitBox,
+      "Standing progress",
+      vit.standingProgress && vit.standingProgress.value,
+      !vit.standingProgress,
+      (v) => {
+        S.setSurvivorVitalFloat(save, state.survivorIndex, "standingProgress", v);
+      },
+      { min: 0, max: 1, step: "0.01" }
+    );
+    addNum(vitBox, "Zombies killed", vit.zombiesKilled && vit.zombiesKilled.value, !vit.zombiesKilled, (v) => {
+      S.setSurvivorZombiesKilled(save, state.survivorIndex, v);
+    });
+    addCheck(vitBox, "Dead", vit.isDead && vit.isDead.value, !vit.isDead, (v) => {
+      S.setSurvivorBool(save, state.survivorIndex, "isDead", v);
+    });
+    addCheck(vitBox, "Departed", vit.isDeparted && vit.isDeparted.value, !vit.isDeparted, (v) => {
+      S.setSurvivorBool(save, state.survivorIndex, "isDeparted", v);
+    });
   }
 
   function renderSurvivors() {
@@ -649,6 +1093,9 @@
       $("skill-table").querySelector("tbody").innerHTML = "";
       if ($("equip-table")) $("equip-table").querySelector("tbody").innerHTML = "";
       if ($("bag-table")) $("bag-table").querySelector("tbody").innerHTML = "";
+      if ($("surv-identity-fields")) $("surv-identity-fields").innerHTML = "";
+      if ($("surv-vitals-fields")) $("surv-vitals-fields").innerHTML = "";
+      if ($("surv-detail-actions")) $("surv-detail-actions").hidden = true;
       $("btn-add-trait").disabled = true;
       $("btn-add-skill").disabled = true;
       $("btn-max-skills").disabled = true;
@@ -657,15 +1104,31 @@
 
     if (state.survivorIndex >= save.survivors.length) state.survivorIndex = 0;
 
+    const qSurv = filterQuery("survivors");
+    const visibleSurv = [];
     save.survivors.forEach((s, i) => {
+      const skillCount = (s.skills && s.skills.length) || 0;
+      const bagFilled = (s.bagSlots || []).filter((x) => x.itemIndex >= 0).length;
+      const hp = s.vitals && s.vitals.health ? Math.round(s.vitals.health.value) : "—";
+      const standing =
+        s.identity && s.identity.standingLevel && s.identity.standingLevel.value
+          ? s.identity.standingLevel.value
+          : "";
+      const hero =
+        s.identity && s.identity.heroBonus && s.identity.heroBonus.value
+          ? s.identity.heroBonus.value
+          : "";
+      const traitIds = (s.traits || []).map((t) => t.id || t.resourceId || "").join(" ");
+      if (!matchesFilter(qSurv, s.displayName, standing, hero, traitIds, hp)) return;
+      visibleSurv.push(i);
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "survivor-chip" + (i === state.survivorIndex ? " is-active" : "");
-      const skillCount = (s.skills && s.skills.length) || 0;
-      const bagFilled = (s.bagSlots || []).filter((x) => x.itemIndex >= 0).length;
       btn.innerHTML =
         escapeHtml(s.displayName) +
-        "<small>" +
+        "<small>HP " +
+        hp +
+        " · " +
         s.traits.length +
         " traits · " +
         skillCount +
@@ -678,11 +1141,31 @@
       });
       list.appendChild(btn);
     });
+    if (!visibleSurv.length) {
+      list.innerHTML = '<p class="panel-note">No survivors match filter.</p>';
+      $("btn-add-trait").disabled = true;
+      $("btn-add-skill").disabled = true;
+      $("btn-max-skills").disabled = true;
+      if ($("surv-detail-actions")) $("surv-detail-actions").hidden = true;
+      return;
+    }
+    state.survivorIndex = pickVisibleIndex(state.survivorIndex, visibleSurv);
+    list.querySelectorAll(".survivor-chip").forEach((btn, idx) => {
+      btn.classList.toggle("is-active", visibleSurv[idx] === state.survivorIndex);
+    });
 
     const survivor = save.survivors[state.survivorIndex];
+    if (S.attachVitalsToSurvivors && !survivor.vitals) {
+      try {
+        S.attachVitalsToSurvivors(save);
+      } catch (err) {
+        console.warn(err);
+      }
+    }
     const bagFilled = (survivor.bagSlots || []).filter((x) => x.itemIndex >= 0).length;
     $("survivor-title").textContent = survivor.displayName;
     $("survivor-sub").textContent =
+      (survivor.nickName ? '"' + survivor.nickName + '" · ' : "") +
       survivor.traits.length +
       " traits · " +
       ((survivor.skills && survivor.skills.length) || 0) +
@@ -690,10 +1173,34 @@
       bagFilled +
       "/" +
       ((survivor.bagSlots && survivor.bagSlots.length) || 0) +
-      " bag slots";
+      " bag slots" +
+      (survivor.rosterArrayIndex >= 0 ? " · roster #" + (survivor.rosterArrayIndex + 1) : "");
+    if ($("surv-detail-actions")) $("surv-detail-actions").hidden = false;
+    const xfer = $("surv-transfer-target");
+    if (xfer && S.listSurvivorRosterTargets) {
+      try {
+        if (!save.survivorBlocks && S.discoverSurvivorRoster) S.discoverSurvivorRoster(save);
+      } catch (_) {}
+      const targets = S.listSurvivorRosterTargets(save);
+      xfer.innerHTML = "";
+      targets.forEach((t) => {
+        const opt = document.createElement("option");
+        opt.value = String(t.index);
+        opt.textContent = t.label;
+        if (t.index === survivor.rosterArrayIndex) opt.selected = true;
+        xfer.appendChild(opt);
+      });
+      xfer.disabled = !targets.length || survivor.blockIndex < 0;
+    }
+    const canRoster = survivor.blockIndex >= 0;
+    if ($("btn-surv-dup")) $("btn-surv-dup").disabled = !canRoster;
+    if ($("btn-surv-del")) $("btn-surv-del").disabled = !canRoster;
+    if ($("btn-surv-transfer")) $("btn-surv-transfer").disabled = !canRoster;
     $("btn-add-trait").disabled = false;
     $("btn-add-skill").disabled = !(survivor.skills && survivor.skillsOffset != null);
     $("btn-max-skills").disabled = !(survivor.skills && survivor.skills.length);
+
+    renderSurvivorIdentityVitals(save, survivor);
 
     const tbody = $("trait-table").querySelector("tbody");
     tbody.innerHTML = "";
@@ -991,7 +1498,15 @@
         escapeHtml(levelBits || "none") +
         " · <strong>" +
         ((save.radioCommands && save.radioCommands.length) || 0) +
-        " radio cmds</strong> · maps scouted flag: " +
+        " radio cmds</strong> · <strong>" +
+        ((save.missions && save.missions.length) || 0) +
+        " active</strong> / " +
+        ((save.completedMissions && save.completedMissions.length) || 0) +
+        " completed · claimed outposts: " +
+        (stats.claimed || 0) +
+        " · infested: " +
+        (stats.infested || 0) +
+        " · maps scouted flag: " +
         (save.areMapsScouted ? (save.areMapsScouted.value ? "true" : "false") : "n/a");
     }
 
@@ -999,7 +1514,7 @@
     siteBody.innerHTML = "";
     const sites = save.mapSites || [];
     if (!sites.length) {
-      siteBody.innerHTML = '<tr><td colspan="4">No MapSiteSaves found.</td></tr>';
+      siteBody.innerHTML = '<tr><td colspan="5">No MapSiteSaves found.</td></tr>';
     } else {
       // Show a compact sample: first 40 + note
       const show = sites.slice(0, 40);
@@ -1032,20 +1547,55 @@
             setStatus(err.message || String(err));
           }
         });
-        tr.innerHTML = `<td>${site.index + 1}</td><td></td><td>${escapeHtml(
-          site.outpostId && site.outpostId !== "None" ? site.outpostId : "—"
-        )}</td><td>${
-          site.surveyingComplete && site.surveyingComplete.value ? "yes" : "no"
-        }</td>`;
+
+        function boolCell(field, prop) {
+          const input = document.createElement("input");
+          input.type = "checkbox";
+          input.checked = !!(prop && prop.value);
+          input.disabled = !prop || prop.valueOff == null;
+          input.addEventListener("change", () => {
+            try {
+              S.setSiteBool(save, site.index, field, input.checked);
+              setDirty(true);
+              setStatus("Updated site #" + (site.index + 1) + " " + field);
+              renderMapQuest();
+            } catch (err) {
+              setStatus(err.message || String(err));
+            }
+          });
+          return input;
+        }
+
+        tr.innerHTML = `<td>${site.index + 1}</td><td></td><td></td><td></td><td></td>`;
         tr.children[1].appendChild(sel);
+        const outInput = document.createElement("input");
+        outInput.type = "text";
+        outInput.value = site.outpostId && site.outpostId !== "None" ? site.outpostId : "";
+        outInput.placeholder = "None";
+        outInput.disabled = !site.outpostIdProp;
+        outInput.title = "OutpostId name (empty = abandon)";
+        outInput.addEventListener("change", () => {
+          try {
+            S.setSiteOutpostId(save, site.index, outInput.value.trim() || "None");
+            setDirty(true);
+            setStatus("Outpost ID updated for site #" + (site.index + 1));
+            renderMapQuest();
+            renderDiff();
+          } catch (err) {
+            setStatus(err.message || String(err));
+          }
+        });
+        tr.children[2].appendChild(outInput);
+        tr.children[3].appendChild(boolCell("surveyingComplete", site.surveyingComplete));
+        tr.children[4].appendChild(boolCell("infestedOutpost", site.infestedOutpost));
         siteBody.appendChild(tr);
       });
       if (sites.length > show.length) {
         const tr = document.createElement("tr");
         tr.innerHTML =
-          '<td colspan="4">… and ' +
+          '<td colspan="5">… and ' +
           (sites.length - show.length) +
-          " more (use Reveal all to change every site)</td>";
+          " more (use Reveal all / Clear infest to change every site)</td>";
         siteBody.appendChild(tr);
       }
     }
@@ -1110,15 +1660,77 @@
     missionBody.innerHTML = "";
     const missions = save.missions || [];
     if (!missions.length) {
-      missionBody.innerHTML = '<tr><td colspan="3">No loose missions in this save.</td></tr>';
+      missionBody.innerHTML = '<tr><td colspan="4">No active loose missions.</td></tr>';
     } else {
       missions.forEach((m) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `<td>${m.index + 1}</td><td>${escapeHtml(m.label || "")}</td><td><code>${escapeHtml(
           m.assetName || ""
-        )}</code></td>`;
+        )}</code></td><td class="row-actions"></td>`;
+        const act = tr.querySelector(".row-actions");
+        const btnDone = document.createElement("button");
+        btnDone.type = "button";
+        btnDone.className = "btn btn--accent";
+        btnDone.textContent = "Complete";
+        btnDone.addEventListener("click", () => {
+          try {
+            const r = S.completeLooseMission(save, m.index);
+            setDirty(true);
+            setStatus("Completed mission · " + r.remaining + " active · " + r.completed + " in log");
+            renderMapQuest();
+            renderDiff();
+          } catch (err) {
+            setStatus(err.message || String(err));
+          }
+        });
+        const btnDrop = document.createElement("button");
+        btnDrop.type = "button";
+        btnDrop.className = "btn";
+        btnDrop.textContent = "Dismiss";
+        btnDrop.addEventListener("click", () => {
+          try {
+            S.removeLooseMission(save, m.index);
+            setDirty(true);
+            setStatus("Dismissed mission");
+            renderMapQuest();
+            renderDiff();
+          } catch (err) {
+            setStatus(err.message || String(err));
+          }
+        });
+        act.appendChild(btnDone);
+        act.appendChild(btnDrop);
         missionBody.appendChild(tr);
       });
+    }
+
+    const doneSummary = $("completed-mission-summary");
+    const doneBody = $("completed-mission-table") && $("completed-mission-table").querySelector("tbody");
+    const completed = save.completedMissions || [];
+    if (doneSummary) {
+      doneSummary.hidden = false;
+      doneSummary.innerHTML = "<strong>" + completed.length + " completed</strong> mission IDs in save log";
+    }
+    if (doneBody) {
+      doneBody.innerHTML = "";
+      if (!completed.length) {
+        doneBody.innerHTML = '<tr><td colspan="3">No CompletedMissions entries.</td></tr>';
+      } else {
+        const show = completed.slice(0, 40);
+        show.forEach((m) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${m.index + 1}</td><td>${escapeHtml(m.label || "")}</td><td><code>${escapeHtml(
+            m.assetName || ""
+          )}</code></td>`;
+          doneBody.appendChild(tr);
+        });
+        if (completed.length > show.length) {
+          const tr = document.createElement("tr");
+          tr.innerHTML =
+            '<td colspan="3">… and ' + (completed.length - show.length) + " more</td>";
+          doneBody.appendChild(tr);
+        }
+      }
     }
   }
 
@@ -1168,7 +1780,12 @@
 
     if (state.vehicleIndex >= vehicles.length) state.vehicleIndex = 0;
 
+    const qVeh = filterQuery("vehicles");
+    const visibleVeh = [];
     vehicles.forEach((v, i) => {
+      const scout = S.vehicleScoutedLevelLabel(v.scoutedLevel);
+      if (!matchesFilter(qVeh, v.shortName, v.classPath, v.guidHex, scout, "Vehicle " + (i + 1))) return;
+      visibleVeh.push(i);
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "survivor-chip" + (i === state.vehicleIndex ? " is-active" : "");
@@ -1180,13 +1797,24 @@
         " fuel · " +
         pct(v.engine) +
         " eng · " +
-        S.vehicleScoutedLevelLabel(v.scoutedLevel) +
+        scout +
         "</span>";
       btn.addEventListener("click", () => {
         state.vehicleIndex = i;
         renderVehicles();
       });
       list.appendChild(btn);
+    });
+    if (!visibleVeh.length) {
+      list.innerHTML = '<p class="panel-note">No vehicles match filter.</p>';
+      $("veh-fields").innerHTML = "";
+      $("veh-trunk-table").querySelector("tbody").innerHTML = "";
+      $("veh-detail-actions").hidden = true;
+      return;
+    }
+    state.vehicleIndex = pickVisibleIndex(state.vehicleIndex, visibleVeh);
+    list.querySelectorAll(".survivor-chip").forEach((btn, idx) => {
+      btn.classList.toggle("is-active", visibleVeh[idx] === state.vehicleIndex);
     });
 
     const v = vehicles[state.vehicleIndex];
@@ -1352,6 +1980,282 @@
     }
   }
 
+  function renderFacilities() {
+    const save = current() && current().save;
+    if (!save) return;
+    if (!save.facilitySlots && S.discoverFacilities) {
+      try {
+        S.discoverFacilities(save);
+      } catch (err) {
+        console.warn(err);
+        save.facilitySlots = [];
+        save.homesiteSlots = [];
+        save.facilityCatalog = [];
+      }
+    }
+
+    const slots = save.facilitySlots || [];
+    const stats = save.facilityStats || { current: 0, homesite: 0, outposts: 0, damaged: 0 };
+    const summary = $("fac-summary");
+    if (summary) {
+      summary.hidden = false;
+      summary.innerHTML =
+        "<strong>" +
+        (stats.current || 0) +
+        " current slots</strong> · " +
+        (stats.outposts || 0) +
+        " outposts · " +
+        (stats.damaged || 0) +
+        " damaged · " +
+        (stats.homesite || 0) +
+        " homesite templates · catalog " +
+        ((save.facilityCatalog && save.facilityCatalog.length) || 0);
+    }
+
+    const list = $("fac-list");
+    list.innerHTML = "";
+    if (!slots.length) {
+      list.innerHTML = '<p class="panel-note">No FacilitySlotSaves found.</p>';
+      $("fac-title").textContent = "No facilities";
+      $("fac-sub").textContent = "";
+      $("fac-fields").innerHTML = "";
+      $("fac-detail-actions").hidden = true;
+      $("homesite-table").querySelector("tbody").innerHTML =
+        '<tr><td colspan="4">No HomesiteSlots.</td></tr>';
+      return;
+    }
+
+    if (state.facilityIndex >= slots.length) state.facilityIndex = 0;
+
+    const qFac = filterQuery("facilities");
+    const visibleFac = [];
+    slots.forEach((f, i) => {
+      const stateLbl = S.facilityStateLabel(f.state);
+      if (!matchesFilter(qFac, f.shortName, f.slotId, f.kind, stateLbl, f.path)) return;
+      visibleFac.push(i);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "survivor-chip" + (i === state.facilityIndex ? " is-active" : "");
+      btn.innerHTML =
+        "<strong>" +
+        escapeHtml(f.shortName || f.slotId || "Slot " + (i + 1)) +
+        "</strong><span>" +
+        escapeHtml(f.kind) +
+        " · " +
+        escapeHtml(stateLbl) +
+        "</span>";
+      btn.addEventListener("click", () => {
+        state.facilityIndex = i;
+        renderFacilities();
+      });
+      list.appendChild(btn);
+    });
+    if (!visibleFac.length) {
+      list.innerHTML = '<p class="panel-note">No facilities match filter.</p>';
+      $("fac-fields").innerHTML = "";
+      $("fac-detail-actions").hidden = true;
+      return;
+    }
+    state.facilityIndex = pickVisibleIndex(state.facilityIndex, visibleFac);
+    list.querySelectorAll(".survivor-chip").forEach((btn, idx) => {
+      btn.classList.toggle("is-active", visibleFac[idx] === state.facilityIndex);
+    });
+
+    const f = slots[state.facilityIndex];
+    $("fac-detail-actions").hidden = false;
+    $("fac-title").textContent = f.shortName || f.slotId || "Facility #" + (f.index + 1);
+    $("fac-sub").textContent = (f.slotId || "") + (f.path ? " · " + f.path : "");
+
+    const fields = $("fac-fields");
+    fields.innerHTML = "";
+
+    function addLabel(text, control) {
+      const wrap = document.createElement("label");
+      const title = document.createElement("span");
+      title.textContent = text;
+      wrap.appendChild(title);
+      wrap.appendChild(control);
+      fields.appendChild(wrap);
+    }
+
+    const idInput = document.createElement("input");
+    idInput.type = "text";
+    idInput.value = f.slotId || "";
+    idInput.disabled = true;
+    addLabel("Slot ID", idInput);
+
+    const pathSel = document.createElement("select");
+    const catalog = save.facilityCatalog || [];
+    const paths = catalog.map((c) => c.path);
+    if (f.path && !paths.includes(f.path)) {
+      const opt = document.createElement("option");
+      opt.value = f.path;
+      opt.textContent = f.shortName + " (current)";
+      opt.selected = true;
+      pathSel.appendChild(opt);
+    }
+    catalog.forEach((c) => {
+      const opt = document.createElement("option");
+      opt.value = c.path;
+      opt.textContent = c.shortName;
+      if (c.path === f.path) opt.selected = true;
+      pathSel.appendChild(opt);
+    });
+    pathSel.disabled = !f.facility;
+    pathSel.addEventListener("change", () => {
+      try {
+        S.setFacilityPath(save, state.facilityIndex, pathSel.value);
+        setDirty(true);
+        setStatus("Facility → " + S.shortFacilityName(pathSel.value));
+        renderFacilities();
+        renderDiff();
+      } catch (err) {
+        setStatus(err.message || String(err));
+      }
+    });
+    addLabel("Facility type", pathSel);
+
+    const stateSel = document.createElement("select");
+    const states = save.facilityStates || S.FACILITY_STATES || [];
+    states.forEach((st) => {
+      const opt = document.createElement("option");
+      opt.value = st;
+      opt.textContent = S.facilityStateLabel(st);
+      if (st === f.state) opt.selected = true;
+      stateSel.appendChild(opt);
+    });
+    if (f.state && !states.includes(f.state)) {
+      const opt = document.createElement("option");
+      opt.value = f.state;
+      opt.textContent = S.facilityStateLabel(f.state);
+      opt.selected = true;
+      stateSel.appendChild(opt);
+    }
+    stateSel.disabled = !f.stateRef;
+    stateSel.addEventListener("change", () => {
+      try {
+        S.setFacilityState(save, state.facilityIndex, stateSel.value);
+        setDirty(true);
+        setStatus("State → " + S.facilityStateLabel(stateSel.value));
+        renderFacilities();
+        renderDiff();
+      } catch (err) {
+        setStatus(err.message || String(err));
+      }
+    });
+    addLabel("State", stateSel);
+
+    const health = document.createElement("input");
+    health.type = "number";
+    health.step = "any";
+    health.value = f.health == null ? "" : formatValue(f.health);
+    health.disabled = f.healthOff == null;
+    health.addEventListener("change", () => {
+      try {
+        S.setFacilityHealth(save, state.facilityIndex, health.value);
+        setDirty(true);
+        setStatus("Facility health updated");
+        renderFacilities();
+        renderDiff();
+      } catch (err) {
+        setStatus(err.message || String(err));
+      }
+    });
+    addLabel("Health (raw float)", health);
+
+    const flags = document.createElement("input");
+    flags.type = "number";
+    flags.value = f.flags == null ? "" : String(f.flags);
+    flags.disabled = f.flagsOff == null;
+    flags.addEventListener("change", () => {
+      try {
+        S.setFacilityFlags(save, state.facilityIndex, flags.value);
+        setDirty(true);
+        setStatus("Flags updated");
+        renderFacilities();
+        renderDiff();
+      } catch (err) {
+        setStatus(err.message || String(err));
+      }
+    });
+    addLabel("Flags", flags);
+
+    const homeBody = $("homesite-table").querySelector("tbody");
+    homeBody.innerHTML = "";
+    const homes = save.homesiteSlots || [];
+    if (!homes.length) {
+      homeBody.innerHTML = '<tr><td colspan="4">No HomesiteSlots.</td></tr>';
+    } else {
+      const show = homes.slice(0, 40);
+      show.forEach((h) => {
+        const tr = document.createElement("tr");
+        const sel = document.createElement("select");
+        catalog.forEach((c) => {
+          const opt = document.createElement("option");
+          opt.value = c.path;
+          opt.textContent = c.shortName;
+          if (c.path === h.path) opt.selected = true;
+          sel.appendChild(opt);
+        });
+        if (h.path && !paths.includes(h.path)) {
+          const opt = document.createElement("option");
+          opt.value = h.path;
+          opt.textContent = h.shortName;
+          opt.selected = true;
+          sel.appendChild(opt);
+        }
+        sel.disabled = !h.facility;
+        sel.addEventListener("change", () => {
+          try {
+            S.setHomesiteFacilityPath(save, h.index, sel.value);
+            setDirty(true);
+            setStatus("Homesite slot " + (h.index + 1) + " path updated");
+            renderFacilities();
+            renderDiff();
+          } catch (err) {
+            setStatus(err.message || String(err));
+          }
+        });
+        const stSel = document.createElement("select");
+        states.forEach((st) => {
+          const opt = document.createElement("option");
+          opt.value = st;
+          opt.textContent = S.facilityStateLabel(st);
+          if (st === h.state) opt.selected = true;
+          stSel.appendChild(opt);
+        });
+        if (h.state && !states.includes(h.state)) {
+          const opt = document.createElement("option");
+          opt.value = h.state;
+          opt.textContent = S.facilityStateLabel(h.state);
+          opt.selected = true;
+          stSel.appendChild(opt);
+        }
+        stSel.disabled = !h.stateRef;
+        stSel.addEventListener("change", () => {
+          try {
+            S.setHomesiteFacilityState(save, h.index, stSel.value);
+            setDirty(true);
+            setStatus("Homesite slot " + (h.index + 1) + " state updated");
+            renderFacilities();
+            renderDiff();
+          } catch (err) {
+            setStatus(err.message || String(err));
+          }
+        });
+        tr.innerHTML = `<td>${h.index + 1}</td><td><code>${escapeHtml(h.slotId || "")}</code></td><td></td><td></td>`;
+        tr.children[2].appendChild(sel);
+        tr.children[3].appendChild(stSel);
+        homeBody.appendChild(tr);
+      });
+      if (homes.length > show.length) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = '<td colspan="4">… and ' + (homes.length - show.length) + " more templates</td>";
+        homeBody.appendChild(tr);
+      }
+    }
+  }
+
   function writeRadioCharge(save, cmd, value) {
     if (cmd.chargesOff == null) throw new Error("No charges field");
     const n = Math.max(0, Math.min(9999, Number(value) | 0));
@@ -1440,8 +2344,50 @@
     renderInventory();
     renderMapQuest();
     renderVehicles();
+    renderFacilities();
+    renderPresets();
     renderDiff();
     renderScan();
+  }
+
+  function renderPresets() {
+    const grid = $("preset-grid");
+    if (!grid) return;
+    const presets = (S.EDITOR_PRESETS || []).slice();
+    grid.innerHTML = "";
+    if (!presets.length) {
+      grid.innerHTML = '<p class="panel-note">No presets loaded (presets.js missing?).</p>';
+      return;
+    }
+    presets.forEach((p) => {
+      const card = document.createElement("article");
+      card.className = "preset-card";
+      card.innerHTML =
+        "<h3>" +
+        escapeHtml(p.title) +
+        "</h3><p>" +
+        escapeHtml(p.blurb || "") +
+        '</p><button type="button" class="btn btn--accent" data-preset="' +
+        escapeHtml(p.id) +
+        '">Apply</button>';
+      card.querySelector("button").addEventListener("click", () => {
+        const slot = current();
+        if (!slot) {
+          setStatus("Load a save first");
+          return;
+        }
+        try {
+          pushCheckpoint("before " + (p.title || p.id));
+          const result = S.applyEditorPreset(slot.save, p.id);
+          setDirty(true);
+          setStatus((result.title || p.title) + " — " + (result.summary || "done"));
+          refreshAll();
+        } catch (err) {
+          setStatus(err.message || String(err));
+        }
+      });
+      grid.appendChild(card);
+    });
   }
 
   function loadBuffer(arrayBuffer, fileName) {
@@ -1483,6 +2429,14 @@
       save.vehicles = [];
       save.vehicleClasses = [];
     }
+    try {
+      S.discoverFacilities(save);
+    } catch (err) {
+      console.warn(err);
+      save.facilitySlots = [];
+      save.homesiteSlots = [];
+      save.facilityCatalog = [];
+    }
     return {
       save,
       backup: new Uint8Array(save.original),
@@ -1493,10 +2447,39 @@
     const files = [...fileList].filter(Boolean);
     if (!files.length) return;
     try {
+      let candidates;
+      if (S.filesFromUserList && S.resolveWgsFiles) {
+        const raw = await S.filesFromUserList(files);
+        const resolved = S.resolveWgsFiles(raw);
+        candidates = resolved.candidates;
+        if (!candidates.length) {
+          throw new Error(
+            "No DaytonSaveGame GVAS found. Drop SaveGame_*.sav, a WGS folder’s GUID blobs + container.*, or a WGS zip."
+          );
+        }
+      } else {
+        candidates = [];
+        for (const file of files) {
+          const buf = new Uint8Array(await file.arrayBuffer());
+          candidates.push({ fileName: file.name || "SaveGame.sav", bytes: buf });
+        }
+      }
+
       const loaded = [];
-      for (const file of files) {
-        const buf = await file.arrayBuffer();
-        loaded.push(loadBuffer(buf, file.name || "SaveGame.sav"));
+      const skipped = [];
+      for (const c of candidates) {
+        try {
+          const ab = c.bytes.buffer.slice(
+            c.bytes.byteOffset,
+            c.bytes.byteOffset + c.bytes.byteLength
+          );
+          loaded.push(loadBuffer(ab, c.fileName || "SaveGame.sav"));
+        } catch (err) {
+          skipped.push((c.fileName || c.sourceName || "?") + ": " + (err.message || String(err)));
+        }
+      }
+      if (!loaded.length) {
+        throw new Error(skipped[0] || "No valid community saves in selection");
       }
       state.saves = loaded;
       state.active = 0;
@@ -1504,15 +2487,18 @@
       state.enclaveIndex = 0;
       state.lockerIndex = 0;
       state.vehicleIndex = 0;
+      state.facilityIndex = 0;
+      state.undoStack = [];
       showEditor(true);
       switchTab("community");
       refreshAll();
       setDirty(false);
-      setStatus(
+      let msg =
         loaded.length === 1
           ? "Loaded " + loaded[0].save.fileName
-          : "Loaded " + loaded.length + " saves — use slot chips to switch"
-      );
+          : "Loaded " + loaded.length + " saves — use slot chips to switch";
+      if (skipped.length) msg += " · skipped " + skipped.length;
+      setStatus(msg);
     } catch (err) {
       console.error(err);
       setStatus(err.message || String(err));
@@ -1541,6 +2527,26 @@
     const name = slot.save.fileName.replace(/\.sav$/i, "") + ".backup.sav";
     S.downloadBytes(slot.backup, name);
     setStatus("Backup downloaded");
+  });
+
+  $("btn-checkpoint").addEventListener("click", () => {
+    pushCheckpoint("manual");
+    setStatus("Checkpoint saved (" + state.undoStack.length + " on stack)");
+  });
+
+  $("btn-undo").addEventListener("click", () => {
+    applyUndo();
+  });
+
+  $("btn-validate").addEventListener("click", () => {
+    const slot = current();
+    if (!slot) return;
+    try {
+      const ok = S.roundTripOk(slot.save);
+      setStatus(ok ? "Validate OK — encode/decode round-trip matches" : "Validate FAILED — round-trip mismatch");
+    } catch (err) {
+      setStatus("Validate error: " + (err.message || String(err)));
+    }
   });
 
   $("btn-save").addEventListener("click", () => {
@@ -1831,6 +2837,79 @@
     }
   });
 
+  $("btn-missions-clear").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    if (!window.confirm("Dismiss all active loose missions?")) return;
+    try {
+      const n = S.clearLooseMissions(save);
+      setDirty(true);
+      setStatus("Cleared " + n + " active missions");
+      renderMapQuest();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-map-clear-infest").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      const n = S.clearAllInfestedOutposts(save);
+      setDirty(true);
+      setStatus("Cleared infestation on " + n + " sites");
+      renderMapQuest();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-map-survey-all").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      const n = S.setAllSitesSurveyed(save, true);
+      setDirty(true);
+      setStatus("Marked " + n + " sites surveyed");
+      renderMapQuest();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-map-abandon-outposts").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    if (!window.confirm("Set every map site OutpostId to None (abandon all outposts)?")) return;
+    try {
+      const n = S.abandonAllOutposts(save);
+      setDirty(true);
+      setStatus("Abandoned " + n + " outposts");
+      renderMapQuest();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-missions-clear-completed").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    if (!window.confirm("Clear the CompletedMissions log? This cannot be undone for this edit session.")) return;
+    try {
+      const n = S.clearCompletedMissions(save);
+      setDirty(true);
+      setStatus("Cleared " + n + " completed mission IDs");
+      renderMapQuest();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
   $("btn-veh-repair-all").addEventListener("click", () => {
     const save = current() && current().save;
     if (!save) return;
@@ -1946,6 +3025,151 @@
     }
   });
 
+  $("btn-surv-heal-all").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      const n = S.healAllSurvivors(save);
+      setDirty(true);
+      setStatus("Healed " + n + " survivors");
+      renderSurvivors();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-surv-rest-all").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      const n = S.clearAllFatigue(save);
+      setDirty(true);
+      setStatus("Cleared fatigue on " + n + " survivors");
+      renderSurvivors();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-surv-hero-all").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      const n = S.promoteAllToHero(save);
+      setDirty(true);
+      setStatus("Promoted " + n + " survivors to Hero");
+      renderSurvivors();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-surv-heal").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      S.healSurvivor(save, state.survivorIndex);
+      setDirty(true);
+      setStatus("Healed " + (save.survivors[state.survivorIndex] && save.survivors[state.survivorIndex].displayName));
+      renderSurvivors();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-surv-dup").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      const idx = S.duplicateSurvivor(save, state.survivorIndex);
+      state.survivorIndex = idx;
+      setDirty(true);
+      setStatus("Duplicated survivor → #" + (idx + 1));
+      renderSurvivors();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-surv-del").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    if (!window.confirm("Delete this survivor from their enclave roster?")) return;
+    try {
+      S.removeSurvivor(save, state.survivorIndex);
+      if (state.survivorIndex >= save.survivors.length) state.survivorIndex = Math.max(0, save.survivors.length - 1);
+      setDirty(true);
+      setStatus("Survivor deleted");
+      renderSurvivors();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-surv-transfer").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    const target = Number($("surv-transfer-target").value);
+    try {
+      const idx = S.transferSurvivor(save, state.survivorIndex, target);
+      state.survivorIndex = Math.min(idx, save.survivors.length - 1);
+      setDirty(true);
+      setStatus("Transferred survivor to roster #" + (target + 1));
+      renderSurvivors();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-fac-repair-all").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      const n = S.repairAllFacilities(save);
+      setDirty(true);
+      setStatus("Repaired " + n + " facility slots");
+      renderFacilities();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-fac-complete-all").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      const n = S.completeAllFacilities(save);
+      setDirty(true);
+      setStatus("Set Completed on " + n + " slots");
+      renderFacilities();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-fac-repair").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      S.repairFacility(save, state.facilityIndex);
+      setDirty(true);
+      setStatus("Repaired facility #" + (state.facilityIndex + 1));
+      renderFacilities();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
   $("btn-add-trait").addEventListener("click", () => {
     const save = current() && current().save;
     if (!save) return;
@@ -2013,6 +3237,24 @@
     dragDepth = Math.max(0, dragDepth - 1);
     if (dragDepth === 0) overlay.hidden = true;
   });
+
+  function bindListFilter(inputId, filterKey, rerender) {
+    const el = $(inputId);
+    if (!el) return;
+    el.value = state.filters[filterKey] || "";
+    el.addEventListener("input", () => {
+      state.filters[filterKey] = el.value;
+      rerender();
+    });
+  }
+
+  bindListFilter("filter-survivors", "survivors", () => current() && renderSurvivors());
+  bindListFilter("filter-enclaves", "enclaves", () => current() && renderEnclaves());
+  bindListFilter("filter-lockers", "lockers", () => current() && renderInventory());
+  bindListFilter("filter-items", "items", () => current() && renderInventory());
+  bindListFilter("filter-catalog", "catalog", () => current() && renderInventory());
+  bindListFilter("filter-vehicles", "vehicles", () => current() && renderVehicles());
+  bindListFilter("filter-facilities", "facilities", () => current() && renderFacilities());
 
   window.addEventListener("dragover", (e) => {
     if (!hasFiles(e)) return;

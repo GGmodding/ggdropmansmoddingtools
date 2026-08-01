@@ -35,6 +35,8 @@
     { id: "plagueHearts", label: "Max plague hearts", kind: "intName", names: ["MaxPlagueNodes"], min: 0, max: 99, group: "threats" },
     { id: "plagueWallSightings", label: "Plague wall sightings", kind: "intName", names: ["PlagueWallSightings"], min: 0, max: 999, group: "threats" },
     { id: "infestationsToday", label: "Infestations today", kind: "intName", names: ["InfestationSpreadCountToday"], min: 0, max: 99, group: "threats" },
+    { id: "morale", label: "Morale (if present)", kind: "floatName", names: ["CurrentMorale", "CommunityMorale", "MoraleValue", "AverageMorale"], min: -100, max: 100, group: "morale" },
+    { id: "moraleBeds", label: "Morale beds score", kind: "floatName", names: ["MoraleBeds", "BedsMorale"], min: -100, max: 100, group: "morale" },
   ];
 
   const INT_TYPES = ["IntProperty", "UInt32Property"];
@@ -380,6 +382,74 @@
     return hits.reduce((best, h) => (h.value > best.value ? h : best), hits[0]);
   }
 
+  function i64(buf, o) {
+    const lo = u32(buf, o);
+    const hi = (buf[o + 4] | (buf[o + 5] << 8) | (buf[o + 6] << 16) | (buf[o + 7] << 24)) | 0;
+    return lo + hi * 4294967296;
+  }
+
+  function writeI64(buf, o, v) {
+    v = Math.max(0, Math.floor(Number(v)));
+    writeU32(buf, o, v >>> 0);
+    writeU32(buf, o + 4, Math.floor(v / 4294967296) >>> 0);
+  }
+
+  function spliceBuf(buf, offset, deleteCount, insert) {
+    const insertBytes = insert || new Uint8Array(0);
+    const next = new Uint8Array(buf.length - deleteCount + insertBytes.length);
+    next.set(buf.subarray(0, offset), 0);
+    if (insertBytes.length) next.set(insertBytes, offset);
+    next.set(buf.subarray(offset + deleteCount), offset + insertBytes.length);
+    return next;
+  }
+
+  function adjustAncestorSizes(buf, point, delta, skipOffs) {
+    if (!delta) return buf;
+    const skip = new Set(skipOffs || []);
+    const patches = [];
+    const structType = encodeUeString("StructProperty");
+    outerStruct: for (let i = 0; i <= buf.length - structType.length; i++) {
+      for (let j = 0; j < structType.length; j++) {
+        if (buf[i + j] !== structType[j]) continue outerStruct;
+      }
+      try {
+        const dataLenOff = i + structType.length;
+        if (skip.has(dataLenOff)) continue;
+        const dataLen = i64(buf, dataLenOff);
+        if (dataLen <= 0 || dataLen > buf.length) continue;
+        let o = dataLenOff + 8;
+        const st = readUeString(buf, o);
+        o = st.next + 17;
+        const payloadStart = o;
+        const payloadEnd = payloadStart + dataLen;
+        if (point >= payloadStart && point < payloadEnd) {
+          patches.push({ off: dataLenOff, next: dataLen + delta });
+        }
+      } catch (_) {}
+    }
+    const arrayType = encodeUeString("ArrayProperty");
+    outerArr: for (let i = 0; i <= buf.length - arrayType.length; i++) {
+      for (let j = 0; j < arrayType.length; j++) {
+        if (buf[i + j] !== arrayType[j]) continue outerArr;
+      }
+      try {
+        const dataLenOff = i + arrayType.length;
+        if (skip.has(dataLenOff)) continue;
+        const dataLen = i64(buf, dataLenOff);
+        if (dataLen <= 0 || dataLen > buf.length) continue;
+        let o = dataLenOff + 8;
+        o = readUeString(buf, o).next + 1;
+        const payloadStart = o;
+        const payloadEnd = payloadStart + dataLen;
+        if (point >= payloadStart && point < payloadEnd) {
+          patches.push({ off: dataLenOff, next: dataLen + delta });
+        }
+      } catch (_) {}
+    }
+    for (const p of patches) writeI64(buf, p.off, p.next);
+    return buf;
+  }
+
   function findCommunityDisplayName(buf) {
     const offsets = findAllStringOffsets(buf, "CommunityDisplayName");
     for (const nameOffset of offsets) {
@@ -391,21 +461,70 @@
         continue;
       }
       if (type.value !== "TextProperty") continue;
-      // dataLen u64 + pad, then TextHistory payload — pull first printable UE string
-      let o = type.next + 9;
-      const end = Math.min(buf.length, type.next + 9 + 256);
+      const dataLenOff = type.next;
+      const dataLen = i64(buf, dataLenOff);
+      const start = type.next + 9;
+      const end = start + dataLen;
+      const strs = [];
+      let o = start;
       while (o + 4 < end) {
         const len = u32(buf, o);
-        if (len >= 4 && len < 120 && o + 4 + len <= buf.length) {
+        if (len >= 2 && len < 400 && o + 4 + len <= end && buf[o + 4 + len - 1] === 0) {
           const s = asciiAt(buf, o + 4, len - 1);
-          if (/^[A-Za-z0-9._\-]+$/.test(s) && s.includes(".")) {
-            return { key: s, nameOffset, stringOffset: o, stringLen: len };
+          if (/^[\x20-\x7E]+$/.test(s) && s.length > 1) {
+            strs.push({ s, off: o, bytes: 4 + len });
+            o += 4 + len;
+            continue;
           }
         }
         o++;
       }
+      const loc = strs.find((x) => /Dayton\.|EnclaveName/i.test(x.s));
+      const guid = strs.find((x) => /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(x.s));
+      const plain =
+        [...strs]
+          .reverse()
+          .find(
+            (x) =>
+              x.s.length >= 2 &&
+              !/Dayton\.|EnclaveName|^[0-9a-f-]{36}$/i.test(x.s) &&
+              !/^(None|Name|ru-RU)$/i.test(x.s)
+          ) || null;
+      if (!loc && !plain) continue;
+      return {
+        key: loc ? loc.s : null,
+        nameOffset,
+        dataLenOff,
+        dataLen,
+        display: plain ? plain.s : null,
+        displayOff: plain ? plain.off : null,
+        displayBytes: plain ? plain.bytes : null,
+        guid: guid ? guid.s : null,
+        stringOffset: loc ? loc.off : null,
+        stringLen: loc ? loc.bytes : null,
+      };
     }
     return null;
+  }
+
+  function setCommunityDisplayName(save, newName) {
+    newName = String(newName || "").trim();
+    if (!newName || newName.length > 80) throw new Error("Community name must be 1–80 characters");
+    if (!/^[\x20-\x7E]+$/.test(newName)) throw new Error("Community name must be ASCII");
+    if (!save.communityName) discoverCommunityFields(save);
+    const cn = save.communityName;
+    if (!cn || cn.displayOff == null) {
+      throw new Error("No editable display string on CommunityDisplayName (loc key only)");
+    }
+    const newStr = encodeUeString(newName);
+    const delta = newStr.length - cn.displayBytes;
+    let buf = spliceBuf(save.properties, cn.displayOff, cn.displayBytes, newStr);
+    writeI64(buf, cn.dataLenOff, cn.dataLen + delta);
+    if (delta) buf = adjustAncestorSizes(buf, cn.displayOff, delta, [cn.dataLenOff]);
+    save.properties = buf;
+    save.dirty = true;
+    discoverCommunityFields(save);
+    return save.communityName && save.communityName.display;
   }
 
   function discoverCommunityFields(save) {
@@ -655,6 +774,7 @@
     setFieldValue,
     setAllInfluence,
     setInfluenceAt,
+    setCommunityDisplayName,
     applyCommunityValues,
     getDiff,
     snapshotValues,

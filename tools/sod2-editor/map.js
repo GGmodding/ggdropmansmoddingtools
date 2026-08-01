@@ -146,9 +146,10 @@
       return { next: o + 10, name: name.s, type: type.s, value: !!buf[o + 8], valueOff: o + 8 };
     }
     if (type.s === "NameProperty" || type.s === "StrProperty" || type.s === "AssetObjectProperty") {
+      const dataLenOff = o;
       o += 9;
       const v = readStr(buf, o);
-      return { next: v.next, name: name.s, type: type.s, value: v.s, valueOff: o, valueBytes: v.bytes };
+      return { next: v.next, name: name.s, type: type.s, value: v.s, valueOff: o, valueBytes: v.bytes, dataLenOff };
     }
     if (type.s === "IntProperty" || type.s === "UInt32Property") {
       o += 9;
@@ -286,6 +287,7 @@
       let scoutingEnabled = null;
       let infestedOutpost = null;
       let outpostId = null;
+      let outpostIdProp = null;
 
       while (true) {
         const before = o;
@@ -307,7 +309,15 @@
         if (p.name === "bSurveyingComplete") surveyingComplete = p;
         if (p.name === "bScoutingEnabled") scoutingEnabled = p;
         if (p.name === "bInfestedOutpost") infestedOutpost = p;
-        if (p.name === "OutpostId") outpostId = p.value;
+        if (p.name === "OutpostId") {
+          outpostId = p.value;
+          outpostIdProp = {
+            value: p.value,
+            valueOff: p.valueOff,
+            valueBytes: p.valueBytes,
+            dataLenOff: p.dataLenOff,
+          };
+        }
         o = p.next;
       }
 
@@ -322,12 +332,15 @@
         scoutingEnabled,
         infestedOutpost,
         outpostId,
+        outpostIdProp,
       });
     }
 
     save.mapSites = sites;
     save.mapSiteArray = header;
-    save.mapSiteStats = { total: sites.length, byLevel };
+    const claimed = sites.filter((s) => s.outpostId && s.outpostId !== "None").length;
+    const infested = sites.filter((s) => s.infestedOutpost && s.infestedOutpost.value).length;
+    save.mapSiteStats = { total: sites.length, byLevel, claimed, infested };
 
     const mapsScouted = findNamedProperties(buf, "bAreMapsScouted", "BoolProperty");
     save.areMapsScouted = null;
@@ -424,31 +437,65 @@
     const buf = save.properties;
     const missions = [];
     const hits = findNamedProperties(buf, "LooseMissionSaves", "ArrayProperty");
+    save.missionArray = null;
     if (hits.length) {
       try {
         const header = parseStructArrayHeader(buf, hits[0].nameOffset);
+        save.missionArray = header;
         let o = header.itemsStart;
         for (let i = 0; i < header.count; i++) {
+          const start = o;
+          const midBefore = o;
+          const midName = readStr(buf, o);
+          if (midName.s !== "MissionId") {
+            // Unexpected layout — skip whole remaining item best-effort
+            throw new Error("LooseMissionSave #" + i + " missing MissionId");
+          }
+          const midType = readStr(buf, midName.next);
+          const dataLenOff = midType.next;
+          const dataLen = i64(buf, dataLenOff);
+          let po = midType.next + 8;
+          const stName = readStr(buf, po);
+          const idPayloadStart = stName.next + 17;
+          const mid = skipProperty(buf, midBefore);
+          const idPayloadEnd = mid.next;
           let assetName = null;
           let missionName = null;
-          while (true) {
-            const before = o;
-            const n = readStr(buf, o);
+          let q = idPayloadStart;
+          while (q < idPayloadEnd) {
+            const before = q;
+            const n = readStr(buf, q);
             if (n.s === "None") {
-              o = n.next;
+              q = n.next;
               break;
             }
             const p = skipProperty(buf, before);
             if (p.name === "AssetName") assetName = p.value;
             if (p.name === "MissionName") missionName = p.value;
-            o = p.next;
+            q = p.next;
           }
+          o = mid.next;
+          const castBefore = o;
+          const cast = skipProperty(buf, castBefore);
+          o = cast.next;
+          const term = readStr(buf, o);
+          if (term.s !== "None") throw new Error("LooseMissionSave #" + i + " missing terminator");
+          o = term.next;
           missions.push({
             index: i,
             kind: "loose",
+            start,
+            end: o,
+            idPropStart: midBefore,
+            idPropEnd: mid.next,
+            idPayloadStart,
+            idPayloadEnd: q,
+            idDataLenOff: dataLenOff,
+            idDataLen: dataLen,
             assetName,
             missionName,
             label: missionName || assetName || "Mission #" + (i + 1),
+            castingBytes: cast.next - castBefore,
           });
         }
       } catch (err) {
@@ -456,7 +503,132 @@
       }
     }
     save.missions = missions;
+
+    // Completed mission IDs (MissionId struct array)
+    save.completedMissions = [];
+    save.completedMissionArray = null;
+    const doneHits = findNamedProperties(buf, "CompletedMissions", "ArrayProperty");
+    if (doneHits.length) {
+      try {
+        const header = parseStructArrayHeader(buf, doneHits[0].nameOffset);
+        if (header.structType === "MissionId") {
+          save.completedMissionArray = header;
+          let o = header.itemsStart;
+          for (let i = 0; i < header.count; i++) {
+            const start = o;
+            let assetName = null;
+            let missionName = null;
+            while (true) {
+              const before = o;
+              const n = readStr(buf, o);
+              if (n.s === "None") {
+                o = n.next;
+                break;
+              }
+              const p = skipProperty(buf, before);
+              if (p.name === "AssetName") assetName = p.value;
+              if (p.name === "MissionName") missionName = p.value;
+              o = p.next;
+            }
+            save.completedMissions.push({
+              index: i,
+              kind: "completed",
+              start,
+              end: o,
+              assetName,
+              missionName,
+              label: missionName || assetName || "Completed #" + (i + 1),
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("CompletedMissions parse failed", err);
+      }
+    }
+
     return missions;
+  }
+
+  function requireLooseMission(save, index) {
+    if (!save.missions) discoverMissions(save);
+    const m = save.missions[index];
+    if (!m) throw new Error("Invalid mission index");
+    return m;
+  }
+
+  function removeLooseMission(save, index) {
+    const m = requireLooseMission(save, index);
+    const header = save.missionArray;
+    if (!header) throw new Error("LooseMissionSaves header missing");
+    const size = m.end - m.start;
+    let buf = spliceBuf(save.properties, m.start, size, null);
+    writeU32(buf, header.countOff, header.count - 1);
+    writeI64(buf, header.dataLenOff, header.dataLen - size);
+    writeI64(buf, header.innerLenOff, header.innerLen - size);
+    buf = adjustAncestorSizes(buf, m.start, -size, [header.dataLenOff, header.innerLenOff]);
+    save.properties = buf;
+    save.dirty = true;
+    discoverMissions(save);
+    return save.missions.length;
+  }
+
+  function clearLooseMissions(save) {
+    discoverMissions(save);
+    let n = 0;
+    for (let i = (save.missions || []).length - 1; i >= 0; i--) {
+      removeLooseMission(save, i);
+      n++;
+    }
+    return n;
+  }
+
+  function completeLooseMission(save, index) {
+    const m = requireLooseMission(save, index);
+    if (!save.completedMissionArray) discoverMissions(save);
+    const doneHeader = save.completedMissionArray;
+    if (!doneHeader) throw new Error("CompletedMissions array not found — dismiss instead");
+
+    const idBody = save.properties.slice(m.idPayloadStart, m.idPayloadEnd);
+    // Append MissionId body to CompletedMissions first (higher offset than LooseMissionSaves).
+    let insertAt = doneHeader.itemsStart;
+    if (save.completedMissions && save.completedMissions.length) {
+      insertAt = save.completedMissions[save.completedMissions.length - 1].end;
+    }
+    const delta = idBody.length;
+    let buf = spliceBuf(save.properties, insertAt, 0, idBody);
+    writeU32(buf, doneHeader.countOff, doneHeader.count + 1);
+    writeI64(buf, doneHeader.dataLenOff, doneHeader.dataLen + delta);
+    writeI64(buf, doneHeader.innerLenOff, doneHeader.innerLen + delta);
+    buf = adjustAncestorSizes(buf, insertAt, delta, [doneHeader.dataLenOff, doneHeader.innerLenOff]);
+    save.properties = buf;
+    save.dirty = true;
+
+    // Re-find the same loose mission after the completed-array splice (offsets below insertAt unchanged).
+    discoverMissions(save);
+    const still = (save.missions || []).find((x) => x.start === m.start);
+    if (!still) throw new Error("Mission completed in log but loose entry vanished unexpectedly");
+    removeLooseMission(save, still.index);
+    return { remaining: save.missions.length, completed: (save.completedMissions || []).length };
+  }
+
+  function clearCompletedMissions(save) {
+    discoverMissions(save);
+    const header = save.completedMissionArray;
+    if (!header) return 0;
+    const n = header.count;
+    if (!n) return 0;
+    const first = save.completedMissions[0];
+    const last = save.completedMissions[save.completedMissions.length - 1];
+    const size = last.end - first.start;
+    let buf = spliceBuf(save.properties, first.start, size, null);
+    writeU32(buf, header.countOff, 0);
+    writeI64(buf, header.dataLenOff, header.dataLen - size);
+    writeI64(buf, header.innerLenOff, header.innerLen - size);
+    buf = adjustAncestorSizes(buf, first.start, -size, [header.dataLenOff, header.innerLenOff]);
+    save.properties = buf;
+    save.dirty = true;
+    discoverMissions(save);
+    return n;
   }
 
   function discoverMapQuest(save) {
@@ -467,6 +639,7 @@
       sites: save.mapSites,
       radio: save.radioCommands,
       missions: save.missions,
+      completedMissions: save.completedMissions,
     };
   }
 
@@ -564,6 +737,85 @@
     return n;
   }
 
+  function setSiteOutpostIdAt(save, site, newId, rediscover) {
+    newId = String(newId == null ? "None" : newId).trim() || "None";
+    if (!site || !site.outpostIdProp || site.outpostIdProp.valueOff == null) {
+      throw new Error("Site OutpostId unavailable");
+    }
+    if (site.outpostId === newId) return false;
+    const prop = site.outpostIdProp;
+    const newStr = encodeUeString(newId);
+    const delta = newStr.length - prop.valueBytes;
+    let buf = spliceBuf(save.properties, prop.valueOff, prop.valueBytes, newStr);
+    writeI64(buf, prop.dataLenOff, newStr.length);
+    if (delta) buf = adjustAncestorSizes(buf, prop.valueOff, delta, [prop.dataLenOff]);
+    save.properties = buf;
+    save.dirty = true;
+    site.outpostId = newId;
+    prop.value = newId;
+    prop.valueBytes = newStr.length;
+    if (rediscover !== false) discoverMapSites(save);
+    return true;
+  }
+
+  function setSiteOutpostId(save, siteIndex, newId) {
+    if (!save.mapSites) discoverMapSites(save);
+    const site = save.mapSites[siteIndex];
+    if (!site) throw new Error("Invalid site index");
+    return setSiteOutpostIdAt(save, site, newId, true);
+  }
+
+  function abandonAllOutposts(save) {
+    discoverMapSites(save);
+    let n = 0;
+    for (let i = save.mapSites.length - 1; i >= 0; i--) {
+      const site = save.mapSites[i];
+      if (!site.outpostId || site.outpostId === "None") continue;
+      if (setSiteOutpostIdAt(save, site, "None", false)) n++;
+    }
+    discoverMapSites(save);
+    return n;
+  }
+
+  function setSiteBool(save, siteIndex, field, value) {
+    if (!save.mapSites) discoverMapSites(save);
+    const site = save.mapSites[siteIndex];
+    if (!site) throw new Error("Invalid site index");
+    const prop = site[field];
+    if (!prop || prop.valueOff == null) throw new Error("Site field unavailable: " + field);
+    save.properties[prop.valueOff] = value ? 1 : 0;
+    prop.value = !!value;
+    save.dirty = true;
+    return true;
+  }
+
+  function clearAllInfestedOutposts(save) {
+    discoverMapSites(save);
+    let n = 0;
+    for (const site of save.mapSites) {
+      if (!site.infestedOutpost || site.infestedOutpost.valueOff == null) continue;
+      if (!site.infestedOutpost.value) continue;
+      save.properties[site.infestedOutpost.valueOff] = 0;
+      site.infestedOutpost.value = false;
+      n++;
+    }
+    save.dirty = true;
+    return n;
+  }
+
+  function setAllSitesSurveyed(save, value) {
+    discoverMapSites(save);
+    let n = 0;
+    for (const site of save.mapSites) {
+      if (!site.surveyingComplete || site.surveyingComplete.valueOff == null) continue;
+      save.properties[site.surveyingComplete.valueOff] = value ? 1 : 0;
+      site.surveyingComplete.value = !!value;
+      n++;
+    }
+    save.dirty = true;
+    return n;
+  }
+
   function scoutedLevelLabel(v) {
     if (!v) return "—";
     return String(v).replace(/^EScoutedLevel::/, "");
@@ -581,4 +833,13 @@
   S.resetRadioCooldowns = resetRadioCooldowns;
   S.setAllRadioCharges = setAllRadioCharges;
   S.scoutedLevelLabel = scoutedLevelLabel;
+  S.removeLooseMission = removeLooseMission;
+  S.clearLooseMissions = clearLooseMissions;
+  S.completeLooseMission = completeLooseMission;
+  S.clearCompletedMissions = clearCompletedMissions;
+  S.setSiteBool = setSiteBool;
+  S.clearAllInfestedOutposts = clearAllInfestedOutposts;
+  S.setAllSitesSurveyed = setAllSitesSurveyed;
+  S.setSiteOutpostId = setSiteOutpostId;
+  S.abandonAllOutposts = abandonAllOutposts;
 })();
