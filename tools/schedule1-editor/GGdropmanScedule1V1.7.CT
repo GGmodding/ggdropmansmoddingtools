@@ -1,0 +1,2552 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="46">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>3</ID>
+      <Description>"GG Schedule One V1.7"</Description>
+      <Options moHideChildren="1"/>
+      <Color>40FF00</Color>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>2</ID>
+          <Description>"Duplicate Any Item (only use 1 at a time)"</Description>
+          <Options moHideChildren="1"/>
+          <Color>00FF00</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>1337400644</ID>
+              <Description>"Move items around to Duplicate"</Description>
+              <Color>FFFF00</Color>
+              <GroupHeader>1</GroupHeader>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1</ID>
+              <Description>"25X"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+
+aobscanmodule(Duplicate,GameAssembly.dll,89 7B 10 74 6D) // should be unique
+alloc(newmem,$1000,Duplicate)
+
+label(code)
+label(return)
+
+newmem:
+mov edi,19
+code:
+  mov [rbx+10],edi
+  je GameAssembly.dll+1FE22C9
+  jmp return
+
+Duplicate:
+  jmp newmem
+return:
+registersymbol(Duplicate)
+
+[DISABLE]
+
+Duplicate:
+  db 89 7B 10 74 6D
+
+unregistersymbol(Duplicate)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+1FE2257
+
+GameAssembly.dll+1FE2233: 03 7B 10              - add edi,[rbx+10]
+GameAssembly.dll+1FE2236: 78 6E                 - js GameAssembly.dll+1FE22A6
+GameAssembly.dll+1FE2238: 48 8B 13              - mov rdx,[rbx]
+GameAssembly.dll+1FE223B: 48 8B CB              - mov rcx,rbx
+GameAssembly.dll+1FE223E: 48 8B 82 B8 01 00 00  - mov rax,[rdx+000001B8]
+GameAssembly.dll+1FE2245: 48 8B 92 C0 01 00 00  - mov rdx,[rdx+000001C0]
+GameAssembly.dll+1FE224C: FF D0                 - call rax
+GameAssembly.dll+1FE224E: 3B F8                 - cmp edi,eax
+GameAssembly.dll+1FE2250: 7F 27                 - jg GameAssembly.dll+1FE2279
+GameAssembly.dll+1FE2252: 48 83 7B 18 00        - cmp qword ptr [rbx+18],00
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+1FE2257: 89 7B 10              - mov [rbx+10],edi
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+1FE225A: 74 6D                 - je GameAssembly.dll+1FE22C9
+GameAssembly.dll+1FE225C: 48 8B 4B 18           - mov rcx,[rbx+18]
+GameAssembly.dll+1FE2260: 48 8B 41 18           - mov rax,[rcx+18]
+GameAssembly.dll+1FE2264: 48 8B 51 28           - mov rdx,[rcx+28]
+GameAssembly.dll+1FE2268: 48 8B 49 40           - mov rcx,[rcx+40]
+GameAssembly.dll+1FE226C: 48 8B 5C 24 30        - mov rbx,[rsp+30]
+GameAssembly.dll+1FE2271: 48 83 C4 20           - add rsp,20
+GameAssembly.dll+1FE2275: 5F                    - pop rdi
+GameAssembly.dll+1FE2276: 48 FF E0              - jmp rax
+GameAssembly.dll+1FE2279: 48 8B 0D 50 30 C3 01  - mov rcx,[GameAssembly.dll+3C152D0]
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>4</ID>
+              <Description>"56X"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+
+aobscanmodule(Duplicate2,GameAssembly.dll,89 7B 10 74 6D) // should be unique
+alloc(newmem,$1000,Duplicate2)
+
+label(code)
+label(return)
+
+newmem:
+mov edi,75
+code:
+  mov [rbx+10],edi
+  je GameAssembly.dll+1FE22C9
+  jmp return
+
+Duplicate2:
+  jmp newmem
+return:
+registersymbol(Duplicate2)
+
+[DISABLE]
+
+Duplicate2:
+  db 89 7B 10 74 6D
+
+unregistersymbol(Duplicate2)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+1FE2257
+
+GameAssembly.dll+1FE2233: 03 7B 10              - add edi,[rbx+10]
+GameAssembly.dll+1FE2236: 78 6E                 - js GameAssembly.dll+1FE22A6
+GameAssembly.dll+1FE2238: 48 8B 13              - mov rdx,[rbx]
+GameAssembly.dll+1FE223B: 48 8B CB              - mov rcx,rbx
+GameAssembly.dll+1FE223E: 48 8B 82 B8 01 00 00  - mov rax,[rdx+000001B8]
+GameAssembly.dll+1FE2245: 48 8B 92 C0 01 00 00  - mov rdx,[rdx+000001C0]
+GameAssembly.dll+1FE224C: FF D0                 - call rax
+GameAssembly.dll+1FE224E: 3B F8                 - cmp edi,eax
+GameAssembly.dll+1FE2250: 7F 27                 - jg GameAssembly.dll+1FE2279
+GameAssembly.dll+1FE2252: 48 83 7B 18 00        - cmp qword ptr [rbx+18],00
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+1FE2257: 89 7B 10              - mov [rbx+10],edi
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+1FE225A: 74 6D                 - je GameAssembly.dll+1FE22C9
+GameAssembly.dll+1FE225C: 48 8B 4B 18           - mov rcx,[rbx+18]
+GameAssembly.dll+1FE2260: 48 8B 41 18           - mov rax,[rcx+18]
+GameAssembly.dll+1FE2264: 48 8B 51 28           - mov rdx,[rcx+28]
+GameAssembly.dll+1FE2268: 48 8B 49 40           - mov rcx,[rcx+40]
+GameAssembly.dll+1FE226C: 48 8B 5C 24 30        - mov rbx,[rsp+30]
+GameAssembly.dll+1FE2271: 48 83 C4 20           - add rsp,20
+GameAssembly.dll+1FE2275: 5F                    - pop rdi
+GameAssembly.dll+1FE2276: 48 FF E0              - jmp rax
+GameAssembly.dll+1FE2279: 48 8B 0D 50 30 C3 01  - mov rcx,[GameAssembly.dll+3C152D0]
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>5</ID>
+              <Description>"112X"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+
+aobscanmodule(Duplicate2,GameAssembly.dll,89 7B 10 74 6D) // should be unique
+alloc(newmem,$1000,Duplicate2)
+
+label(code)
+label(return)
+
+newmem:
+mov edi,70
+code:
+  mov [rbx+10],edi
+  je GameAssembly.dll+1FE22C9
+  jmp return
+
+Duplicate2:
+  jmp newmem
+return:
+registersymbol(Duplicate2)
+
+[DISABLE]
+
+Duplicate2:
+  db 89 7B 10 74 6D
+
+unregistersymbol(Duplicate2)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+1FE2257
+
+GameAssembly.dll+1FE2233: 03 7B 10              - add edi,[rbx+10]
+GameAssembly.dll+1FE2236: 78 6E                 - js GameAssembly.dll+1FE22A6
+GameAssembly.dll+1FE2238: 48 8B 13              - mov rdx,[rbx]
+GameAssembly.dll+1FE223B: 48 8B CB              - mov rcx,rbx
+GameAssembly.dll+1FE223E: 48 8B 82 B8 01 00 00  - mov rax,[rdx+000001B8]
+GameAssembly.dll+1FE2245: 48 8B 92 C0 01 00 00  - mov rdx,[rdx+000001C0]
+GameAssembly.dll+1FE224C: FF D0                 - call rax
+GameAssembly.dll+1FE224E: 3B F8                 - cmp edi,eax
+GameAssembly.dll+1FE2250: 7F 27                 - jg GameAssembly.dll+1FE2279
+GameAssembly.dll+1FE2252: 48 83 7B 18 00        - cmp qword ptr [rbx+18],00
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+1FE2257: 89 7B 10              - mov [rbx+10],edi
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+1FE225A: 74 6D                 - je GameAssembly.dll+1FE22C9
+GameAssembly.dll+1FE225C: 48 8B 4B 18           - mov rcx,[rbx+18]
+GameAssembly.dll+1FE2260: 48 8B 41 18           - mov rax,[rcx+18]
+GameAssembly.dll+1FE2264: 48 8B 51 28           - mov rdx,[rcx+28]
+GameAssembly.dll+1FE2268: 48 8B 49 40           - mov rcx,[rcx+40]
+GameAssembly.dll+1FE226C: 48 8B 5C 24 30        - mov rbx,[rsp+30]
+GameAssembly.dll+1FE2271: 48 83 C4 20           - add rsp,20
+GameAssembly.dll+1FE2275: 5F                    - pop rdi
+GameAssembly.dll+1FE2276: 48 FF E0              - jmp rax
+GameAssembly.dll+1FE2279: 48 8B 0D 50 30 C3 01  - mov rcx,[GameAssembly.dll+3C152D0]
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>6</ID>
+              <Description>"320x"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+
+aobscanmodule(Duplicate3,GameAssembly.dll,89 7B 10 74 6D) // should be unique
+alloc(newmem,$1000,Duplicate3)
+
+label(code)
+label(return)
+
+newmem:
+mov edi,140
+code:
+  mov [rbx+10],edi
+  je GameAssembly.dll+1FE22C9
+  jmp return
+
+Duplicate3:
+  jmp newmem
+return:
+registersymbol(Duplicate3)
+
+[DISABLE]
+
+Duplicate3:
+  db 89 7B 10 74 6D
+
+unregistersymbol(Duplicate3)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+1FE2257
+
+GameAssembly.dll+1FE2233: 03 7B 10              - add edi,[rbx+10]
+GameAssembly.dll+1FE2236: 78 6E                 - js GameAssembly.dll+1FE22A6
+GameAssembly.dll+1FE2238: 48 8B 13              - mov rdx,[rbx]
+GameAssembly.dll+1FE223B: 48 8B CB              - mov rcx,rbx
+GameAssembly.dll+1FE223E: 48 8B 82 B8 01 00 00  - mov rax,[rdx+000001B8]
+GameAssembly.dll+1FE2245: 48 8B 92 C0 01 00 00  - mov rdx,[rdx+000001C0]
+GameAssembly.dll+1FE224C: FF D0                 - call rax
+GameAssembly.dll+1FE224E: 3B F8                 - cmp edi,eax
+GameAssembly.dll+1FE2250: 7F 27                 - jg GameAssembly.dll+1FE2279
+GameAssembly.dll+1FE2252: 48 83 7B 18 00        - cmp qword ptr [rbx+18],00
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+1FE2257: 89 7B 10              - mov [rbx+10],edi
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+1FE225A: 74 6D                 - je GameAssembly.dll+1FE22C9
+GameAssembly.dll+1FE225C: 48 8B 4B 18           - mov rcx,[rbx+18]
+GameAssembly.dll+1FE2260: 48 8B 41 18           - mov rax,[rcx+18]
+GameAssembly.dll+1FE2264: 48 8B 51 28           - mov rdx,[rcx+28]
+GameAssembly.dll+1FE2268: 48 8B 49 40           - mov rcx,[rcx+40]
+GameAssembly.dll+1FE226C: 48 8B 5C 24 30        - mov rbx,[rsp+30]
+GameAssembly.dll+1FE2271: 48 83 C4 20           - add rsp,20
+GameAssembly.dll+1FE2275: 5F                    - pop rdi
+GameAssembly.dll+1FE2276: 48 FF E0              - jmp rax
+GameAssembly.dll+1FE2279: 48 8B 0D 50 30 C3 01  - mov rcx,[GameAssembly.dll+3C152D0]
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>7</ID>
+              <Description>"512X"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+
+aobscanmodule(Duplicate2,GameAssembly.dll,89 7B 10 74 6D) // should be unique
+alloc(newmem,$1000,Duplicate2)
+
+label(code)
+label(return)
+
+newmem:
+mov edi,200
+code:
+  mov [rbx+10],edi
+  je GameAssembly.dll+1FE22C9
+  jmp return
+
+Duplicate2:
+  jmp newmem
+return:
+registersymbol(Duplicate2)
+
+[DISABLE]
+
+Duplicate2:
+  db 89 7B 10 74 6D
+
+unregistersymbol(Duplicate2)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+1FE2257
+
+GameAssembly.dll+1FE2233: 03 7B 10              - add edi,[rbx+10]
+GameAssembly.dll+1FE2236: 78 6E                 - js GameAssembly.dll+1FE22A6
+GameAssembly.dll+1FE2238: 48 8B 13              - mov rdx,[rbx]
+GameAssembly.dll+1FE223B: 48 8B CB              - mov rcx,rbx
+GameAssembly.dll+1FE223E: 48 8B 82 B8 01 00 00  - mov rax,[rdx+000001B8]
+GameAssembly.dll+1FE2245: 48 8B 92 C0 01 00 00  - mov rdx,[rdx+000001C0]
+GameAssembly.dll+1FE224C: FF D0                 - call rax
+GameAssembly.dll+1FE224E: 3B F8                 - cmp edi,eax
+GameAssembly.dll+1FE2250: 7F 27                 - jg GameAssembly.dll+1FE2279
+GameAssembly.dll+1FE2252: 48 83 7B 18 00        - cmp qword ptr [rbx+18],00
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+1FE2257: 89 7B 10              - mov [rbx+10],edi
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+1FE225A: 74 6D                 - je GameAssembly.dll+1FE22C9
+GameAssembly.dll+1FE225C: 48 8B 4B 18           - mov rcx,[rbx+18]
+GameAssembly.dll+1FE2260: 48 8B 41 18           - mov rax,[rcx+18]
+GameAssembly.dll+1FE2264: 48 8B 51 28           - mov rdx,[rcx+28]
+GameAssembly.dll+1FE2268: 48 8B 49 40           - mov rcx,[rcx+40]
+GameAssembly.dll+1FE226C: 48 8B 5C 24 30        - mov rbx,[rsp+30]
+GameAssembly.dll+1FE2271: 48 83 C4 20           - add rsp,20
+GameAssembly.dll+1FE2275: 5F                    - pop rdi
+GameAssembly.dll+1FE2276: 48 FF E0              - jmp rax
+GameAssembly.dll+1FE2279: 48 8B 0D 50 30 C3 01  - mov rcx,[GameAssembly.dll+3C152D0]
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>8</ID>
+              <Description>"2457X (More than ever Needed)"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+
+aobscanmodule(Duplicate2,GameAssembly.dll,89 7B 10 74 6D) // should be unique
+alloc(newmem,$1000,Duplicate2)
+
+label(code)
+label(return)
+
+newmem:
+mov edi,999
+code:
+  mov [rbx+10],edi
+  je GameAssembly.dll+1FE22C9
+  jmp return
+
+Duplicate2:
+  jmp newmem
+return:
+registersymbol(Duplicate2)
+
+[DISABLE]
+
+Duplicate2:
+  db 89 7B 10 74 6D
+
+unregistersymbol(Duplicate2)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+1FE2257
+
+GameAssembly.dll+1FE2233: 03 7B 10              - add edi,[rbx+10]
+GameAssembly.dll+1FE2236: 78 6E                 - js GameAssembly.dll+1FE22A6
+GameAssembly.dll+1FE2238: 48 8B 13              - mov rdx,[rbx]
+GameAssembly.dll+1FE223B: 48 8B CB              - mov rcx,rbx
+GameAssembly.dll+1FE223E: 48 8B 82 B8 01 00 00  - mov rax,[rdx+000001B8]
+GameAssembly.dll+1FE2245: 48 8B 92 C0 01 00 00  - mov rdx,[rdx+000001C0]
+GameAssembly.dll+1FE224C: FF D0                 - call rax
+GameAssembly.dll+1FE224E: 3B F8                 - cmp edi,eax
+GameAssembly.dll+1FE2250: 7F 27                 - jg GameAssembly.dll+1FE2279
+GameAssembly.dll+1FE2252: 48 83 7B 18 00        - cmp qword ptr [rbx+18],00
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+1FE2257: 89 7B 10              - mov [rbx+10],edi
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+1FE225A: 74 6D                 - je GameAssembly.dll+1FE22C9
+GameAssembly.dll+1FE225C: 48 8B 4B 18           - mov rcx,[rbx+18]
+GameAssembly.dll+1FE2260: 48 8B 41 18           - mov rax,[rcx+18]
+GameAssembly.dll+1FE2264: 48 8B 51 28           - mov rdx,[rcx+28]
+GameAssembly.dll+1FE2268: 48 8B 49 40           - mov rcx,[rcx+40]
+GameAssembly.dll+1FE226C: 48 8B 5C 24 30        - mov rbx,[rsp+30]
+GameAssembly.dll+1FE2271: 48 83 C4 20           - add rsp,20
+GameAssembly.dll+1FE2275: 5F                    - pop rdi
+GameAssembly.dll+1FE2276: 48 FF E0              - jmp rax
+GameAssembly.dll+1FE2279: 48 8B 0D 50 30 C3 01  - mov rcx,[GameAssembly.dll+3C152D0]
+}
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>15</ID>
+          <Description>"BankBalance (Only use 1 at a time)"</Description>
+          <Options moHideChildren="1"/>
+          <Color>00FF00</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>1337400643</ID>
+              <Description>"Deposit $20 to activate"</Description>
+              <Color>FFFF00</Color>
+              <GroupHeader>1</GroupHeader>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>23</ID>
+              <Description>"250"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-23
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(BANKBALENCE1,GameAssembly.dll,F3 0F 11 B7 28 01 00 00) // should be unique
+alloc(newmem,$1000,BANKBALENCE1)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rdi+00000128],xmm6
+  mov [rdi+128],(float)250
+  jmp return
+
+BANKBALENCE1:
+  jmp newmem
+  nop 3
+return:
+registersymbol(BANKBALENCE1)
+
+[DISABLE]
+
+BANKBALENCE1:
+  db F3 0F 11 B7 28 01 00 00
+
+unregistersymbol(BANKBALENCE1)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+627A66
+
+GameAssembly.dll+627A2C: 80 3D 9C 9C 7E 03 00     - cmp byte ptr [GameAssembly.dll+3E116CF],00
+GameAssembly.dll+627A33: F3 0F 10 73 1C           - movss xmm6,[rbx+1C]
+GameAssembly.dll+627A38: F3 0F 59 73 18           - mulss xmm6,[rbx+18]
+GameAssembly.dll+627A3D: F3 0F 58 B7 28 01 00 00  - addss xmm6,[rdi+00000128]
+GameAssembly.dll+627A45: 75 1F                    - jne GameAssembly.dll+627A66
+GameAssembly.dll+627A47: 48 8D 0D EA 86 5B 03     - lea rcx,[GameAssembly.dll+3BE0138]
+GameAssembly.dll+627A4E: E8 2D 78 DA FF           - call GameAssembly.dll+3CF280
+GameAssembly.dll+627A53: 48 8D 0D 4E 11 57 03     - lea rcx,[GameAssembly.dll+3B98BA8]
+GameAssembly.dll+627A5A: E8 21 78 DA FF           - call GameAssembly.dll+3CF280
+GameAssembly.dll+627A5F: C6 05 69 9C 7E 03 01     - mov byte ptr [GameAssembly.dll+3E116CF],01
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+627A66: F3 0F 11 B7 28 01 00 00  - movss [rdi+00000128],xmm6
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+627A6E: 48 8B 0D C3 86 5B 03     - mov rcx,[GameAssembly.dll+3BE0138]
+GameAssembly.dll+627A75: 83 B9 E0 00 00 00 00     - cmp dword ptr [rcx+000000E0],00
+GameAssembly.dll+627A7C: 75 05                    - jne GameAssembly.dll+627A83
+GameAssembly.dll+627A7E: E8 7D 3C D1 FF           - call GameAssembly.il2cpp_runtime_class_init
+GameAssembly.dll+627A83: 33 C9                    - xor ecx,ecx
+GameAssembly.dll+627A85: E8 46 B1 6E 02           - call GameAssembly.dll+2D12BD0
+GameAssembly.dll+627A8A: 84 C0                    - test al,al
+GameAssembly.dll+627A8C: 74 22                    - je GameAssembly.dll+627AB0
+GameAssembly.dll+627A8E: 48 8B 8F 80 01 00 00     - mov rcx,[rdi+00000180]
+GameAssembly.dll+627A95: 48 85 C9                 - test rcx,rcx
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>14</ID>
+              <Description>"999"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-23
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(BANKBALENCE1,GameAssembly.dll,F3 0F 11 B7 28 01 00 00) // should be unique
+alloc(newmem,$1000,BANKBALENCE1)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rdi+00000128],xmm6
+  mov [rdi+128],(float)999
+  jmp return
+
+BANKBALENCE1:
+  jmp newmem
+  nop 3
+return:
+registersymbol(BANKBALENCE1)
+
+[DISABLE]
+
+BANKBALENCE1:
+  db F3 0F 11 B7 28 01 00 00
+
+unregistersymbol(BANKBALENCE1)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+627A66
+
+GameAssembly.dll+627A2C: 80 3D 9C 9C 7E 03 00     - cmp byte ptr [GameAssembly.dll+3E116CF],00
+GameAssembly.dll+627A33: F3 0F 10 73 1C           - movss xmm6,[rbx+1C]
+GameAssembly.dll+627A38: F3 0F 59 73 18           - mulss xmm6,[rbx+18]
+GameAssembly.dll+627A3D: F3 0F 58 B7 28 01 00 00  - addss xmm6,[rdi+00000128]
+GameAssembly.dll+627A45: 75 1F                    - jne GameAssembly.dll+627A66
+GameAssembly.dll+627A47: 48 8D 0D EA 86 5B 03     - lea rcx,[GameAssembly.dll+3BE0138]
+GameAssembly.dll+627A4E: E8 2D 78 DA FF           - call GameAssembly.dll+3CF280
+GameAssembly.dll+627A53: 48 8D 0D 4E 11 57 03     - lea rcx,[GameAssembly.dll+3B98BA8]
+GameAssembly.dll+627A5A: E8 21 78 DA FF           - call GameAssembly.dll+3CF280
+GameAssembly.dll+627A5F: C6 05 69 9C 7E 03 01     - mov byte ptr [GameAssembly.dll+3E116CF],01
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+627A66: F3 0F 11 B7 28 01 00 00  - movss [rdi+00000128],xmm6
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+627A6E: 48 8B 0D C3 86 5B 03     - mov rcx,[GameAssembly.dll+3BE0138]
+GameAssembly.dll+627A75: 83 B9 E0 00 00 00 00     - cmp dword ptr [rcx+000000E0],00
+GameAssembly.dll+627A7C: 75 05                    - jne GameAssembly.dll+627A83
+GameAssembly.dll+627A7E: E8 7D 3C D1 FF           - call GameAssembly.il2cpp_runtime_class_init
+GameAssembly.dll+627A83: 33 C9                    - xor ecx,ecx
+GameAssembly.dll+627A85: E8 46 B1 6E 02           - call GameAssembly.dll+2D12BD0
+GameAssembly.dll+627A8A: 84 C0                    - test al,al
+GameAssembly.dll+627A8C: 74 22                    - je GameAssembly.dll+627AB0
+GameAssembly.dll+627A8E: 48 8B 8F 80 01 00 00     - mov rcx,[rdi+00000180]
+GameAssembly.dll+627A95: 48 85 C9                 - test rcx,rcx
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>16</ID>
+              <Description>"2500"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-23
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(BANKBALENCE1,GameAssembly.dll,F3 0F 11 B7 28 01 00 00) // should be unique
+alloc(newmem,$1000,BANKBALENCE1)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rdi+00000128],xmm6
+  mov [rdi+128],(float)2500
+  jmp return
+
+BANKBALENCE1:
+  jmp newmem
+  nop 3
+return:
+registersymbol(BANKBALENCE1)
+
+[DISABLE]
+
+BANKBALENCE1:
+  db F3 0F 11 B7 28 01 00 00
+
+unregistersymbol(BANKBALENCE1)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+627A66
+
+GameAssembly.dll+627A2C: 80 3D 9C 9C 7E 03 00     - cmp byte ptr [GameAssembly.dll+3E116CF],00
+GameAssembly.dll+627A33: F3 0F 10 73 1C           - movss xmm6,[rbx+1C]
+GameAssembly.dll+627A38: F3 0F 59 73 18           - mulss xmm6,[rbx+18]
+GameAssembly.dll+627A3D: F3 0F 58 B7 28 01 00 00  - addss xmm6,[rdi+00000128]
+GameAssembly.dll+627A45: 75 1F                    - jne GameAssembly.dll+627A66
+GameAssembly.dll+627A47: 48 8D 0D EA 86 5B 03     - lea rcx,[GameAssembly.dll+3BE0138]
+GameAssembly.dll+627A4E: E8 2D 78 DA FF           - call GameAssembly.dll+3CF280
+GameAssembly.dll+627A53: 48 8D 0D 4E 11 57 03     - lea rcx,[GameAssembly.dll+3B98BA8]
+GameAssembly.dll+627A5A: E8 21 78 DA FF           - call GameAssembly.dll+3CF280
+GameAssembly.dll+627A5F: C6 05 69 9C 7E 03 01     - mov byte ptr [GameAssembly.dll+3E116CF],01
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+627A66: F3 0F 11 B7 28 01 00 00  - movss [rdi+00000128],xmm6
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+627A6E: 48 8B 0D C3 86 5B 03     - mov rcx,[GameAssembly.dll+3BE0138]
+GameAssembly.dll+627A75: 83 B9 E0 00 00 00 00     - cmp dword ptr [rcx+000000E0],00
+GameAssembly.dll+627A7C: 75 05                    - jne GameAssembly.dll+627A83
+GameAssembly.dll+627A7E: E8 7D 3C D1 FF           - call GameAssembly.il2cpp_runtime_class_init
+GameAssembly.dll+627A83: 33 C9                    - xor ecx,ecx
+GameAssembly.dll+627A85: E8 46 B1 6E 02           - call GameAssembly.dll+2D12BD0
+GameAssembly.dll+627A8A: 84 C0                    - test al,al
+GameAssembly.dll+627A8C: 74 22                    - je GameAssembly.dll+627AB0
+GameAssembly.dll+627A8E: 48 8B 8F 80 01 00 00     - mov rcx,[rdi+00000180]
+GameAssembly.dll+627A95: 48 85 C9                 - test rcx,rcx
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>17</ID>
+              <Description>"10,000"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-23
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(BANKBALENCE1,GameAssembly.dll,F3 0F 11 B7 28 01 00 00) // should be unique
+alloc(newmem,$1000,BANKBALENCE1)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rdi+00000128],xmm6
+  mov [rdi+128],(float)10000
+  jmp return
+
+BANKBALENCE1:
+  jmp newmem
+  nop 3
+return:
+registersymbol(BANKBALENCE1)
+
+[DISABLE]
+
+BANKBALENCE1:
+  db F3 0F 11 B7 28 01 00 00
+
+unregistersymbol(BANKBALENCE1)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+627A66
+
+GameAssembly.dll+627A2C: 80 3D 9C 9C 7E 03 00     - cmp byte ptr [GameAssembly.dll+3E116CF],00
+GameAssembly.dll+627A33: F3 0F 10 73 1C           - movss xmm6,[rbx+1C]
+GameAssembly.dll+627A38: F3 0F 59 73 18           - mulss xmm6,[rbx+18]
+GameAssembly.dll+627A3D: F3 0F 58 B7 28 01 00 00  - addss xmm6,[rdi+00000128]
+GameAssembly.dll+627A45: 75 1F                    - jne GameAssembly.dll+627A66
+GameAssembly.dll+627A47: 48 8D 0D EA 86 5B 03     - lea rcx,[GameAssembly.dll+3BE0138]
+GameAssembly.dll+627A4E: E8 2D 78 DA FF           - call GameAssembly.dll+3CF280
+GameAssembly.dll+627A53: 48 8D 0D 4E 11 57 03     - lea rcx,[GameAssembly.dll+3B98BA8]
+GameAssembly.dll+627A5A: E8 21 78 DA FF           - call GameAssembly.dll+3CF280
+GameAssembly.dll+627A5F: C6 05 69 9C 7E 03 01     - mov byte ptr [GameAssembly.dll+3E116CF],01
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+627A66: F3 0F 11 B7 28 01 00 00  - movss [rdi+00000128],xmm6
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+627A6E: 48 8B 0D C3 86 5B 03     - mov rcx,[GameAssembly.dll+3BE0138]
+GameAssembly.dll+627A75: 83 B9 E0 00 00 00 00     - cmp dword ptr [rcx+000000E0],00
+GameAssembly.dll+627A7C: 75 05                    - jne GameAssembly.dll+627A83
+GameAssembly.dll+627A7E: E8 7D 3C D1 FF           - call GameAssembly.il2cpp_runtime_class_init
+GameAssembly.dll+627A83: 33 C9                    - xor ecx,ecx
+GameAssembly.dll+627A85: E8 46 B1 6E 02           - call GameAssembly.dll+2D12BD0
+GameAssembly.dll+627A8A: 84 C0                    - test al,al
+GameAssembly.dll+627A8C: 74 22                    - je GameAssembly.dll+627AB0
+GameAssembly.dll+627A8E: 48 8B 8F 80 01 00 00     - mov rcx,[rdi+00000180]
+GameAssembly.dll+627A95: 48 85 C9                 - test rcx,rcx
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>18</ID>
+              <Description>"50,000"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-23
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(BANKBALENCE1,GameAssembly.dll,F3 0F 11 B7 28 01 00 00) // should be unique
+alloc(newmem,$1000,BANKBALENCE1)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rdi+00000128],xmm6
+  mov [rdi+128],(float)50000
+  jmp return
+
+BANKBALENCE1:
+  jmp newmem
+  nop 3
+return:
+registersymbol(BANKBALENCE1)
+
+[DISABLE]
+
+BANKBALENCE1:
+  db F3 0F 11 B7 28 01 00 00
+
+unregistersymbol(BANKBALENCE1)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+627A66
+
+GameAssembly.dll+627A2C: 80 3D 9C 9C 7E 03 00     - cmp byte ptr [GameAssembly.dll+3E116CF],00
+GameAssembly.dll+627A33: F3 0F 10 73 1C           - movss xmm6,[rbx+1C]
+GameAssembly.dll+627A38: F3 0F 59 73 18           - mulss xmm6,[rbx+18]
+GameAssembly.dll+627A3D: F3 0F 58 B7 28 01 00 00  - addss xmm6,[rdi+00000128]
+GameAssembly.dll+627A45: 75 1F                    - jne GameAssembly.dll+627A66
+GameAssembly.dll+627A47: 48 8D 0D EA 86 5B 03     - lea rcx,[GameAssembly.dll+3BE0138]
+GameAssembly.dll+627A4E: E8 2D 78 DA FF           - call GameAssembly.dll+3CF280
+GameAssembly.dll+627A53: 48 8D 0D 4E 11 57 03     - lea rcx,[GameAssembly.dll+3B98BA8]
+GameAssembly.dll+627A5A: E8 21 78 DA FF           - call GameAssembly.dll+3CF280
+GameAssembly.dll+627A5F: C6 05 69 9C 7E 03 01     - mov byte ptr [GameAssembly.dll+3E116CF],01
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+627A66: F3 0F 11 B7 28 01 00 00  - movss [rdi+00000128],xmm6
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+627A6E: 48 8B 0D C3 86 5B 03     - mov rcx,[GameAssembly.dll+3BE0138]
+GameAssembly.dll+627A75: 83 B9 E0 00 00 00 00     - cmp dword ptr [rcx+000000E0],00
+GameAssembly.dll+627A7C: 75 05                    - jne GameAssembly.dll+627A83
+GameAssembly.dll+627A7E: E8 7D 3C D1 FF           - call GameAssembly.il2cpp_runtime_class_init
+GameAssembly.dll+627A83: 33 C9                    - xor ecx,ecx
+GameAssembly.dll+627A85: E8 46 B1 6E 02           - call GameAssembly.dll+2D12BD0
+GameAssembly.dll+627A8A: 84 C0                    - test al,al
+GameAssembly.dll+627A8C: 74 22                    - je GameAssembly.dll+627AB0
+GameAssembly.dll+627A8E: 48 8B 8F 80 01 00 00     - mov rcx,[rdi+00000180]
+GameAssembly.dll+627A95: 48 85 C9                 - test rcx,rcx
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>19</ID>
+              <Description>"100,000"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-23
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(BANKBALENCE1,GameAssembly.dll,F3 0F 11 B7 28 01 00 00) // should be unique
+alloc(newmem,$1000,BANKBALENCE1)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rdi+00000128],xmm6
+  mov [rdi+128],(float)100000
+  jmp return
+
+BANKBALENCE1:
+  jmp newmem
+  nop 3
+return:
+registersymbol(BANKBALENCE1)
+
+[DISABLE]
+
+BANKBALENCE1:
+  db F3 0F 11 B7 28 01 00 00
+
+unregistersymbol(BANKBALENCE1)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+627A66
+
+GameAssembly.dll+627A2C: 80 3D 9C 9C 7E 03 00     - cmp byte ptr [GameAssembly.dll+3E116CF],00
+GameAssembly.dll+627A33: F3 0F 10 73 1C           - movss xmm6,[rbx+1C]
+GameAssembly.dll+627A38: F3 0F 59 73 18           - mulss xmm6,[rbx+18]
+GameAssembly.dll+627A3D: F3 0F 58 B7 28 01 00 00  - addss xmm6,[rdi+00000128]
+GameAssembly.dll+627A45: 75 1F                    - jne GameAssembly.dll+627A66
+GameAssembly.dll+627A47: 48 8D 0D EA 86 5B 03     - lea rcx,[GameAssembly.dll+3BE0138]
+GameAssembly.dll+627A4E: E8 2D 78 DA FF           - call GameAssembly.dll+3CF280
+GameAssembly.dll+627A53: 48 8D 0D 4E 11 57 03     - lea rcx,[GameAssembly.dll+3B98BA8]
+GameAssembly.dll+627A5A: E8 21 78 DA FF           - call GameAssembly.dll+3CF280
+GameAssembly.dll+627A5F: C6 05 69 9C 7E 03 01     - mov byte ptr [GameAssembly.dll+3E116CF],01
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+627A66: F3 0F 11 B7 28 01 00 00  - movss [rdi+00000128],xmm6
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+627A6E: 48 8B 0D C3 86 5B 03     - mov rcx,[GameAssembly.dll+3BE0138]
+GameAssembly.dll+627A75: 83 B9 E0 00 00 00 00     - cmp dword ptr [rcx+000000E0],00
+GameAssembly.dll+627A7C: 75 05                    - jne GameAssembly.dll+627A83
+GameAssembly.dll+627A7E: E8 7D 3C D1 FF           - call GameAssembly.il2cpp_runtime_class_init
+GameAssembly.dll+627A83: 33 C9                    - xor ecx,ecx
+GameAssembly.dll+627A85: E8 46 B1 6E 02           - call GameAssembly.dll+2D12BD0
+GameAssembly.dll+627A8A: 84 C0                    - test al,al
+GameAssembly.dll+627A8C: 74 22                    - je GameAssembly.dll+627AB0
+GameAssembly.dll+627A8E: 48 8B 8F 80 01 00 00     - mov rcx,[rdi+00000180]
+GameAssembly.dll+627A95: 48 85 C9                 - test rcx,rcx
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>20</ID>
+              <Description>"500,000"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-23
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(BANKBALENCE1,GameAssembly.dll,F3 0F 11 B7 28 01 00 00) // should be unique
+alloc(newmem,$1000,BANKBALENCE1)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rdi+00000128],xmm6
+  mov [rdi+128],(float)500000
+  jmp return
+
+BANKBALENCE1:
+  jmp newmem
+  nop 3
+return:
+registersymbol(BANKBALENCE1)
+
+[DISABLE]
+
+BANKBALENCE1:
+  db F3 0F 11 B7 28 01 00 00
+
+unregistersymbol(BANKBALENCE1)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+627A66
+
+GameAssembly.dll+627A2C: 80 3D 9C 9C 7E 03 00     - cmp byte ptr [GameAssembly.dll+3E116CF],00
+GameAssembly.dll+627A33: F3 0F 10 73 1C           - movss xmm6,[rbx+1C]
+GameAssembly.dll+627A38: F3 0F 59 73 18           - mulss xmm6,[rbx+18]
+GameAssembly.dll+627A3D: F3 0F 58 B7 28 01 00 00  - addss xmm6,[rdi+00000128]
+GameAssembly.dll+627A45: 75 1F                    - jne GameAssembly.dll+627A66
+GameAssembly.dll+627A47: 48 8D 0D EA 86 5B 03     - lea rcx,[GameAssembly.dll+3BE0138]
+GameAssembly.dll+627A4E: E8 2D 78 DA FF           - call GameAssembly.dll+3CF280
+GameAssembly.dll+627A53: 48 8D 0D 4E 11 57 03     - lea rcx,[GameAssembly.dll+3B98BA8]
+GameAssembly.dll+627A5A: E8 21 78 DA FF           - call GameAssembly.dll+3CF280
+GameAssembly.dll+627A5F: C6 05 69 9C 7E 03 01     - mov byte ptr [GameAssembly.dll+3E116CF],01
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+627A66: F3 0F 11 B7 28 01 00 00  - movss [rdi+00000128],xmm6
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+627A6E: 48 8B 0D C3 86 5B 03     - mov rcx,[GameAssembly.dll+3BE0138]
+GameAssembly.dll+627A75: 83 B9 E0 00 00 00 00     - cmp dword ptr [rcx+000000E0],00
+GameAssembly.dll+627A7C: 75 05                    - jne GameAssembly.dll+627A83
+GameAssembly.dll+627A7E: E8 7D 3C D1 FF           - call GameAssembly.il2cpp_runtime_class_init
+GameAssembly.dll+627A83: 33 C9                    - xor ecx,ecx
+GameAssembly.dll+627A85: E8 46 B1 6E 02           - call GameAssembly.dll+2D12BD0
+GameAssembly.dll+627A8A: 84 C0                    - test al,al
+GameAssembly.dll+627A8C: 74 22                    - je GameAssembly.dll+627AB0
+GameAssembly.dll+627A8E: 48 8B 8F 80 01 00 00     - mov rcx,[rdi+00000180]
+GameAssembly.dll+627A95: 48 85 C9                 - test rcx,rcx
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>21</ID>
+              <Description>"1,000,000"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-23
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(BANKBALENCE1,GameAssembly.dll,F3 0F 11 B7 28 01 00 00) // should be unique
+alloc(newmem,$1000,BANKBALENCE1)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rdi+00000128],xmm6
+  mov [rdi+128],(float)1000000
+  jmp return
+
+BANKBALENCE1:
+  jmp newmem
+  nop 3
+return:
+registersymbol(BANKBALENCE1)
+
+[DISABLE]
+
+BANKBALENCE1:
+  db F3 0F 11 B7 28 01 00 00
+
+unregistersymbol(BANKBALENCE1)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+627A66
+
+GameAssembly.dll+627A2C: 80 3D 9C 9C 7E 03 00     - cmp byte ptr [GameAssembly.dll+3E116CF],00
+GameAssembly.dll+627A33: F3 0F 10 73 1C           - movss xmm6,[rbx+1C]
+GameAssembly.dll+627A38: F3 0F 59 73 18           - mulss xmm6,[rbx+18]
+GameAssembly.dll+627A3D: F3 0F 58 B7 28 01 00 00  - addss xmm6,[rdi+00000128]
+GameAssembly.dll+627A45: 75 1F                    - jne GameAssembly.dll+627A66
+GameAssembly.dll+627A47: 48 8D 0D EA 86 5B 03     - lea rcx,[GameAssembly.dll+3BE0138]
+GameAssembly.dll+627A4E: E8 2D 78 DA FF           - call GameAssembly.dll+3CF280
+GameAssembly.dll+627A53: 48 8D 0D 4E 11 57 03     - lea rcx,[GameAssembly.dll+3B98BA8]
+GameAssembly.dll+627A5A: E8 21 78 DA FF           - call GameAssembly.dll+3CF280
+GameAssembly.dll+627A5F: C6 05 69 9C 7E 03 01     - mov byte ptr [GameAssembly.dll+3E116CF],01
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+627A66: F3 0F 11 B7 28 01 00 00  - movss [rdi+00000128],xmm6
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+627A6E: 48 8B 0D C3 86 5B 03     - mov rcx,[GameAssembly.dll+3BE0138]
+GameAssembly.dll+627A75: 83 B9 E0 00 00 00 00     - cmp dword ptr [rcx+000000E0],00
+GameAssembly.dll+627A7C: 75 05                    - jne GameAssembly.dll+627A83
+GameAssembly.dll+627A7E: E8 7D 3C D1 FF           - call GameAssembly.il2cpp_runtime_class_init
+GameAssembly.dll+627A83: 33 C9                    - xor ecx,ecx
+GameAssembly.dll+627A85: E8 46 B1 6E 02           - call GameAssembly.dll+2D12BD0
+GameAssembly.dll+627A8A: 84 C0                    - test al,al
+GameAssembly.dll+627A8C: 74 22                    - je GameAssembly.dll+627AB0
+GameAssembly.dll+627A8E: 48 8B 8F 80 01 00 00     - mov rcx,[rdi+00000180]
+GameAssembly.dll+627A95: 48 85 C9                 - test rcx,rcx
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>22</ID>
+              <Description>"999,999,999"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-23
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(BANKBALENCE1,GameAssembly.dll,F3 0F 11 B7 28 01 00 00) // should be unique
+alloc(newmem,$1000,BANKBALENCE1)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rdi+00000128],xmm6
+  mov [rdi+128],(float)999999999
+  jmp return
+
+BANKBALENCE1:
+  jmp newmem
+  nop 3
+return:
+registersymbol(BANKBALENCE1)
+
+[DISABLE]
+
+BANKBALENCE1:
+  db F3 0F 11 B7 28 01 00 00
+
+unregistersymbol(BANKBALENCE1)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+627A66
+
+GameAssembly.dll+627A2C: 80 3D 9C 9C 7E 03 00     - cmp byte ptr [GameAssembly.dll+3E116CF],00
+GameAssembly.dll+627A33: F3 0F 10 73 1C           - movss xmm6,[rbx+1C]
+GameAssembly.dll+627A38: F3 0F 59 73 18           - mulss xmm6,[rbx+18]
+GameAssembly.dll+627A3D: F3 0F 58 B7 28 01 00 00  - addss xmm6,[rdi+00000128]
+GameAssembly.dll+627A45: 75 1F                    - jne GameAssembly.dll+627A66
+GameAssembly.dll+627A47: 48 8D 0D EA 86 5B 03     - lea rcx,[GameAssembly.dll+3BE0138]
+GameAssembly.dll+627A4E: E8 2D 78 DA FF           - call GameAssembly.dll+3CF280
+GameAssembly.dll+627A53: 48 8D 0D 4E 11 57 03     - lea rcx,[GameAssembly.dll+3B98BA8]
+GameAssembly.dll+627A5A: E8 21 78 DA FF           - call GameAssembly.dll+3CF280
+GameAssembly.dll+627A5F: C6 05 69 9C 7E 03 01     - mov byte ptr [GameAssembly.dll+3E116CF],01
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+627A66: F3 0F 11 B7 28 01 00 00  - movss [rdi+00000128],xmm6
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+627A6E: 48 8B 0D C3 86 5B 03     - mov rcx,[GameAssembly.dll+3BE0138]
+GameAssembly.dll+627A75: 83 B9 E0 00 00 00 00     - cmp dword ptr [rcx+000000E0],00
+GameAssembly.dll+627A7C: 75 05                    - jne GameAssembly.dll+627A83
+GameAssembly.dll+627A7E: E8 7D 3C D1 FF           - call GameAssembly.il2cpp_runtime_class_init
+GameAssembly.dll+627A83: 33 C9                    - xor ecx,ecx
+GameAssembly.dll+627A85: E8 46 B1 6E 02           - call GameAssembly.dll+2D12BD0
+GameAssembly.dll+627A8A: 84 C0                    - test al,al
+GameAssembly.dll+627A8C: 74 22                    - je GameAssembly.dll+627AB0
+GameAssembly.dll+627A8E: 48 8B 8F 80 01 00 00     - mov rcx,[rdi+00000180]
+GameAssembly.dll+627A95: 48 85 C9                 - test rcx,rcx
+}
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1337400632</ID>
+          <Description>"CashBalance (Only use 1 at a time)"</Description>
+          <Options moHideChildren="1"/>
+          <Color>00FF00</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>1337400642</ID>
+              <Description>"Withdrawal $20 bucks to activate"</Description>
+              <Color>FFFF00</Color>
+              <GroupHeader>1</GroupHeader>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1337400631</ID>
+              <Description>"150"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-23
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(CASHMONEY,GameAssembly.dll,F3 0F 11 49 30 72 07) // should be unique
+alloc(newmem,$1000,CASHMONEY)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rcx+30],xmm1
+  mov [rcx+30],(float)150
+  jmp return
+
+CASHMONEY:
+  jmp newmem
+return:
+registersymbol(CASHMONEY)
+
+[DISABLE]
+
+CASHMONEY:
+  db F3 0F 11 49 30
+
+unregistersymbol(CASHMONEY)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+6B9A6E
+
+GameAssembly.dll+6B9A4E: 48 8B D9                 - mov rbx,rcx
+GameAssembly.dll+6B9A51: 0F 2F D1                 - comiss xmm2,xmm1
+GameAssembly.dll+6B9A54: 77 12                    - ja GameAssembly.dll+6B9A68
+GameAssembly.dll+6B9A56: F3 0F 10 05 2A E2 98 02  - movss xmm0,[GameAssembly.dll+3047C88]
+GameAssembly.dll+6B9A5E: 0F 2F C8                 - comiss xmm1,xmm0
+GameAssembly.dll+6B9A61: 76 08                    - jna GameAssembly.dll+6B9A6B
+GameAssembly.dll+6B9A63: 0F 28 C8                 - movaps xmm1,xmm0
+GameAssembly.dll+6B9A66: EB 03                    - jmp GameAssembly.dll+6B9A6B
+GameAssembly.dll+6B9A68: 0F 57 C9                 - xorps xmm1,xmm1
+GameAssembly.dll+6B9A6B: 0F 2F D1                 - comiss xmm2,xmm1
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+6B9A6E: F3 0F 11 49 30           - movss [rcx+30],xmm1
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+6B9A73: 72 07                    - jb GameAssembly.dll+6B9A7C
+GameAssembly.dll+6B9A75: 33 D2                    - xor edx,edx
+GameAssembly.dll+6B9A77: E8 34 89 92 01           - call GameAssembly.dll+1FE23B0
+GameAssembly.dll+6B9A7C: 33 D2                    - xor edx,edx
+GameAssembly.dll+6B9A7E: 48 8B CB                 - mov rcx,rbx
+GameAssembly.dll+6B9A81: 48 83 C4 20              - add rsp,20
+GameAssembly.dll+6B9A85: 5B                       - pop rbx
+GameAssembly.dll+6B9A86: E9 55 88 92 01           - jmp GameAssembly.dll+1FE22E0
+GameAssembly.dll+6B9A8B: CC                       - int 3 
+GameAssembly.dll+6B9A8C: CC                       - int 3 
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1337400633</ID>
+              <Description>"500"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-23
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(CASHMONEY,GameAssembly.dll,F3 0F 11 49 30 72 07) // should be unique
+alloc(newmem,$1000,CASHMONEY)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rcx+30],xmm1
+  mov [rcx+30],(float)500
+  jmp return
+
+CASHMONEY:
+  jmp newmem
+return:
+registersymbol(CASHMONEY)
+
+[DISABLE]
+
+CASHMONEY:
+  db F3 0F 11 49 30
+
+unregistersymbol(CASHMONEY)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+6B9A6E
+
+GameAssembly.dll+6B9A4E: 48 8B D9                 - mov rbx,rcx
+GameAssembly.dll+6B9A51: 0F 2F D1                 - comiss xmm2,xmm1
+GameAssembly.dll+6B9A54: 77 12                    - ja GameAssembly.dll+6B9A68
+GameAssembly.dll+6B9A56: F3 0F 10 05 2A E2 98 02  - movss xmm0,[GameAssembly.dll+3047C88]
+GameAssembly.dll+6B9A5E: 0F 2F C8                 - comiss xmm1,xmm0
+GameAssembly.dll+6B9A61: 76 08                    - jna GameAssembly.dll+6B9A6B
+GameAssembly.dll+6B9A63: 0F 28 C8                 - movaps xmm1,xmm0
+GameAssembly.dll+6B9A66: EB 03                    - jmp GameAssembly.dll+6B9A6B
+GameAssembly.dll+6B9A68: 0F 57 C9                 - xorps xmm1,xmm1
+GameAssembly.dll+6B9A6B: 0F 2F D1                 - comiss xmm2,xmm1
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+6B9A6E: F3 0F 11 49 30           - movss [rcx+30],xmm1
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+6B9A73: 72 07                    - jb GameAssembly.dll+6B9A7C
+GameAssembly.dll+6B9A75: 33 D2                    - xor edx,edx
+GameAssembly.dll+6B9A77: E8 34 89 92 01           - call GameAssembly.dll+1FE23B0
+GameAssembly.dll+6B9A7C: 33 D2                    - xor edx,edx
+GameAssembly.dll+6B9A7E: 48 8B CB                 - mov rcx,rbx
+GameAssembly.dll+6B9A81: 48 83 C4 20              - add rsp,20
+GameAssembly.dll+6B9A85: 5B                       - pop rbx
+GameAssembly.dll+6B9A86: E9 55 88 92 01           - jmp GameAssembly.dll+1FE22E0
+GameAssembly.dll+6B9A8B: CC                       - int 3 
+GameAssembly.dll+6B9A8C: CC                       - int 3 
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1337400634</ID>
+              <Description>"1,000"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-23
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(CASHMONEY,GameAssembly.dll,F3 0F 11 49 30 72 07) // should be unique
+alloc(newmem,$1000,CASHMONEY)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rcx+30],xmm1
+  mov [rcx+30],(float)1000
+  jmp return
+
+CASHMONEY:
+  jmp newmem
+return:
+registersymbol(CASHMONEY)
+
+[DISABLE]
+
+CASHMONEY:
+  db F3 0F 11 49 30
+
+unregistersymbol(CASHMONEY)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+6B9A6E
+
+GameAssembly.dll+6B9A4E: 48 8B D9                 - mov rbx,rcx
+GameAssembly.dll+6B9A51: 0F 2F D1                 - comiss xmm2,xmm1
+GameAssembly.dll+6B9A54: 77 12                    - ja GameAssembly.dll+6B9A68
+GameAssembly.dll+6B9A56: F3 0F 10 05 2A E2 98 02  - movss xmm0,[GameAssembly.dll+3047C88]
+GameAssembly.dll+6B9A5E: 0F 2F C8                 - comiss xmm1,xmm0
+GameAssembly.dll+6B9A61: 76 08                    - jna GameAssembly.dll+6B9A6B
+GameAssembly.dll+6B9A63: 0F 28 C8                 - movaps xmm1,xmm0
+GameAssembly.dll+6B9A66: EB 03                    - jmp GameAssembly.dll+6B9A6B
+GameAssembly.dll+6B9A68: 0F 57 C9                 - xorps xmm1,xmm1
+GameAssembly.dll+6B9A6B: 0F 2F D1                 - comiss xmm2,xmm1
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+6B9A6E: F3 0F 11 49 30           - movss [rcx+30],xmm1
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+6B9A73: 72 07                    - jb GameAssembly.dll+6B9A7C
+GameAssembly.dll+6B9A75: 33 D2                    - xor edx,edx
+GameAssembly.dll+6B9A77: E8 34 89 92 01           - call GameAssembly.dll+1FE23B0
+GameAssembly.dll+6B9A7C: 33 D2                    - xor edx,edx
+GameAssembly.dll+6B9A7E: 48 8B CB                 - mov rcx,rbx
+GameAssembly.dll+6B9A81: 48 83 C4 20              - add rsp,20
+GameAssembly.dll+6B9A85: 5B                       - pop rbx
+GameAssembly.dll+6B9A86: E9 55 88 92 01           - jmp GameAssembly.dll+1FE22E0
+GameAssembly.dll+6B9A8B: CC                       - int 3 
+GameAssembly.dll+6B9A8C: CC                       - int 3 
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1337400635</ID>
+              <Description>"5,000"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-23
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(CASHMONEY,GameAssembly.dll,F3 0F 11 49 30 72 07) // should be unique
+alloc(newmem,$1000,CASHMONEY)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rcx+30],xmm1
+  mov [rcx+30],(float)5000
+  jmp return
+
+CASHMONEY:
+  jmp newmem
+return:
+registersymbol(CASHMONEY)
+
+[DISABLE]
+
+CASHMONEY:
+  db F3 0F 11 49 30
+
+unregistersymbol(CASHMONEY)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+6B9A6E
+
+GameAssembly.dll+6B9A4E: 48 8B D9                 - mov rbx,rcx
+GameAssembly.dll+6B9A51: 0F 2F D1                 - comiss xmm2,xmm1
+GameAssembly.dll+6B9A54: 77 12                    - ja GameAssembly.dll+6B9A68
+GameAssembly.dll+6B9A56: F3 0F 10 05 2A E2 98 02  - movss xmm0,[GameAssembly.dll+3047C88]
+GameAssembly.dll+6B9A5E: 0F 2F C8                 - comiss xmm1,xmm0
+GameAssembly.dll+6B9A61: 76 08                    - jna GameAssembly.dll+6B9A6B
+GameAssembly.dll+6B9A63: 0F 28 C8                 - movaps xmm1,xmm0
+GameAssembly.dll+6B9A66: EB 03                    - jmp GameAssembly.dll+6B9A6B
+GameAssembly.dll+6B9A68: 0F 57 C9                 - xorps xmm1,xmm1
+GameAssembly.dll+6B9A6B: 0F 2F D1                 - comiss xmm2,xmm1
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+6B9A6E: F3 0F 11 49 30           - movss [rcx+30],xmm1
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+6B9A73: 72 07                    - jb GameAssembly.dll+6B9A7C
+GameAssembly.dll+6B9A75: 33 D2                    - xor edx,edx
+GameAssembly.dll+6B9A77: E8 34 89 92 01           - call GameAssembly.dll+1FE23B0
+GameAssembly.dll+6B9A7C: 33 D2                    - xor edx,edx
+GameAssembly.dll+6B9A7E: 48 8B CB                 - mov rcx,rbx
+GameAssembly.dll+6B9A81: 48 83 C4 20              - add rsp,20
+GameAssembly.dll+6B9A85: 5B                       - pop rbx
+GameAssembly.dll+6B9A86: E9 55 88 92 01           - jmp GameAssembly.dll+1FE22E0
+GameAssembly.dll+6B9A8B: CC                       - int 3 
+GameAssembly.dll+6B9A8C: CC                       - int 3 
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1337400636</ID>
+              <Description>"10,000"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-23
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(CASHMONEY,GameAssembly.dll,F3 0F 11 49 30 72 07) // should be unique
+alloc(newmem,$1000,CASHMONEY)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rcx+30],xmm1
+  mov [rcx+30],(float)10000
+  jmp return
+
+CASHMONEY:
+  jmp newmem
+return:
+registersymbol(CASHMONEY)
+
+[DISABLE]
+
+CASHMONEY:
+  db F3 0F 11 49 30
+
+unregistersymbol(CASHMONEY)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+6B9A6E
+
+GameAssembly.dll+6B9A4E: 48 8B D9                 - mov rbx,rcx
+GameAssembly.dll+6B9A51: 0F 2F D1                 - comiss xmm2,xmm1
+GameAssembly.dll+6B9A54: 77 12                    - ja GameAssembly.dll+6B9A68
+GameAssembly.dll+6B9A56: F3 0F 10 05 2A E2 98 02  - movss xmm0,[GameAssembly.dll+3047C88]
+GameAssembly.dll+6B9A5E: 0F 2F C8                 - comiss xmm1,xmm0
+GameAssembly.dll+6B9A61: 76 08                    - jna GameAssembly.dll+6B9A6B
+GameAssembly.dll+6B9A63: 0F 28 C8                 - movaps xmm1,xmm0
+GameAssembly.dll+6B9A66: EB 03                    - jmp GameAssembly.dll+6B9A6B
+GameAssembly.dll+6B9A68: 0F 57 C9                 - xorps xmm1,xmm1
+GameAssembly.dll+6B9A6B: 0F 2F D1                 - comiss xmm2,xmm1
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+6B9A6E: F3 0F 11 49 30           - movss [rcx+30],xmm1
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+6B9A73: 72 07                    - jb GameAssembly.dll+6B9A7C
+GameAssembly.dll+6B9A75: 33 D2                    - xor edx,edx
+GameAssembly.dll+6B9A77: E8 34 89 92 01           - call GameAssembly.dll+1FE23B0
+GameAssembly.dll+6B9A7C: 33 D2                    - xor edx,edx
+GameAssembly.dll+6B9A7E: 48 8B CB                 - mov rcx,rbx
+GameAssembly.dll+6B9A81: 48 83 C4 20              - add rsp,20
+GameAssembly.dll+6B9A85: 5B                       - pop rbx
+GameAssembly.dll+6B9A86: E9 55 88 92 01           - jmp GameAssembly.dll+1FE22E0
+GameAssembly.dll+6B9A8B: CC                       - int 3 
+GameAssembly.dll+6B9A8C: CC                       - int 3 
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1337400637</ID>
+              <Description>"50,000"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-23
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(CASHMONEY,GameAssembly.dll,F3 0F 11 49 30 72 07) // should be unique
+alloc(newmem,$1000,CASHMONEY)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rcx+30],xmm1
+  mov [rcx+30],(float)50000
+  jmp return
+
+CASHMONEY:
+  jmp newmem
+return:
+registersymbol(CASHMONEY)
+
+[DISABLE]
+
+CASHMONEY:
+  db F3 0F 11 49 30
+
+unregistersymbol(CASHMONEY)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+6B9A6E
+
+GameAssembly.dll+6B9A4E: 48 8B D9                 - mov rbx,rcx
+GameAssembly.dll+6B9A51: 0F 2F D1                 - comiss xmm2,xmm1
+GameAssembly.dll+6B9A54: 77 12                    - ja GameAssembly.dll+6B9A68
+GameAssembly.dll+6B9A56: F3 0F 10 05 2A E2 98 02  - movss xmm0,[GameAssembly.dll+3047C88]
+GameAssembly.dll+6B9A5E: 0F 2F C8                 - comiss xmm1,xmm0
+GameAssembly.dll+6B9A61: 76 08                    - jna GameAssembly.dll+6B9A6B
+GameAssembly.dll+6B9A63: 0F 28 C8                 - movaps xmm1,xmm0
+GameAssembly.dll+6B9A66: EB 03                    - jmp GameAssembly.dll+6B9A6B
+GameAssembly.dll+6B9A68: 0F 57 C9                 - xorps xmm1,xmm1
+GameAssembly.dll+6B9A6B: 0F 2F D1                 - comiss xmm2,xmm1
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+6B9A6E: F3 0F 11 49 30           - movss [rcx+30],xmm1
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+6B9A73: 72 07                    - jb GameAssembly.dll+6B9A7C
+GameAssembly.dll+6B9A75: 33 D2                    - xor edx,edx
+GameAssembly.dll+6B9A77: E8 34 89 92 01           - call GameAssembly.dll+1FE23B0
+GameAssembly.dll+6B9A7C: 33 D2                    - xor edx,edx
+GameAssembly.dll+6B9A7E: 48 8B CB                 - mov rcx,rbx
+GameAssembly.dll+6B9A81: 48 83 C4 20              - add rsp,20
+GameAssembly.dll+6B9A85: 5B                       - pop rbx
+GameAssembly.dll+6B9A86: E9 55 88 92 01           - jmp GameAssembly.dll+1FE22E0
+GameAssembly.dll+6B9A8B: CC                       - int 3 
+GameAssembly.dll+6B9A8C: CC                       - int 3 
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1337400638</ID>
+              <Description>"100,000"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-23
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(CASHMONEY,GameAssembly.dll,F3 0F 11 49 30 72 07) // should be unique
+alloc(newmem,$1000,CASHMONEY)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rcx+30],xmm1
+  mov [rcx+30],(float)100000
+  jmp return
+
+CASHMONEY:
+  jmp newmem
+return:
+registersymbol(CASHMONEY)
+
+[DISABLE]
+
+CASHMONEY:
+  db F3 0F 11 49 30
+
+unregistersymbol(CASHMONEY)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+6B9A6E
+
+GameAssembly.dll+6B9A4E: 48 8B D9                 - mov rbx,rcx
+GameAssembly.dll+6B9A51: 0F 2F D1                 - comiss xmm2,xmm1
+GameAssembly.dll+6B9A54: 77 12                    - ja GameAssembly.dll+6B9A68
+GameAssembly.dll+6B9A56: F3 0F 10 05 2A E2 98 02  - movss xmm0,[GameAssembly.dll+3047C88]
+GameAssembly.dll+6B9A5E: 0F 2F C8                 - comiss xmm1,xmm0
+GameAssembly.dll+6B9A61: 76 08                    - jna GameAssembly.dll+6B9A6B
+GameAssembly.dll+6B9A63: 0F 28 C8                 - movaps xmm1,xmm0
+GameAssembly.dll+6B9A66: EB 03                    - jmp GameAssembly.dll+6B9A6B
+GameAssembly.dll+6B9A68: 0F 57 C9                 - xorps xmm1,xmm1
+GameAssembly.dll+6B9A6B: 0F 2F D1                 - comiss xmm2,xmm1
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+6B9A6E: F3 0F 11 49 30           - movss [rcx+30],xmm1
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+6B9A73: 72 07                    - jb GameAssembly.dll+6B9A7C
+GameAssembly.dll+6B9A75: 33 D2                    - xor edx,edx
+GameAssembly.dll+6B9A77: E8 34 89 92 01           - call GameAssembly.dll+1FE23B0
+GameAssembly.dll+6B9A7C: 33 D2                    - xor edx,edx
+GameAssembly.dll+6B9A7E: 48 8B CB                 - mov rcx,rbx
+GameAssembly.dll+6B9A81: 48 83 C4 20              - add rsp,20
+GameAssembly.dll+6B9A85: 5B                       - pop rbx
+GameAssembly.dll+6B9A86: E9 55 88 92 01           - jmp GameAssembly.dll+1FE22E0
+GameAssembly.dll+6B9A8B: CC                       - int 3 
+GameAssembly.dll+6B9A8C: CC                       - int 3 
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1337400639</ID>
+              <Description>"500,000"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-23
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(CASHMONEY,GameAssembly.dll,F3 0F 11 49 30 72 07) // should be unique
+alloc(newmem,$1000,CASHMONEY)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rcx+30],xmm1
+  mov [rcx+30],(float)500000
+  jmp return
+
+CASHMONEY:
+  jmp newmem
+return:
+registersymbol(CASHMONEY)
+
+[DISABLE]
+
+CASHMONEY:
+  db F3 0F 11 49 30
+
+unregistersymbol(CASHMONEY)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+6B9A6E
+
+GameAssembly.dll+6B9A4E: 48 8B D9                 - mov rbx,rcx
+GameAssembly.dll+6B9A51: 0F 2F D1                 - comiss xmm2,xmm1
+GameAssembly.dll+6B9A54: 77 12                    - ja GameAssembly.dll+6B9A68
+GameAssembly.dll+6B9A56: F3 0F 10 05 2A E2 98 02  - movss xmm0,[GameAssembly.dll+3047C88]
+GameAssembly.dll+6B9A5E: 0F 2F C8                 - comiss xmm1,xmm0
+GameAssembly.dll+6B9A61: 76 08                    - jna GameAssembly.dll+6B9A6B
+GameAssembly.dll+6B9A63: 0F 28 C8                 - movaps xmm1,xmm0
+GameAssembly.dll+6B9A66: EB 03                    - jmp GameAssembly.dll+6B9A6B
+GameAssembly.dll+6B9A68: 0F 57 C9                 - xorps xmm1,xmm1
+GameAssembly.dll+6B9A6B: 0F 2F D1                 - comiss xmm2,xmm1
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+6B9A6E: F3 0F 11 49 30           - movss [rcx+30],xmm1
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+6B9A73: 72 07                    - jb GameAssembly.dll+6B9A7C
+GameAssembly.dll+6B9A75: 33 D2                    - xor edx,edx
+GameAssembly.dll+6B9A77: E8 34 89 92 01           - call GameAssembly.dll+1FE23B0
+GameAssembly.dll+6B9A7C: 33 D2                    - xor edx,edx
+GameAssembly.dll+6B9A7E: 48 8B CB                 - mov rcx,rbx
+GameAssembly.dll+6B9A81: 48 83 C4 20              - add rsp,20
+GameAssembly.dll+6B9A85: 5B                       - pop rbx
+GameAssembly.dll+6B9A86: E9 55 88 92 01           - jmp GameAssembly.dll+1FE22E0
+GameAssembly.dll+6B9A8B: CC                       - int 3 
+GameAssembly.dll+6B9A8C: CC                       - int 3 
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1337400640</ID>
+              <Description>"999,999"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-23
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(CASHMONEY,GameAssembly.dll,F3 0F 11 49 30 72 07) // should be unique
+alloc(newmem,$1000,CASHMONEY)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rcx+30],xmm1
+  mov [rcx+30],(float)999999
+  jmp return
+
+CASHMONEY:
+  jmp newmem
+return:
+registersymbol(CASHMONEY)
+
+[DISABLE]
+
+CASHMONEY:
+  db F3 0F 11 49 30
+
+unregistersymbol(CASHMONEY)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+6B9A6E
+
+GameAssembly.dll+6B9A4E: 48 8B D9                 - mov rbx,rcx
+GameAssembly.dll+6B9A51: 0F 2F D1                 - comiss xmm2,xmm1
+GameAssembly.dll+6B9A54: 77 12                    - ja GameAssembly.dll+6B9A68
+GameAssembly.dll+6B9A56: F3 0F 10 05 2A E2 98 02  - movss xmm0,[GameAssembly.dll+3047C88]
+GameAssembly.dll+6B9A5E: 0F 2F C8                 - comiss xmm1,xmm0
+GameAssembly.dll+6B9A61: 76 08                    - jna GameAssembly.dll+6B9A6B
+GameAssembly.dll+6B9A63: 0F 28 C8                 - movaps xmm1,xmm0
+GameAssembly.dll+6B9A66: EB 03                    - jmp GameAssembly.dll+6B9A6B
+GameAssembly.dll+6B9A68: 0F 57 C9                 - xorps xmm1,xmm1
+GameAssembly.dll+6B9A6B: 0F 2F D1                 - comiss xmm2,xmm1
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+6B9A6E: F3 0F 11 49 30           - movss [rcx+30],xmm1
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+6B9A73: 72 07                    - jb GameAssembly.dll+6B9A7C
+GameAssembly.dll+6B9A75: 33 D2                    - xor edx,edx
+GameAssembly.dll+6B9A77: E8 34 89 92 01           - call GameAssembly.dll+1FE23B0
+GameAssembly.dll+6B9A7C: 33 D2                    - xor edx,edx
+GameAssembly.dll+6B9A7E: 48 8B CB                 - mov rcx,rbx
+GameAssembly.dll+6B9A81: 48 83 C4 20              - add rsp,20
+GameAssembly.dll+6B9A85: 5B                       - pop rbx
+GameAssembly.dll+6B9A86: E9 55 88 92 01           - jmp GameAssembly.dll+1FE22E0
+GameAssembly.dll+6B9A8B: CC                       - int 3 
+GameAssembly.dll+6B9A8C: CC                       - int 3 
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1337400641</ID>
+              <Description>"999,999,999"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-23
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(CASHMONEY,GameAssembly.dll,F3 0F 11 49 30 72 07) // should be unique
+alloc(newmem,$1000,CASHMONEY)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rcx+30],xmm1
+  mov [rcx+30],(float)999999999
+  jmp return
+
+CASHMONEY:
+  jmp newmem
+return:
+registersymbol(CASHMONEY)
+
+[DISABLE]
+
+CASHMONEY:
+  db F3 0F 11 49 30
+
+unregistersymbol(CASHMONEY)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+6B9A6E
+
+GameAssembly.dll+6B9A4E: 48 8B D9                 - mov rbx,rcx
+GameAssembly.dll+6B9A51: 0F 2F D1                 - comiss xmm2,xmm1
+GameAssembly.dll+6B9A54: 77 12                    - ja GameAssembly.dll+6B9A68
+GameAssembly.dll+6B9A56: F3 0F 10 05 2A E2 98 02  - movss xmm0,[GameAssembly.dll+3047C88]
+GameAssembly.dll+6B9A5E: 0F 2F C8                 - comiss xmm1,xmm0
+GameAssembly.dll+6B9A61: 76 08                    - jna GameAssembly.dll+6B9A6B
+GameAssembly.dll+6B9A63: 0F 28 C8                 - movaps xmm1,xmm0
+GameAssembly.dll+6B9A66: EB 03                    - jmp GameAssembly.dll+6B9A6B
+GameAssembly.dll+6B9A68: 0F 57 C9                 - xorps xmm1,xmm1
+GameAssembly.dll+6B9A6B: 0F 2F D1                 - comiss xmm2,xmm1
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+6B9A6E: F3 0F 11 49 30           - movss [rcx+30],xmm1
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+6B9A73: 72 07                    - jb GameAssembly.dll+6B9A7C
+GameAssembly.dll+6B9A75: 33 D2                    - xor edx,edx
+GameAssembly.dll+6B9A77: E8 34 89 92 01           - call GameAssembly.dll+1FE23B0
+GameAssembly.dll+6B9A7C: 33 D2                    - xor edx,edx
+GameAssembly.dll+6B9A7E: 48 8B CB                 - mov rcx,rbx
+GameAssembly.dll+6B9A81: 48 83 C4 20              - add rsp,20
+GameAssembly.dll+6B9A85: 5B                       - pop rbx
+GameAssembly.dll+6B9A86: E9 55 88 92 01           - jmp GameAssembly.dll+1FE22E0
+GameAssembly.dll+6B9A8B: CC                       - int 3 
+GameAssembly.dll+6B9A8C: CC                       - int 3 
+}
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1337400657</ID>
+          <Description>"Time Cheats(Only use 1 at a time)"</Description>
+          <Options moHideChildren="1"/>
+          <Color>00FF00</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>1337400658</ID>
+              <Description>"Morning"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+//code from here to '[DISABLE]' will be used to enable the cheat
+alloc(newmem,2048,"GameAssembly.dll"+B2D316) 
+label(returnhere)
+label(originalcode)
+label(exit)
+
+newmem: //this is allocated memory, you have read,write,execute access
+//place your code here
+
+originalcode:
+mov [rbx+00000128],esi
+mov esi, 275
+
+exit:
+jmp returnhere
+
+"GameAssembly.dll"+B2D316:
+jmp newmem
+nop
+returnhere:
+
+
+ 
+ 
+[DISABLE]
+//code from here till the end of the code will be used to disable the cheat
+dealloc(newmem)
+"GameAssembly.dll"+B2D316:
+mov [rbx+00000128],esi
+//Alt: db 89 B3 28 01 00 00
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1337400659</ID>
+              <Description>"Noon"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+//code from here to '[DISABLE]' will be used to enable the cheat
+alloc(newmem,2048,"GameAssembly.dll"+B2D316) 
+label(returnhere)
+label(originalcode)
+label(exit)
+
+newmem: //this is allocated memory, you have read,write,execute access
+//place your code here
+
+originalcode:
+mov [rbx+00000128],esi
+mov esi, 490
+
+exit:
+jmp returnhere
+
+"GameAssembly.dll"+B2D316:
+jmp newmem
+nop
+returnhere:
+
+
+ 
+ 
+[DISABLE]
+//code from here till the end of the code will be used to disable the cheat
+dealloc(newmem)
+"GameAssembly.dll"+B2D316:
+mov [rbx+00000128],esi
+//Alt: db 89 B3 28 01 00 00
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1337400660</ID>
+              <Description>"Night"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+//code from here to '[DISABLE]' will be used to enable the cheat
+alloc(newmem,2048,"GameAssembly.dll"+B2D316) 
+label(returnhere)
+label(originalcode)
+label(exit)
+
+newmem: //this is allocated memory, you have read,write,execute access
+//place your code here
+
+originalcode:
+mov [rbx+00000128],esi
+mov esi, 700
+
+exit:
+jmp returnhere
+
+"GameAssembly.dll"+B2D316:
+jmp newmem
+nop
+returnhere:
+
+
+ 
+ 
+[DISABLE]
+//code from here till the end of the code will be used to disable the cheat
+dealloc(newmem)
+"GameAssembly.dll"+B2D316:
+mov [rbx+00000128],esi
+//Alt: db 89 B3 28 01 00 00
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1337400655</ID>
+              <Description>"Midnight"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+//code from here to '[DISABLE]' will be used to enable the cheat
+alloc(newmem,2048,"GameAssembly.dll"+B2D316) 
+label(returnhere)
+label(originalcode)
+label(exit)
+
+newmem: //this is allocated memory, you have read,write,execute access
+//place your code here
+
+originalcode:
+mov [rbx+00000128],esi
+mov esi, 1
+
+exit:
+jmp returnhere
+
+"GameAssembly.dll"+B2D316:
+jmp newmem
+nop
+returnhere:
+
+
+ 
+ 
+[DISABLE]
+//code from here till the end of the code will be used to disable the cheat
+dealloc(newmem)
+"GameAssembly.dll"+B2D316:
+mov [rbx+00000128],esi
+//Alt: db 89 B3 28 01 00 00
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry NoCheckbox="1">
+              <ID>1337400661</ID>
+              <Description>"Skipping Time Also Instant Grows Plants"</Description>
+              <Color>FFFF00</Color>
+              <GroupHeader>1</GroupHeader>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>10</ID>
+          <Description>"SuperSpeed (Sprinting)"</Description>
+          <Color>00FF00</Color>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-23
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(speedhack,GameAssembly.dll,F3 0F 11 76 50 44) // should be unique
+alloc(newmem,$1000,speedhack)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rsi+50],xmm6
+  mov [rsi+50],(float)10
+  jmp return
+
+speedhack:
+  jmp newmem
+return:
+registersymbol(speedhack)
+
+[DISABLE]
+
+speedhack:
+  db F3 0F 11 76 50
+
+unregistersymbol(speedhack)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+6B42CC
+
+GameAssembly.dll+6B42A9: 72 0F                    - jb GameAssembly.dll+6B42BA
+GameAssembly.dll+6B42AB: 41 0F 28 F1              - movaps xmm6,xmm9
+GameAssembly.dll+6B42AF: F3 0F 59 F2              - mulss xmm6,xmm2
+GameAssembly.dll+6B42B3: F3 41 0F 58 F2           - addss xmm6,xmm10
+GameAssembly.dll+6B42B8: EB 12                    - jmp GameAssembly.dll+6B42CC
+GameAssembly.dll+6B42BA: 0F 28 F7                 - movaps xmm6,xmm7
+GameAssembly.dll+6B42BD: F3 0F 59 F2              - mulss xmm6,xmm2
+GameAssembly.dll+6B42C1: F3 41 0F 58 F2           - addss xmm6,xmm10
+GameAssembly.dll+6B42C6: EB 04                    - jmp GameAssembly.dll+6B42CC
+GameAssembly.dll+6B42C8: 41 0F 28 F1              - movaps xmm6,xmm9
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+6B42CC: F3 0F 11 76 50           - movss [rsi+50],xmm6
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+6B42D1: 44 38 76 49              - cmp [rsi+49],r14b
+GameAssembly.dll+6B42D5: 75 5A                    - jne GameAssembly.dll+6B4331
+GameAssembly.dll+6B42D7: F3 0F 10 86 D8 00 00 00  - movss xmm0,[rsi+000000D8]
+GameAssembly.dll+6B42DF: 41 0F 2F C1              - comiss xmm0,xmm9
+GameAssembly.dll+6B42E3: 76 4C                    - jna GameAssembly.dll+6B4331
+GameAssembly.dll+6B42E5: 33 C9                    - xor ecx,ecx
+GameAssembly.dll+6B42E7: E8 04 A3 6A 02           - call UnityEngine.Time.get_deltaTime
+GameAssembly.dll+6B42EC: 41 0F 28 C9              - movaps xmm1,xmm9
+GameAssembly.dll+6B42F0: 0F 28 D0                 - movaps xmm2,xmm0
+GameAssembly.dll+6B42F3: F3 0F 5C CE              - subss xmm1,xmm6
+}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>12</ID>
+          <Description>"SuperJump"</Description>
+          <Color>00FF00</Color>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-23
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(Jumps,GameAssembly.dll,F3 0F 11 83 B0 00 00 00 EB) // should be unique
+alloc(newmem,$1000,Jumps)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rbx+000000B0],xmm0
+  mov [rbx+000000B0],(float)30
+  jmp return
+
+Jumps:
+  jmp newmem
+  nop 3
+return:
+registersymbol(Jumps)
+
+[DISABLE]
+
+Jumps:
+  db F3 0F 11 83 B0 00 00 00
+
+unregistersymbol(Jumps)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+6B8887
+
+GameAssembly.dll+6B8852: 75 0F                    - jne GameAssembly.dll+6B8863
+GameAssembly.dll+6B8854: 48 8B C8                 - mov rcx,rax
+GameAssembly.dll+6B8857: E8 A4 2E C8 FF           - call GameAssembly.il2cpp_runtime_class_init
+GameAssembly.dll+6B885C: 48 8B 05 5D E5 54 03     - mov rax,[GameAssembly.dll+3C06DC0]
+GameAssembly.dll+6B8863: 48 8B 80 B8 00 00 00     - mov rax,[rax+000000B8]
+GameAssembly.dll+6B886A: F3 0F 10 40 08           - movss xmm0,[rax+08]
+GameAssembly.dll+6B886F: F3 0F 59 05 F9 F3 98 02  - mulss xmm0,[GameAssembly.dll+3047C70]
+GameAssembly.dll+6B8877: C7 43 3C 00 00 00 00     - mov [rbx+3C],00000000
+GameAssembly.dll+6B887E: F3 0F 58 C6              - addss xmm0,xmm6
+GameAssembly.dll+6B8882: 0F 28 74 24 30           - movaps xmm6,[rsp+30]
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+6B8887: F3 0F 11 83 B0 00 00 00  - movss [rbx+000000B0],xmm0
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+6B888F: EB 78                    - jmp GameAssembly.dll+6B8909
+GameAssembly.dll+6B8891: 83 F8 01                 - cmp eax,01
+GameAssembly.dll+6B8894: 0F 85 C2 00 00 00        - jne GameAssembly.dll+6B895C
+GameAssembly.dll+6B889A: C7 47 10 FF FF FF FF     - mov [rdi+10],FFFFFFFF
+GameAssembly.dll+6B88A1: 48 85 DB                 - test rbx,rbx
+GameAssembly.dll+6B88A4: 0F 84 BF 00 00 00        - je GameAssembly.dll+6B8969
+GameAssembly.dll+6B88AA: F3 0F 10 05 02 F1 98 02  - movss xmm0,[GameAssembly.dll+30479B4]
+GameAssembly.dll+6B88B2: 0F 2F 43 3C              - comiss xmm0,[rbx+3C]
+GameAssembly.dll+6B88B6: 0F 86 8A 00 00 00        - jbe GameAssembly.dll+6B8946
+GameAssembly.dll+6B88BC: 48 8B 4B 28              - mov rcx,[rbx+28]
+}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1337400628</ID>
+          <Description>"Reset Weekly Diposit Limit"</Description>
+          <Options moHideChildren="1"/>
+          <Color>00FF00</Color>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-23
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(RESETWEEKLYDIPOSIT,GameAssembly.dll,F3 0F 11 00 F3 0F 10 47 2C) // should be unique
+alloc(newmem,$1000,RESETWEEKLYDIPOSIT)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rax],xmm0
+  mov [rax],(float)0
+  movss xmm0,[rdi+2C]
+  jmp return
+
+RESETWEEKLYDIPOSIT:
+  jmp newmem
+  nop 4
+return:
+registersymbol(RESETWEEKLYDIPOSIT)
+
+[DISABLE]
+
+RESETWEEKLYDIPOSIT:
+  db F3 0F 11 00 F3 0F 10 47 2C
+
+unregistersymbol(RESETWEEKLYDIPOSIT)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+A9E1C7
+
+GameAssembly.dll+A9E19B: 39 B1 E0 00 00 00     - cmp [rcx+000000E0],esi
+GameAssembly.dll+A9E1A1: 75 0C                 - jne GameAssembly.dll+A9E1AF
+GameAssembly.dll+A9E1A3: E8 58 D5 89 FF        - call GameAssembly.il2cpp_runtime_class_init
+GameAssembly.dll+A9E1A8: 48 8B 0D 79 BE 13 03  - mov rcx,[GameAssembly.dll+3BDA028]
+GameAssembly.dll+A9E1AF: 48 8B 81 B8 00 00 00  - mov rax,[rcx+000000B8]
+GameAssembly.dll+A9E1B6: 45 33 C9              - xor r9d,r9d
+GameAssembly.dll+A9E1B9: 45 33 C0              - xor r8d,r8d
+GameAssembly.dll+A9E1BC: 33 D2                 - xor edx,edx
+GameAssembly.dll+A9E1BE: F3 0F 10 00           - movss xmm0,[rax]
+GameAssembly.dll+A9E1C2: F3 0F 58 47 2C        - addss xmm0,[rdi+2C]
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+A9E1C7: F3 0F 11 00           - movss [rax],xmm0
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+A9E1CB: F3 0F 10 47 2C        - movss xmm0,[rdi+2C]
+GameAssembly.dll+A9E1D0: 48 8B B3 D0 00 00 00  - mov rsi,[rbx+000000D0]
+GameAssembly.dll+A9E1D7: E8 74 7E B8 FF        - call GameAssembly.dll+626050
+GameAssembly.dll+A9E1DC: 48 8B 0D DD 64 10 03  - mov rcx,[GameAssembly.dll+3BA46C0]
+GameAssembly.dll+A9E1E3: 45 33 C0              - xor r8d,r8d
+GameAssembly.dll+A9E1E6: 48 8B D0              - mov rdx,rax
+GameAssembly.dll+A9E1E9: E8 D2 75 07 01        - call GameAssembly.dll+1B157C0
+GameAssembly.dll+A9E1EE: 48 85 F6              - test rsi,rsi
+GameAssembly.dll+A9E1F1: 74 3E                 - je GameAssembly.dll+A9E231
+GameAssembly.dll+A9E1F3: 4C 8B 06              - mov r8,[rsi]
+}
+</AssemblerScript>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>1337400629</ID>
+              <Description>"Deposit $20 to Activate"</Description>
+              <Color>FFFF00</Color>
+              <GroupHeader>1</GroupHeader>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1337400646</ID>
+          <Description>"9999999 Watering Can"</Description>
+          <Color>00FF00</Color>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-25
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(WATERCAN,GameAssembly.dll,F3 0F 11 43 30 48 8B CB E8) // should be unique
+alloc(newmem,$1000,WATERCAN)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rbx+30],xmm0
+  mov [rbx+30], (float)9999999
+
+  jmp return
+
+WATERCAN:
+  jmp newmem
+return:
+registersymbol(WATERCAN)
+
+[DISABLE]
+
+WATERCAN:
+  db F3 0F 11 43 30
+
+unregistersymbol(WATERCAN)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+6D1EF7
+
+GameAssembly.dll+6D1ED7: F3 0F 58 C7              - addss xmm0,xmm7
+GameAssembly.dll+6D1EDB: 0F 2F C8                 - comiss xmm1,xmm0
+GameAssembly.dll+6D1EDE: 77 12                    - ja GameAssembly.dll+6D1EF2
+GameAssembly.dll+6D1EE0: F3 0F 10 88 B8 00 00 00  - movss xmm1,[rax+000000B8]
+GameAssembly.dll+6D1EE8: 0F 2F C1                 - comiss xmm0,xmm1
+GameAssembly.dll+6D1EEB: 76 08                    - jna GameAssembly.dll+6D1EF5
+GameAssembly.dll+6D1EED: 0F 28 C1                 - movaps xmm0,xmm1
+GameAssembly.dll+6D1EF0: EB 03                    - jmp GameAssembly.dll+6D1EF5
+GameAssembly.dll+6D1EF2: 0F 57 C0                 - xorps xmm0,xmm0
+GameAssembly.dll+6D1EF5: 33 D2                    - xor edx,edx
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+6D1EF7: F3 0F 11 43 30           - movss [rbx+30],xmm0
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+6D1EFC: 48 8B CB                 - mov rcx,rbx
+GameAssembly.dll+6D1EFF: E8 DC 03 91 01           - call GameAssembly.dll+1FE22E0
+GameAssembly.dll+6D1F04: 45 33 C0                 - xor r8d,r8d
+GameAssembly.dll+6D1F07: 0F 28 CE                 - movaps xmm1,xmm6
+GameAssembly.dll+6D1F0A: 48 8B CF                 - mov rcx,rdi
+GameAssembly.dll+6D1F0D: 48 8B 5C 24 50           - mov rbx,[rsp+50]
+GameAssembly.dll+6D1F12: 0F 28 74 24 30           - movaps xmm6,[rsp+30]
+GameAssembly.dll+6D1F17: 0F 28 7C 24 20           - movaps xmm7,[rsp+20]
+GameAssembly.dll+6D1F1C: 48 83 C4 40              - add rsp,40
+GameAssembly.dll+6D1F20: 5F                       - pop rdi
+}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1337400649</ID>
+          <Description>"TV Minigames"</Description>
+          <Options moHideChildren="1"/>
+          <Color>00FF00</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>1337400648</ID>
+              <Description>"Egg Run Instant High score"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-29
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(EGGRUN,GameAssembly.dll,F3 0F 11 87 EC 00 00 00 E8) // should be unique
+alloc(newmem,$1000,EGGRUN)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movss [rdi+000000EC],xmm0
+  mov [rdi+000000EC],(float)9999999999
+  jmp return
+
+EGGRUN:
+  jmp newmem
+  nop 3
+return:
+registersymbol(EGGRUN)
+
+[DISABLE]
+
+EGGRUN:
+  db F3 0F 11 87 EC 00 00 00
+
+unregistersymbol(EGGRUN)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+B20C53
+
+GameAssembly.dll+B20C2E: 33 C9                    - xor ecx,ecx
+GameAssembly.dll+B20C30: 8B 5F 78                 - mov ebx,[rdi+78]
+GameAssembly.dll+B20C33: E8 B8 D9 23 02           - call GameAssembly.dll+2D5E5F0
+GameAssembly.dll+B20C38: F3 0F 10 7F 68           - movss xmm7,[rdi+68]
+GameAssembly.dll+B20C3D: 33 C9                    - xor ecx,ecx
+GameAssembly.dll+B20C3F: 66 0F 6E CB              - movd xmm1,ebx
+GameAssembly.dll+B20C43: 0F 5B C9                 - cvtdq2ps xmm1,xmm1
+GameAssembly.dll+B20C46: F3 0F 59 C1              - mulss xmm0,xmm1
+GameAssembly.dll+B20C4A: F3 0F 58 C6              - addss xmm0,xmm6
+GameAssembly.dll+B20C4E: F3 0F 10 77 74           - movss xmm6,[rdi+74]
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+B20C53: F3 0F 11 87 EC 00 00 00  - movss [rdi+000000EC],xmm0
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+B20C5B: E8 90 D9 23 02           - call GameAssembly.dll+2D5E5F0
+GameAssembly.dll+B20C60: F3 0F 10 4F 6C           - movss xmm1,[rdi+6C]
+GameAssembly.dll+B20C65: F3 0F 59 C6              - mulss xmm0,xmm6
+GameAssembly.dll+B20C69: F3 0F 58 C7              - addss xmm0,xmm7
+GameAssembly.dll+B20C6D: 0F 2F C8                 - comiss xmm1,xmm0
+GameAssembly.dll+B20C70: 77 0A                    - ja GameAssembly.dll+B20C7C
+GameAssembly.dll+B20C72: F3 0F 10 4F 70           - movss xmm1,[rdi+70]
+GameAssembly.dll+B20C77: 0F 2F C1                 - comiss xmm0,xmm1
+GameAssembly.dll+B20C7A: 76 03                    - jna GameAssembly.dll+B20C7F
+GameAssembly.dll+B20C7C: 0F 28 C1                 - movaps xmm0,xmm1
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1337400652</ID>
+              <Description>"Noodle game Instant High Score (also breaks noodle game)"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : Schedule I.exe
+  Version: 
+  Date   : 2026-05-29
+  Author : Owner
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(NOODLEGAME,GameAssembly.dll,89 41 18 44 3B 42 18 0F 83 AF) // should be unique
+alloc(newmem,$1000,NOODLEGAME)
+
+label(code)
+label(return)
+
+newmem:
+mov eax 999
+code:
+  mov [rcx+18],eax
+  cmp r8d,[rdx+18]
+  jmp return
+
+NOODLEGAME:
+  jmp newmem
+  nop 2
+return:
+registersymbol(NOODLEGAME)
+
+[DISABLE]
+
+NOODLEGAME:
+  db 89 41 18 44 3B 42 18
+
+unregistersymbol(NOODLEGAME)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll+B2640D
+
+GameAssembly.dll+B263E5: 44 3B 42 18           - cmp r8d,[rdx+18]
+GameAssembly.dll+B263E9: 72 1E                 - jb GameAssembly.dll+B26409
+GameAssembly.dll+B263EB: 49 8B 41 20           - mov rax,[r9+20]
+GameAssembly.dll+B263EF: 0F 14 C1              - unpcklps xmm0,xmm1
+GameAssembly.dll+B263F2: 66 48 0F 7E C2        - movq rdx,xmm0
+GameAssembly.dll+B263F7: 4C 8B 80 C0 00 00 00  - mov r8,[rax+000000C0]
+GameAssembly.dll+B263FE: 4D 8B 40 70           - mov r8,[r8+70]
+GameAssembly.dll+B26402: E8 C9 43 F2 00        - call GameAssembly.dll+1A4A7D0
+GameAssembly.dll+B26407: EB 1F                 - jmp GameAssembly.dll+B26428
+GameAssembly.dll+B26409: 41 8D 40 01           - lea eax,[r8+01]
+// ---------- INJECTING HERE ----------
+GameAssembly.dll+B2640D: 89 41 18              - mov [rcx+18],eax
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll+B26410: 44 3B 42 18           - cmp r8d,[rdx+18]
+GameAssembly.dll+B26414: 0F 83 AF 03 00 00     - jae GameAssembly.dll+B267C9
+GameAssembly.dll+B2641A: F3 42 0F 11 44 C2 20  - movss [rdx+r8*8+20],xmm0
+GameAssembly.dll+B26421: F3 42 0F 11 4C C2 24  - movss [rdx+r8*8+24],xmm1
+GameAssembly.dll+B26428: 48 39 B3 E0 00 00 00  - cmp [rbx+000000E0],rsi
+GameAssembly.dll+B2642F: 74 0E                 - je GameAssembly.dll+B2643F
+GameAssembly.dll+B26431: 48 8B 8B E0 00 00 00  - mov rcx,[rbx+000000E0]
+GameAssembly.dll+B26438: 33 D2                 - xor edx,edx
+GameAssembly.dll+B2643A: E8 B1 B4 25 02        - call GameAssembly.dll+2D818F0
+GameAssembly.dll+B2643F: 83 BB C8 00 00 00 01  - cmp dword ptr [rbx+000000C8],01
+}
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>104954</ID>
+      <Description>"Join The Discord"</Description>
+      <Color>0080FF</Color>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+
+[ENABLE]
+
+
+shellExecute('https://discord.gg/wGgk9XvjDq')
+
+if not syntaxcheck then
+ synchronize(function()
+   local t = createTimer()
+   t.Interval,t.OnTimer = 500,function(tm)
+     tm.Destroy()
+     memrec.Active = false
+   end
+ end)
+end
+
+[DISABLE]
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>349103</ID>
+      <Description>"Deactivation"</Description>
+      <Color>000080</Color>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$LUA}
+if syntaxcheck then return end
+[ENABLE]
+-- Deactivate All Scripts
+local mainHook = ('Dinkum')
+local al = getAddressList()
+for i = 0, al.Count - 1 do
+    if al[i].Active == true and al[i].Description ~= mainHook then al[i].Active = false
+ end
+end
+for i = 0, al.Count - 1 do
+     if al[i].Active == true  then al[i].Active = false
+ end
+end
+-- Deactivate mono if available
+if isUnityEngine == true then
+   if monopipe then monopipe.destroy();monopipe=nil end
+else
+end
+createTimer(1500, function() memrec.Active = false end)
+[DISABLE]
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>1337400626</ID>
+      <Description>"Have a great fucking day"</Description>
+      <Color>FF80FF</Color>
+      <GroupHeader>1</GroupHeader>
+    </CheatEntry>
+  </CheatEntries>
+  <CheatCodes>
+    <CodeEntry>
+      <Description>Change of mov [rsp+08],rbx</Description>
+      <AddressString>GameAssembly.dll+6B2B70</AddressString>
+      <Before>
+        <Byte>D1</Byte>
+        <Byte>C9</Byte>
+        <Byte>D1</Byte>
+        <Byte>FF</Byte>
+        <Byte>CC</Byte>
+      </Before>
+      <Actual>
+        <Byte>48</Byte>
+        <Byte>89</Byte>
+        <Byte>5C</Byte>
+        <Byte>24</Byte>
+        <Byte>08</Byte>
+      </Actual>
+      <After>
+        <Byte>57</Byte>
+        <Byte>48</Byte>
+        <Byte>83</Byte>
+        <Byte>EC</Byte>
+        <Byte>20</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Change of jne GameAssembly.dll+6B2B99</Description>
+      <AddressString>GameAssembly.dll+6B2B84</AddressString>
+      <Before>
+        <Byte>03</Byte>
+        <Byte>00</Byte>
+        <Byte>48</Byte>
+        <Byte>8B</Byte>
+        <Byte>F9</Byte>
+      </Before>
+      <Actual>
+        <Byte>75</Byte>
+        <Byte>13</Byte>
+      </Actual>
+      <After>
+        <Byte>48</Byte>
+        <Byte>8D</Byte>
+        <Byte>0D</Byte>
+        <Byte>AB</Byte>
+        <Byte>98</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Change of mov byte ptr [GameAssembly.dll+3E11B20],01</Description>
+      <AddressString>GameAssembly.dll+6B2C24</AddressString>
+      <Before>
+        <Byte>E8</Byte>
+        <Byte>5C</Byte>
+        <Byte>C6</Byte>
+        <Byte>D1</Byte>
+        <Byte>FF</Byte>
+      </Before>
+      <Actual>
+        <Byte>C6</Byte>
+        <Byte>05</Byte>
+        <Byte>F5</Byte>
+        <Byte>EE</Byte>
+        <Byte>75</Byte>
+        <Byte>03</Byte>
+        <Byte>01</Byte>
+      </Actual>
+      <After>
+        <Byte>80</Byte>
+        <Byte>3D</Byte>
+        <Byte>85</Byte>
+        <Byte>DE</Byte>
+        <Byte>75</Byte>
+      </After>
+    </CodeEntry>
+  </CheatCodes>
+  <UserdefinedSymbols/>
+  <LuaScript>openProcess('Cheatengine')
+controlMainForm = getMainForm()
+al = getAddressList()
+-- Remove the first hyphen from the next line to comment out the Cheat Engine slim line code
+--[[
+--Disable header sorting and items dragging
+  AddressListTreeview = component_getComponent(al,0)
+  AddressListHeader   = component_getComponent(al,1)
+  setMethodProperty(AddressListHeader  ,"OnSectionClick",nil)
+  setMethodProperty(AddressListTreeview,"OnDragOver"    ,nil)
+  setMethodProperty(AddressListTreeview,"OnDragDrop"    ,nil)
+  setMethodProperty(AddressListTreeview,"OnEndDrag"     ,nil)
+--end
+
+--show main window
+  ShowMainWindowTimer = createTimer(nil,false)
+  timer_setInterval(ShowMainWindowTimer, 1)
+  timer_onTimer(ShowMainWindowTimer, function (sender)
+    object_destroy(sender)
+    control_setVisible(controlMainForm,true) -- set visible
+    form_setMenu(controlMainForm,nil)        -- hide menu
+  end)
+  timer_setEnabled(ShowMainWindowTimer, true)
+--end
+
+--]]--
+
+control_setCaption(controlMainForm,"GGdropman Scedule 1 V1.7")
+function cycleFullCompact(sender,force)
+ if force~=nil then state = not force end
+   controlMainForm.Splitter1.Visible = state
+   controlMainForm.Panel4.Visible    = state
+end
+
+</LuaScript>
+</CheatTable>

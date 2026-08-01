@@ -233,6 +233,7 @@
 
     .hud-section:nth-of-type(2) { animation-delay: 0.22s; }
     .hud-section:nth-of-type(3) { animation-delay: 0.32s; }
+    .hud-section:nth-of-type(4) { animation-delay: 0.42s; }
 
     .hud-section__head {
       display: flex;
@@ -707,6 +708,30 @@
           </span>
         </a>
 
+        <a class="tile tile--schedule" href="tools/schedule1-editor/GGdropmanScedule1V1.7.CT" download>
+          <span class="tile__badge tile__badge--live">.CT</span>
+          <span class="tile__body">
+            <span class="tile__game">Hyland Point</span>
+            <span class="tile__name">Schedule I Table v1.7</span>
+            <span class="tile__meta">Cheat Engine · Schedule I</span>
+          </span>
+        </a>
+
+        <button type="button" class="tile tile--banner" onclick="showComingSoon()" aria-label="More coming soon">
+          <span class="tile__body">
+            <span class="tile__name">More worlds incoming</span>
+            <span class="tile__meta">Request a game in credits vibes</span>
+          </span>
+        </button>
+      </nav>
+    </section>
+
+    <section class="hud-section" id="achievements" aria-labelledby="achievements-title">
+      <div class="hud-section__head">
+        <h2 class="hud-section__title" id="achievements-title">Achievement Unlockers</h2>
+        <p class="hud-section__sub">Local Steam tools to list, unlock, or lock achievements for owned games.</p>
+      </div>
+      <nav class="hud-grid" aria-label="Achievement unlockers">
         <a class="tile tile--steam" href="tools/steam-achievement-unlocker/guide.html">
           <span class="tile__badge tile__badge--live">CLI</span>
           <span class="tile__body">
@@ -715,31 +740,6 @@
             <span class="tile__meta">Node · SoD2 default · any AppID</span>
           </span>
         </a>
-
-        <button type="button" class="tile tile--hades tile--soon" onclick="showComingSoon()">
-          <span class="tile__badge tile__badge--soon">Soon</span>
-          <span class="tile__body">
-            <span class="tile__game">Underworld</span>
-            <span class="tile__name">Hades</span>
-            <span class="tile__meta">Darkness · nectar · keepsakes</span>
-          </span>
-        </button>
-
-        <button type="button" class="tile tile--diablo tile--soon" onclick="showComingSoon()">
-          <span class="tile__badge tile__badge--soon">Soon</span>
-          <span class="tile__body">
-            <span class="tile__game">Sanctuary</span>
-            <span class="tile__name">Diablo II</span>
-            <span class="tile__meta">Gold · items · characters</span>
-          </span>
-        </button>
-
-        <button type="button" class="tile tile--banner" onclick="showComingSoon()" aria-label="More coming soon">
-          <span class="tile__body">
-            <span class="tile__name">More worlds incoming</span>
-            <span class="tile__meta">Request a game in credits vibes</span>
-          </span>
-        </button>
       </nav>
     </section>
   </div>
@@ -776,10 +776,11 @@
         <ul>
           <li><a href="tools/ff7-editor/GGdropmanFF7V1.0.CT" download>Final Fantasy VII Steam (.CT) v1.0</a> — GGdropman</li>
           <li><a href="tools/tcg-editor/GGdropmanTCG_v1.0.CT" download>TCG Card Shop Simulator Mono (.CT) v1.0</a> — GGdropman</li>
+          <li><a href="tools/schedule1-editor/GGdropmanScedule1V1.7.CT" download>Schedule I (.CT) v1.7</a> — GGdropman</li>
         </ul>
-        <p><strong>Steam tools:</strong></p>
+        <p><strong>Achievement Unlockers:</strong></p>
         <ul>
-          <li><a href="tools/steam-achievement-unlocker/guide.html">Steam Achievement Unlocker</a> — GGdropman (local Node CLI)</li>
+          <li><a href="tools/steam-achievement-unlocker/guide.html">Steam Achievement Unlocker</a> — GGdropman (local Node CLI · SoD2 default)</li>
         </ul>
         <p><strong>Art:</strong> Steam header images used as tile atmosphere only.</p>
       </div>
@@ -792,7 +793,7 @@
         <h2 class="modal-title" id="soon-title">Coming Soon</h2>
         <button type="button" class="modal-close" id="soon-close" aria-label="Close">×</button>
       </div>
-      <p class="credits-body">That world’s still locked. Borderlands, Hades, and Diablo II are on the radar — TCG, FF7, Last Epoch, Schedule I, and State of Decay 2 are ready now.</p>
+      <p class="credits-body">That world’s still locked. Borderlands is on the radar — TCG, FF7, Last Epoch, Schedule I, and State of Decay 2 are ready now.</p>
     </div>
   </div>
 
