@@ -31,6 +31,10 @@
         Load ZIP
         <input id="zip-input" type="file" accept=".zip,application/zip" hidden />
       </label>
+      <label class="slot-pick" id="slot-wrap" hidden>
+        Slot
+        <select id="slot-select"></select>
+      </label>
       <button id="btn-backup" class="btn" type="button" disabled>Download Backup ZIP</button>
       <button id="btn-save" class="btn btn--accent" type="button" disabled>Save ZIP</button>
       <span id="dirty-pill" class="pill" hidden>Unsaved</span>
@@ -39,7 +43,7 @@
 
   <section class="path-banner">
     <strong>Save path</strong>
-    <span>Close Schedule I fully. Saves live in <code>%USERPROFILE%\AppData\LocalLow\TVGS\Schedule I\Saves\&lt;SteamID&gt;\SaveGame_#</code>. Load that folder (or a ZIP of it), edit, then extract the download over the slot. Always backup first. For live RAM edits, use <a href="GGdropmanScedule1V1.7.CT" download>GGdropmanScedule1V1.7.CT</a>.</span>
+    <span>Close Schedule I fully. Saves live in <code>%USERPROFILE%\AppData\LocalLow\TVGS\Schedule I\Saves\&lt;SteamID&gt;\SaveGame_#</code>. Load that folder (or a ZIP of it), edit, then extract the download over the slot. Always backup first. Live RAM: <a href="GGdropmanScedule1V1.7.CT" download>GGdropmanScedule1V1.7.CT</a>.</span>
   </section>
 
   <div id="install-modal" class="modal" hidden>
@@ -61,26 +65,35 @@
     <button class="tab is-active" data-tab="overview" type="button">Overview</button>
     <button class="tab" data-tab="money" type="button">Money</button>
     <button class="tab" data-tab="rank" type="button">Rank</button>
+    <button class="tab" data-tab="inventory" type="button">Inventory</button>
+    <button class="tab" data-tab="properties" type="button">Properties</button>
+    <button class="tab" data-tab="npcs" type="button">People</button>
+    <button class="tab" data-tab="appearance" type="button">Look</button>
+    <button class="tab" data-tab="quests" type="button">Quests</button>
+    <button class="tab" data-tab="vehicles" type="button">Vehicles</button>
     <button class="tab" data-tab="products" type="button">Products</button>
+    <button class="tab" data-tab="storage" type="button">Racks</button>
+    <button class="tab" data-tab="presets" type="button">Presets</button>
     <button class="tab" data-tab="files" type="button">Files</button>
   </nav>
 
   <main class="main">
     <div id="empty-state" class="empty">
       <h2>Load a SaveGame folder</h2>
-      <p>Pick the <code>SaveGame_1</code> (etc.) folder, or drop a ZIP of it. Browser tools can’t write straight into AppData — you’ll download a ZIP to merge back.</p>
+      <p>Pick the <code>SaveGame_1</code> folder, the parent Saves folder (multi-slot picker appears), or drop a ZIP. Browser tools download a ZIP to merge back into AppData.</p>
     </div>
 
     <section id="panel-overview" class="panel is-active" hidden>
       <div class="panel__head">
         <h2>Organisation</h2>
-        <p>Core save identity and time. Money &amp; rank have their own tabs.</p>
+        <p>Empire pulse — identity, clock, and a quick census of what this save is holding.</p>
       </div>
       <div id="overview-meta" class="meta-strip"></div>
       <div class="form-grid">
         <label>Organisation name<input id="f-org" type="text" /></label>
         <label>Game version<input id="f-game-version" type="text" readonly /></label>
         <label>Elapsed days<input id="f-days" type="number" step="1" min="0" /></label>
+        <label>Time of day<input id="f-tod" type="number" step="1" min="0" title="In-game time units from Time.json" /></label>
         <label>Last played<input id="f-last-played" type="text" readonly /></label>
       </div>
     </section>
@@ -88,7 +101,7 @@
     <section id="panel-money" class="panel" hidden>
       <div class="panel__head">
         <h2>Cash &amp; Bank</h2>
-        <p><code>OnlineBalance</code> is your bank. Pocket cash lives in <code>Players/Player_0/Inventory.json</code> as nested CashData.</p>
+        <p><code>OnlineBalance</code> is your bank. Pocket cash is CashData inside player inventory.</p>
       </div>
       <div class="form-grid">
         <label>Bank (OnlineBalance)<input id="f-bank" type="number" step="0.01" min="0" /></label>
@@ -97,21 +110,19 @@
         <label>Lifetime earnings<input id="f-lifetime" type="number" step="0.01" min="0" /></label>
       </div>
       <div class="quick-actions">
-        <button type="button" class="btn" id="btn-money-100k">Set bank $100,000</button>
-        <button type="button" class="btn" id="btn-money-1m">Set bank $1,000,000</button>
-        <button type="button" class="btn" id="btn-cash-50k">Set pocket $50,000</button>
+        <button type="button" class="btn" id="btn-money-100k">Bank $100k</button>
+        <button type="button" class="btn" id="btn-money-1m">Bank $1M</button>
+        <button type="button" class="btn" id="btn-cash-50k">Pocket $50k</button>
       </div>
     </section>
 
     <section id="panel-rank" class="panel" hidden>
       <div class="panel__head">
         <h2>Rank &amp; XP</h2>
-        <p>Preset fills Rank, Tier, XP=0, and TotalXP for the start of that tier. Tweak TotalXP if your save used different totals.</p>
+        <p>Presets sync TotalXP to the start of that tier. Adjust if your build uses different totals.</p>
       </div>
       <div class="form-grid">
-        <label>Rank
-          <select id="f-rank"></select>
-        </label>
+        <label>Rank<select id="f-rank"></select></label>
         <label>Tier
           <select id="f-tier">
             <option value="1">I</option>
@@ -125,28 +136,68 @@
         <label>Total XP<input id="f-total-xp" type="number" step="1" min="0" /></label>
       </div>
       <div class="quick-actions">
-        <button type="button" class="btn" id="btn-sync-total-xp">Sync TotalXP from rank/tier</button>
-        <button type="button" class="btn btn--accent" id="btn-rank-kingpin">Jump to Kingpin I</button>
+        <button type="button" class="btn" id="btn-sync-total-xp">Sync TotalXP</button>
+        <button type="button" class="btn btn--accent" id="btn-rank-kingpin">Kingpin I</button>
       </div>
     </section>
 
-    <section id="panel-products" class="panel" hidden>
+    <section id="panel-inventory" class="panel" hidden>
       <div class="panel__head">
-        <h2>Products</h2>
-        <p>Rename discovered mixes and tweak appearance colors from <code>Products.json</code>.</p>
+        <h2>Player pockets</h2>
+        <p>Each inventory slot is a JSON string. Cash slots stay cash — edit pocket money on the Money tab.</p>
       </div>
       <div class="toolbar">
-        <label>Search<input id="product-search" type="text" placeholder="Name or ID" /></label>
+        <label>Quick fill ID
+          <input id="inv-fill-id" type="text" list="item-id-list" placeholder="ogkush" />
+        </label>
+        <label>Qty<input id="inv-fill-qty" type="number" min="0" value="20" /></label>
+        <button type="button" class="btn" id="btn-inv-fill-empty">Fill empty slots</button>
+        <button type="button" class="btn" id="btn-inv-clear">Clear non-cash</button>
+      </div>
+      <datalist id="item-id-list"></datalist>
+      <div class="table-wrap">
+        <table class="data-table" id="inv-table">
+          <thead><tr><th>#</th><th>ID</th><th>Qty</th><th>Type</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-properties" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Properties &amp; businesses</h2>
+        <p>Flip <code>IsOwned</code> on every property/business JSON the save knows about — the classic stuck-door fix.</p>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-own-all">Own everything</button>
+        <button type="button" class="btn" id="btn-own-props">Own all properties</button>
+        <button type="button" class="btn" id="btn-own-biz">Own all businesses</button>
+      </div>
+      <div class="table-wrap" style="margin-top:1rem">
+        <table class="data-table" id="own-table">
+          <thead><tr><th>Name</th><th>Kind</th><th>Code</th><th>Owned</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-npcs" class="panel" hidden>
+      <div class="panel__head">
+        <h2>People of Hyland Point</h2>
+        <p>Customers, suppliers, dealers. RelationDelta drives the vibe; Unlocked / Recruited fix stuck NPCs like Molly.</p>
+      </div>
+      <div class="toolbar">
+        <label>Search<input id="npc-search" type="text" placeholder="Name or ID" /></label>
+        <button type="button" class="btn" id="btn-npc-loyal">Max all relations</button>
+        <button type="button" class="btn" id="btn-npc-unlock">Unlock all</button>
+        <button type="button" class="btn btn--accent" id="btn-npc-recruit">Recruit dealers</button>
       </div>
       <div class="table-wrap">
-        <table class="data-table" id="product-table">
+        <table class="data-table" id="npc-table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>ID</th>
-              <th>Source</th>
-              <th>Main</th>
-              <th>Secondary</th>
+              <th>Name</th><th>Role</th><th>Relation</th><th>Tier</th>
+              <th>Unlocked</th><th>Recruited</th><th>Dependence</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -154,21 +205,129 @@
       </div>
     </section>
 
+    <section id="panel-appearance" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Player look</h2>
+        <p>Edits <code>Players/Player_0/Appearance.json</code>. Skin uses 0–1 RGB floats (what the game stores).</p>
+      </div>
+      <div id="appearance-missing" class="callout" hidden>No Appearance.json in this save — load a slot that has Player_0 appearance data.</div>
+      <div id="appearance-form" class="form-grid">
+        <label>Gender
+          <select id="f-gender">
+            <option value="0">Male (0)</option>
+            <option value="1">Female (1)</option>
+          </select>
+        </label>
+        <label>Weight (0–1)<input id="f-weight" type="number" min="0" max="1" step="0.01" /></label>
+        <label>Skin color<input id="f-skin" type="color" /></label>
+      </div>
+      <div class="look-preview" id="look-preview" aria-hidden="true">
+        <div class="look-preview__face" id="look-face"></div>
+        <p>Live skin preview — save still needs a ZIP install to hit the game.</p>
+      </div>
+    </section>
+
+    <section id="panel-quests" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Quests</h2>
+        <p>States: 0 not started · 1 active · 2 completed. If the save has no quest files, this stays empty.</p>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-quests-complete">Complete all</button>
+        <button type="button" class="btn" id="btn-quests-reset">Reset all to 0</button>
+      </div>
+      <div class="table-wrap" style="margin-top:1rem">
+        <table class="data-table" id="quest-table">
+          <thead><tr><th>Name</th><th>ID</th><th>State</th><th>File</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-vehicles" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Vehicles · stash polaroid</h2>
+        <p>Snapshot <code>OwnedVehicles.json</code> while vans are loaded, then restore later to restock without re-packing. Snapshot lives in this browser’s localStorage.</p>
+      </div>
+      <div id="vehicles-missing" class="callout" hidden>No OwnedVehicles.json yet — buy a vehicle in-game first, then reload the save here.</div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-veh-snap">Take polaroid (snapshot)</button>
+        <button type="button" class="btn" id="btn-veh-restore">Restore polaroid</button>
+      </div>
+      <p id="veh-snap-meta" class="hint"></p>
+      <div class="table-wrap">
+        <table class="data-table" id="veh-table">
+          <thead><tr><th>Name</th><th>Code</th><th>GUID</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-products" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Products &amp; mixes</h2>
+        <p>CreatedProducts files + named arrays in Products.json. Tweak names, colors, and effect tags.</p>
+      </div>
+      <div class="toolbar">
+        <label>Search<input id="product-search" type="text" placeholder="Name or ID" /></label>
+        <button type="button" class="btn" id="btn-discover-base">Discover base strains</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="product-table">
+          <thead>
+            <tr><th>Name</th><th>ID</th><th>Effects</th><th>Main</th><th>Secondary</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-storage" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Storage racks</h2>
+        <p>Fills placeable storage Contents slots — grow / mix / meth supply kits. Empty slots only get filled up to rack size.</p>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn" id="btn-kit-grow">Fill all · Grow kit</button>
+        <button type="button" class="btn" id="btn-kit-mix">Fill all · Mix kit</button>
+        <button type="button" class="btn" id="btn-kit-meth">Fill all · Meth chem</button>
+      </div>
+      <div class="table-wrap" style="margin-top:1rem">
+        <table class="data-table" id="rack-table">
+          <thead><tr><th>Rack</th><th>Slots</th><th>Filled</th><th>Preview</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-presets" class="panel" hidden>
+      <div class="panel__head">
+        <h2>One-shot presets</h2>
+        <p>Stacked cheats with a Schedule I flavor. Still download a ZIP after — nothing writes AppData directly.</p>
+      </div>
+      <div id="preset-grid" class="preset-grid"></div>
+    </section>
+
     <section id="panel-files" class="panel" hidden>
       <div class="panel__head">
-        <h2>Loaded files</h2>
-        <p>Yellow border = edited. Pick a file to view raw JSON (read-only here — use the tabs to edit safely).</p>
+        <h2>Files</h2>
+        <p>Yellow = edited. Raw JSON is editable — Apply writes back into the loaded save map.</p>
       </div>
       <div id="file-list" class="file-list"></div>
       <label style="margin-top:1rem">Raw JSON
-        <textarea id="raw-json" readonly placeholder="Select a file…"></textarea>
+        <textarea id="raw-json" placeholder="Select a file…"></textarea>
       </label>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-raw-apply" disabled>Apply raw JSON</button>
+        <button type="button" class="btn" id="btn-raw-format" disabled>Format</button>
+      </div>
     </section>
   </main>
 
   <footer class="status-bar" id="status">Ready — load a SaveGame folder or ZIP.</footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="data.js"></script>
   <script src="save.js"></script>
   <script src="app.js"></script>
 </body>

@@ -3,3 +3,5 @@ Thumbs.db
 *.log
 tools/last-epoch-editor/_moditem.json
 tools/last-epoch-editor/_campaign_progress.json
+tools/schedule1-editor/_samples/
+tools/schedule1-editor/_test-*.js
