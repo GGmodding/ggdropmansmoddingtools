@@ -5,12 +5,16 @@
 
   const CONSOLE_HINTS = [
     {
+      cmd: "Cheat Engine table",
+      desc: "Download GGdropmanGrounded2V1.0.CT — live super speed / jump / fly / vitals / free build while Augusta runs.",
+    },
+    {
       cmd: SAVE_PATH,
       desc: "Steam / PC world folders live here — each slot is a directory with HostPlayer.csav, World.csav, SaveGameHeaderData.savheader.",
     },
     {
       cmd: "Close Grounded 2 first",
-      desc: "Overwrite while Augusta is running can corrupt the slot or get clobbered by autosave / Steam Cloud.",
+      desc: "Overwrite while Augusta is running can corrupt the slot or get clobbered by autosave / Steam Cloud. Use the .CT for in-session cheats instead.",
     },
     {
       cmd: "Oodle rewrite",
@@ -52,8 +56,8 @@
     { id: "compare", title: "Compare another slot", status: "beta", note: "Folder pick vs loaded Host/World stats" },
     { id: "inventory", title: "Inventory", status: "beta", note: "Add/remove/stack HostPlayer bags" },
     { id: "multiplayer", title: "Player_*.csav mirror", status: "beta", note: "Mirror or solo write modes" },
-    { id: "travel", title: "Teleport / position", status: "pending", note: "No scale(1,1,1) transform on this HostPlayer" },
-    { id: "cheattable", title: "Cheat Engine table", status: "n/a", note: "No Augusta .CT yet" },
+    { id: "travel", title: "Teleport / position", status: "pending", note: "No scale(1,1,1) transform on this HostPlayer — use .CT teleport-to-aim while playing" },
+    { id: "cheattable", title: "Cheat Engine table", status: "beta", note: "GGdropmanGrounded2V1.0.CT — ACTIVATE (AOB) then speed / jump / fly / vitals / world toggles" },
   ];
 
   window.GroundedData = {

@@ -1,0 +1,34 @@
+name: Visitor comment or request
+description: Leave feedback or ask for a new save editor / cheat table
+title: "[Visitor] "
+labels: ["visitor"]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is this?
+      options:
+        - Comment / feedback
+        - Request a save editor
+        - Request a cheat table
+        - Bug report on an existing tool
+    validations:
+      required: true
+  - type: input
+    id: game
+    attributes:
+      label: Game (if any)
+      placeholder: e.g. Grounded 2, Palworld, Hades II
+  - type: input
+    id: name
+    attributes:
+      label: Display name (optional)
+      placeholder: How should we credit you on the hub?
+  - type: textarea
+    id: message
+    attributes:
+      label: Message
+      description: Tell us what you want, what broke, or what you love.
+      placeholder: I'd love a save editor for…
+    validations:
+      required: true

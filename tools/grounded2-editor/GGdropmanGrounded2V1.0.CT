@@ -3,7 +3,7 @@
   <CheatEntries>
     <CheatEntry>
       <ID>77</ID>
-      <Description>"=== GGdropmans Grounded V1.0 ==="</Description>
+      <Description>"=== GGdropmans Grounded 2 V1.0 ==="</Description>
       <Options moHideChildren="1"/>
       <Color>0000C080</Color>
       <GroupHeader>1</GroupHeader>
@@ -14,10 +14,10 @@
           <Color>00808080</Color>
           <VariableType>Auto Assembler Script</VariableType>
           <AssemblerScript>{
-        GGdropmans Grounded Cheat Table V1.0
+        GGdropmans Grounded 2 Cheat Table V1.0
         ====================================
         Process: Maine-Win64-Shipping.exe (Steam)
-        Companion to tools/grounded-editor (browser save editor).
+        Companion to tools/grounded2-editor (Augusta / Grounded 2 save editor).
 
         1. Load into a world
         2. Attach CE to Maine-Win64-Shipping.exe
@@ -26,8 +26,8 @@
                 5. Use Vitals / Economy / Settings for live cheats
                 6. Gear → one-shot weapons / god armor scripts while items are equipped
 
-                Offline unlocks (buildings, BURG.L purchases, achievements, OP preset)
-                stay in the browser save editor — they are not stable as one-click RAM patches.
+                Offline unlocks (buildings, quests, analyze, fog, hatchery, buggy tier, OP preset, inventory dumps)
+                stay in the browser save editor — use this .CT for live movement / vitals / world toggles.
                 }
                 [ENABLE]
                 [DISABLE]
@@ -42,34 +42,92 @@
         {$lua}
         if syntaxcheck then return end
         if getAddressSafe(process) == nil then
-          showMessage("Attach to Maine-Win64-Shipping.exe first")
+          showMessage("Attach to Maine-Win64-Shipping.exe (Grounded 2 / Augusta) first")
           error("no process")
         end
-        -- Bases resolved from AOBs on the local Steam build (Maine-Win64-Shipping).
-        -- After a patch: run DEBUG → Fetch Base Addresses and update these defines.
-        autoAssemble([[
-        define(Player,Maine-Win64-Shipping.exe+61A3D20)
-        define(Statistics,Maine-Win64-Shipping.exe+619EB40)
-        define(GearData,Maine-Win64-Shipping.exe+6426A20)
-        define(EngineData,Maine-Win64-Shipping.exe+6427EE0)
-        define(GameState,Maine-Win64-Shipping.exe+642BE78)
-        registersymbol(Player)
-        registersymbol(Statistics)
-        registersymbol(GearData)
-        registersymbol(EngineData)
-        registersymbol(GameState)
-        ]])
-        print("GGdropman Grounded V1.0 activated ("..tostring(process)..")")
+
+        -- Resolve GNames/UObject statics via AOB (same Maine UE signatures as G1 lineage).
+        -- After a major Augusta patch, re-enable [ACTIVATE] or run DEBUG → Fetch Base Addresses.
+        local aobList = {
+          "4C 8B 05 ?? ?? ?? ?? 4D 85 C0 0F 84 ?? ?? ?? ?? 49 8B 80 40 01 00 00 48 89 9C 24 A0 00 00 00 48 85 C0",
+          "4C 8B 35 ?? ?? ?? ?? 48 63 05 ?? ?? ?? ?? 4D 8D 24 C6 4D 3B F4",
+          "48 8B 05 ?? ?? ?? ?? 48 89 3C D8 48 8B 9C 24 C0 00 00 00 44 88 A7 C0",
+          "48 8B 05 ?? ?? ?? ?? 48 8B D1 48 8B 88 F8 0A 00 00 48 85 C9 74 07 48 8B",
+          "48 8B 05 ?? ?? ?? ?? 49 8B D3 45 33 C0 48 8B 0A 48 39 81 80 02 00 00 74 11"
+        }
+        local aobNames = {"Player","Statistics","GearData","EngineData","GameState"}
+        local xbase = getAddress(process)
+        local defs = {}
+        local miss = {}
+        print("GGdropman Grounded 2: scanning AOBs on "..tostring(process).."…")
+        for i = 1, #aobList do
+          local aob = AOBScan(aobList[i], "+X*C*W")
+          if aob == nil or aob.Count == 0 then
+            miss[#miss+1] = aobNames[i]
+            print(aobNames[i]..": MISS")
+          else
+            local instruct = getAddressSafe(aob[0])
+            local distance = readInteger(instruct + 3)
+            local instructSize = getInstructionSize(instruct)
+            local address = (instruct + distance + instructSize) - xbase
+            defs[aobNames[i]] = string.format("%s+%X", process, address)
+            print(string.format("%s: %s", aobNames[i], defs[aobNames[i]]))
+          end
+          if aob then aob.destroy() end
+        end
+        if #miss &gt; 0 then
+          showMessage("AOB miss: "..table.concat(miss, ", ").."\nPointer groups for those symbols will be empty until the signature is updated.")
+        end
+        if not defs.Player then
+          showMessage("Player AOB failed — cannot activate. Game must be in-world (not main menu).")
+          error("no Player AOB")
+        end
+
+        local aa = ""
+        for _, n in ipairs(aobNames) do
+          if defs[n] then
+            aa = aa.."define("..n..","..defs[n]..")\n"
+            aa = aa.."registersymbol("..n..")\n"
+          end
+        end
+        autoAssemble(aa)
+
+        -- Probe CharacterMovementComponent pointer on the player pawn (UE offset drifts on Augusta).
+        gg2_cmc_off = nil
+        local pawns = {0xDC8, 0xE00, 0xE08, 0xD80, 0xD00, 0xC80, 0xF00, 0x1080, 0x1100}
+        local pRoot = readQword(getAddress("Player"))
+        if pRoot and pRoot ~= 0 then
+          for _, off in ipairs(pawns) do
+            local c = readQword(pRoot + off)
+            if c and c &gt; 0x10000 then
+              -- Heuristic: CMC has MaxWalkSpeed-like floats in 0x140..0x360
+              for foff = 0x140, 0x360, 4 do
+                local v = readFloat(c + foff)
+                if v and v &gt; 200 and v &lt; 1200 then
+                  gg2_cmc_off = off
+                  print(string.format("CMC candidate Player+0x%X (walk~%.0f @ +0x%X)", off, v, foff))
+                  break
+                end
+              end
+            end
+            if gg2_cmc_off then break end
+          end
+        end
+        if not gg2_cmc_off then
+          gg2_cmc_off = 0xDC8
+          print("CMC offset fallback Player+0xDC8 (move around and re-ACTIVATE if speed scripts fail)")
+        end
+
+        print("GGdropman Grounded 2 V1.0 activated")
         [DISABLE]
         {$lua}
         if syntaxcheck then return end
-        autoAssemble([[
-        unregistersymbol(Player)
-        unregistersymbol(Statistics)
-        unregistersymbol(GearData)
-        unregistersymbol(EngineData)
-        unregistersymbol(GameState)
-        ]])
+        for _, n in ipairs({"Player","Statistics","GearData","EngineData","GameState"}) do
+          if getAddressSafe(n) then
+            pcall(function() autoAssemble("unregistersymbol("..n..")") end)
+          end
+        end
+        gg2_cmc_off = nil
         </AssemblerScript>
         </CheatEntry>
         <CheatEntry>
@@ -101,7 +159,7 @@
             local function cmc()
               local p = readQword(getAddress("Player"))
               if p == nil or p == 0 then return nil end
-              return readQword(p + 0xDC8)
+              return readQword(p + (gg2_cmc_off or 0xDC8))
             end
 
             local function findWalk(c)
@@ -159,7 +217,7 @@
             if st and st.off then
               local p = readQword(getAddressSafe("Player") or 0)
               if p and p ~= 0 then
-                local c = readQword(p + 0xDC8)
+                local c = readQword(p + (gg2_cmc_off or 0xDC8))
                 if c and st.baseWalk then writeFloat(c + st.off, st.baseWalk) end
               end
             end
@@ -187,7 +245,7 @@
             local function cmc()
               local p = readQword(getAddress("Player"))
               if p == nil or p == 0 then return nil end
-              return readQword(p + 0xDC8)
+              return readQword(p + (gg2_cmc_off or 0xDC8))
             end
 
             local function findJump(c)
@@ -237,7 +295,7 @@
             if st and st.off and st.baseJump then
               local p = readQword(getAddressSafe("Player") or 0)
               if p and p ~= 0 then
-                local c = readQword(p + 0xDC8)
+                local c = readQword(p + (gg2_cmc_off or 0xDC8))
                 if c then writeFloat(c + st.off, st.baseJump) end
               end
             end
@@ -2166,6 +2224,156 @@
             </CheatEntry>
           </CheatEntries>
         </CheatEntry>
+        
+        <CheatEntry>
+          <ID>200</ID>
+          <Description>"G2 adaptive (scan helpers)"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <Color>00C08040</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>201</ID>
+              <Description>"[Script] Probe vitals near Player"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+            {$lua}
+            if syntaxcheck then return end
+            if getAddressSafe("Player") == nil then
+              showMessage("Enable [ACTIVATE] first")
+              error("no Player")
+            end
+            local p = readQword(getAddress("Player"))
+            if not p or p == 0 then error("null Player") end
+            print(string.format("Player pawn %X — scanning component floats…", p))
+            -- Walk likely UObject* slots on the pawn and print health/survival-ish floats.
+            local hits = 0
+            for off = 0x100, 0x1400, 8 do
+              local c = readQword(p + off)
+              if c and c &gt; 0x10000 and c &lt; 0x7FFFFFFFFFFF then
+                for f = 0, 0x80, 4 do
+                  local v = readFloat(c + f)
+                  if v and v &gt; 40 and v &lt; 400 then
+                    print(string.format("  pawn+0x%X -&gt; obj+0x%X = %.1f", off, f, v))
+                    hits = hits + 1
+                    if hits &gt; 40 then break end
+                  end
+                end
+              end
+              if hits &gt; 40 then break end
+            end
+            print("Probe done. Use printed addresses with CE 'Add address' if G1 pointer chains look wrong.")
+            [DISABLE]
+            </AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>202</ID>
+              <Description>"[Script] One-shot (PlayerDamage scale x50)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+            {$lua}
+            if syntaxcheck then return end
+            if getAddressSafe("GameState") == nil then
+              showMessage("Enable [ACTIVATE] first (need GameState AOB)")
+              error("no GameState")
+            end
+            local function resolve(baseSym, offsets)
+              local a = getAddress(baseSym)
+              if not a then return nil end
+              for i = #offsets, 2, -1 do
+                a = readQword(a + offsets[i])
+                if a == nil or a == 0 then return nil end
+              end
+              return a + offsets[1]
+            end
+            -- Same chain as World settings → Player Damage scale (G1 layout; may need retune on Augusta)
+            local addr = resolve("GameState", {0x50, 0x138, 0x388, 0x170})
+            if not addr then
+              showMessage("Could not resolve Player Damage scale pointer")
+              error("no dmg scale")
+            end
+            gg2_oneshot = gg2_oneshot or {}
+            gg2_oneshot.addr = addr
+            gg2_oneshot.prev = readFloat(addr)
+            writeFloat(addr, 50)
+            print(string.format("PlayerDamage scale %.2f -&gt; 50 @ %X", gg2_oneshot.prev or -1, addr))
+            [DISABLE]
+            {$lua}
+            if syntaxcheck then return end
+            if gg2_oneshot and gg2_oneshot.addr and gg2_oneshot.prev then
+              writeFloat(gg2_oneshot.addr, gg2_oneshot.prev)
+            end
+            </AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>203</ID>
+              <Description>"[Script] Free build + recipes (GameState bytes)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+            {$lua}
+            if syntaxcheck then return end
+            if getAddressSafe("GameState") == nil then
+              showMessage("Enable [ACTIVATE] first")
+              error("no GameState")
+            end
+            local function resolve(baseSym, offsets)
+              local a = getAddress(baseSym)
+              if not a then return nil end
+              for i = #offsets, 2, -1 do
+                a = readQword(a + offsets[i])
+                if a == nil or a == 0 then return nil end
+              end
+              return a + offsets[1]
+            end
+            local toggles = {
+              {n="All Recipes", off={0x3A,0x138,0x388,0x170}},
+              {n="Free Build", off={0x3B,0x138,0x388,0x170}},
+              {n="Recipes Free", off={0x3D,0x138,0x388,0x170}},
+              {n="Perks Unlocked", off={0x49,0x138,0x388,0x170}},
+            }
+            for _, t in ipairs(toggles) do
+              local a = resolve("GameState", t.off)
+              if a then
+                writeBytes(a, 1)
+                print("set "..t.n)
+              else
+                print("miss "..t.n)
+              end
+            end
+            [DISABLE]
+            </AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>204</ID>
+              <Description>"Editor ↔ CT feature map"</Description>
+              <Color>00808080</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+        Save editor (tools/grounded2-editor) — offline .csav:
+          header rename, vitals, molars/science, gear god/oneshot, mutations,
+          quests, tech/analyze, buildings, achievements, calendar, fog,
+          chests, omni tiers, buggy tier, hatchery finish, resource/egg presets,
+          inventory, multiplayer mirror, OP preset.
+
+        This .CT — live Maine-Win64-Shipping RAM:
+          super speed / jump / fly / teleport-to-aim,
+          fill/god vitals, hunger/thirst freeze,
+          science/molars pointers, held gear, haul,
+          GameState free-build / damage scales / time rates,
+          adaptive probe + one-shot / free-build scripts.
+
+        Prefer editor for bulk unlocks; prefer .CT for movement while playing.
+        }
+        [ENABLE]
+        [DISABLE]
+        </AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+
         <CheatEntry>
           <ID>76</ID>
           <Description>"DEBUG"</Description>
@@ -2180,7 +2388,7 @@
               <AssemblerScript>{$lua}
             if syntaxcheck then return end
             [ENABLE]
-            print("Fetching Base Addresses...")
+            print("Fetching Grounded 2 Base Addresses…")
             local aobList = {
             "4C 8B 05 ?? ?? ?? ?? 4D 85 C0 0F 84 ?? ?? ?? ?? 49 8B 80 40 01 00 00 48 89 9C 24 A0 00 00 00 48 85 C0",
             "4C 8B 35 ?? ?? ?? ?? 48 63 05 ?? ?? ?? ?? 4D 8D 24 C6 4D 3B F4",

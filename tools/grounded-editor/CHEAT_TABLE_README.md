@@ -27,6 +27,8 @@ Companion Cheat Engine table for the browser save editor — live RAM cheats whi
 | Vitals | Health, stamina, hunger, thirst, oxygen (+ fill / freeze scripts) |
 | Economy | Raw Science, milk molars, mega milk molars |
 | Gear | Held item durability / stack / enhancement pointers |
+| Gear — one-shot / god armor | **One-shot weapons** (damage x100 + durability/enhancement freeze), **god armor** (equip durability freeze + low enemy damage), combo script |
+| Stacks — giant stack size | **Held stack freeze 9999**, **StackSize.* upgrades → tier 20**, haul capacity 99, combo script |
 | Mutations | Max / active mutation slot counts |
 | Hauling | Haul capacity + current haul |
 | World settings | Free build, recipes, bug AI, damage scales, time / hunger rates |

@@ -24,6 +24,7 @@
       --subnautica: #3de0c8;
       --grounded: #8fbf4a;
       --steam: #66c0f4;
+      --visitor: #e8a87c;
       --font-display: "Bungee", cursive;
       --font-ui: "Chakra Petch", sans-serif;
     }
@@ -223,6 +224,209 @@
       opacity: 1;
     }
 
+    .hero__links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 18px;
+      align-items: center;
+    }
+
+    .hero__link {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 0.92rem;
+      font-weight: 600;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(232, 168, 124, 0.45);
+      padding-bottom: 2px;
+      transition: color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .hero__link:hover {
+      color: #fff;
+      border-color: var(--visitor);
+    }
+
+    /* —— Visitors board —— */
+    .visitors {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .visitors__panel {
+      border: 2px solid rgba(232, 168, 124, 0.35);
+      border-radius: 10px;
+      background:
+        linear-gradient(160deg, rgba(232, 168, 124, 0.12), transparent 42%),
+        rgba(14, 18, 26, 0.88);
+      padding: 18px 16px 16px;
+    }
+
+    .visitors__panel-title {
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      letter-spacing: 0.04em;
+      margin-bottom: 12px;
+      color: #fff;
+    }
+
+    .visitors-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .visitors-form label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.62);
+    }
+
+    .visitors-form input,
+    .visitors-form select,
+    .visitors-form textarea {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(8, 10, 16, 0.72);
+      color: #fff;
+      font-family: var(--font-ui);
+      font-size: 0.95rem;
+      font-weight: 500;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .visitors-form input:focus,
+    .visitors-form select:focus,
+    .visitors-form textarea:focus {
+      border-color: color-mix(in srgb, var(--visitor) 80%, #fff);
+    }
+
+    .visitors-form textarea {
+      min-height: 110px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    .visitors-form__row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .visitors-form__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-top: 4px;
+    }
+
+    .visitors-form__submit {
+      padding: 12px 18px;
+      border-radius: 6px;
+      border: 2px solid rgba(232, 168, 124, 0.7);
+      background: linear-gradient(180deg, rgba(232, 168, 124, 0.28), rgba(180, 100, 60, 0.16));
+      color: #fff;
+      font-family: var(--font-ui);
+      font-weight: 700;
+      font-size: 0.88rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .visitors-form__submit:hover {
+      transform: translateY(-1px);
+      border-color: #f3c29a;
+    }
+
+    .visitors-form__hint {
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.5);
+      line-height: 1.4;
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 500;
+    }
+
+    .visitors-form__hint a {
+      color: var(--visitor);
+    }
+
+    .visitors-feed {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 520px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .visitor-post {
+      padding: 12px 12px 11px;
+      border-left: 3px solid color-mix(in srgb, var(--visitor) 75%, transparent);
+      background: rgba(8, 10, 16, 0.55);
+      border-radius: 0 8px 8px 0;
+    }
+
+    .visitor-post__meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      align-items: baseline;
+      margin-bottom: 6px;
+      font-size: 0.78rem;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .visitor-post__kind {
+      color: var(--visitor);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .visitor-post__name {
+      color: rgba(255, 255, 255, 0.88);
+      font-weight: 600;
+    }
+
+    .visitor-post__msg {
+      font-size: 0.95rem;
+      line-height: 1.45;
+      color: rgba(255, 255, 255, 0.82);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .visitor-post__link {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 0.8rem;
+      color: var(--gold);
+      text-decoration: none;
+    }
+
+    .visitor-post__link:hover { text-decoration: underline; }
+
+    .visitors-empty,
+    .visitors-status {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.5);
+      line-height: 1.45;
+      padding: 8px 2px;
+    }
+
     /* —— Sections —— */
     .hud-section {
       display: flex;
@@ -236,6 +440,7 @@
     .hud-section:nth-of-type(2) { animation-delay: 0.22s; }
     .hud-section:nth-of-type(3) { animation-delay: 0.32s; }
     .hud-section:nth-of-type(4) { animation-delay: 0.42s; }
+    .hud-section:nth-of-type(5) { animation-delay: 0.52s; }
 
     .hud-section__head {
       display: flex;
@@ -614,6 +819,8 @@
       .tile--tcg,
       .tile--banner { grid-column: auto; }
       .hero { min-height: auto; padding-top: 88px; }
+      .visitors { grid-template-columns: 1fr; }
+      .visitors-form__row { grid-template-columns: 1fr; }
       .visitor-count {
         left: 10px;
         right: 10px;
@@ -645,7 +852,10 @@
       <h1 class="hero__brand">GGdropmans</h1>
       <p class="hero__tag">Save editors &amp; cheat tables for the games you actually grind.</p>
       <p class="hero__sub">Pick a portal below — Midgar mako, Trumbull Valley, Planet 4546B, and more on the way.</p>
-      <a class="hero__cta" href="#editors">Browse tools <span aria-hidden="true">↓</span></a>
+      <div class="hero__links">
+        <a class="hero__cta" href="#editors">Browse tools <span aria-hidden="true">↓</span></a>
+        <a class="hero__link" href="#visitors">Leave a comment / request a tool</a>
+      </div>
     </header>
 
     <section class="hud-section" id="editors" aria-labelledby="editors-title">
@@ -731,7 +941,7 @@
           <span class="tile__body">
             <span class="tile__game">Brookhollow Park</span>
             <span class="tile__name">Grounded 2</span>
-            <span class="tile__meta">Augusta · Oodle .csav · EA saves</span>
+            <span class="tile__meta">Augusta · Oodle .csav · + Cheat Engine table</span>
           </span>
         </a>
       </nav>
@@ -779,10 +989,19 @@
           </span>
         </a>
 
-        <button type="button" class="tile tile--banner" onclick="showComingSoon()" aria-label="More coming soon">
+        <a class="tile tile--grounded2" href="tools/grounded2-editor/GGdropmanGrounded2V1.0.CT" download>
+          <span class="tile__badge tile__badge--live">.CT</span>
+          <span class="tile__body">
+            <span class="tile__game">Brookhollow Park</span>
+            <span class="tile__name">Grounded 2 Table v1.0</span>
+            <span class="tile__meta">Augusta · AOB activate · speed / fly</span>
+          </span>
+        </a>
+
+        <button type="button" class="tile tile--banner" onclick="location.hash='visitors'" aria-label="Request a tool in Visitors">
           <span class="tile__body">
             <span class="tile__name">More worlds incoming</span>
-            <span class="tile__meta">Request a game in credits vibes</span>
+            <span class="tile__meta">Request one in Visitors ↓</span>
           </span>
         </button>
       </nav>
@@ -803,6 +1022,62 @@
           </span>
         </a>
       </nav>
+    </section>
+
+    <section class="hud-section" id="visitors" aria-labelledby="visitors-title">
+      <div class="hud-section__head">
+        <h2 class="hud-section__title" id="visitors-title">Visitors</h2>
+        <p class="hud-section__sub">Drop a comment, request the next save editor, or ask for a Cheat Engine table. Posts open a GitHub issue so the whole crew can see them.</p>
+      </div>
+      <div class="visitors">
+        <div class="visitors__panel">
+          <h3 class="visitors__panel-title">Leave a note</h3>
+          <form class="visitors-form" id="visitors-form">
+            <div class="visitors-form__row">
+              <label>Name
+                <input id="visitor-name" type="text" maxlength="40" placeholder="Anonymous explorer" autocomplete="nickname" />
+              </label>
+              <label>Type
+                <select id="visitor-kind">
+                  <option value="comment">Comment / feedback</option>
+                  <option value="editor">Request a save editor</option>
+                  <option value="table">Request a cheat table</option>
+                  <option value="bug">Bug on an existing tool</option>
+                </select>
+              </label>
+            </div>
+            <label>Game
+              <input id="visitor-game" type="text" maxlength="60" placeholder="Grounded 2, Palworld, Hades II…" list="visitor-game-list" />
+              <datalist id="visitor-game-list">
+                <option value="Grounded"></option>
+                <option value="Grounded 2"></option>
+                <option value="Final Fantasy VII"></option>
+                <option value="Schedule I"></option>
+                <option value="State of Decay 2"></option>
+                <option value="Subnautica"></option>
+                <option value="Subnautica 2"></option>
+                <option value="Last Epoch"></option>
+                <option value="TCG Card Shop Simulator"></option>
+              </datalist>
+            </label>
+            <label>Message
+              <textarea id="visitor-message" maxlength="1200" required placeholder="What should we build next? What broke? What slapped?"></textarea>
+            </label>
+            <div class="visitors-form__actions">
+              <button type="submit" class="visitors-form__submit">Post to GitHub</button>
+              <p class="visitors-form__hint">Opens a pre-filled
+                <a href="https://github.com/GGmodding/ggdropmansmoddingtools/issues/new?template=visitor.yml" target="_blank" rel="noopener noreferrer">issue</a>
+                (GitHub account needed). Your note also stays on this board in this browser.</p>
+            </div>
+          </form>
+        </div>
+        <div class="visitors__panel">
+          <h3 class="visitors__panel-title">Board</h3>
+          <div class="visitors-feed" id="visitors-feed" aria-live="polite">
+            <p class="visitors-status" id="visitors-status">Loading visitor notes…</p>
+          </div>
+        </div>
+      </div>
     </section>
   </div>
 
@@ -844,6 +1119,7 @@
           <li><a href="tools/tcg-editor/GGdropmanTCG_v1.0.CT" download>TCG Card Shop Simulator Mono (.CT) v1.0</a> — GGdropman</li>
           <li><a href="tools/schedule1-editor/GGdropmanScedule1V1.7.CT" download>Schedule I (.CT) v1.7</a> — GGdropman</li>
           <li><a href="tools/grounded-editor/GGdropmanGroundedV1.0.CT" download>Grounded (.CT) v1.0</a> — GGdropman (speed / jump / vitals)</li>
+          <li><a href="tools/grounded2-editor/GGdropmanGrounded2V1.0.CT" download>Grounded 2 (.CT) v1.0</a> — GGdropman (Augusta · AOB activate)</li>
         </ul>
         <p><strong>Achievement Unlockers:</strong></p>
         <ul>
@@ -866,6 +1142,15 @@
 
   <script>
     (() => {
+      const REPO = "GGmodding/ggdropmansmoddingtools";
+      const LOCAL_KEY = "gg_visitor_posts_v1";
+      const KIND_LABEL = {
+        comment: "Comment",
+        editor: "Editor request",
+        table: "Cheat table request",
+        bug: "Bug report",
+      };
+
       const creditsModal = document.getElementById("credits-modal");
       const soonModal = document.getElementById("soon-modal");
       const openModal = (el) => { el.hidden = false; };
@@ -901,6 +1186,195 @@
         document.getElementById("visitor-total").textContent = "--";
         document.getElementById("visitor-unique").textContent = "--";
       }
+
+      function escapeHtml(s) {
+        return String(s || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function loadLocal() {
+        try {
+          return JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]");
+        } catch {
+          return [];
+        }
+      }
+
+      function saveLocal(entries) {
+        try {
+          localStorage.setItem(LOCAL_KEY, JSON.stringify(entries.slice(0, 40)));
+        } catch (_) {}
+      }
+
+      function renderFeed(entries) {
+        const feed = document.getElementById("visitors-feed");
+        if (!entries.length) {
+          feed.innerHTML =
+            '<p class="visitors-empty">No notes yet — be the first to request a tool or leave a tip.</p>';
+          return;
+        }
+        feed.innerHTML = entries
+          .map((e) => {
+            const kind = escapeHtml(KIND_LABEL[e.kind] || e.kind || "Note");
+            const name = escapeHtml(e.name || "Anonymous");
+            const game = e.game ? " · " + escapeHtml(e.game) : "";
+            const date = e.date ? escapeHtml(e.date) : "";
+            const link = e.url
+              ? '<a class="visitor-post__link" href="' +
+                escapeHtml(e.url) +
+                '" target="_blank" rel="noopener noreferrer">View on GitHub</a>'
+              : e.local
+                ? '<span class="visitor-post__link">Saved on this device · posted via GitHub when you submit</span>'
+                : "";
+            return (
+              '<article class="visitor-post">' +
+              '<div class="visitor-post__meta">' +
+              '<span class="visitor-post__kind">' +
+              kind +
+              "</span>" +
+              '<span class="visitor-post__name">' +
+              name +
+              "</span>" +
+              (game ? "<span>" + game + "</span>" : "") +
+              (date ? "<span>" + date + "</span>" : "") +
+              "</div>" +
+              '<p class="visitor-post__msg">' +
+              escapeHtml(e.message) +
+              "</p>" +
+              link +
+              "</article>"
+            );
+          })
+          .join("");
+      }
+
+      function parseIssue(issue) {
+        const title = issue.title || "";
+        if (!/^\[Visitor\]/i.test(title)) return null;
+        const body = issue.body || "";
+        const kindMatch = body.match(/\*\*Type:\*\*\s*(.+)/i);
+        const nameMatch = body.match(/\*\*Name:\*\*\s*(.+)/i);
+        const gameMatch = body.match(/\*\*Game:\*\*\s*(.+)/i);
+        const msgMatch = body.match(/\*\*Message:\*\*\s*([\s\S]+?)(?:\n---|\n\*\*|$)/i);
+        let kind = "comment";
+        const kindRaw = (kindMatch && kindMatch[1] || title).toLowerCase();
+        if (/editor/.test(kindRaw)) kind = "editor";
+        else if (/table|cheat/.test(kindRaw)) kind = "table";
+        else if (/bug/.test(kindRaw)) kind = "bug";
+        const message =
+          (msgMatch && msgMatch[1].trim()) ||
+          body.replace(/\*\*[^*]+:\*\*.*\n?/g, "").trim() ||
+          title.replace(/^\[Visitor\]\s*/i, "");
+        return {
+          kind,
+          name: (nameMatch && nameMatch[1].trim()) || issue.user?.login || "Visitor",
+          game: (gameMatch && gameMatch[1].trim()) || "",
+          message: message.slice(0, 1200),
+          date: (issue.created_at || "").slice(0, 10),
+          url: issue.html_url,
+        };
+      }
+
+      async function loadBoard() {
+        const status = document.getElementById("visitors-status");
+        const local = loadLocal().map((e) => ({ ...e, local: true }));
+        let curated = [];
+        let remote = [];
+        try {
+          const boardRes = await fetch("visitors/board.json", { cache: "no-store" });
+          if (boardRes.ok) {
+            const data = await boardRes.json();
+            curated = Array.isArray(data.entries) ? data.entries : [];
+          }
+        } catch (_) {}
+        try {
+          const api =
+            "https://api.github.com/repos/" +
+            REPO +
+            "/issues?state=all&per_page=40&sort=created&direction=desc";
+          const res = await fetch(api, {
+            headers: { Accept: "application/vnd.github+json" },
+          });
+          if (res.ok) {
+            const issues = await res.json();
+            remote = issues.map(parseIssue).filter(Boolean);
+          } else if (status) {
+            status.textContent = "GitHub feed unavailable right now — showing local + curated notes.";
+          }
+        } catch (_) {
+          if (status) {
+            status.textContent = "Offline — showing local + curated notes.";
+          }
+        }
+
+        const seen = new Set();
+        const merged = [];
+        for (const e of [...local, ...remote, ...curated]) {
+          const key = (e.url || "") + "|" + (e.message || "").slice(0, 80) + "|" + (e.date || "");
+          if (seen.has(key)) continue;
+          seen.add(key);
+          merged.push(e);
+        }
+        merged.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+        renderFeed(merged.slice(0, 40));
+      }
+
+      document.getElementById("visitors-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const name = (document.getElementById("visitor-name").value || "").trim() || "Anonymous";
+        const kind = document.getElementById("visitor-kind").value;
+        const game = (document.getElementById("visitor-game").value || "").trim();
+        const message = (document.getElementById("visitor-message").value || "").trim();
+        if (!message) return;
+
+        const entry = {
+          kind,
+          name,
+          game,
+          message,
+          date: new Date().toISOString().slice(0, 10),
+          local: true,
+        };
+        const local = loadLocal();
+        local.unshift(entry);
+        saveLocal(local);
+
+        const kindLabel = KIND_LABEL[kind] || kind;
+        const title =
+          "[Visitor] " +
+          kindLabel +
+          (game ? ": " + game : "");
+        const body =
+          "**Type:** " +
+          kindLabel +
+          "\n" +
+          "**Name:** " +
+          name +
+          "\n" +
+          "**Game:** " +
+          (game || "(none)") +
+          "\n\n**Message:**\n" +
+          message +
+          "\n\n---\n_Submitted from the GGdropmans hub Visitors board._\n";
+
+        const url =
+          "https://github.com/" +
+          REPO +
+          "/issues/new?title=" +
+          encodeURIComponent(title) +
+          "&body=" +
+          encodeURIComponent(body) +
+          "&labels=visitor";
+
+        window.open(url, "_blank", "noopener,noreferrer");
+        document.getElementById("visitor-message").value = "";
+        loadBoard();
+      });
+
+      loadBoard();
     })();
   </script>
 </body>
