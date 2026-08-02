@@ -13,6 +13,7 @@ for (const f of [
   "csav.js",
   "header.js",
   "player.js",
+  "gear.js",
   "save.js",
   "data.js",
   "inventory.js",
@@ -120,6 +121,34 @@ const inv = Inv.parseInventory(hostRaw);
 console.log("inventory", { ok: inv.ok, items: inv.items.length, count: inv.count });
 assert(inv.ok && inv.items.length > 0, "inventory parse failed");
 assert(inv.count === inv.items.length, "inventory count mismatch");
+
+const G = window.GroundedGear;
+assert(G, "GroundedGear missing — load gear.js in smoke");
+let gearHost = hostRaw;
+const gear0 = G.parseGear(gearHost);
+console.log(
+  "gear",
+  gear0.items.map((i) => i.kind + ":" + i.name + "@L" + i.level)
+);
+assert(gear0.ok && gear0.items.some((i) => i.kind === "weapon"), "no weapons parsed");
+const oneshot = G.applyOneShotWeapons(gearHost);
+gearHost = oneshot.bytes;
+const gear1 = G.parseGear(gearHost);
+assert(oneshot.changed >= 1, "oneshot changed nothing");
+assert(
+  gear1.items.every(
+    (i) =>
+      i.kind !== "weapon" ||
+      (i.enhancement === "Mighty" &&
+        i.level === 9 &&
+        i.attackMult >= 100 &&
+        i.durability >= 99999)
+  ),
+  "oneshot fields not applied"
+);
+const god = G.applyGodArmor(gearHost);
+console.log("god armor changed", god.changed, "(0 ok if no armor yet)");
+gearHost = god.bytes;
 
 const packedWorld = C.compressCsav(worldRaw);
 const worldRound = await C.decompressCsav(packedWorld, oozDecompress);

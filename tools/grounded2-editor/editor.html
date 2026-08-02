@@ -59,6 +59,13 @@
     <button class="tab is-active" data-tab="overview" type="button">Overview</button>
     <button class="tab" data-tab="meta" type="button">Header</button>
     <button class="tab" data-tab="vitals" type="button">Vitals &amp; Molars</button>
+    <button class="tab" data-tab="gear" type="button">Weapons &amp; Armor</button>
+    <button class="tab" data-tab="mutations" type="button">Mutations</button>
+    <button class="tab" data-tab="progress" type="button">Quests</button>
+    <button class="tab" data-tab="tech" type="button">Tech / Analyze</button>
+    <button class="tab" data-tab="world" type="button">World</button>
+    <button class="tab" data-tab="chests" type="button">Chests</button>
+    <button class="tab" data-tab="pets" type="button">Pets / Omni</button>
     <button class="tab" data-tab="inventory" type="button">Items</button>
     <button class="tab" data-tab="features" type="button">Feature map</button>
     <button class="tab" data-tab="cheats" type="button">Notes</button>
@@ -162,6 +169,253 @@
       </div>
     </section>
 
+    <section id="panel-gear" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Weapons &amp; armor (smithing)</h2>
+        <p>Smithing Station fields on HostPlayer inventory / equipment: enhancement level (0–9), path (Mighty / Bulky…), durability. One-shot &amp; god-armor push max station upgrades.</p>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-oneshot">One-shot weapons</button>
+        <button type="button" class="btn btn--accent" id="btn-godarmor">God mode armor (Bulky)</button>
+        <button type="button" class="btn btn--accent" id="btn-sleekarmor">Sleek IX armor</button>
+        <button type="button" class="btn" id="btn-oneshot-ngp">One-shot NG+ XV</button>
+        <button type="button" class="btn" id="btn-sleek-ngp">Sleek NG+ XV</button>
+        <button type="button" class="btn" id="btn-gear-refresh">Reload</button>
+      </div>
+      <p class="hint">One-shot: Mighty IX + attack amp ×100 + max durability. God armor: Bulky IX + huge durability. Needs armor pieces in the bag/equipment — early saves may only have weapons. Close the game before install.</p>
+      <div id="equip-doll" class="equip-doll" aria-label="Equipped gear">
+        <div class="equip-doll__grid">
+          <div class="equip-slot" data-slot="head"><span class="equip-slot__label">Head</span><span class="equip-slot__body" id="doll-head">—</span></div>
+          <div class="equip-slot" data-slot="mainhand"><span class="equip-slot__label">Main</span><span class="equip-slot__body" id="doll-mainhand">—</span></div>
+          <div class="equip-slot equip-slot--torso" data-slot="chest"><span class="equip-slot__label">Chest</span><span class="equip-slot__body" id="doll-chest">—</span></div>
+          <div class="equip-slot" data-slot="offhand"><span class="equip-slot__label">Off</span><span class="equip-slot__body" id="doll-offhand">—</span></div>
+          <div class="equip-slot" data-slot="legs"><span class="equip-slot__label">Legs</span><span class="equip-slot__body" id="doll-legs">—</span></div>
+          <div class="equip-slot" data-slot="trinket"><span class="equip-slot__label">Trinket</span><span class="equip-slot__body" id="doll-trinket">—</span></div>
+        </div>
+        <p class="hint" id="doll-hint">Equipped slots from EquipmentComponent.</p>
+      </div>
+      <div id="gear-missing" class="callout" hidden>No weapons/armor parsed from HostPlayer inventory or equipment.</div>
+      <div class="table-wrap">
+        <table class="data-table" id="gear-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Where</th>
+              <th>Kind</th>
+              <th>Level</th>
+              <th>Path</th>
+              <th>Armor path</th>
+              <th>Durability</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-mutations" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Mutations (PerkComponent)</h2>
+        <p>Unlock / set mutation phase on HostPlayer. Phase −1 = locked, 0–2 = phases I–III. Slot upgrades come from milk-molar <code>Perks</code> when present.</p>
+      </div>
+      <div class="form-grid">
+        <label>Mutation slots upgrade (0–3)
+          <input id="mut-slots" type="number" min="0" max="3" step="1" value="0" />
+        </label>
+        <label class="hint-label">Effective slots<span id="mut-slots-hint" class="hint">—</span></label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-mut-slots">Apply slots</button>
+        <button type="button" class="btn btn--accent" id="btn-mut-unlock">Unlock all (phase III)</button>
+        <button type="button" class="btn" id="btn-mut-refresh">Reload</button>
+      </div>
+      <p class="hint" id="mut-hint">Load a save to edit mutations.</p>
+      <div class="table-wrap">
+        <table class="data-table" id="mut-table">
+          <thead>
+            <tr>
+              <th>Mutation</th>
+              <th>Id</th>
+              <th>Phase</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-progress" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Quests</h2>
+        <p>QuestManager entries in <code>World.csav</code> (<code>Table_Quests_ALL</code>). Complete marks the header active and every objective step done.</p>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-quest-complete-all">Complete all quests</button>
+        <button type="button" class="btn" id="btn-quest-refresh">Reload</button>
+      </div>
+      <p class="hint" id="quest-hint">Load a save with World.csav to edit quests.</p>
+      <div class="table-wrap">
+        <table class="data-table" id="quest-table">
+          <thead>
+            <tr>
+              <th>Quest</th>
+              <th>Id</th>
+              <th>Steps</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-tech" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Knowledge &amp; analyzer</h2>
+        <p>PartyComponent in <code>World.csav</code>: PDA knowledge list + Resource Analyzer unlocks. Analyze starter bundle teaches common G2 materials.</p>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-tech-analyze">Analyze starter bundle</button>
+        <button type="button" class="btn btn--accent" id="btn-tech-chips">Unlock TechChips</button>
+        <button type="button" class="btn" id="btn-tech-refresh">Reload</button>
+      </div>
+      <div class="form-grid">
+        <label>Add knowledge id
+          <input id="tech-know-name" type="text" placeholder="TechChip_Ominent_Super_Snackbar" />
+        </label>
+        <label>Add analyzed id
+          <input id="tech-anal-name" type="text" placeholder="FiberRaw" />
+        </label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn" id="btn-tech-add-know">Add knowledge</button>
+        <button type="button" class="btn" id="btn-tech-add-anal">Add analyzed</button>
+      </div>
+      <p class="hint" id="tech-hint">Load World.csav to browse knowledge / analyzed lists.</p>
+      <div class="table-wrap">
+        <table class="data-table" id="tech-know-table">
+          <thead><tr><th>Knowledge</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="tech-anal-table">
+          <thead><tr><th>Analyzed</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-world" class="panel" hidden>
+      <div class="panel__head">
+        <h2>World systems</h2>
+        <p>Buildings, achievements, and calendar day on <code>World.csav</code> / HostPlayer.</p>
+      </div>
+      <h3 class="subhead">Map / fog</h3>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-fog-reveal">Reveal all fog</button>
+      </div>
+      <p class="hint" id="fog-hint">—</p>
+      <p class="hint" id="survey-hint">—</p>
+      <h3 class="subhead">Calendar</h3>
+      <div class="form-grid">
+        <label>Day value<input id="cal-day" type="number" min="0" max="10000" step="0.01" /></label>
+        <label>Hour hint (0–24)<input id="cal-hour" type="number" min="0" max="23.99" step="0.25" /></label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-cal-apply">Apply day</button>
+        <button type="button" class="btn" id="btn-cal-dawn">Dawn</button>
+        <button type="button" class="btn" id="btn-cal-noon">Noon</button>
+        <button type="button" class="btn" id="btn-cal-dusk">Dusk</button>
+      </div>
+      <p class="hint" id="cal-hint">—</p>
+      <h3 class="subhead">Buildings</h3>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-build-unlock">Unlock all known buildings</button>
+        <button type="button" class="btn" id="btn-build-refresh">Reload</button>
+      </div>
+      <p class="hint" id="build-hint">—</p>
+      <div class="table-wrap">
+        <table class="data-table" id="build-table">
+          <thead><tr><th>Building</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <h3 class="subhead">Achievements</h3>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-ach-complete">Complete all achievements</button>
+      </div>
+      <p class="hint" id="ach-hint">—</p>
+      <div class="table-wrap">
+        <table class="data-table" id="ach-table">
+          <thead><tr><th>Id</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-chests" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Chests &amp; storage</h2>
+        <p>World.csav InventoryComponents (chests, baskets). Early saves may have none placed yet.</p>
+      </div>
+      <div class="form-grid">
+        <label>Storage
+          <select id="chest-select"></select>
+        </label>
+        <label>Item id
+          <input id="chest-add-name" type="text" placeholder="FiberRaw" />
+        </label>
+        <label>Quantity<input id="chest-add-qty" type="number" min="1" max="9999" step="1" value="1" /></label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-chest-add">Add / stack</button>
+        <button type="button" class="btn" id="btn-chest-refresh">Reload</button>
+      </div>
+      <p class="hint" id="chest-hint">Load a save with World.csav to browse storage.</p>
+      <div class="table-wrap">
+        <table class="data-table" id="chest-edit-table">
+          <thead>
+            <tr><th>Item</th><th>Stack</th><th></th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-pets" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Omni-tool, pets &amp; buggy</h2>
+        <p>HostPlayer OmniTool tiers, PetStorage bag skim, and buggy upgrade status.</p>
+      </div>
+      <h3 class="subhead">Omni-tool</h3>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-omni-max">Max Omni tiers (IV)</button>
+      </div>
+      <p class="hint" id="omni-hint">—</p>
+      <h3 class="subhead">Pet storage</h3>
+      <p class="hint" id="pet-hint">—</p>
+      <div class="table-wrap">
+        <table class="data-table" id="pet-table">
+          <thead><tr><th>Item</th><th>Stack</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <h3 class="subhead">Buggy upgrades</h3>
+      <p class="hint" id="buggy-hint">—</p>
+      <h3 class="subhead">Hauling</h3>
+      <p class="hint" id="haul-hint">Items currently on HaulingComponent (empty if not carrying).</p>
+      <div class="table-wrap">
+        <table class="data-table" id="haul-table">
+          <thead><tr><th>Item</th><th>Stack</th><th>Enhancement</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
     <section id="panel-inventory" class="panel" hidden>
       <div class="panel__head">
         <h2>Inventory</h2>
@@ -222,9 +476,14 @@
         <p>Grounded 2 Early Access — prefer backups. No Cheat Engine table in this pass.</p>
       </div>
       <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-op-preset">Make me OP</button>
+        <button type="button" class="btn" id="btn-status-clear">Clear status ailments</button>
+        <button type="button" class="btn" id="btn-compare-folder">Compare folder…</button>
         <button type="button" class="btn" id="btn-dry-run">Oodle dry-run</button>
         <button type="button" class="btn" id="btn-check-game">Check if Grounded 2 may be running</button>
       </div>
+      <p class="hint" id="preset-hint">OP fills vitals, molars, science, mutations, quests, buildings, analyze, gear, fog, omni.</p>
+      <pre id="compare-out" class="hint" style="white-space:pre-wrap"></pre>
       <pre id="dry-run-out" class="hint" style="white-space:pre-wrap"></pre>
       <h3 class="subhead">Tips</h3>
       <div class="table-wrap">
@@ -244,7 +503,19 @@
   <script src="csav.js"></script>
   <script src="header.js"></script>
   <script src="player.js"></script>
+  <script src="gear.js"></script>
+  <script src="perks.js"></script>
+  <script src="progress.js"></script>
+  <script src="buildings.js"></script>
+  <script src="tech.js"></script>
   <script src="inventory.js"></script>
+  <script src="storage.js"></script>
+  <script src="calendar.js"></script>
+  <script src="position.js"></script>
+  <script src="hauling.js"></script>
+  <script src="map.js"></script>
+  <script src="pets.js"></script>
+  <script src="presets.js"></script>
   <script src="save.js"></script>
   <script type="module" src="app.js"></script>
 </body>

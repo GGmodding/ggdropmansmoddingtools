@@ -7,11 +7,36 @@ import { decompress as oozDecompress } from "./vendor/index.js";
   const H = window.GroundedHeader;
   const P = window.GroundedPlayer;
   const S = window.GroundedSave;
+  const G = window.GroundedGear;
+  const Perks = window.GroundedPerks;
+  const Progress = window.GroundedProgress;
+  const Tech = window.GroundedTech;
   const Inv = window.GroundedInventory;
+  const Stor = window.GroundedStorage;
+  const Cal = window.GroundedCalendar;
+  const Pos = window.GroundedPosition;
+  const Presets = window.GroundedPresets;
+  const MapFog = window.GroundedMap;
+  const Pets = window.GroundedPets;
+  const Haul = window.GroundedHauling;
   const D = window.GroundedData;
   const $ = (id) => document.getElementById(id);
 
-  const PANELS = ["overview", "meta", "vitals", "inventory", "features", "cheats"];
+  const PANELS = [
+    "overview",
+    "meta",
+    "vitals",
+    "gear",
+    "mutations",
+    "progress",
+    "tech",
+    "world",
+    "chests",
+    "pets",
+    "inventory",
+    "features",
+    "cheats",
+  ];
 
   const state = {
     slotName: "Grounded2Save",
@@ -375,6 +400,513 @@ import { decompress as oozDecompress } from "./vendor/index.js";
     await loadFromSlotMap(slotMap);
   }
 
+  function refreshEquipDoll() {
+    const hint = $("doll-hint");
+    const slotIds = ["head", "chest", "legs", "mainhand", "offhand", "trinket"];
+    if (!state.hostRaw || !G || typeof G.parseEquipmentDoll !== "function") {
+      slotIds.forEach((id) => {
+        const el = $("doll-" + id);
+        if (el) el.innerHTML = "—";
+        const wrap = el && el.closest(".equip-slot");
+        if (wrap) wrap.classList.add("is-empty");
+      });
+      if (hint) hint.textContent = "HostPlayer not loaded.";
+      return;
+    }
+    const doll = G.parseEquipmentDoll(state.hostRaw);
+    let filled = 0;
+    for (const id of slotIds) {
+      const el = $("doll-" + id);
+      const wrap = el && el.closest(".equip-slot");
+      const it = doll.slots[id];
+      if (!el) continue;
+      if (!it) {
+        el.innerHTML = "—";
+        if (wrap) wrap.classList.add("is-empty");
+        continue;
+      }
+      filled++;
+      if (wrap) wrap.classList.remove("is-empty");
+      const meta =
+        it.kind === "armor"
+          ? "L" + it.level + " · " + (it.mid || "None")
+          : "L" + it.level + " · " + (it.enhancement || "None");
+      const canMax = !/Trinket|Accessory/i.test(it.name);
+      el.innerHTML =
+        "<div><code>" +
+        escapeHtml(it.name) +
+        "</code></div>" +
+        "<div class=\"equip-slot__meta\">" +
+        escapeHtml(meta) +
+        "</div>" +
+        (canMax
+          ? "<div class=\"equip-slot__actions\"><button type=\"button\" class=\"btn btn-doll-max\" data-slot=\"" +
+            escapeHtml(id) +
+            "\">Max</button></div>"
+          : "");
+    }
+    if (hint) {
+      hint.textContent = filled
+        ? filled + " equipped slot(s). Max applies one-shot / god path to that piece."
+        : "No equipped gear parsed (empty hands / unknown item names).";
+    }
+  }
+
+  function refreshGearTable() {
+    const missing = $("gear-missing");
+    const tbody = $("gear-table").querySelector("tbody");
+    refreshEquipDoll();
+    if (!state.hostRaw || !G) {
+      missing.hidden = false;
+      tbody.innerHTML = "";
+      return;
+    }
+    const gear = G.parseGear(state.hostRaw);
+    if (!gear.ok) {
+      missing.hidden = false;
+      tbody.innerHTML = "";
+      return;
+    }
+    missing.hidden = true;
+    tbody.innerHTML = gear.items
+      .map((it, idx) => {
+        const armorPath =
+          it.kind === "armor" ? escapeHtml(it.mid || "—") : "—";
+        const weaponPath =
+          it.kind === "armor" ? "—" : escapeHtml(it.enhancement || "—");
+        return (
+          "<tr data-gear-idx=\"" +
+          idx +
+          "\">" +
+          "<td><code>" +
+          escapeHtml(it.name) +
+          "</code></td>" +
+          "<td>" +
+          escapeHtml(it.region) +
+          "</td>" +
+          "<td>" +
+          escapeHtml(it.kind) +
+          "</td>" +
+          "<td>" +
+          it.level +
+          "</td>" +
+          "<td>" +
+          weaponPath +
+          "</td>" +
+          "<td>" +
+          armorPath +
+          "</td>" +
+          "<td>" +
+          Math.round(it.durability * 10) / 10 +
+          "</td>" +
+          "<td><button type=\"button\" class=\"btn btn-gear-max\" data-idx=\"" +
+          idx +
+          "\">Max</button></td>" +
+          "</tr>"
+        );
+      })
+      .join("");
+  }
+
+  function maxSingleGear(idx) {
+    if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+    const gear = G.parseGear(state.hostRaw);
+    const it = gear.items[idx];
+    if (!it) throw new Error("Item not found.");
+    const patch =
+      it.kind === "armor"
+        ? {
+            level: G.MAX_SMITH_LEVEL,
+            mid: "Bulky",
+            durability: G.GOD_DURABILITY,
+            fullDurabilityHead: true,
+          }
+        : {
+            level: G.MAX_SMITH_LEVEL,
+            enhancement: "Mighty",
+            attackMult: G.ONE_SHOT_ATTACK_MULT,
+            durability: G.GOD_DURABILITY,
+            fullDurabilityHead: true,
+          };
+    const result = G.writeGearItem(state.hostRaw, idx, patch);
+    commitHostRaw(result.bytes);
+    return result.values;
+  }
+
+  function refreshMutationsEditor() {
+    const hint = $("mut-hint");
+    const tbody = $("mut-table").querySelector("tbody");
+    if (!state.hostRaw || !Perks) {
+      hint.textContent = "Load a save to edit mutations.";
+      tbody.innerHTML = "";
+      return;
+    }
+    const parsed = Perks.parsePerkComponent(state.hostRaw);
+    const slots = Perks.parsePerksUpgrade(state.hostRaw);
+    if (slots) {
+      $("mut-slots").disabled = false;
+      $("mut-slots").value = slots.level;
+      $("mut-slots-hint").textContent = " → " + (2 + slots.level) + " equip slots";
+      $("btn-mut-slots").disabled = false;
+    } else {
+      $("mut-slots").disabled = true;
+      $("mut-slots-hint").textContent = " (Perks upgrade not in this save yet)";
+      $("btn-mut-slots").disabled = true;
+    }
+    if (!parsed.ok) {
+      hint.textContent = "Could not parse PerkComponent.";
+      tbody.innerHTML = "";
+      return;
+    }
+    const unlocked = parsed.entries.filter((e) => e.phase >= 0).length;
+    hint.textContent =
+      parsed.entries.length +
+      " mutations · " +
+      unlocked +
+      " unlocked · phase −1 locked, 0–2 = I–III.";
+    tbody.innerHTML = parsed.entries
+      .map((e, idx) => {
+        return (
+          "<tr>" +
+          "<td>" +
+          escapeHtml(e.display) +
+          "</td>" +
+          "<td><code>" +
+          escapeHtml(e.id) +
+          "</code></td>" +
+          "<td><input type=\"number\" min=\"-1\" max=\"2\" step=\"1\" value=\"" +
+          e.phase +
+          "\" data-mut-phase=\"" +
+          idx +
+          "\" style=\"width:4rem\" /></td>" +
+          "<td>" +
+          "<button type=\"button\" class=\"btn btn-mut-set\" data-idx=\"" +
+          idx +
+          "\">Set</button> " +
+          "<button type=\"button\" class=\"btn btn-mut-max\" data-idx=\"" +
+          idx +
+          "\">III</button>" +
+          "</td>" +
+          "</tr>"
+        );
+      })
+      .join("");
+  }
+
+  function refreshQuestsEditor() {
+    const hint = $("quest-hint");
+    const tbody = $("quest-table").querySelector("tbody");
+    if (!state.worldRaw || !Progress) {
+      hint.textContent = "Load a save with World.csav to edit quests.";
+      tbody.innerHTML = "";
+      return;
+    }
+    const parsed = Progress.parseQuests(state.worldRaw);
+    if (!parsed.ok) {
+      hint.textContent = "No QuestManager / Table_Quests_ALL entries found.";
+      tbody.innerHTML = "";
+      return;
+    }
+    const done = parsed.quests.filter((q) => q.complete).length;
+    hint.textContent =
+      parsed.quests.length + " quests · " + done + " complete · edits rewrite World.csav.";
+    tbody.innerHTML = parsed.quests
+      .map((q) => {
+        const status = q.complete
+          ? "complete"
+          : q.active
+            ? "active " + q.doneSteps + "/" + q.stepCount
+            : "locked " + q.doneSteps + "/" + q.stepCount;
+        return (
+          "<tr>" +
+          "<td>" +
+          escapeHtml(q.display) +
+          "</td>" +
+          "<td><code>" +
+          escapeHtml(q.id) +
+          "</code></td>" +
+          "<td>" +
+          q.doneSteps +
+          "/" +
+          q.stepCount +
+          "</td>" +
+          "<td>" +
+          escapeHtml(status) +
+          "</td>" +
+          "<td>" +
+          (q.complete
+            ? "—"
+            : "<button type=\"button\" class=\"btn btn-quest-done\" data-id=\"" +
+              escapeHtml(q.id) +
+              "\">Complete</button>") +
+          "</td>" +
+          "</tr>"
+        );
+      })
+      .join("");
+  }
+
+  function commitWorldRaw(bytes) {
+    state.worldRaw = bytes;
+    setFile("World.csav", C.compressCsav(bytes));
+    setDirty(true);
+    refreshAll();
+  }
+
+  function refreshTechEditor() {
+    const hint = $("tech-hint");
+    const knowBody = $("tech-know-table").querySelector("tbody");
+    const analBody = $("tech-anal-table").querySelector("tbody");
+    if (!state.worldRaw || !Tech) {
+      hint.textContent = "Load World.csav to browse knowledge / analyzed lists.";
+      knowBody.innerHTML = "";
+      analBody.innerHTML = "";
+      return;
+    }
+    const parsed = Tech.parsePartyTech(state.worldRaw);
+    if (!parsed.ok) {
+      hint.textContent = "Could not parse PartyComponent tech lists.";
+      knowBody.innerHTML = "";
+      analBody.innerHTML = "";
+      return;
+    }
+    hint.textContent =
+      parsed.knowledge.length +
+      " knowledge · " +
+      parsed.analyzed.length +
+      " analyzed" +
+      (parsed.knowledgeCountMatches ? "" : " · knowledge count field nonstandard (adds still insert records)");
+    knowBody.innerHTML = parsed.knowledge
+      .map((k) => "<tr><td><code>" + escapeHtml(k.name) + "</code></td></tr>")
+      .join("");
+    analBody.innerHTML = parsed.analyzed
+      .map((k) => "<tr><td><code>" + escapeHtml(k.name) + "</code></td></tr>")
+      .join("");
+  }
+
+  function refreshWorldEditor() {
+    if (Cal && state.worldRaw) {
+      const cal = Cal.parseCalendar(state.worldRaw);
+      if (cal.ok) {
+        $("cal-day").value = Math.round(cal.day * 100) / 100;
+        $("cal-hour").value = Math.round(cal.hourHint * 100) / 100;
+        $("cal-hint").textContent =
+          "Day " + cal.day.toFixed(2) + " · ~" + cal.hourHint.toFixed(1) + "h";
+      } else {
+        $("cal-hint").textContent = "CalendarComponent not parsed.";
+      }
+    }
+    if (Progress && state.worldRaw && Progress.parseBuildings) {
+      const b = Progress.parseBuildings(state.worldRaw);
+      $("build-hint").textContent = b.ok
+        ? b.entries.length + " unlocked buildings"
+        : "No building unlock list found.";
+      $("build-table").querySelector("tbody").innerHTML = b.ok
+        ? b.entries
+            .slice(0, 200)
+            .map((e) => "<tr><td><code>" + escapeHtml(e.name) + "</code></td></tr>")
+            .join("")
+        : "";
+    }
+    if (Progress && state.hostRaw && Progress.parseAchievements) {
+      const a = Progress.parseAchievements(state.hostRaw);
+      const unlocked = a.ok ? a.entries.filter((e) => e.unlocked).length : 0;
+      $("ach-hint").textContent = a.ok
+        ? a.entries.length + " achievements · " + unlocked + " unlocked"
+        : "AchievementsComponent not parsed.";
+      $("ach-table").querySelector("tbody").innerHTML = a.ok
+        ? a.entries
+            .map(
+              (e) =>
+                "<tr><td><code>" +
+                escapeHtml(e.id) +
+                "</code></td><td>" +
+                (e.unlocked ? "done" : "locked") +
+                "</td></tr>"
+            )
+            .join("")
+        : "";
+    }
+    if (MapFog && state.worldRaw) {
+      const fog = MapFog.parseFog(state.worldRaw);
+      $("fog-hint").textContent = fog.ok
+        ? "Fog blob " +
+          fog.count +
+          " bytes · " +
+          fog.pct +
+          "% revealed (" +
+          fog.revealed +
+          " ff / " +
+          fog.fogged +
+          " zero)"
+        : "FogOfWarComponent not parsed.";
+      const survey = MapFog.parseSurvey(state.worldRaw);
+      $("survey-hint").textContent = survey.ok
+        ? "ResourceSurvey: tag " + survey.tag + " · " + survey.note
+        : "ResourceSurveyComponent not found.";
+    }
+  }
+
+  function refreshPetsEditor() {
+    if (Pets && state.hostRaw) {
+      const omni = Pets.parseOmni(state.hostRaw);
+      $("omni-hint").textContent = omni.ok
+        ? "Version " + omni.version + " · tiers [" + omni.levels.join(", ") + "]"
+        : "OmniToolComponent not found.";
+      const pets = Pets.parsePetStorage(state.hostRaw);
+      $("pet-hint").textContent = pets.ok
+        ? pets.items.length +
+          " item(s) in PetStorage" +
+          (pets.hasMaster ? " (PetMaster present)" : "")
+        : "PetStorageComponent not found.";
+      $("pet-table").querySelector("tbody").innerHTML = pets.ok
+        ? pets.items
+            .map(
+              (it) =>
+                "<tr><td><code>" +
+                escapeHtml(it.name) +
+                "</code></td><td>" +
+                it.stack +
+                "</td></tr>"
+            )
+            .join("") || "<tr><td colspan=\"2\">Empty.</td></tr>"
+        : "";
+      const buggy = Pets.parseBuggy(state.hostRaw);
+      $("buggy-hint").textContent = buggy.ok
+        ? "PlayerBuggyUpgradeComponent tag " + buggy.tag + " — " + buggy.note
+        : "PlayerBuggyUpgradeComponent not found.";
+    }
+    if (Haul && state.hostRaw) {
+      const haul = Haul.parseHauling(state.hostRaw);
+      $("haul-hint").textContent = haul.ok
+        ? haul.items.length + " hauled item(s)."
+        : "HaulingComponent not found.";
+      $("haul-table").querySelector("tbody").innerHTML = haul.ok
+        ? haul.items.length
+          ? haul.items
+              .map(
+                (it) =>
+                  "<tr><td><code>" +
+                  escapeHtml(it.name) +
+                  "</code></td><td>" +
+                  it.stack +
+                  "</td><td>" +
+                  escapeHtml(it.enhancement === "None" ? "—" : it.enhancement || "—") +
+                  "</td></tr>"
+              )
+              .join("")
+          : "<tr><td colspan=\"3\">Nothing hauled right now.</td></tr>"
+        : "";
+    }
+  }
+
+  function snapshotSlotStats(hostRaw, worldRaw) {
+    const snap = {
+      gear: 0,
+      mutations: 0,
+      buildings: 0,
+      knowledge: 0,
+      quests: 0,
+      fogPct: null,
+      omni: null,
+    };
+    try {
+      if (hostRaw && G) snap.gear = G.parseGear(hostRaw).items.length;
+    } catch (_) {}
+    try {
+      if (hostRaw && Perks) {
+        snap.mutations = Perks.parsePerkComponent(hostRaw).entries.filter(
+          (e) => e.phase >= 0
+        ).length;
+      }
+    } catch (_) {}
+    try {
+      if (worldRaw && Progress && Progress.parseBuildings) {
+        const b = Progress.parseBuildings(worldRaw);
+        if (b.ok) snap.buildings = b.entries.length;
+      }
+    } catch (_) {}
+    try {
+      if (worldRaw && Progress && Progress.parseQuests) {
+        const q = Progress.parseQuests(worldRaw);
+        if (q.ok) snap.quests = q.entries.length;
+      }
+    } catch (_) {}
+    try {
+      if (worldRaw && Tech) {
+        const t = Tech.parsePartyTech(worldRaw);
+        if (t && t.ok && t.knowledge) snap.knowledge = t.knowledge.length;
+      }
+    } catch (_) {}
+    try {
+      if (hostRaw && P) snap.molars = P.parseMolars(hostRaw, worldRaw);
+    } catch (_) {}
+    try {
+      if (worldRaw && MapFog) {
+        const f = MapFog.parseFog(worldRaw);
+        if (f.ok) snap.fogPct = f.pct;
+      }
+    } catch (_) {}
+    try {
+      if (hostRaw && Pets) {
+        const o = Pets.parseOmni(hostRaw);
+        if (o.ok) snap.omni = o.levels.join("/");
+      }
+    } catch (_) {}
+    return snap;
+  }
+
+  function refreshChestsEditor() {
+    const hint = $("chest-hint");
+    const sel = $("chest-select");
+    const tbody = $("chest-edit-table").querySelector("tbody");
+    if (!state.worldRaw || !Stor) {
+      hint.textContent = "Load World.csav to browse storage.";
+      sel.innerHTML = "";
+      tbody.innerHTML = "";
+      return;
+    }
+    const listed = Stor.listStorages(state.worldRaw);
+    if (!listed.ok) {
+      hint.textContent =
+        "No chest/storage inventories found in this World (place chests in-game first).";
+      sel.innerHTML = "";
+      tbody.innerHTML = "";
+      return;
+    }
+    const prev = sel.value;
+    sel.innerHTML = listed.storages
+      .map(
+        (s, i) =>
+          "<option value=\"" +
+          i +
+          "\">" +
+          escapeHtml(s.label) +
+          " (" +
+          s.itemCount +
+          ")</option>"
+      )
+      .join("");
+    if (prev && Number(prev) < listed.storages.length) sel.value = prev;
+    const idx = Number(sel.value) || 0;
+    const st = listed.storages[idx];
+    hint.textContent =
+      listed.storages.length + " storages · viewing “" + st.label + "”.";
+    tbody.innerHTML = st.items
+      .map((it, i) => {
+        return (
+          "<tr><td><code>" +
+          escapeHtml(it.name) +
+          "</code></td><td>" +
+          it.stack +
+          "</td><td><button type=\"button\" class=\"btn btn-chest-rm\" data-i=\"" +
+          i +
+          "\">Remove</button></td></tr>"
+        );
+      })
+      .join("");
+  }
+
   function refreshInventoryUi() {
     const hint = $("inv-hint");
     const tbody = $("inv-edit-table").querySelector("tbody");
@@ -620,6 +1152,13 @@ import { decompress as oozDecompress } from "./vendor/index.js";
 
     refreshInventoryUi();
     refreshCatalog();
+    refreshGearTable();
+    refreshMutationsEditor();
+    refreshQuestsEditor();
+    refreshTechEditor();
+    refreshWorldEditor();
+    refreshChestsEditor();
+    refreshPetsEditor();
 
     $("feature-table").querySelector("tbody").innerHTML = D.FEATURE_MATRIX.map(
       (f) =>
@@ -930,6 +1469,420 @@ import { decompress as oozDecompress } from "./vendor/index.js";
       }
     });
     $("catalog-filter").addEventListener("input", () => refreshCatalog());
+
+    $("btn-gear-refresh").addEventListener("click", () => refreshAll());
+    $("btn-oneshot").addEventListener("click", () => {
+      try {
+        if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+        const r = G.applyOneShotWeapons(state.hostRaw);
+        commitHostRaw(r.bytes);
+        setStatus("One-shot weapons applied to " + r.changed + " item(s).");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-godarmor").addEventListener("click", () => {
+      try {
+        if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+        const r = G.applyGodArmor(state.hostRaw);
+        commitHostRaw(r.bytes);
+        setStatus(
+          r.changed
+            ? "God mode armor applied to " + r.changed + " item(s)."
+            : "No armor pieces found to upgrade (craft/equip armor first)."
+        );
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-sleekarmor").addEventListener("click", () => {
+      try {
+        if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+        const r = G.applySleekArmor(state.hostRaw);
+        commitHostRaw(r.bytes);
+        setStatus(
+          r.changed
+            ? "Sleek armor applied to " + r.changed + " item(s) @ " + r.level + "."
+            : "No armor pieces found to upgrade."
+        );
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-oneshot-ngp").addEventListener("click", () => {
+      try {
+        if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+        const r = G.applyOneShotWeapons(state.hostRaw, { ngPlus: true });
+        commitHostRaw(r.bytes);
+        setStatus(
+          "One-shot NG+ weapons: " + r.changed + " item(s) @ Mighty " + r.level + "."
+        );
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-sleek-ngp").addEventListener("click", () => {
+      try {
+        if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+        const r = G.applySleekArmor(state.hostRaw, { ngPlus: true });
+        commitHostRaw(r.bytes);
+        setStatus(
+          r.changed
+            ? "Sleek NG+ armor: " + r.changed + " item(s) @ Sleek " + r.level + "."
+            : "No armor pieces found to upgrade."
+        );
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("gear-table").addEventListener("click", (e) => {
+      const btn = e.target.closest(".btn-gear-max");
+      if (!btn) return;
+      try {
+        const idx = Number(btn.getAttribute("data-idx"));
+        const values = maxSingleGear(idx);
+        setStatus("Maxed " + values.name + ": " + JSON.stringify(values));
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("equip-doll").addEventListener("click", (e) => {
+      const btn = e.target.closest(".btn-doll-max");
+      if (!btn) return;
+      try {
+        if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+        const slot = btn.getAttribute("data-slot");
+        const doll = G.parseEquipmentDoll(state.hostRaw);
+        const item = doll.slots[slot];
+        if (!item) throw new Error("Empty slot.");
+        const idx = G.gearIndexForDollItem(state.hostRaw, item);
+        if (idx < 0) throw new Error("That slot is not smithable here (trinket?).");
+        const values = maxSingleGear(idx);
+        setStatus("Maxed equipped " + values.name + ".");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+
+    $("btn-mut-refresh").addEventListener("click", () => refreshAll());
+    $("btn-mut-slots").addEventListener("click", () => {
+      try {
+        if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+        const r = Perks.writePerksSlotUpgrade(state.hostRaw, $("mut-slots").value);
+        commitHostRaw(r.bytes);
+        setStatus("Mutation slots upgrade → " + r.level + " (equip " + r.slots + ").");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-mut-unlock").addEventListener("click", () => {
+      try {
+        if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+        const r = Perks.unlockAllMutations(state.hostRaw, Perks.MAX_PHASE);
+        commitHostRaw(r.bytes);
+        setStatus(
+          "Unlocked " + r.changed + " / " + r.total + " mutations to phase " + r.phase + "."
+        );
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("mut-table").addEventListener("click", (e) => {
+      const setBtn = e.target.closest(".btn-mut-set");
+      const maxBtn = e.target.closest(".btn-mut-max");
+      if (!setBtn && !maxBtn) return;
+      try {
+        if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+        const idx = Number((setBtn || maxBtn).getAttribute("data-idx"));
+        let phase = Perks.MAX_PHASE;
+        if (setBtn) {
+          const inp = $("mut-table").querySelector(
+            'input[data-mut-phase="' + idx + '"]'
+          );
+          phase = inp ? inp.value : 0;
+        }
+        const r = Perks.writePerkPhase(state.hostRaw, idx, phase);
+        commitHostRaw(r.bytes);
+        setStatus("Set " + r.id + " → phase " + r.phase + ".");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+
+    $("btn-quest-refresh").addEventListener("click", () => refreshAll());
+    $("btn-quest-complete-all").addEventListener("click", () => {
+      try {
+        if (!state.worldRaw) throw new Error("World.csav not decompressed.");
+        if (
+          !confirm(
+            "Mark all " +
+              (Progress.parseQuests(state.worldRaw).quests || []).length +
+              " quests complete in World.csav?"
+          )
+        ) {
+          return;
+        }
+        const r = Progress.completeAllQuests(state.worldRaw);
+        commitWorldRaw(r.bytes);
+        setStatus("Completed " + r.changed + " / " + r.total + " quests.");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("quest-table").addEventListener("click", (e) => {
+      const btn = e.target.closest(".btn-quest-done");
+      if (!btn) return;
+      try {
+        if (!state.worldRaw) throw new Error("World.csav not decompressed.");
+        const id = btn.getAttribute("data-id");
+        const r = Progress.completeQuest(state.worldRaw, id);
+        commitWorldRaw(r.bytes);
+        setStatus("Completed quest " + id + " (" + r.steps + " steps).");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+
+    $("btn-tech-refresh").addEventListener("click", () => refreshAll());
+    $("btn-tech-analyze").addEventListener("click", () => {
+      try {
+        if (!state.worldRaw) throw new Error("World.csav not decompressed.");
+        const r = Tech.unlockAnalyzeStarter(state.worldRaw);
+        commitWorldRaw(r.bytes);
+        setStatus("Analyze starter: +" + r.added + " (skipped " + r.skipped + ").");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-tech-chips").addEventListener("click", () => {
+      try {
+        if (!state.worldRaw) throw new Error("World.csav not decompressed.");
+        const r = Tech.unlockTechChips(state.worldRaw);
+        commitWorldRaw(r.bytes);
+        setStatus("TechChips: +" + r.added + " (skipped " + r.skipped + ").");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-tech-add-know").addEventListener("click", () => {
+      try {
+        if (!state.worldRaw) throw new Error("World.csav not decompressed.");
+        const r = Tech.addKnowledgeItem(state.worldRaw, $("tech-know-name").value);
+        commitWorldRaw(r.bytes);
+        setStatus("Knowledge " + r.mode + ": " + r.added);
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-tech-add-anal").addEventListener("click", () => {
+      try {
+        if (!state.worldRaw) throw new Error("World.csav not decompressed.");
+        const r = Tech.addAnalyzedItem(state.worldRaw, $("tech-anal-name").value);
+        commitWorldRaw(r.bytes);
+        setStatus("Analyzed " + r.mode + ": " + r.added);
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+
+    $("btn-cal-apply").addEventListener("click", () => {
+      try {
+        if (!state.worldRaw) throw new Error("World not loaded.");
+        const r = Cal.writeCalendarDay(state.worldRaw, $("cal-day").value);
+        commitWorldRaw(r.bytes);
+        setStatus("Calendar day → " + r.day);
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    function setHour(h) {
+      try {
+        if (!state.worldRaw) throw new Error("World not loaded.");
+        const r = Cal.writeTimeOfDay(state.worldRaw, h);
+        commitWorldRaw(r.bytes);
+        setStatus("Time of day → hour " + h);
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    }
+    $("btn-cal-dawn").addEventListener("click", () => setHour(6));
+    $("btn-cal-noon").addEventListener("click", () => setHour(12));
+    $("btn-cal-dusk").addEventListener("click", () => setHour(18));
+    $("btn-build-refresh").addEventListener("click", () => refreshAll());
+    $("btn-build-unlock").addEventListener("click", () => {
+      try {
+        if (!state.worldRaw) throw new Error("World not loaded.");
+        const r = Progress.unlockAllBuildingsFromSave(state.worldRaw);
+        commitWorldRaw(r.bytes);
+        setStatus(
+          "Buildings +" + r.added + " (skipped " + r.skipped + ", owned " + r.owned + ")."
+        );
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-ach-complete").addEventListener("click", () => {
+      try {
+        if (!state.hostRaw) throw new Error("HostPlayer not loaded.");
+        const r = Progress.completeAllAchievements(state.hostRaw);
+        commitHostRaw(r.bytes);
+        setStatus("Achievements updated (" + r.changed + " flag writes, " + r.total + " entries).");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-fog-reveal").addEventListener("click", () => {
+      try {
+        if (!state.worldRaw) throw new Error("World not loaded.");
+        const r = MapFog.revealAllFog(state.worldRaw);
+        commitWorldRaw(r.bytes);
+        setStatus("Fog revealed (" + r.count + " bytes → 0xFF; was " + r.wasRevealed + " already).");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-omni-max").addEventListener("click", () => {
+      try {
+        if (!state.hostRaw) throw new Error("HostPlayer not loaded.");
+        const r = Pets.maxOmniTool(state.hostRaw, Pets.OMNI_MAX_LEVEL);
+        commitHostRaw(r.bytes);
+        setStatus(
+          "Omni tiers " +
+            (r.was || []).join("/") +
+            " → " +
+            r.levels.join("/") +
+            " (" +
+            r.changed +
+            " changed)."
+        );
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-chest-refresh").addEventListener("click", () => refreshChestsEditor());
+    $("chest-select").addEventListener("change", () => refreshChestsEditor());
+    $("btn-chest-add").addEventListener("click", () => {
+      try {
+        if (!state.worldRaw) throw new Error("World not loaded.");
+        const idx = Number($("chest-select").value);
+        const r = Stor.addStorageItem(
+          state.worldRaw,
+          idx,
+          $("chest-add-name").value,
+          $("chest-add-qty").value
+        );
+        commitWorldRaw(r.bytes);
+        setStatus("Chest add: " + JSON.stringify(r.mode || r));
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("chest-edit-table").addEventListener("click", (e) => {
+      const btn = e.target.closest(".btn-chest-rm");
+      if (!btn) return;
+      try {
+        const idx = Number($("chest-select").value);
+        const r = Stor.removeStorageItem(state.worldRaw, idx, Number(btn.getAttribute("data-i")));
+        commitWorldRaw(r.bytes);
+        setStatus("Removed " + r.removed + " from " + r.storage);
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+
+    $("btn-op-preset").addEventListener("click", () => {
+      try {
+        if (!state.hostRaw && !state.worldRaw) throw new Error("Load a save first.");
+        if (!confirm("Apply OP preset (vitals, molars, gear, mutations, quests, buildings, analyze)?")) {
+          return;
+        }
+        const r = Presets.applyOpPreset(state.hostRaw, state.worldRaw);
+        if (r.hostBytes) {
+          state.hostRaw = r.hostBytes;
+          syncPlayerCopies(C.compressCsav(state.hostRaw));
+        }
+        if (r.worldBytes) {
+          state.worldRaw = r.worldBytes;
+          setFile("World.csav", C.compressCsav(state.worldRaw));
+        }
+        setDirty(true);
+        refreshAll();
+        setStatus("OP preset: " + r.log.join(", "));
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-status-clear").addEventListener("click", () => {
+      try {
+        if (!state.hostRaw) throw new Error("HostPlayer not loaded.");
+        const r = Presets.clearStatusEffects(state.hostRaw);
+        commitHostRaw(r.bytes);
+        setStatus("Cleared status bytes (" + r.touched + " nonzero → 0).");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-compare-folder").addEventListener("click", () => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.webkitdirectory = true;
+      input.multiple = true;
+      input.addEventListener("change", async () => {
+        try {
+          if (!state.hostRaw && !state.worldRaw) {
+            throw new Error("Load the primary save first.");
+          }
+          const files = [...(input.files || [])];
+          if (!files.length) return;
+          const byName = new Map();
+          for (const f of files) {
+            const base = f.name.split(/[/\\]/).pop();
+            byName.set(base.toLowerCase(), f);
+          }
+          const hostF = byName.get("hostplayer.csav");
+          const worldF = byName.get("world.csav");
+          if (!hostF && !worldF) {
+            throw new Error("Compare folder needs HostPlayer.csav and/or World.csav.");
+          }
+          let otherHost = null;
+          let otherWorld = null;
+          if (hostF) {
+            otherHost = await C.decompressCsav(
+              new Uint8Array(await hostF.arrayBuffer()),
+              oozDecompress
+            );
+          }
+          if (worldF) {
+            otherWorld = await C.decompressCsav(
+              new Uint8Array(await worldF.arrayBuffer()),
+              oozDecompress
+            );
+          }
+          const a = snapshotSlotStats(state.hostRaw, state.worldRaw);
+          const b = snapshotSlotStats(otherHost, otherWorld);
+          const molA = a.molars || {};
+          const molB = b.molars || {};
+          const lines = [
+            "Loaded vs compare folder",
+            "gear: " + a.gear + " → " + b.gear,
+            "mutations unlocked: " + a.mutations + " → " + b.mutations,
+            "buildings: " + a.buildings + " → " + b.buildings,
+            "quests: " + a.quests + " → " + b.quests,
+            "knowledge: " + a.knowledge + " → " + b.knowledge,
+            "fog %: " + (a.fogPct ?? "—") + " → " + (b.fogPct ?? "—"),
+            "omni: " + (a.omni ?? "—") + " → " + (b.omni ?? "—"),
+            "milk molars: " + (molA.milkMolars ?? "—") + " → " + (molB.milkMolars ?? "—"),
+            "golden molars: " + (molA.goldenMolars ?? "—") + " → " + (molB.goldenMolars ?? "—"),
+            "raw science: " + (molA.rawScience ?? "—") + " → " + (molB.rawScience ?? "—"),
+          ];
+          if ($("compare-out")) $("compare-out").textContent = lines.join("\n");
+          setStatus("Compared against folder (" + files.length + " files).");
+        } catch (err) {
+          alert(err.message || String(err));
+        }
+      });
+      input.click();
+    });
 
     $("btn-dry-run").addEventListener("click", () => {
       runOodleDryRun().catch((err) => alert(err.message || String(err)));
