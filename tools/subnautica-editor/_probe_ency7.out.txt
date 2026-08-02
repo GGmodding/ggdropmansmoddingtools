@@ -1,0 +1,437 @@
+﻿=== Encyclopedia entry wire format ===
+
+@ 4955 hex 420f0a06526561646d6512050d0000f043421a0a11537572766976616c436865636b6c69737412050d0000f04342170a0e41
+len 15 fields [
+  {
+    "field": 1,
+    "wt": "b",
+    "len": 6,
+    "str": "Readme",
+    "hex": "526561646d65",
+    "nested": null
+  },
+  {
+    "field": 2,
+    "wt": "b",
+    "len": 5,
+    "str": null,
+    "hex": "0d0000f043",
+    "nested": [
+      {
+        "field": 1,
+        "wt": "f32",
+        "float": 480,
+        "hex": "0000f043"
+      }
+    ]
+  }
+]
+
+@ 4972 hex 421a0a11537572766976616c436865636b6c69737412050d0000f04342170a0e4175726f72614f7665727669657712050d00
+len 26 fields [
+  {
+    "field": 1,
+    "wt": "b",
+    "len": 17,
+    "str": "SurvivalChecklist",
+    "hex": "537572766976616c436865636b6c697374",
+    "nested": null
+  },
+  {
+    "field": 2,
+    "wt": "b",
+    "len": 5,
+    "str": null,
+    "hex": "0d0000f043",
+    "nested": [
+      {
+        "field": 1,
+        "wt": "f32",
+        "float": 480,
+        "hex": "0000f043"
+      }
+    ]
+  }
+]
+
+@ 5000 hex 42170a0e4175726f72614f7665727669657712050d0000f04342100a074145505375697412050d0000f04342100a074c6966
+len 23 fields [
+  {
+    "field": 1,
+    "wt": "b",
+    "len": 14,
+    "str": "AuroraOverview",
+    "hex": "4175726f72614f76657276696577",
+    "nested": null
+  },
+  {
+    "field": 2,
+    "wt": "b",
+    "len": 5,
+    "str": null,
+    "hex": "0d0000f043",
+    "nested": [
+      {
+        "field": 1,
+        "wt": "f32",
+        "float": 480,
+        "hex": "0000f043"
+      }
+    ]
+  }
+]
+
+@ 5331 hex 42100a074761736f706f6412050dd8f0a94442120a09437265657076696e6512050d6284c744420f0a064d65736d65721205
+len 16 fields [
+  {
+    "field": 1,
+    "wt": "b",
+    "len": 7,
+    "str": "Gasopod",
+    "hex": "4761736f706f64",
+    "nested": null
+  },
+  {
+    "field": 2,
+    "wt": "b",
+    "len": 5,
+    "str": null,
+    "hex": "0dd8f0a944",
+    "nested": [
+      {
+        "field": 1,
+        "wt": "f32",
+        "float": 1359.5263671875,
+        "hex": "d8f0a944"
+      }
+    ]
+  }
+]
+
+@ 5451 hex 422b0a22526164696f5368616c6c6f777332324e6f5369676e616c416c744461746162616e6b12050d88901c4542110a084c
+len 43 fields [
+  {
+    "field": 1,
+    "wt": "b",
+    "len": 34,
+    "str": "RadioShallows22NoSignalAltDatabank",
+    "hex": "526164696f5368616c6c6f777332324e6f5369676e616c416c744461746162616e6b",
+    "nested": null
+  },
+  {
+    "field": 2,
+    "wt": "b",
+    "len": 5,
+    "str": null,
+    "hex": "0d88901c45",
+    "nested": [
+      {
+        "field": 1,
+        "wt": "f32",
+        "float": 2505.033203125,
+        "hex": "88901c45"
+      }
+    ]
+  }
+]
+
+@ 5660 hex 421a0a114175726f72615f436172676f5f5044413112050d63b6974542200a174175726f72615f4f66666963655f5465726d
+len 26 fields [
+  {
+    "field": 1,
+    "wt": "b",
+    "len": 17,
+    "str": "Aurora_Cargo_PDA1",
+    "hex": "4175726f72615f436172676f5f50444131",
+    "nested": null
+  },
+  {
+    "field": 2,
+    "wt": "b",
+    "len": 5,
+    "str": null,
+    "hex": "0d63b69745",
+    "nested": [
+      {
+        "field": 1,
+        "wt": "f32",
+        "float": 4854.79833984375,
+        "hex": "63b69745"
+      }
+    ]
+  }
+]
+
+=== Journal entry wire format ===
+
+@ 3505 hex 3a160a0d476f616c5f4c696665706f643212050dbf32f8433a140a0b476f616c5f436f7070657212
+fields [
+  {
+    "field": 1,
+    "wt": "b",
+    "len": 13,
+    "str": "Goal_Lifepod2",
+    "hex": "476f616c5f4c696665706f6432",
+    "nested": null
+  },
+  {
+    "field": 2,
+    "wt": "b",
+    "len": 5,
+    "str": null,
+    "hex": "0dbf32f843",
+    "nested": [
+      {
+        "field": 1,
+        "wt": "f32",
+        "float": 496.3964538574219,
+        "hex": "bf32f843"
+      }
+    ]
+  }
+]
+
+@ 3765 hex 3a180a0f526164696f426f756e63654261636b12050da1628e443a1d0a1453746f72795f4175726f
+fields [
+  {
+    "field": 1,
+    "wt": "b",
+    "len": 15,
+    "str": "RadioBounceBack",
+    "hex": "526164696f426f756e63654261636b",
+    "nested": null
+  },
+  {
+    "field": 2,
+    "wt": "b",
+    "len": 5,
+    "str": null,
+    "hex": "0da1628e44",
+    "nested": [
+      {
+        "field": 1,
+        "wt": "f32",
+        "float": 1139.0821533203125,
+        "hex": "a1628e44"
+      }
+    ]
+  }
+]
+
+@ 4074 hex 3a180a0f526164696f5368616c6c6f7773323212050dc3ae1c453a230a1a526164696f5368616c6c
+fields [
+  {
+    "field": 1,
+    "wt": "b",
+    "len": 15,
+    "str": "RadioShallows22",
+    "hex": "526164696f5368616c6c6f77733232",
+    "nested": null
+  },
+  {
+    "field": 2,
+    "wt": "b",
+    "len": 5,
+    "str": null,
+    "hex": "0dc3ae1c45",
+    "nested": [
+      {
+        "field": 1,
+        "wt": "f32",
+        "float": 2506.922607421875,
+        "hex": "c3ae1c45"
+      }
+    ]
+  }
+]
+
+=== Scanner (field 9) search near Player ===
+possible scanner @ 6545 len 1303
+[
+  {
+    "field": 1,
+    "wt": "v",
+    "v": 2
+  },
+  {
+    "field": 2,
+    "wt": "b",
+    "len": 43,
+    "str": null,
+    "hex": "0a2438653164636236612d363566652d343736392d616461342d663465356535303933623065150000803f",
+    "nested": [
+      {
+        "field": 1,
+        "wt": "b",
+        "len": 36,
+        "str": "8e1dcb6a-65fe-4769-ada4-f4e5e5093b0e",
+        "hex": "38653164636236612d363566652d343736392d616461342d663465356535303933623065",
+        "nested": null
+      },
+      {
+        "field": 2,
+        "wt": "f32",
+        "float": 1,
+        "hex": "0000803f"
+      }
+    ]
+  },
+  {
+    "field": 2,
+    "wt": "b",
+    "len": 43,
+    "str": null,
+    "hex": "0a2435626439616633362d323566612d343537352d626565642d366665326236653032383631150000803f",
+    "nested": [
+      {
+        "field": 1,
+        "wt": "b",
+        "len": 36,
+        "str": "5bd9af36-25fa-4575-beed-6fe2b6e02861",
+        "hex": "35626439616633362d323566612d343537352d626565642d366665326236653032383631",
+        "nested": null
+      },
+      {
+        "field": 2,
+        "wt": "f32",
+        "float": 1,
+        "hex": "0000803f"
+      }
+    ]
+  },
+  {
+    "field": 2,
+    "wt": "b",
+    "len": 43,
+    "str": null,
+    "hex": "0a2461333665663234392d313235622d346232302d386330382d373865303738333964663632150000803f",
+    "nested": [
+      {
+        "field": 1,
+        "wt": "b",
+        "len": 36,
+        "str": "a36ef249-125b-4b20-8c08-78e07839df62",
+        "hex": "61333665663234392d313235622d346232302d386330382d373865303738333964663632",
+        "nested": null
+      },
+      {
+        "field": 2,
+        "wt": "f32",
+        "float": 1,
+        "hex": "0000803f"
+      }
+    ]
+  },
+  {
+    "field": 2,
+    "wt": "b",
+    "len": 43,
+    "str": null,
+    "hex": "0a2434646535366135662d653365322d346465362d393662662d626435616235386365623436150000803f",
+    "nested": [
+      {
+        "field": 1,
+        "wt": "b",
+        "len": 36,
+        "str": "4de56a5f-e3e2-4de6-96bf-bd5ab58ceb46",
+        "hex": "
+
+=== Bytes after last ency-ish region ===
+12050db8ed024642100a074169727361636b12050d0000f0434a970a0802122b0a2438653164636236612d363566652d343736392d616461342d663465356535303933623065150000803f122b0a2435626439616633362d323566612d343537352d626565642d366665326236653032383631150000803f122b0a2461333665663234392d313235622d346232302d386330382d373865303738333964663632150000803f122b0a2434646535366135662d6533
+......FB...Airsack......CJ.....+.$8e1dcb6a-65fe-4769-ada4-f4e5e5093b0e....?.+.$5bd9af36-25fa-4575-beed-6fe2b6e02861....?.+.$a36ef249-125b-4b20-8c08-78e07839df62....?.+.$4de56a5f-e3
+
+=== Unlocked encyclopedia in save === 64
+- Readme ts=480
+- SurvivalChecklist ts=480
+- AuroraOverview ts=480
+- AEPSuit ts=480
+- Lifepod ts=480
+- Builder ts=480
+- Welder ts=480
+- Seaglide ts=480
+- BlueprintCorruption ts=480
+- Scanner ts=480
+- SolarPanel ts=480
+- Fabricator ts=480
+- Aquarium ts=480
+- MVB ts=480
+- Airpumps ts=480
+- BigCoralTubes ts=941.5977783203125
+- SecondarySystems ts=1089.0889892578125
+- MetalSalvage ts=1318.7139892578125
+- Gasopod ts=1359.5263671875
+- Creepvine ts=1596.136962890625
+- Mesmer ts=1611.7950439453125
+- LifepodSeaglide ts=1827.3687744140625
+- Seamoth ts=1840.7669677734375
+- Bioreactor ts=1879.0457763671875
+- RadioShallows22NoSignalAltDatabank ts=2505.033203125
+- Lifepod3 ts=2726.183837890625
+- Cyclops ts=2942.669921875
+- PropulsionCannon ts=3033.48486328125
+- StasisRifle ts=3126.49462890625
+- BasePlanter ts=3130.49951171875
+- Techlight ts=3168.6123046875
+- MapRoom ts=3543.186767578125
+- RadSuit ts=4516.93798828125
+- Aurora_Cargo_PDA1 ts=4854.79833984375
+- Aurora_Office_Terminal1 ts=4895.798828125
+- Aurora_Office_PDA1 ts=4899.45947265625
+- Aurora_Living_Area_PDA1 ts=5103.216796875
+- OuterBiomeWreckLore1 ts=5165.51416015625
+- Aurora_Locker_PDA1 ts=5233.0322265625
+- Aurora_Locker_PDA2 ts=5245.61376953125
+- Exo ts=5511.314453125
+- Aurora_Living_Area_PDA3 ts=5580.61572265625
+- Aurora_Living_Area_PDA2 ts=5703.51123046875
+- CaptainPDA ts=5726.53857421875
+- Aurora_RingRoom_Terminal3 ts=5732.46826171875
+- Rocket ts=5735.4697265625
+- TimeCapsule ts=5742.47509765625
+- Aurora_Living_Area_PDA2b ts=5757.82861328125
+- OuterBiomeWreckLore2 ts=5770.38232421875
+- Aurora_DriveRoom_Terminal1 ts=5893.5302734375
+- OuterBiomeWreckLore4 ts=5949.359375
+- 5a68923d7409ef41fd37d6d6 ts=6392.23974609375
+- ModificationStation ts=6428.6875
+- TreeMushroom ts=6499.40966796875
+- Moonpool ts=6526.6787109375
+- LifepodCrashZone2 ts=7290.28857421875
+- JellyPDABreadcrumb ts=7754.7939453125
+- NuclearReactor ts=7853.6298828125
+- WaterFilter ts=7889.0380859375
+- ThermalPlant ts=7894.318359375
+- JellyPDARoom1Desk ts=7948.33154296875
+- JellyPDARoom2Desk ts=8056.66943359375
+- LifepodKeenLog ts=8379.4296875
+- Airsack ts=480
+
+Language Ency_ unlock ids 327
+unlocked intersecting language 63
+missing from save (sample 40): CaptainCode, RadioRadiationSuitNoSignalAltDatabank, RadioKelp28NoSignalAltDatabank, RadioMushroom24NoSignalAltDatabank, RadioGrassy25NoSignalAltDatabank, Aurora_RingRoom_Code_PDA, DataCoil, Aurora_RingRoom_Terminal1, Aurora_BreachScan, Aurora_RingRoom_Terminal2, Exo_Code_LifepodPDA, Exo_Code_WreckPDA, AuroraEngineeringLog, InnerBiomeWreckLore1, InnerBiomeWreckLore2, InnerBiomeWreckLore3, InnerBiomeWreckLore4, InnerBiomeWreckLore5, InnerBiomeWreckLore7, InnerBiomeWreckLore9, InnerBiomeWreckLore6, InnerBiomeWreckLore8, OuterBiomeWreckLore3, OuterBiomeWreckLore5, OuterBiomeWreckLore6, OuterBiomeWreckLore9, OuterBiomeWreckLore10, OuterBiomeWreckLore7, OuterBiomeWreckLore8, LifepodCrashZone1, LifepodCaptainsQuartersCode, LifepodDecoy, RendezvousFloatingIsland, LifepodRandom, Lifepod4, Lifepod2, Lifepod1, LifepodKeenDialog, LifepodCTODialog1, LifepodCTODialog2
+
+=== StoryGoalManager header ===
+1001d5100803120d476f616c5f4c696665706f6432120c506c6179657244
+Trying parse from first 0x12
+goals via 0x12 run 104
+
+Entry format conclusion from Readme:
+0a 06 52 65 61 64 6d 65 12 05 0d 00 00 f0 43
+[
+  {
+    field: 1,
+    wt: 'b',
+    len: 6,
+    str: 'Readme',
+    hex: '526561646d65',
+    nested: null
+  },
+  {
+    field: 2,
+    wt: 'b',
+    len: 5,
+    str: null,
+    hex: '0d0000f043',
+    nested: [ [Object] ]
+  }
+]

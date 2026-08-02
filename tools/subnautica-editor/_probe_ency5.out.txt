@@ -1,0 +1,26 @@
+﻿Player component at 3252
+header 0a06506c617965721001d2bb0108051000180120
+IsEnabled 1
+first member bytes d2bb010805100018012000289004282b289d2328ff2328962328f823283e
+field counts in window { '1': 1, '26': 2 }
+parsed bytes 193
+[1] version: n=1 sample= [ 40 ]
+
+[26] pins: varints=0 sample=[] blobs=1 blob0 len=187
+  blob0 nested counts { '1': 1, '2': 1, '3': 1, '4': 1, '5': 16 }
+  blob0 nested head [
+  'f1=5',    'f2=0',
+  'f3=1',    'f4=0',
+  'f5=528',  'f5=43',
+  'f5=4509', 'f5=4607',
+  'f5=4502', 'f5=4600'
+]
+
+=== ALL ENCYCLOPEDIA ENTRIES === 0
+
+=== JOURNAL ENTRIES === 0
+
+English.json Ency_ keys 327
+AEPSuit, AcidMushroom, Airpumps, Airsack, AlphaPeeper, AluminiumOxide, Ampeel, Aquarium, AquariumPeeper, AuroraEngineeringLog, AuroraOverview, Aurora_BreachScan, Aurora_Cargo_PDA1, Aurora_DriveRoom_Terminal1, Aurora_Living_Area_PDA1, Aurora_Living_Area_PDA2, Aurora_Living_Area_PDA2b, Aurora_Living_Area_PDA3, Aurora_Locker_PDA1, Aurora_Locker_PDA2, Aurora_Office_PDA1, Aurora_Office_Terminal1, Aurora_RingRoom_Code_PDA, Aurora_RingRoom_Terminal1, Aurora_RingRoom_Terminal2, Aurora_RingRoom_Terminal3, BasaltOutcrops, BasePlanter, BigCoralTubes, Bioreactor, Biter, Bladderfish, Bleeder, Blighter, BloodCrawler, BloodGrass, BloodRoot, BloodVine, BlueAmoeba, BlueLostRiverLilly, BluePalm, BlueTipLostRiverPlant, BlueprintCorruption, Boneshark, Boomerang, BrainCoral, Builder, BulboTree, BulkheadDoor, CaptainCode, CaptainPDA, CaveCrawler, CoralSample, CoralShellPlate, Crabsnake, Crabsquid, Crash, CrashLair, Creepvine, CreepvineSeeds
+EncyDesc_ keys 327
+total unique unlock ids 327

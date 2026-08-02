@@ -1,0 +1,111 @@
+﻿Player payload len 187 at 3252
+field counts { '1': 1, '2': 1, '3': 1, '4': 1, '5': 62 }
+
+=== field 1 count 1 ===
+[
+  {
+    "field": 1,
+    "wt": "varint",
+    "v": 5
+  }
+]
+
+=== field 2 count 1 ===
+[
+  {
+    "field": 2,
+    "wt": "varint",
+    "v": 0
+  }
+]
+
+=== field 3 count 1 ===
+[
+  {
+    "field": 3,
+    "wt": "varint",
+    "v": 1
+  }
+]
+
+=== field 4 count 1 ===
+[
+  {
+    "field": 4,
+    "wt": "varint",
+    "v": 0
+  }
+]
+field 5: count 62 sample [
+  { field: 5, wt: 'varint', v: 528 },
+  { field: 5, wt: 'varint', v: 43 },
+  { field: 5, wt: 'varint', v: 4509 }
+]
+
+scene ency-like strings [
+  { s: '"RadioShallows22NoSignalAltDatabank', at: 1344 },
+  { s: '"RadioShallows22NoSignalAltDatabank', at: 5454 },
+  { s: '"RadioShallows22NoSignalAltDatabank', at: 9350 }
+]
+scene creature-like [
+  'Lifepod', 'Builder',
+  'Scanner', 'Gasopod',
+  'Mesmer',  'Seamoth',
+  'Cyclops', 'Garryfish'
+]
+scene pathlike [
+  { s: 'AuroraWarnings', at: 220 },
+  { s: 'Aurora_Cargo_PDA1', at: 1813 },
+  { s: 'Aurora_Office_Terminal1', at: 1861 },
+  { s: 'Aurora_Office_PDA1', at: 1886 },
+  { s: 'Aurora_Living_Area_PDA1', at: 1954 },
+  { s: 'Aurora_Locker_PDA1', at: 2001 },
+  { s: 'Aurora_Locker_PDA2', at: 2021 },
+  { s: 'AuroraRadiationFixed', at: 2106 },
+  { s: 'Aurora_Living_Area_PDA3', at: 2169 },
+  { s: 'Aurora_Living_Area_PDA2', at: 2194 },
+  { s: 'Aurora_RingRoom_Terminal3', at: 2231 },
+  { s: 'Aurora_Living_Area_PDA2b', at: 2279 },
+  { s: 'Aurora_DriveRoom_Terminal1', at: 2327 },
+  { s: 'Aurora_RingRoom_Terminal2', at: 2377 },
+  { s: 'Aurora_RingRoom_Terminal2', at: 4759 },
+  { s: 'AuroraOverview', at: 5004 },
+  { s: 'Techlight', at: 5608 },
+  { s: 'Aurora_Cargo_PDA1', at: 5664 },
+  { s: 'Aurora_Office_Terminal1', at: 5692 },
+  { s: 'Aurora_Office_PDA1', at: 5726 },
+  { s: 'Aurora_Living_Area_PDA1', at: 5755 },
+  { s: 'Aurora_Locker_PDA1', at: 5820 },
+  { s: 'Aurora_Locker_PDA2', at: 5849 },
+  { s: 'Aurora_Living_Area_PDA3', at: 5892 },
+  { s: 'Aurora_Living_Area_PDA2', at: 5926 },
+  { s: 'Aurora_RingRoom_Terminal3', at: 5981 },
+  { s: 'Aurora_Living_Area_PDA2b', at: 6056 },
+  { s: 'Aurora_DriveRoom_Terminal1', at: 6122 },
+  { s: 'Aurora_Cargo_PDA1', at: 9405 },
+  { s: 'Aurora_Living_Area_PDA2b', at: 9713 },
+  { s: 'Aurora_DriveRoom_Terminal1', at: 10113 },
+  { s: 'Aurora_Living_Area_PDA2', at: 10189 },
+  { s: 'Aurora_Living_Area_PDA3', at: 10457 },
+  { s: 'Aurora_RingRoom_Terminal3', at: 10778 },
+  { s: 'Aurora_Office_Terminal1', at: 11016 },
+  { s: 'Aurora_Office_PDA1', at: 11059 },
+  { s: 'Aurora_Locker_PDA2', at: 11097 },
+  { s: 'Aurora_Locker_PDA1', at: 11428 },
+  { s: 'Aurora_RingRoom_Terminal2', at: 11534 },
+  { s: 'Aurora_Living_Area_PDA1', at: 11797 }
+]
+
+global ency-like strings []
+global creature-like [ 'Exosuit' ]
+global pathlike []
+component Story.StoryGoalManager hits 1 [ 630 ]
+component StoryGoalCustomEventHandler hits 1 [ 3018 ]
+component Player hits 2 [ 3065, 3252 ]
+component Inventory hits 1 [ 27340 ]
+component PDA hits 0 []
+component uGUI_PDA hits 0 []
+
+After name bytes: 1001d5100803120d476f616c5f4c696665706f64
+field2 varint 1
+next tag field 26 wt 5 byte d5

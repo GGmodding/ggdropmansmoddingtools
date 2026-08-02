@@ -1,0 +1,228 @@
+﻿Player payload 187 ends 3452
+after payload hex 0828d30f282a28dc0b28a10628a50628fc2a289e2b28a52b28a32b28f30528a42b28a62b28942b28f20b28a40628932b288e2b283b3a160a0d476f616c5f4c696665706f643212050dbf32f8433a140a0b476f616c5f436f7070657212050d14dd06443a230a1a476f616c5f42696f6d6553616665536861
+after ascii .(..(*(..(..(..(.*(.+(.+(.+(..(.+(.+(.+(..(..(.+(.+(;:...Goal_Lifepod2....2.C:...Goal_Copper......D:#..Goal_BiomeSafeSha
+extra fields after player blob [ 'f1:v=40' ]
+
+NestedClass rows 1129
+Nested KnownTech / CompoundTech
+  techType: valuetype .TechType | dependencies: class System.Collections.Generic.List`1<valuetype .TechType>
+Nested KnownTech / AnalysisTech
+  techType: valuetype .TechType | unlockMessage: string | unlockSound: class .FMODAsset | unlockPopup: class UnityEngine.Sprite | unlockTechTypes: class System.Collections.Generic.List`1<valuetype .TechType> | storyGoals: class System.Collections.Generic.List`1<class Story.StoryGoal>
+Nested KnownTech / OnChanged
+  
+Nested KnownTech / OnAdd
+  
+Nested KnownTech / OnRemove
+  
+Nested KnownTech / OnCompoundAdd
+  
+Nested KnownTech / OnCompoundRemove
+  
+Nested KnownTech / OnCompoundProgress
+  
+Nested KnownTech / OnAnalyze
+  
+Nested PDAEncyclopedia / OnAdd
+  
+Nested PDAEncyclopedia / OnUpdate
+  
+Nested PDAEncyclopedia / OnRemove
+  
+Nested PDAEncyclopedia / EntryData
+  key: string | path: string | nodes: string[] | kind: valuetype .Kind | unlocked: bool | popup: class UnityEngine.Sprite | image: class UnityEngine.Texture2D | sound: class .FMODAsset | audio: class .FMODAsset
+Nested PDAEncyclopedia / Entry
+  timestamp: r4 | timeCapsuleId: string
+Nested PDALog / OnAdd
+  
+Nested PDALog / OnRemove
+  
+Nested PDALog / OnSetTime
+  
+Nested PDALog / EntryType
+  value__: i4 | Default: valuetype .EntryType | LowPriDefer: valuetype .EntryType | NowOrNever: valuetype .EntryType | Invalid: valuetype .EntryType
+Nested PDALog / EntryTypeComparer
+  
+Nested PDALog / EntryData
+  key: string | type: valuetype .EntryType | icon: class UnityEngine.Sprite | sound: class .FMODAsset | doNotAutoPlay: bool
+Nested PDALog / Entry
+  timestamp: r4 | data: class .EntryData
+Nested PDALog / <GetEntries>d__34
+  <>1__state: i4 | <>2__current: valuetype System.Collections.Generic.KeyValuePair`2<string,class .Entry> | <>l__initialThreadId: i4 | includeDelayed: bool | <>3__includeDelayed: bool | <e>5__2: valuetype .Enumerator<string,class .Entry>
+Nested PDAScanner / ScanTarget
+  techType: valuetype .TechType | gameObject: class UnityEngine.GameObject | uid: string | transform: class UnityEngine.Transform | mass: r4 | progress: r4
+Nested PDAScanner / Result
+  value__: i4 | None: valuetype .Result | Processed: valuetype .Result | Known: valuetype .Result | Scan: valuetype .Result | Done: valuetype .Result | Researched: valuetype .Result | NotInfected: valuetype .Result | Infected: valuetype .Result
+Nested PDAScanner / OnEntryEvent
+  
+Nested PDAScanner / EntryData
+  minFragments: i4 | maxFragments: i4 | key: valuetype .TechType | locked: bool | totalFragments: i4 | destroyAfterScan: bool | encyclopedia: string | blueprint: valuetype .TechType | scanTime: r4 | isFragment: bool
+Nested PDAScanner / Entry
+  techType: valuetype .TechType | progress: r4 | unlocked: i4
+Nested PDAScanner / Data
+  version: i4 | fragments: class System.Collections.Generic.Dictionary`2<string,r4> | partial: class System.Collections.Generic.List`1<class .Entry> | complete: class System.Collections.Generic.HashSet`1<valuetype .TechType>
+Nested Player / EquipmentModel
+  techType: valuetype .TechType | model: class UnityEngine.GameObject
+Nested Player / EquipmentType
+  slot: string | defaultModel: class UnityEngine.GameObject | equipment: valuetype .EquipmentModel[]
+Nested Player / InitialEquipment
+  techType: valuetype .TechType | count: i4
+Nested Player / Mode
+  value__: i4 | Normal: valuetype .Mode | Piloting: valuetype .Mode | LockedPiloting: valuetype .Mode | Sitting: valuetype .Mode
+Nested Player / MotorMode
+  value__: i4 | Walk: valuetype .MotorMode | Dive: valuetype .MotorMode | Seaglide: valuetype .MotorMode | Vehicle: valuetype .MotorMode | Mech: valuetype .MotorMode | Run: valuetype .MotorMode
+Nested Player / SuffocationState
+  value__: i4 | None: valuetype .SuffocationState | Suffocating: valuetype .SuffocationState | Recovering: valuetype .SuffocationState
+Nested Player / ScubaMaskState
+  value__: i4 | Off: valuetype .ScubaMaskState | On: valuetype .ScubaMaskState | DelayedOff: valuetype .ScubaMaskState
+Nested Player / OnTeleportationComplete
+  
+Nested Player / <UnlockEconomyItems>d__241
+  <>1__state: i4 | <>2__current: object | <economyItems>5__2: class .IEconomyItems
+Nested Player / <ResetPlayerOnDeath>d__302
+  <>1__state: i4 | <>2__current: object | waitTime: r4 | <>4__this: class .Player | <lostStuff>5__2: bool | <streamer>5__3: class .LargeWorldStreamer
+Nested Player / <TriggerInfectionRevealAsync>d__318
+  <>1__state: i4 | <>2__current: object | <>4__this: class .Player
+Nested Player / <ShowGlovesInAsync>d__320
+  <>1__state: i4 | <>2__current: object | inSeconds: r4 | <>4__this: class .Player
+
+Player key field types:
+  currentVersion: i4 flags=0x8051
+  version: i4 flags=0x86
+  serializedIsUnderwater: bool flags=0x86
+  serializedDepthClass: i4 flags=0x86
+  serializedEscapePod: bool flags=0x86
+  knownTech: class System.Collections.Generic.List`1<valuetype .TechType> flags=0x86
+  currentSubUID: string flags=0x86
+  journal: class System.Collections.Generic.Dictionary`2<string,class .Entry> flags=0x86
+  encyclopedia: class System.Collections.Generic.Dictionary`2<string,class .Entry> flags=0x86
+  scanner: class .Data flags=0x86
+  usedTools: class System.Collections.Generic.HashSet`1<valuetype .TechType> flags=0xa6
+  analyzedTech: class System.Collections.Generic.HashSet`1<valuetype .TechType> flags=0x86
+  notifications: class .SerializedData flags=0x86
+  timeCapsules: class System.Collections.Generic.Dictionary`2<string,class .TimeCapsuleContent> flags=0x86
+  pins: class System.Collections.Generic.List`1<valuetype .TechType> flags=0x86
+
+PDAEncyclopedia fields:
+  timeCapsulePath: string
+  sPathSplitChars: char[]
+  initialized: bool
+  mapping: class System.Collections.Generic.Dictionary`2<string,class .EntryData>
+  entries: class System.Collections.Generic.Dictionary`2<string,class .Entry>
+  <tree>k__BackingField: class .CraftNode
+  onAdd: class .OnAdd
+  onUpdate: class .OnUpdate
+  onRemove: class .OnRemove
+
+PDALog fields:
+  sEntryTypeComparer: class .EntryTypeComparer
+  queue: valuetype .Queue
+  iconDefault: class UnityEngine.Sprite
+  onAdd: class .OnAdd
+  onRemove: class .OnRemove
+  onSetTime: class .OnSetTime
+  <initialized>k__BackingField: bool
+  mapping: class System.Collections.Generic.Dictionary`2<string,class .EntryData>
+  entries: class System.Collections.Generic.Dictionary`2<string,class .Entry>
+  time: r4
+
+PDAScanner fields:
+  infectionEncyclopediaEntry: string
+  healedInfectionEncyclopediaEntry: string
+  heroPeeperEncyclopediaEntry: string
+  aquariumPeeperEncyclopediaEntry: string
+  redundantScanTime: r4
+  selfScanTime: r4
+  currentVersion: i4
+  fragments: class System.Collections.Generic.Dictionary`2<string,r4>
+  partial: class System.Collections.Generic.List`1<class .Entry>
+  complete: class System.Collections.Generic.HashSet`1<valuetype .TechType>
+  scanTarget: valuetype .ScanTarget
+  onAdd: class .OnEntryEvent
+  onRemove: class .OnEntryEvent
+  onProgress: class .OnEntryEvent
+  initialized: bool
+  mapping: class System.Collections.Generic.Dictionary`2<valuetype .TechType,class .EntryData>
+  toRemove: class System.Collections.Generic.List`1<valuetype .TechType>
+  cachedProgress: class System.Collections.Generic.Dictionary`2<string,r4>
+
+KnownTech fields:
+  initialized: bool
+  onChanged: class .OnChanged
+  onAdd: class .OnAdd
+  onRemove: class .OnRemove
+  onCompoundAdd: class .OnCompoundAdd
+  onCompoundRemove: class .OnCompoundRemove
+  onCompoundProgress: class .OnCompoundProgress
+  onAnalyze: class .OnAnalyze
+  defaultTech: class System.Collections.Generic.HashSet`1<valuetype .TechType>
+  compoundTech: class System.Collections.Generic.List`1<class .CompoundTech>
+  analysisTech: class System.Collections.Generic.List`1<class .AnalysisTech>
+  knownTech: class System.Collections.Generic.HashSet`1<valuetype .TechType>
+  analyzedTech: class System.Collections.Generic.HashSet`1<valuetype .TechType>
+  knownCompoundTech: class System.Collections.Generic.Dictionary`2<valuetype .TechType,i4>
+
+PDAData fields:
+  assetPath: string
+  defaultLogIcon: class UnityEngine.Sprite
+  log: class System.Collections.Generic.List`1<class .EntryData>
+  encyclopedia: class System.Collections.Generic.List`1<class .EntryData>
+  scanner: class System.Collections.Generic.List`1<class .EntryData>
+  defaultTech: class System.Collections.Generic.List`1<valuetype .TechType>
+  analysisTech: class System.Collections.Generic.List`1<class .AnalysisTech>
+  compoundTech: class System.Collections.Generic.List`1<class .CompoundTech>
+
+MemberRef .ctor count 1088
+CustomAttribute rows 8466 rowSize 12
+ProtoMember? Player.version => tag 1 (blob len 8)
+ProtoMember? Player.serializedIsUnderwater => tag 2 (blob len 8)
+ProtoMember? Player.serializedDepthClass => tag 3 (blob len 8)
+ProtoMember? Player.serializedEscapePod => tag 4 (blob len 8)
+ProtoMember? Player.knownTech => tag 5 (blob len 25)
+ProtoMember? Player.currentSubUID => tag 6 (blob len 8)
+ProtoMember? Player.journal => tag 7 (blob len 25)
+ProtoMember? Player.encyclopedia => tag 8 (blob len 25)
+ProtoMember? Player.scanner => tag 9 (blob len 8)
+ProtoMember? Player.usedTools => tag 11 (blob len 8)
+ProtoMember? Player.analyzedTech => tag 13 (blob len 25)
+ProtoMember? Player.notifications => tag 15 (blob len 8)
+ProtoMember? Player.timeCapsules => tag 19 (blob len 25)
+ProtoMember? Player.pins => tag 26 (blob len 25)
+protoHits on Player want-fields 14
+
+Likely ProtoMember on Player fields:
+  [1] version
+  [2] serializedIsUnderwater
+  [3] serializedDepthClass
+  [4] serializedEscapePod
+  [5] knownTech
+  [6] currentSubUID
+  [7] journal
+  [8] encyclopedia
+  [9] scanner
+  [10] currentWaterParkUID
+  [11] usedTools
+  [12] precursorOutOfWater
+  [13] analyzedTech
+  [14] isSick
+  [15] notifications
+  [16] _displaySurfaceWater
+  [17] timeLastSleep
+  [18] infectionRevealed
+  [19] timeCapsules
+  [20] hasUsedConsole
+  [21] rotationX
+  [22] rotationY
+  [23] suffocationState
+  [24] suffocationProgress
+  [25] lastValidSubUID
+  [26] pins
+
+lang-like files [
+  'C:/Program Files (x86)/Steam/steamapps/common/Subnautica/Subnautica_Data/Managed/UnityEngine.LocalizationModule.dll',
+  'C:/Program Files (x86)/Steam/steamapps/common/Subnautica/Subnautica_Data/StreamingAssets/SNUnmanagedData/LanguageFiles/English.json'
+]
+scan C:/Program Files (x86)/Steam/steamapps/common/Subnautica/Subnautica_Data/resources.assets 7633172
+  Ency_ found 0 []
+scan C:/Program Files (x86)/Steam/steamapps/common/Subnautica/Subnautica_Data/sharedassets0.assets 16460
+  Ency_ found 0 []
+missing C:/Program Files (x86)/Steam/steamapps/common/Subnautica/Subnautica_Data/resources.resource

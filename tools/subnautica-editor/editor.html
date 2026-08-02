@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GGdropmans Subnautica Save Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Orbitron:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="drop-overlay" class="drop-overlay" hidden>
+    <div class="drop-overlay__panel">Drop slot folder or ZIP</div>
+  </div>
+
+  <header class="topbar">
+    <a class="brand" href="../../index.html" style="text-decoration:none;color:inherit">
+      <span class="brand__mark">SN</span>
+      <div class="brand__text">
+        <h1>Subnautica Save Editor</h1>
+        <p>4546B · Below Zero · Back to hub</p>
+      </div>
+    </a>
+    <div class="topbar__actions">
+      <label class="btn btn--primary">
+        Load Files
+        <input id="files-input" type="file" multiple accept=".json,.bin,.jpg,.jpeg,.png,.zip,application/zip" hidden />
+      </label>
+      <label class="btn">
+        Load Folder
+        <input id="folder-input" type="file" webkitdirectory multiple hidden />
+      </label>
+      <button id="btn-find-save" class="btn" type="button" title="Open Explorer or pick a Desktop copy of your slot (Program Files folders are blocked by Chrome).">Find Save</button>
+      <button id="btn-open-save-folder" class="btn" type="button" title="Copy path + download Explorer shortcut">Open Folder</button>
+      <label class="btn">
+        Load ZIP
+        <input id="zip-input" type="file" accept=".zip,application/zip" hidden />
+      </label>
+      <label class="slot-pick" id="slot-wrap" hidden>
+        Slot
+        <select id="slot-select"></select>
+      </label>
+      <button id="btn-backup" class="btn" type="button" disabled>Download Backup ZIP</button>
+      <button id="btn-save" class="btn btn--accent" type="button" disabled>Save ZIP</button>
+      <button id="btn-install" class="btn" type="button" disabled title="Write edited files into a folder you pick (Desktop copy of the slot). Chrome cannot write into Program Files.">Install to Folder</button>
+      <span id="dirty-pill" class="pill" hidden>Unsaved</span>
+    </div>
+  </header>
+
+  <section class="path-banner">
+    <strong>Chrome tip</strong>
+    <span>Steam saves live under <code>Program Files</code> — folder pickers often say “system files” and refuse.
+      Use <strong>Open Folder</strong>, copy <code>slot00xx</code> to Desktop, then <strong>Load Folder</strong> / <strong>Find Save</strong> on the copy —
+      or <strong>Load Files</strong> (multi-select the files inside the slot) / <strong>Load ZIP</strong>. Always backup first.
+    </span>
+  </section>
+
+  <div id="install-modal" class="modal" hidden>
+    <div class="modal__card">
+      <h2>ZIP downloaded</h2>
+      <ol>
+        <li>Make sure Subnautica / Below Zero is fully closed.</li>
+        <li>Extract the ZIP — you should get a <code>slot00xx</code> folder.</li>
+        <li>Copy its contents into your real slot folder (overwrite).</li>
+        <li>Launch the game and load that slot.</li>
+      </ol>
+      <div class="modal__actions">
+        <button type="button" class="btn" id="btn-open-save-folder-modal">Open Folder</button>
+        <button type="button" class="btn btn--accent" id="btn-close-modal">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="tabs" id="tabs" aria-label="Editor sections" hidden>
+    <button class="tab is-active" data-tab="overview" type="button">Overview</button>
+    <button class="tab" data-tab="mode" type="button">Mode &amp; Time</button>
+    <button class="tab" data-tab="vitals" type="button">Vitals</button>
+    <button class="tab" data-tab="inventory" type="button">Inventory</button>
+    <button class="tab" data-tab="tools" type="button">Tools</button>
+    <button class="tab" data-tab="cheats" type="button">Console</button>
+    <button class="tab" data-tab="presets" type="button">Presets</button>
+    <button class="tab" data-tab="files" type="button">Files</button>
+  </nav>
+
+  <main class="main">
+    <div id="empty-state" class="empty">
+      <h2>Load a save slot</h2>
+      <p>Chrome blocks folders inside <code>Program Files</code>. Prefer <strong>Load Files</strong> (Ctrl+click the files in <code>slot00xx</code>),
+        or copy the slot to Desktop and use Load Folder / Find Save, or zip the slot and Load ZIP.</p>
+    </div>
+
+    <section id="panel-overview" class="panel is-active" hidden>
+      <div class="panel__head">
+        <h2>Dive status</h2>
+        <p>Menu-facing metadata from <code>gameinfo.json</code>. World state lives in the binary object files.</p>
+      </div>
+      <div id="overview-meta" class="meta-strip"></div>
+      <div class="overview-shot" id="overview-shot-wrap" hidden>
+        <img id="overview-shot" alt="Save screenshot thumbnail" />
+      </div>
+      <div class="panel__head" style="margin-top:1.25rem">
+        <h2>Core files</h2>
+        <p>A loadable slot needs these four. Missing ones usually means a broken or incomplete copy.</p>
+      </div>
+      <div id="integrity-list" class="integrity-list"></div>
+      <div class="panel__head" style="margin-top:1.25rem">
+        <h2>Compare another slot</h2>
+        <p>Load a second slot to diff mode, time, inventory counts, vitals, and story goals.</p>
+      </div>
+      <div class="toolbar">
+        <label class="btn">
+          Compare Files
+          <input id="compare-files-input" type="file" multiple accept=".json,.bin,.jpg,.jpeg,.png,.zip,application/zip" hidden />
+        </label>
+        <label class="btn">
+          Compare Folder
+          <input id="compare-folder-input" type="file" webkitdirectory multiple hidden />
+        </label>
+        <button type="button" class="btn" id="btn-compare-clear" hidden>Clear compare</button>
+      </div>
+      <pre id="compare-out" class="compare-out" hidden></pre>
+      <div class="panel__head" style="margin-top:1.25rem">
+        <h2>Below Zero</h2>
+        <p id="bz-note">SN and BZ share the same slot file names. BZ uses different TechTypes / ency keys / cold systems — blueprint &amp; encyclopedia catalogs in this editor are Subnautica (SN1). Vitals, position, inventory clone, radiation (SN), and base flood still apply when those components exist.</p>
+      </div>
+    </section>
+
+    <section id="panel-mode" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Mode &amp; clock</h2>
+        <p>0 Survival · 1 Freedom · 2 Hardcore · 3 Creative. <code>changeSet</code> is the engine build — lower it to load an Experimental save on Stable.</p>
+      </div>
+      <div class="form-grid">
+        <label>Game mode
+          <select id="f-mode"></select>
+        </label>
+        <label>gameTime (seconds)<input id="f-gametime" type="number" step="any" min="0" /></label>
+        <label>changeSet (build)<input id="f-changeset" type="number" step="1" /></label>
+        <label>userName<input id="f-username" type="text" /></label>
+        <label>machineName<input id="f-machine" type="text" /></label>
+        <label>dateTicks<input id="f-dateticks" type="number" step="1" /></label>
+        <label>startTicks<input id="f-startticks" type="number" step="1" /></label>
+      </div>
+      <div class="flag-grid">
+        <label class="check"><input id="f-cyclops" type="checkbox" /> cyclopsPresent</label>
+        <label class="check"><input id="f-seamoth" type="checkbox" /> seamothPresent</label>
+        <label class="check"><input id="f-base" type="checkbox" /> basePresent</label>
+        <label class="check"><input id="f-fallback" type="checkbox" /> isFallback</label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-mode-creative">Creative</button>
+        <button type="button" class="btn" id="btn-mode-survival">Survival</button>
+        <button type="button" class="btn" id="btn-mode-freedom">Freedom</button>
+        <button type="button" class="btn" id="btn-reset-time">Reset gameTime → 0</button>
+      </div>
+    </section>
+
+    <section id="panel-vitals" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Player vitals</h2>
+        <p>Reads Survival / LiveMixin / Oxygen from <code>scene-objects.bin</code>. Values are written in place — same meters the game shows for health, food, water, O₂, and infection.</p>
+      </div>
+      <div id="vitals-missing" class="callout" hidden>No player vitals found in this slot (need a full <code>scene-objects.bin</code>).</div>
+      <div id="vitals-body">
+        <div class="form-grid">
+          <label>Health (0–100)
+            <input id="v-health" type="number" min="0" max="100" step="0.1" />
+          </label>
+          <label>Food (0–200)
+            <input id="v-food" type="number" min="0" max="200" step="0.1" />
+          </label>
+          <label>Water (0–200)
+            <input id="v-water" type="number" min="0" max="200" step="0.1" />
+          </label>
+          <label>Oxygen (0–200)
+            <input id="v-oxygen" type="number" min="0" max="200" step="0.1" />
+          </label>
+          <label>Infection (0–100)
+            <input id="v-infection" type="number" min="0" max="100" step="0.1" />
+          </label>
+        </div>
+        <p class="hint" id="vitals-hint">O₂ max depends on tanks in-game (45 base). Infection 0 = clear.</p>
+        <div class="quick-actions">
+          <button type="button" class="btn btn--accent" id="btn-vitals-apply">Apply vitals</button>
+          <button type="button" class="btn" id="btn-vitals-fill">Fill health / food / water</button>
+          <button type="button" class="btn" id="btn-vitals-cure">Cure infection → 0</button>
+          <button type="button" class="btn" id="btn-vitals-refresh">Reload from save</button>
+        </div>
+      </div>
+
+      <div class="panel__head" style="margin-top:1.5rem">
+        <h2>Player position</h2>
+        <p>Edits the player <code>UnityEngine.Transform</code> local position in <code>scene-objects.bin</code>. Useful for softlocks — backup first.</p>
+      </div>
+      <div id="pos-missing" class="callout" hidden>Player Transform not found.</div>
+      <div id="pos-body">
+        <div class="form-grid">
+          <label>X<input id="p-x" type="number" step="0.1" /></label>
+          <label>Y (depth)<input id="p-y" type="number" step="0.1" /></label>
+          <label>Z<input id="p-z" type="number" step="0.1" /></label>
+        </div>
+        <div class="quick-actions" id="pos-warps"></div>
+        <div class="quick-actions">
+          <button type="button" class="btn btn--accent" id="btn-pos-apply">Apply position</button>
+          <button type="button" class="btn" id="btn-pos-surface">Y → −2 (near surface)</button>
+          <button type="button" class="btn" id="btn-pos-refresh">Reload from save</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="panel-inventory" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Inventory &amp; lockers</h2>
+        <p>Edits pickupable items inside <code>global-objects.bin</code>. Simple resources/tools can be added or removed. Complex items (batteries with charge, etc.) are listed but skipped for safety.</p>
+      </div>
+      <div id="inv-missing" class="callout" hidden>No <code>global-objects.bin</code> in this slot — load a full save.</div>
+      <div id="inv-body">
+        <div class="toolbar">
+          <label>Container
+            <select id="inv-container"></select>
+          </label>
+          <label>Filter
+            <input id="inv-filter" type="text" placeholder="titanium, quartz…" />
+          </label>
+          <button type="button" class="btn" id="btn-inv-refresh">Refresh</button>
+          <button type="button" class="btn btn--danger" id="btn-inv-remove">Remove selected</button>
+          <button type="button" class="btn btn--danger" id="btn-inv-clear">Clear container</button>
+          <button type="button" class="btn btn--danger" id="btn-inv-clear-all">Clear all containers</button>
+          <button type="button" class="btn btn--danger" id="btn-inv-strip-tools">Strip tools</button>
+        </div>
+        <div class="toolbar">
+          <label>Add item
+            <input id="inv-add-name" type="text" list="inv-item-list" placeholder="Titanium" />
+          </label>
+          <datalist id="inv-item-list"></datalist>
+          <label>Qty
+            <input id="inv-add-qty" type="number" min="1" max="48" value="1" />
+          </label>
+          <button type="button" class="btn btn--accent" id="btn-inv-add">Add to container</button>
+        </div>
+        <div class="toolbar" id="inv-kits">
+          <span class="hint" style="align-self:center">Kits</span>
+        </div>
+        <p class="hint" id="inv-hint">Pick a container (largest is usually your main storage). Adding clones an existing simple item template in the save.</p>
+        <div class="table-wrap">
+          <table class="data-table" id="inv-table">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="inv-check-all" title="Select all visible" /></th>
+                <th>Item</th>
+                <th>Class ID</th>
+                <th>Size</th>
+                <th>Editable</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="panel-tools" class="panel" hidden>
+      <div class="panel__head">
+        <h2>NG+ / story tools</h2>
+        <p>Bases &amp; vehicles live in <code>global-objects.bin</code>. Story PDA / wreck triggers live in <code>scene-objects.bin</code>. Full NG+ usually means swapping scene-objects from a fresh same-mode save.</p>
+      </div>
+      <div class="callout">
+        Dropping scene-objects from the ZIP does <strong>not</strong> invent a fresh story file — after extract, copy <code>scene-objects.bin</code> from a brand-new slot into this one, keep <code>global-objects.bin</code> from your old progress, and set <code>gameTime</code> to 0.
+      </div>
+      <div class="panel__head" style="margin-top:1.25rem">
+        <h2>PDA / blueprints</h2>
+        <p>Writes unlocked TechTypes into <code>scene-objects.bin</code> (same idea as console <code>unlock all</code>). Databank encyclopedia uses Player field 8 — same idea as <code>ency all</code>.</p>
+      </div>
+      <p class="hint" id="pda-status">Load a slot to see unlock count.</p>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-pda-unlock-all">Unlock all PDA blueprints</button>
+        <button type="button" class="btn btn--accent" id="btn-ency-unlock-all">Unlock all encyclopedia</button>
+        <button type="button" class="btn btn--accent" id="btn-fix-radiation">Fix Aurora radiation</button>
+        <button type="button" class="btn btn--accent" id="btn-unflood-bases">Unflood bases</button>
+        <button type="button" class="btn btn--accent" id="btn-refill-vehicles">Refill vehicle energy</button>
+        <button type="button" class="btn" id="btn-story-aurora">Mark Aurora goals</button>
+        <button type="button" class="btn" id="btn-story-babies">Emperor babies hatched</button>
+        <button type="button" class="btn" id="btn-story-rocket">Force rocket stage 5</button>
+        <button type="button" class="btn btn--danger" id="btn-story-drop">Omit scene-objects.bin from ZIP</button>
+        <button type="button" class="btn" id="btn-story-keep">Keep scene-objects.bin</button>
+        <button type="button" class="btn" id="btn-reset-time-tools">Reset gameTime → 0</button>
+      </div>
+      <p class="hint" id="radiation-status">Radiation status loads with the slot.</p>
+      <p class="hint" id="base-status">Base flood status loads with the slot. Hull strength is computed in-game from base shape — only flood water is saved.</p>
+      <p class="hint" id="vehicle-status">Vehicle status loads with the slot.</p>
+      <p class="hint" id="story-status">Story status loads with the slot.</p>
+    </section>
+
+    <section id="panel-cheats" class="panel" hidden>
+      <div class="panel__head">
+        <h2>In-game console</h2>
+        <p>Still useful for health, unlocks, warps, and items the binary editor won’t clone. Press <kbd>F3</kbd>, unlock the console, then <kbd>Enter</kbd> / <kbd>~</kbd>.</p>
+      </div>
+      <div class="toolbar">
+        <label>Search<input id="cheat-search" type="text" placeholder="titanium, unlock, warp…" /></label>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="cheat-table">
+          <thead><tr><th>Command</th><th>What it does</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-presets" class="panel" hidden>
+      <div class="panel__head">
+        <h2>One-shot presets</h2>
+        <p>Writes <code>gameinfo.json</code> only. Download a ZIP after — nothing writes SNAppData directly.</p>
+      </div>
+      <div id="preset-grid" class="preset-grid"></div>
+    </section>
+
+    <section id="panel-files" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Files</h2>
+        <p>Yellow = edited. Red tint = omitted on save. Raw JSON apply works for <code>gameinfo.json</code> (and any other JSON in the slot).</p>
+      </div>
+      <div id="file-list" class="file-list"></div>
+      <label style="margin-top:1rem" id="raw-label">Raw JSON
+        <textarea id="raw-json" placeholder="Select a JSON file…"></textarea>
+      </label>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-raw-apply" disabled>Apply raw JSON</button>
+        <button type="button" class="btn" id="btn-raw-format" disabled>Format</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="status-bar" id="status">Ready — load a slot00xx folder or ZIP.</footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="../shared/save-folders.js"></script>
+  <script src="data.js"></script>
+  <script src="classids-db.js"></script>
+  <script src="techids-db.js"></script>
+  <script src="ency-keys-db.js"></script>
+  <script src="inventory.js"></script>
+  <script src="pda.js"></script>
+  <script src="encyclopedia.js"></script>
+  <script src="radiation.js"></script>
+  <script src="position.js"></script>
+  <script src="base.js"></script>
+  <script src="vehicles.js"></script>
+  <script src="story.js"></script>
+  <script src="vitals.js"></script>
+  <script src="save.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

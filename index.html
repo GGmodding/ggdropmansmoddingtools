@@ -21,6 +21,8 @@
       --diablo: #c45a2d;
       --schedule: #7ec8ff;
       --sod2: #c45a2a;
+      --subnautica: #3de0c8;
+      --grounded: #8fbf4a;
       --steam: #66c0f4;
       --font-display: "Bungee", cursive;
       --font-ui: "Chakra Petch", sans-serif;
@@ -415,26 +417,6 @@
         linear-gradient(125deg, rgba(30, 80, 120, 0.4), transparent 50%);
     }
 
-    .tile--borderlands {
-      --accent: var(--vault);
-      --art: url("https://cdn.cloudflare.steamstatic.com/steam/apps/49520/header.jpg");
-      border-width: 3px;
-      border-radius: 4px;
-      box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.55);
-    }
-
-    .tile--borderlands .tile__name {
-      font-family: var(--font-display);
-      font-size: 1.05rem;
-      letter-spacing: 0.01em;
-      -webkit-text-stroke: 0.5px #000;
-    }
-
-    .tile--borderlands:hover {
-      transform: translate(-2px, -4px);
-      box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.55);
-    }
-
     .tile--hades {
       --accent: var(--hades);
       --art: url("https://cdn.cloudflare.steamstatic.com/steam/apps/1145360/header.jpg");
@@ -466,6 +448,39 @@
       background:
         radial-gradient(circle at 25% 30%, rgba(255, 180, 80, 0.22), transparent 40%),
         linear-gradient(125deg, rgba(126, 200, 255, 0.3), transparent 50%);
+    }
+
+    .tile--subnautica {
+      --accent: var(--subnautica);
+      --art: url("https://cdn.cloudflare.steamstatic.com/steam/apps/264710/header.jpg");
+    }
+
+    .tile--subnautica::after {
+      background:
+        radial-gradient(circle at 30% 40%, rgba(61, 224, 200, 0.28), transparent 42%),
+        linear-gradient(125deg, rgba(20, 90, 120, 0.45), transparent 55%);
+    }
+
+    .tile--subnautica2 {
+      --accent: #6fd3ff;
+      --art: url("https://cdn.cloudflare.steamstatic.com/steam/apps/1962700/header.jpg");
+    }
+
+    .tile--subnautica2::after {
+      background:
+        radial-gradient(circle at 28% 35%, rgba(111, 211, 255, 0.3), transparent 44%),
+        linear-gradient(125deg, rgba(40, 70, 140, 0.45), transparent 55%);
+    }
+
+    .tile--grounded {
+      --accent: var(--grounded);
+      --art: url("https://cdn.cloudflare.steamstatic.com/steam/apps/962130/header.jpg");
+    }
+
+    .tile--grounded::after {
+      background:
+        radial-gradient(circle at 30% 35%, rgba(143, 191, 74, 0.32), transparent 44%),
+        linear-gradient(125deg, rgba(80, 110, 40, 0.45), transparent 55%);
     }
 
     .tile--soon {
@@ -618,7 +633,7 @@
     <header class="hero">
       <h1 class="hero__brand">GGdropmans</h1>
       <p class="hero__tag">Save editors &amp; cheat tables for the games you actually grind.</p>
-      <p class="hero__sub">Pick a portal below — Midgar mako, Trumbull Valley, Borderlands vaults, and more on the way.</p>
+      <p class="hero__sub">Pick a portal below — Midgar mako, Trumbull Valley, Planet 4546B, and more on the way.</p>
       <a class="hero__cta" href="#editors">Browse tools <span aria-hidden="true">↓</span></a>
     </header>
 
@@ -673,14 +688,32 @@
           </span>
         </a>
 
-        <button type="button" class="tile tile--borderlands tile--soon" onclick="showComingSoon()">
-          <span class="tile__badge tile__badge--soon">Soon</span>
+        <a class="tile tile--subnautica" href="tools/subnautica-editor/editor.html">
+          <span class="tile__badge tile__badge--live">Live</span>
           <span class="tile__body">
-            <span class="tile__game">Pandora</span>
-            <span class="tile__name">Borderlands</span>
-            <span class="tile__meta">Guns · vault · badass rank</span>
+            <span class="tile__game">Planet 4546B</span>
+            <span class="tile__name">Subnautica</span>
+            <span class="tile__meta">Mode · inventory · find saves</span>
           </span>
-        </button>
+        </a>
+
+        <a class="tile tile--subnautica2" href="tools/subnautica2-editor/editor.html">
+          <span class="tile__badge tile__badge--live">Live</span>
+          <span class="tile__body">
+            <span class="tile__game">Sector Zero</span>
+            <span class="tile__name">Subnautica 2</span>
+            <span class="tile__meta">GVAS · metadata · EA saves</span>
+          </span>
+        </a>
+
+        <a class="tile tile--grounded" href="tools/grounded-editor/editor.html">
+          <span class="tile__badge tile__badge--live">Live</span>
+          <span class="tile__body">
+            <span class="tile__game">The Backyard</span>
+            <span class="tile__name">Grounded</span>
+            <span class="tile__meta">Oodle .csav · header · vitals</span>
+          </span>
+        </a>
       </nav>
     </section>
 
@@ -771,6 +804,9 @@
           <li><a href="tools/last-epoch-editor/editor.html">Last Epoch Offline Save Editor</a> — GGdropman</li>
           <li><a href="tools/schedule1-editor/editor.html">Schedule I Save Editor</a> — GGdropman</li>
           <li><a href="tools/sod2-editor/editor.html">State of Decay 2 Community Save Editor</a> — GGdropman</li>
+          <li><a href="tools/subnautica-editor/editor.html">Subnautica / Below Zero Save Editor</a> — GGdropman</li>
+          <li><a href="tools/subnautica2-editor/editor.html">Subnautica 2 Save Editor</a> — GGdropman</li>
+          <li><a href="tools/grounded-editor/editor.html">Grounded Save Editor</a> — GGdropman</li>
         </ul>
         <p><strong>Cheat Tables:</strong></p>
         <ul>
@@ -793,7 +829,7 @@
         <h2 class="modal-title" id="soon-title">Coming Soon</h2>
         <button type="button" class="modal-close" id="soon-close" aria-label="Close">×</button>
       </div>
-      <p class="credits-body">That world’s still locked. Borderlands is on the radar — TCG, FF7, Last Epoch, Schedule I, and State of Decay 2 are ready now.</p>
+      <p class="credits-body">That world’s still locked. More editors are on the radar — TCG, FF7, Last Epoch, Schedule I, State of Decay 2, Subnautica, and Subnautica 2 are ready now.</p>
     </div>
   </div>
 

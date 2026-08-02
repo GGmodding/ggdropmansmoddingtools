@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GGdropmans Subnautica 2 Save Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Orbitron:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="drop-overlay" class="drop-overlay" hidden>
+    <div class="drop-overlay__panel">Drop savegame_N.sav / .bak / ZIP</div>
+  </div>
+
+  <header class="topbar">
+    <a class="brand" href="../../index.html" style="text-decoration:none;color:inherit">
+      <span class="brand__mark">S2</span>
+      <div class="brand__text">
+        <h1>Subnautica 2 Save Editor</h1>
+        <p>UE5 · GVAS · Back to hub</p>
+      </div>
+    </a>
+    <div class="topbar__actions">
+      <label class="btn btn--primary">
+        Load Save
+        <input id="files-input" type="file" multiple accept=".sav,.bak,.zip,application/zip" hidden />
+      </label>
+      <label class="btn">
+        Load Folder
+        <input id="folder-input" type="file" webkitdirectory multiple hidden />
+      </label>
+      <button id="btn-find-save" class="btn" type="button">Find Save</button>
+      <button id="btn-open-save-folder" class="btn" type="button">Open Folder</button>
+      <label class="btn">
+        Load ZIP
+        <input id="zip-input" type="file" accept=".zip,application/zip" hidden />
+      </label>
+      <button id="btn-backup" class="btn" type="button" disabled>Download Backup</button>
+      <button id="btn-save" class="btn btn--accent" type="button" disabled>Save .sav</button>
+      <button id="btn-install" class="btn" type="button" disabled>Install to Folder</button>
+      <span id="dirty-pill" class="pill" hidden>Unsaved</span>
+    </div>
+  </header>
+
+  <section class="path-banner">
+    <strong>SN2 saves</strong>
+    <span>Live under <code>%LOCALAPPDATA%\Subnautica2\Saved\SaveGames</code> as <code>savegame_N.sav</code> (+ <code>.bak</code>).
+      This is Unreal GVAS — not the SN1 <code>slot00xx</code> folder format. Close the game before overwriting.</span>
+  </section>
+
+  <nav class="tabs" id="tabs" aria-label="Editor sections" hidden>
+    <button class="tab is-active" data-tab="overview" type="button">Overview</button>
+    <button class="tab" data-tab="meta" type="button">Metadata</button>
+    <button class="tab" data-tab="vitals" type="button">Vitals</button>
+    <button class="tab" data-tab="inventory" type="button">Inventory</button>
+    <button class="tab" data-tab="features" type="button">Feature map</button>
+    <button class="tab" data-tab="cheats" type="button">Notes</button>
+  </nav>
+
+  <main class="main">
+    <div id="empty-state" class="empty">
+      <h2>Load a Subnautica 2 save</h2>
+      <p>Pick <code>savegame_N.sav</code> from <code>%LOCALAPPDATA%\Subnautica2\Saved\SaveGames</code>, or use Find Save / Load Folder / ZIP.</p>
+    </div>
+
+    <section id="panel-overview" class="panel is-active" hidden>
+      <div class="panel__head">
+        <h2>Save status</h2>
+        <p>Top-level GVAS metadata. World/player blobs sit inside nested <code>UWESaveBlob</code> buffers.</p>
+      </div>
+      <div id="overview-meta" class="meta-strip"></div>
+      <div class="callout" id="parity-callout">
+        Same <em>editor shape</em> as the SN1 tool — not the same binary format. Open <strong>Feature map</strong> for what is live vs still reverse-engineering.
+      </div>
+    </section>
+
+    <section id="panel-meta" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Slot metadata</h2>
+        <p>In-place StrProperty / BoolProperty edits. Display names longer than the original need padding room (same byte budget).</p>
+      </div>
+      <div class="form-grid">
+        <label>SlotName (read-only)<input id="f-slot" type="text" readonly /></label>
+        <label>Display name<input id="f-display" type="text" maxlength="48" /></label>
+        <label>Game mode
+          <select id="f-mode"></select>
+        </label>
+        <label>Level<input id="f-level" type="text" readonly /></label>
+        <label>Build<input id="f-build" type="text" readonly /></label>
+        <label>Playtime<input id="f-playtime" type="text" readonly /></label>
+      </div>
+      <div class="flag-grid">
+        <label class="check"><input id="f-mp" type="checkbox" /> bIsMultiplayerSave</label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-meta-apply">Apply metadata</button>
+        <button type="button" class="btn" id="btn-meta-refresh">Reload from save</button>
+      </div>
+      <p class="hint" id="meta-hint">Game mode rewrite keeps the string length (Survival ↔ Creative both 8 chars). Freedom/Hardcore may need a longer original string.</p>
+    </section>
+
+    <section id="panel-vitals" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Player vitals (beta)</h2>
+        <p>Writes attribute <code>BaseValue</code> floats when a Health/Food/Oxygen/Water + FloatProperty pattern is found.</p>
+      </div>
+      <div id="vitals-missing" class="callout" hidden>No attribute floats found in this save yet.</div>
+      <div id="vitals-body">
+        <div class="form-grid">
+          <label>Health<input id="v-health" type="number" min="0" max="200" step="0.1" /></label>
+          <label>Food<input id="v-food" type="number" min="0" max="200" step="0.1" /></label>
+          <label>Water<input id="v-water" type="number" min="0" max="200" step="0.1" /></label>
+          <label>Oxygen<input id="v-oxygen" type="number" min="0" max="200" step="0.1" /></label>
+        </div>
+        <div class="quick-actions">
+          <button type="button" class="btn btn--accent" id="btn-vitals-apply">Apply vitals</button>
+          <button type="button" class="btn" id="btn-vitals-fill">Fill to 100</button>
+          <button type="button" class="btn" id="btn-vitals-refresh">Reload</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="panel-inventory" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Inventory scan (beta)</h2>
+        <p>Lists <code>DA_*</code> soft object paths found in the save. Add/remove cloning is not safe until the nested inventory format is fully mapped.</p>
+      </div>
+      <p class="hint" id="inv-hint">Load a save to scan.</p>
+      <div class="table-wrap">
+        <table class="data-table" id="inv-table">
+          <thead><tr><th>Item (DA_)</th><th>Mentions</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-features" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Feature map vs SN1 editor</h2>
+        <p>Goal is the same tool surface. SN2’s UE5 blobs mean several systems need more RE before they match SN1.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="feature-table">
+          <thead><tr><th>Feature</th><th>Status</th><th>Notes</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-cheats" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Notes &amp; paths</h2>
+        <p>SN2 Early Access — prefer backups. Community tools like NotAlterra are great for .sav/.bak recovery.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="cheat-table">
+          <thead><tr><th>Tip</th><th>Detail</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="status-bar" id="status">Ready — load a savegame_N.sav.</footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="../shared/save-folders.js"></script>
+  <script src="data.js"></script>
+  <script src="gvas.js"></script>
+  <script src="save.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

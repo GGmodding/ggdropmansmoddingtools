@@ -1,0 +1,147 @@
+﻿Unique components: AnalyticsController, AuroraWarnings, Battery, Constructable, CrafterLogic, CraftingAnalytics, CrashedShipExploder, CreatureDeath, DayNightCycle, Eatable, EnergyMixin, EscapePod, FairRandomizer, Flare, Garryfish, InfectedMixin, Inventory, LargeWorldEntity, LeakingRadiation, LiveMixin, MedicalCabinet, NitrogenLevel, Oxygen, Pickupable, PingInstance, Player, PlayerSoundTrigger, PlayerTimeCapsule, PlayerWorldArrows, PowerSource, PrisonManager, StorageContainer, Story.StoryGoalManager, Story.StoryGoalScheduler, StoryGoalCustomEventHandler, Survival, TeleporterManager, ToggleLights, UnityEngine.CapsuleCollider, UnityEngine.SphereCollider, UnityEngine.Transform, UnstuckPlayer, WaterParkCreature
+Counts: {
+  'UnityEngine.Transform': 211,
+  AuroraWarnings: 1,
+  PlayerWorldArrows: 1,
+  'Story.StoryGoalManager': 1,
+  'Story.StoryGoalScheduler': 1,
+  StoryGoalCustomEventHandler: 1,
+  Oxygen: 2,
+  Player: 1,
+  LiveMixin: 13,
+  Survival: 1,
+  Inventory: 1,
+  Pickupable: 163,
+  Garryfish: 1,
+  CreatureDeath: 1,
+  InfectedMixin: 2,
+  WaterParkCreature: 1,
+  Eatable: 20,
+  Battery: 18,
+  StorageContainer: 1,
+  EnergyMixin: 5,
+  LargeWorldEntity: 4,
+  ToggleLights: 1,
+  NitrogenLevel: 1,
+  FairRandomizer: 8,
+  'UnityEngine.CapsuleCollider': 1,
+  DayNightCycle: 1,
+  PrisonManager: 1,
+  TeleporterManager: 1,
+  PlayerTimeCapsule: 1,
+  AnalyticsController: 1,
+  CraftingAnalytics: 1,
+  UnstuckPlayer: 1,
+  'UnityEngine.SphereCollider': 12,
+  EscapePod: 1,
+  PingInstance: 1,
+  Flare: 2,
+  CrafterLogic: 1,
+  Constructable: 3,
+  MedicalCabinet: 1,
+  PowerSource: 3,
+  CrashedShipExploder: 1,
+  PlayerSoundTrigger: 1,
+  LeakingRadiation: 1
+}
+
+--- Story.StoryGoalManager at 654 ---
+616765721001d5100803120d476f616c5f4c696665706f6432120c506c61796572446976696e67120b476f616c5f436f70706572121a476f616c5f42696f6d65536166655368616c6c6f777343617665120b4f6e437261667454616e6b120f526164696f426f756e
+ager........Goal_Lifepod2..PlayerDiving..Goal_Copper..Goal_BiomeSafeShallowsCave..OnCraftTank..RadioBoun
+enabled? 1
+next tag d5 field 26 wt 5
+starts with fixed32 - maybe data is unwrapped?
+raw slice len to next component 2136
+raw field counts { '1': 1, '11': 1, '26': 1 }
+raw strings []
+raw fields head [
+  'f26:f32:10080312',
+  'f1:f32:476f616c',
+  '{"err":"wt","field":11,"wt":7,"i":10}'
+]
+
+--- StoryGoalCustomEventHandler at 3047 ---
+646c6572100109080015000000001800200012e79c040a06506c6179657212db9c0408021206506c617965721acb9c04380800100118132206506c61796572322462633664363730612d653637342d346134612d616432372d366632333739313165386539480050
+dler............ .......Player........Player....8......".Player2$bc6d670a-e674-4a4a-ad27-6f237911e8e9H.P
+enabled? 1
+next tag 9 field 1 wt 1
+
+--- Player at 3260 ---
+617965721001d2bb010805100018012000289004282b289d2328ff2328962328f823283e28860428ef052803288504289a2328fc2328942328810428d00f282928f00528800428c41028a44e288308288b0e28890c28f50b28c91028a54e28ff0b28fe0b288d0e28
+ayer........... .(..(+(.#(.#(.#(.#(>(..(..(.(..(.#(.#(.#(..(..()(..(..(..(.N(..(..(..(..(..(.N(..(..(..(
+enabled? 1
+next tag d2 field 26 wt 2
+len-delimited payload 187
+field counts { '1': 1, '2': 1, '3': 1, '4': 1, '5': 62 }
+strings []
+fields head [
+  'f1:v=5',     'f2:v=0',    'f3:v=1',
+  'f4:v=0',     'f5:v=528',  'f5:v=43',
+  'f5:v=4509',  'f5:v=4607', 'f5:v=4502',
+  'f5:v=4600',  'f5:v=62',   'f5:v=518',
+  'f5:v=751',   'f5:v=3',    'f5:v=517',
+  'f5:v=4506',  'f5:v=4604', 'f5:v=4500',
+  'f5:v=513',   'f5:v=2000', 'f5:v=41',
+  'f5:v=752',   'f5:v=512',  'f5:v=2116',
+  'f5:v=10020', 'f5:v=1027', 'f5:v=1803',
+  'f5:v=1545',  'f5:v=1525', 'f5:v=2121',
+  'f5:v=10021', 'f5:v=1535', 'f5:v=1534',
+  'f5:v=1805',  'f5:v=1532', 'f5:v=2120',
+  'f5:v=10022', 'f5:v=5528', 'f5:v=1819',
+  'f5:v=761'
+]
+
+--- Oxygen at 3243 ---
+7967656e1001050d000034420a0a06506c617965721001d2bb010805100018012000289004282b289d2328ff2328962328f823283e28860428ef052803288504289a2328fc2328942328810428d00f282928f00528800428c41028a44e288308288b0e28890c28f5
+ygen......4B...Player........... .(..(+(.#(.#(.#(.#(>(..(..(.(..(.#(.#(.#(..(..()(..(..(..(.N(..(..(..(.
+enabled? 1
+next tag 5 field 0 wt 5
+starts with fixed32 - maybe data is unwrapped?
+raw slice len to next component 7
+raw field counts {}
+raw strings []
+raw fields head [ '{"err":"bad","i":0,"tag":5}' ]
+
+--- Oxygen at 71428 ---
+7967656e1001050d0000b4422a2c0a0454616e6b122432363864366366342d346434392d346339342d613132372d6633376435313663353432652a090a05436869703212002a2d0a054368697031122465316566656130612d653663662d343064362d383238642d
+ygen.......B*,..Tank.$268d6cf4-4d49-4c94-a127-f37d516c542e*...Chip2..*-..Chip1.$e1efea0a-e6cf-40d6-828d-
+enabled? 1
+next tag 5 field 0 wt 5
+starts with fixed32 - maybe data is unwrapped?
+raw slice len to next component 404
+raw field counts {}
+raw strings []
+raw fields head [ '{"err":"bad","i":0,"tag":5}' ]
+
+--- Survival at 27319 ---
+6976616c100111080115d1a022421d2c71604225000000000d0a09496e76656e746f7279100190dc02080612bac80203089f01600801100118002208556e746167676564322463383331656432612d643739312d346664312d393164612d39326634303462646139
+ival........"B.,q`B%.......Inventory...............`......".Untagged2$c831ed2a-d791-4fd1-91da-92f404bda9
+enabled? 1
+next tag 11 field 2 wt 1
+
+--- Inventory at 27351 ---
+746f7279100190dc02080612bac80203089f01600801100118002208556e746167676564322463383331656432612d643739312d346664312d393164612d393266343034626461396233422462633664363730612d653637342d346134612d616432372d36663233
+tory...............`......".Untagged2$c831ed2a-d791-4fd1-91da-92f404bda9b3B$bc6d670a-e674-4a4a-ad27-6f23
+enabled? 1
+next tag 90 field 18 wt 0
+
+slot files [
+  'CellsCache:0',
+  'CoordinatedSpawnsInitialized.nautilus:339',
+  'efool-custom-inventory:0',
+  'fogmap.bin:25903',
+  'fogmap_alz.bin:75',
+  'fogmap_ilz.bin:75',
+  'fogmap_jellyshroom.bin:10985',
+  'fogmap_lostriver.bin:7647',
+  'gameinfo.json:343',
+  'global-objects.bin:39578',
+  'mapicons.bin:1358',
+  'notes.bin:0',
+  'PdaUpgradeChips:0',
+  'scene-objects.bin:85801',
+  'screenshot.jpg:6554',
+  'timecapsules:0'
+]
+
+global unique components: Base, BaseAddFaceGhost, BaseFloodSim, BaseRoot, Battery, Constructable, ConstructableBase, Constructor, CrafterLogic, Eatable, EnergyMixin, Exosuit, LargeWorldEntity, MedicalCabinet, Pickupable, PingInstance, PowerSource, SeaMoth, SeamothStorageContainer, SignalPing, SolarPanel, StorageContainer, ToggleLights, UnityEngine.Transform, VFXConstructing

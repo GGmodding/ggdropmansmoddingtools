@@ -1,0 +1,207 @@
+﻿SGM goals count 104
+Goal_Lifepod2
+PlayerDiving
+Goal_Copper
+Goal_BiomeSafeShallowsCave
+OnCraftTank
+RadioBounceBack
+OnCraftBattery
+Goal_Scanner
+Goal_BiomeKelpForest
+Goal_Silver
+Goal_Knife
+Goal_CookedPeeper
+Goal_Fins
+RepairLifepod
+Goal_SecondarySystems
+SecondarySystems
+OnPlayRadioBounceBack
+OnCraftDoubleTank
+Story_AuroraWarning1
+Goal_Seaglide
+RadioGrassy21
+Goal_Airsack
+OnPlayRadioGrassy21
+RadioGrassy25
+Goal_Builder
+Goal_JellyCaveEntrance
+LifepodSeaglide
+Goal_BiomeGrassyPlateaus
+RadioShallows22
+Goal_BiomeKelpForestCave
+OnPlayRadioGrassy25
+OnCraftConstructor
+RadioSecondOfficer
+OnConstructHatch
+Story_AuroraWarning2
+OnPlayRadioShallows22
+RadioShallows22NoSignalAlt
+RadioShallows22NoSignalAltDatabank
+OnConstructSeamoth
+Goal_Seamoth
+Lifepod3
+Goal_Diamond
+Goal_BiomeUnderwaterIslands
+Goal_BiomeJellyCave2
+RadioWarper1
+Infection_Progress2
+Goal_BiomeMountains
+RadioSunbeamStart
+RadioSunbeam1
+Story_AuroraWarning3
+OnPlayRadioSecondOfficer
+RadioKoosh26
+OnPlayRadioWarper1
+Story_AuroraWarning4
+UnlockRadiationSuit
+Goal_UnlockRadSuit
+RadSuit
+Goal_BiomeCrashedShip
+Goal_LocationAuroraEntry
+Goal_LocationAuroraFurtherIn
+Aurora_Cargo_PDA1
+Goal_LocationAuroraInterior
+Aurora_Office_Terminal1
+Aurora_Office_PDA1
+Goal_LocationAuroraHallway
+Goal_PurifiedWater
+Aurora_Living_Area_PDA1
+OuterBiomeWreckLore1
+Aurora_Locker_PDA1
+Aurora_Locker_PDA2
+Goal_LocationAuroraDriveEntry
+Goal_LocationAuroraDriveInterior
+AuroraRadiationFixed
+Goal_LocationAuroraExoRoom
+RadioKelp28
+Aurora_Living_Area_PDA3
+Aurora_Living_Area_PDA2
+CaptainPDA
+Aurora_RingRoom_Terminal3
+Rocket
+TimeCapsule
+Aurora_Living_Area_PDA2b
+OuterBiomeWreckLore2
+Aurora_DriveRoom_Terminal1
+OuterBiomeWreckLore4
+Aurora_RingRoom_Terminal2
+Goal_BiomeMushroomForest
+LifepodCrashZone2
+OnPlayRadioSunbeam1
+Goal_BiomeJellyCave
+JellyPDABreadcrumb
+UnlockLargeRoom
+UnlockGlassDome
+UnlockLargeGlassDome
+JellyPDARoom1Desk
+RadioSunbeam2
+JellyPDARoom2Desk
+RadioMushroom24
+LifepodKeenLog
+OnPlayRadioKoosh26
+OnConstructExosuit
+Goal_Exo
+Goal_LostRiverEntrance
+Infection_Progress3
+
+PDA-ish goals 42 [
+  'RadioBounceBack',
+  'Goal_Scanner',
+  'OnPlayRadioBounceBack',
+  'RadioGrassy21',
+  'OnPlayRadioGrassy21',
+  'RadioGrassy25',
+  'RadioShallows22',
+  'OnPlayRadioGrassy25',
+  'RadioSecondOfficer',
+  'OnPlayRadioShallows22',
+  'RadioShallows22NoSignalAlt',
+  'RadioShallows22NoSignalAltDatabank',
+  'RadioWarper1',
+  'Infection_Progress2',
+  'RadioSunbeamStart',
+  'RadioSunbeam1',
+  'OnPlayRadioSecondOfficer',
+  'RadioKoosh26',
+  'OnPlayRadioWarper1',
+  'Aurora_Cargo_PDA1',
+  'Aurora_Office_Terminal1',
+  'Aurora_Office_PDA1',
+  'Aurora_Living_Area_PDA1',
+  'Aurora_Locker_PDA1',
+  'Aurora_Locker_PDA2',
+  'RadioKelp28',
+  'Aurora_Living_Area_PDA3',
+  'Aurora_Living_Area_PDA2',
+  'CaptainPDA',
+  'Aurora_RingRoom_Terminal3',
+  'Aurora_Living_Area_PDA2b',
+  'Aurora_DriveRoom_Terminal1',
+  'Aurora_RingRoom_Terminal2',
+  'OnPlayRadioSunbeam1',
+  'JellyPDABreadcrumb',
+  'JellyPDARoom1Desk',
+  'RadioSunbeam2',
+  'JellyPDARoom2Desk',
+  'RadioMushroom24',
+  'LifepodKeenLog',
+  'OnPlayRadioKoosh26',
+  'Infection_Progress3'
+]
+streams [ '#~', '#Strings', '#US', '#GUID', '#Blob' ]
+TypeDef rows 3111 Field rows 20826 MethodDef 22340
+
+Interesting types:
+- [1115] .KnownTech fields 7893..7906
+- [1277] .PDAData fields 8839..8846
+- [1278] .PDAEncyclopedia fields 8847..8855
+- [1285] .PDALog fields 8871..8880
+- [1297] .PDAScanner fields 8919..8936
+- [1430] .Player fields 9641..9791
+
+=== .KnownTech fields ===
+initialized, onChanged, onAdd, onRemove, onCompoundAdd, onCompoundRemove, onCompoundProgress, onAnalyze, defaultTech, compoundTech, analysisTech, knownTech, analyzedTech, knownCompoundTech
+=== methods ===
+add_onChanged, remove_onChanged, add_onAdd, remove_onAdd, add_onRemove, remove_onRemove, add_onCompoundAdd, remove_onCompoundAdd, add_onCompoundRemove, remove_onCompoundRemove, add_onCompoundProgress, remove_onCompoundProgress, add_onAnalyze, remove_onAnalyze, Initialize, Deinitialize, GetTech, Contains, Add, AddRange, Remove, ValidateAnalysisTech, ValidateCompoundTech, UnlockCompoundTech, Analyze, GetCompoundTech, GetKnownCompoundTech, GetCompoundDependenciesUnlocked, GetCompoundDependenciesTotal, GetAllUnlockables, UnlockAll, UnreadAdd, UnreadRemove, GetTechUnlockState, GetTechUnlockState, NotifyAdd, NotifyRemove, NotifyChanged, NotifyCompoundAdd, NotifyCompoundRemove, NotifyCompoundProgress, NotifyAnalyze, Serialize, Deserialize, .cctor
+
+=== .PDAData fields ===
+assetPath, defaultLogIcon, log, encyclopedia, scanner, defaultTech, analysisTech, compoundTech
+=== methods ===
+Initialize, Deinitialize, .ctor
+
+=== .PDAEncyclopedia fields ===
+timeCapsulePath, sPathSplitChars, initialized, mapping, entries, <tree>k__BackingField, onAdd, onUpdate, onRemove
+=== methods ===
+get_tree, set_tree, Initialize, Deinitialize, OnLanguageChanged, AddAndPlaySound, AddTimeCapsule, UpdateTimeCapsule, RemoveTimeCapsule, Add, AddAllEntries, GetParent, Add, ContainsEntry, GetEntries, HasEntryData, GetEntryData, Serialize, Deserialize, ParsePath, GetNode, NotifyAdd, NotifyUpdate, NotifyRemove, .cctor
+
+=== .PDALog fields ===
+sEntryTypeComparer, queue, iconDefault, onAdd, onRemove, onSetTime, <initialized>k__BackingField, mapping, entries, time
+=== methods ===
+add_onAdd, remove_onAdd, add_onRemove, remove_onRemove, add_onSetTime, remove_onSetTime, get_initialized, set_initialized, Initialize, Deinitialize, InitDataForEntries, OnUpdate, Add, Remove, GetEntryData, GetMapping, GetEntries, Contains, GetIcon, SetTime, NotifyAdd, NotifyRemove, Serialize, Deserialize, .cctor
+
+=== .PDAScanner fields ===
+infectionEncyclopediaEntry, healedInfectionEncyclopediaEntry, heroPeeperEncyclopediaEntry, aquariumPeeperEncyclopediaEntry, redundantScanTime, selfScanTime, currentVersion, fragments, partial, complete, scanTarget, onAdd, onRemove, onProgress, initialized, mapping, toRemove, cachedProgress
+=== methods ===
+Initialize, Deinitialize, GetAllEntriesData, GetEntryData, HasEntry, IsFragment, GetPartialEntries, GetPartialEntriesWhichUnlocks, ContainsPartialEntry, IsEntryUnlocks, IsEntryUnlocks, GetEntryUnlockable, GetPartialEntryByKey, AddByUnlockable, Add, RemoveAllEntriesWhichUnlocks, CompleteAllEntriesWhichUnlocks, ContainsCompleteEntry, RemoveCompleteWhichUnlocks, UpdateTarget, CanScan, CanScan, Scan, Unlock, NotifyAdd, NotifyRemove, NotifyProgress, Serialize, Deserialize, GetDebugString, .cctor
+
+=== .Player fields ===
+creativeEquipment, kCrashedShipBiome, kPrecursorGunBiome, main, mainObject, mainCollider, fixedUpdateSinceLastChangedSub, requiredFixedUpdateSinceLastChangedSub, wantInterpolate, currentMountedVehicle, jumpSound, equipmentModels, movementSpeed, depthLevel, head, playerSphereRadius, camRoot, camAnchor, surfaceFXSpawn, temperatureDamage, scubaMaskModelSpawn, fpParticleEmissionPoint, pda, armsController, playerAnimator, playerArrowTransform, oxygenMgr, textStyle, crushDepth, pdaData, rightHandSlot, radiateSound, deathMusic, suffocationTime, suffocationRecoveryTime, liveMixin, footStepSounds, acidLoopingSound, groundMotor, rigidBody, teleportingLoopSound, bottom, diveGoal, guiHand, _cinematicModeActive, <isWaitingForTeleportation>k__BackingField, inExosuit, inSeamoth, motorMode, playerModeChanged, playerMotorModeChanged, tookBreathEvent, swimFastEvent, sitting, playerDeathEvent, playerRespawnEvent, isUnderwater, isUnderwaterForSwimming, depthClass, escapePod, timeGrabbed, timeBashed, mesmerizedSpeedMultiplier, infectedMixin, infectionRevealCurve, infectionCureCurve, infectionRevealSound, leftHandBone, currentVersion, version, serializedIsUnderwater, serializedDepthClass, serializedEscapePod, knownTech, currentSubUID, journal, encyclopedia, scanner, currentWaterParkUID, usedTools, forceWalkMotorMode, precursorOutOfWater, analyzedTech, isSick, notifications, _displaySurfaceWater, timeLastSleep, infectionRevealed, timeCapsules, hasUsedConsole, rotationX, rotationY, suffocationState, suffocationProgress, lastValidSubUID, pins, _timeSavingDisallowed, timeLastCleanup, restoreQuickSlot, timeMonitor, scubaMaskModel, surfaceFX, mode, timeSpawned, biomeString, _currentSub, initialSub, _currentEscapePod, _currentWaterPark, _radiationAmount, isNewBorn, escapePodRadius, lastValidSub, lastEscapePod, suffocation, fallDamageThreshholdSpeed, fallDamage, cachedDepth, bodyStr, handStr, fmodIndexIntensity, timeStartRealSeconds, lastPosition, maxDepth, distanceTraveled, infectionRevealCinematicLength, infectionRevealDuration, infectionCureDuration, timePlayerInfectionRevealed, timePlayerInfectionCured, freezeStatsCount, timeFallingBegan, wasFalling, kFallingAnimDelay, currentScubaMaskState, scubaMaskTimer, scubaMaskHideCallback, waterPlaneOverride, exitWaterOffset, exitWaterGroundedOffset, enterWaterOffset, minGroundedCheckInterval, timeLastGroundedCheck, <debugFastSwimAllowed>k__BackingField, shotgunMode, currentSubChangedEvent, <playerController>k__BackingField, onTeleportationComplete, currChair, timeLastShotgun, registeredForHighFixedTimestep
+=== methods ===
+get_interpolate, set_forceCinematicMode, set_cinematicModeActive, get_cinematicModeActive, get_justSpawned, get_radiationAmount, get_currentSub, set_currentSub, get_currentEscapePod, set_currentEscapePod, get_currentWaterPark, set_currentWaterPark, get_displaySurfaceWater, get_isWaitingForTeleportation, set_isWaitingForTeleportation, get_isPiloting, get_viewModelCamera, GetPDA, set_allowSaving, get_allowSaving, get_debugFastSwimAllowed, set_debugFastSwimAllowed, OnConsoleCommand_warpme, OnConsoleCommand_fastswim, OnConsoleCommand_kill, OnConsoleCommand_takedamage, OnConsoleCommand_shotgun, OnConsoleCommand_warp, OnConsoleCommand_warpforward, OnConsoleCommand_invisible, OnConsoleCommand_spawnnearby, OnConsoleCommand_interpolate, get_playerController, set_playerController, AddUsedTool, IsToolUsed, GetSkyEnvironment, IsFrozenStats, FreezeStats, UnfreezeStats, WaitForTeleportation, add_onTeleportationComplete, remove_onTeleportationComplete, CheckTeleportationComplete, CompleteTeleportation, SetHeadVisible, CrushDamageUpdate, FindAwakeSpawnedEnts, Start, OnDestroy, OnDisable, ApplyEscapePodSkyIfNeeded, SetupCreativeMode, CheckSubValid, HasInventoryRoom, HasInventoryRoom, ValidateCurrentSub, ValidateEscapePod, ValidateCurrentWaterPark, CanChangeSub, SetCurrentSub, OnSubDamaged, SetScubaMaskState, SetScubaMaskActive, HideScubaMask, GetUniqueIdentifierIfExists, OnProtoSerialize, OnProtoDeserialize, IsNewBorn, Awake, UnlockEconomyItems, SpawnNearby, GetOxygenAvailable, GetOxygenCapacity, SetPosition, SetPosition, GetLastPosition, TrackTravelStats, GetCurrentSub, GetLastSub, GetDepth, IsUnderwaterForSwimming, IsUnderwater, IsSwimming, IsInside, IsInsideWalkable, CanBreathe, IsInSub, IsInBase, IsInSubmarine, CanBeAttacked, IsBleederAttached, GetMode, EnterLockedMode, ExitLockedMode, IsPilotingInLockedMode, IsPiloting, GetPilotingChair, EnterPilotingMode, TryEject, EnterSittingMode, ExitSittingMode, UpdateRotation, UpdatePosition, FixedUpdate, GetPlayFallingAnimation, LateUpdate, UpdateBiomeRichPresence, CalculateBiome, HideEquipmentSlot, EquipmentChanged, UpdateReinforcedSuit, HasReinforcedSuit, HasReinforcedGloves, SetRadiationAmount, ExitPilotingMode, UpdateIsUnderwater, UpdateIsUnderwaterForSwimming, OnPlayerIsUnderwaterChanged, OnPlayerDepthClassChanged, SetDisplaySurfaceWater, SetWaterPlane, GetWaterLevel, CanEject, GetVehicle, IsInsidePoweredVehicle, ToNormalMode, EndGame, GetRespawnPosition, MovePlayerToRespawnPoint, ResetPlayerOnDeath, SetPrecursorOutOfWater, OnKill, GetSurfaceDepth, GetDepthClass, GetBreathPeriod, GetOxygenPerBreath, SetMotorMode, UpdateMotorMode, HandleShotgunMode, OnPlayerPositionCheat, Update, StartPlayerInfectionReveal, StartPlayerInfectionCure, GetInfectionAmount, TriggerInfectionRevealAsync, StartHideGlovesFor, ShowGlovesInAsync, GetCanItemBeUsed, UpdateItemHolstering, RestoreSubIfNeeded, RestoreWaterParkIfNeeded, UpdateRadiationSound, PlayGrab, GetLeftHandBone, PlayBash, IsInClawExosuit, IsFreeToInteract, IsAlive, OnTakeDamage, GetPlayerInAnimState, GetInMechMode, OnSwimFastStartAnim, OnSwimFastEndAnim, PlayOneShotPS, SuffocationReset, IsSuffocating, SuffocationUpdate, SuffocationDie, SuffocationRecovery, LoadSuffocationState, GetBiomeString, GetPlayMetalFootstepSounds, OnLand, OnJump, OnAcidEnter, OnAcidExit, IsDeconstructionObstacle, IObstacle.CanDeconstruct, CompileTimeCheck, UpdateVrFading, RequiresHighPrecisionPhysics, ApplyHighPrecisionPhysicsIfNecessary, AddOnTriggerExitRecovery, RemoveOnTriggerExitRecovery, .ctor, .cctor
+Nested: ForwardOnPlayerEntered/SimpleFogBoxVolume
+  fields: boxSize, previousBoxSize
+  methods: OnEnable, PopulateShaderName, HasChanged, SetChangedValues, UpdateVolume, .ctor
+Nested: OnPlayerNearby/SimpleFogBoxVolume
+  fields: boxSize, previousBoxSize
+  methods: OnEnable, PopulateShaderName, HasChanged, SetChangedValues, UpdateVolume, .ctor
+
+Scanning resources.assets for Ency keys (stream)...
+Ency_ keys found 0
+
+path keys 0 
+scene count Peeper 4
+scene count Gasopod 2
+scene count Aurora 74
+scene count Creepvine 3
+scene count Seamoth 7
+scene count ReaperLeviathan 0

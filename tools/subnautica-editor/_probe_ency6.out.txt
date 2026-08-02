@@ -1,0 +1,508 @@
+﻿before Player:
+ 6f726d1001380a0f0d26cd94c415a48019c41d7d9e37c312140ddd0ff63b15bcd072bf1d7dad9b3c251bdba13e1a0f0d0000803f150000803f1d0000803f0a0a064f787967656e1001050d000034420a0a06506c617965721001d2bb01080510
+orm..8...&.........}.7.......;...r..}..<%...>......?....?....?...Oxygen......4B...Player........
+
+Raw from 3452: 0828d30f282a28dc0b28a10628a50628fc2a289e2b28a52b28a32b28f30528a42b28a62b28942b28f20b28a40628932b288e2b283b3a160a0d476f616c5f4c696665706f643212050dbf32f8433a140a0b476f616c5f436f7070657212050d14dd06443a
+
+journal/f7 tag 0x3a candidates 54
+[
+  {
+    at: 3505,
+    len: 22,
+    key: 'Goal_Lifepod2',
+    ratio: 0.6818181818181818
+  },
+  { at: 3529, len: 20, key: 'Goal_Copper', ratio: 0.6 },
+  {
+    at: 3551,
+    len: 35,
+    key: 'Goal_BiomeSafeShallowsCave',
+    ratio: 0.8285714285714286
+  },
+  { at: 3588, len: 21, key: 'Goal_Scanner', ratio: 0.6190476190476191 },
+  {
+    at: 3611,
+    len: 29,
+    key: 'Goal_BiomeKelpForest',
+    ratio: 0.7586206896551724
+  },
+  { at: 3642, len: 20, key: 'Goal_Silver', ratio: 0.65 },
+  { at: 3664, len: 19, key: 'Goal_Knife', ratio: 0.631578947368421 },
+  {
+    at: 3685,
+    len: 26,
+    key: 'Goal_CookedPeeper',
+    ratio: 0.7692307692307693
+  },
+  { at: 3713, len: 18, key: 'Goal_Fins', ratio: 0.6111111111111112 },
+  {
+    at: 3733,
+    len: 30,
+    key: 'Goal_SecondarySystems',
+    ratio: 0.7666666666666667
+  },
+  {
+    at: 3765,
+    len: 24,
+    key: 'RadioBounceBack',
+    ratio: 0.7083333333333334
+  },
+  {
+    at: 3791,
+    len: 29,
+    key: 'Story_AuroraWarning1',
+    ratio: 0.7586206896551724
+  },
+  {
+    at: 3822,
+    len: 22,
+    key: 'Goal_Seaglide',
+    ratio: 0.6363636363636364
+  },
+  { at: 3846, len: 21, key: 'Goal_Airsack', ratio: 0.6666666666666666 },
+  {
+    at: 3869,
+    len: 22,
+    key: 'RadioGrassy21',
+    ratio: 0.6363636363636364
+  },
+  { at: 3893, len: 21, key: 'Goal_Builder', ratio: 0.6190476190476191 },
+  {
+    at: 3916,
+    len: 31,
+    key: 'Goal_JellyCaveEntrance',
+    ratio: 0.7419354838709677
+  },
+  {
+    at: 3949,
+    len: 33,
+    key: 'Goal_BiomeGrassyPlateaus',
+    ratio: 0.7575757575757576
+  },
+  {
+    at: 3984,
+    len: 33,
+    key: 'Goal_BiomeKelpForestCave',
+    ratio: 0.7878787878787878
+  },
+  {
+    at: 4019,
+    len: 22,
+    key: 'RadioGrassy25',
+    ratio: 0.6818181818181818
+  },
+  {
+    at: 4043,
+    len: 29,
+    key: 'Story_AuroraWarning2',
+    ratio: 0.7931034482758621
+  },
+  {
+    at: 4074,
+    len: 24,
+    key: 'RadioShallows22',
+    ratio: 0.6666666666666666
+  },
+  { at: 4100, len: 35, key: 'RadioShallows22NoSignalAlt', ratio: 0.8 },
+  { at: 4137, len: 21, key: 'Goal_Seamoth', ratio: 0.7142857142857143 },
+  { at: 4160, len: 21, key: 'Goal_Diamond', ratio: 0.7142857142857143 },
+  {
+    at: 4183,
+    len: 36,
+    key: 'Goal_BiomeUnderwaterIslands',
+    ratio: 0.8055555555555556
+  },
+  {
+    at: 4221,
+    len: 29,
+    key: 'Goal_BiomeJellyCave2',
+    ratio: 0.7586206896551724
+  },
+  { at: 4252, len: 28, key: 'Goal_BiomeMountains', ratio: 0.75 },
+  {
+    at: 4282,
+    len: 29,
+    key: 'Story_AuroraWarning3',
+    ratio: 0.7931034482758621
+  },
+  {
+    at: 4313,
+    len: 27,
+    key: 'RadioSecondOfficer',
+    ratio: 0.7777777777777778
+  },
+  { at: 4342, len: 21, key: 'RadioWarper1', ratio: 0.6666666666666666 },
+  {
+    at: 4365,
+    len: 29,
+    key: 'Story_AuroraWarning4',
+    ratio: 0.7586206896551724
+  },
+  {
+    at: 4396,
+    len: 27,
+    key: 'Goal_UnlockRadSuit',
+    ratio: 0.7777777777777778
+  },
+  {
+    at: 4425,
+    len: 30,
+    key: 'Goal_BiomeCrashedShip',
+    ratio: 0.7333333333333333
+  },
+  {
+    at: 4457,
+    len: 33,
+    key: 'Goal_LocationAuroraEntry',
+    ratio: 0.7878787878787878
+  },
+  {
+    at: 4492,
+    len: 37,
+    key: 'Goal_LocationAuroraFurtherIn',
+    ratio: 0.8108108108108109
+  },
+  {
+    at: 4531,
+    len: 36,
+    key: 'Goal_LocationAuroraInterior',
+    ratio: 0.8055555555555556
+  },
+  { at: 4569, len: 35, key: 'Goal_LocationAuroraHallway', ratio: 0.8 },
+  {
+    at: 4606,
+    len: 27,
+    key: 'Goal_PurifiedWater',
+    ratio: 0.7407407407407407
+  },
+  {
+    at: 4635,
+    len: 38,
+    key: 'Goal_LocationAuroraDriveEntry',
+    ratio: 0.8157894736842105
+  },
+  {
+    at: 4675,
+    len: 41,
+    key: 'Goal_LocationAuroraDriveInterior',
+    ratio: 0.8292682926829268
+  },
+  { at: 4718, len: 35, key: 'Goal_LocationAuroraExoRoom', ratio: 0.8 },
+  {
+    at: 4755,
+    len: 34,
+    key: 'Aurora_RingRoom_Terminal2',
+    ratio: 0.7941176470588235
+  },
+  {
+    at: 4791,
+    len: 33,
+    key: 'Goal_BiomeMushroomForest',
+    ratio: 0.7878787878787878
+  },
+  {
+    at: 4826,
+    len: 22,
+    key: 'RadioSunbeam1',
+    ratio: 0.6363636363636364
+  },
+  { at: 4850, len: 28, key: 'Goal_BiomeJellyCave', ratio: 0.75 },
+  { at: 4880, len: 21, key: 'RadioKoosh26', ratio: 0.6190476190476191 },
+  { at: 4903, len: 17, key: 'Goal_Exo', ratio: 0.5294117647058824 },
+  {
+    at: 4922,
+    len: 31,
+    key: 'Goal_LostRiverEntrance',
+    ratio: 0.7419354838709677
+  }
+]
+
+encyclopedia/f8 tag 0x42 candidates 111
+[
+  { at: 4955, len: 15, key: 'Readme', ratio: 0.4666666666666667 },
+  {
+    at: 4972,
+    len: 26,
+    key: 'SurvivalChecklist',
+    ratio: 0.6923076923076923
+  },
+  {
+    at: 5000,
+    len: 23,
+    key: 'AuroraOverview',
+    ratio: 0.6521739130434783
+  },
+  { at: 5025, len: 16, key: 'AEPSuit', ratio: 0.5 },
+  { at: 5043, len: 16, key: 'Lifepod', ratio: 0.5 },
+  { at: 5061, len: 16, key: 'Builder', ratio: 0.5 },
+  { at: 5079, len: 15, key: 'Welder', ratio: 0.4666666666666667 },
+  { at: 5096, len: 17, key: 'Seaglide', ratio: 0.5294117647058824 },
+  {
+    at: 5115,
+    len: 28,
+    key: 'BlueprintCorruption',
+    ratio: 0.7142857142857143
+  },
+  { at: 5145, len: 16, key: 'Scanner', ratio: 0.5 },
+  { at: 5163, len: 19, key: 'SolarPanel', ratio: 0.5789473684210527 },
+  { at: 5184, len: 19, key: 'Fabricator', ratio: 0.5789473684210527 },
+  { at: 5205, len: 17, key: 'Aquarium', ratio: 0.5294117647058824 },
+  { at: 5224, len: 12, key: 'MVB', ratio: 0.3333333333333333 },
+  { at: 5238, len: 17, key: 'Airpumps', ratio: 0.5294117647058824 },
+  {
+    at: 5257,
+    len: 22,
+    key: 'BigCoralTubes',
+    ratio: 0.7727272727272727
+  },
+  { at: 5281, len: 25, key: 'SecondarySystems', ratio: 0.72 },
+  { at: 5308, len: 21, key: 'MetalSalvage', ratio: 0.6190476190476191 },
+  { at: 5331, len: 16, key: 'Gasopod', ratio: 0.5 },
+  { at: 5349, len: 18, key: 'Creepvine', ratio: 0.6111111111111112 },
+  { at: 5369, len: 15, key: 'Mesmer', ratio: 0.6 },
+  {
+    at: 5386,
+    len: 24,
+    key: 'LifepodSeaglide',
+    ratio: 0.7083333333333334
+  },
+  { at: 5412, len: 16, key: 'Seamoth', ratio: 0.5 },
+  { at: 5430, len: 19, key: 'Bioreactor', ratio: 0.631578947368421 },
+  {
+    at: 5451,
+    len: 43,
+    key: 'RadioShallows22NoSignalAltDatabank',
+    ratio: 0.8372093023255814
+  },
+  { at: 5496, len: 17, key: 'Lifepod3', ratio: 0.6470588235294118 },
+  { at: 5515, len: 16, key: 'Cyclops', ratio: 0.5625 },
+  { at: 5533, len: 25, key: 'PropulsionCannon', ratio: 0.72 },
+  { at: 5560, len: 20, key: 'StasisRifle', ratio: 0.7 },
+  { at: 5582, len: 20, key: 'BasePlanter', ratio: 0.65 },
+  { at: 5604, len: 18, key: 'Techlight', ratio: 0.6111111111111112 },
+  { at: 5624, len: 16, key: 'MapRoom', ratio: 0.625 },
+  { at: 5642, len: 16, key: 'RadSuit', ratio: 0.5625 },
+  {
+    at: 5660,
+    len: 26,
+    key: 'Aurora_Cargo_PDA1',
+    ratio: 0.7307692307692307
+  },
+  { at: 5688, len: 32, key: 'Aurora_Office_Terminal1', ratio: 0.78125 },
+  {
+    at: 5722,
+    len: 27,
+    key: 'Aurora_Office_PDA1',
+    ratio: 0.7037037037037037
+  },
+  { at: 5751, len: 32, key: 'Aurora_Living_Area_PDA1', ratio: 0.78125 },
+  {
+    at: 5785,
+    len: 29,
+    key: 'OuterBiomeWreckLore1',
+    ratio: 0.7586206896551724
+  },
+  {
+    at: 5816,
+    len: 27,
+    key: 'Aurora_Locker_PDA1',
+    ratio: 0.7407407407407407
+  },
+  {
+    at: 5845,
+    len: 27,
+    key: 'Aurora_Locker_PDA2',
+    ratio: 0.7037037037037037
+  },
+  { at: 5874, len: 12, key: 'Exo', ratio: 0.4166666666666667 },
+  { at: 5888, len: 32, key: 'Aurora_Living_Area_PDA3', ratio: 0.78125 },
+  { at: 5922, len: 32, key: 'Aurora_Living_Area_PDA2', ratio: 0.78125 },
+  { at: 5956, len: 19, key: 'CaptainPDA', ratio: 0.631578947368421 },
+  {
+    at: 5977,
+    len: 34,
+    key: 'Aurora_RingRoom_Terminal3',
+    ratio: 0.7941176470588235
+  },
+  { at: 6013, len: 15, key: 'Rocket', ratio: 0.5333333333333333 },
+  { at: 6030, len: 20, key: 'TimeCapsule', ratio: 0.65 },
+  {
+    at: 6052,
+    len: 33,
+    key: 'Aurora_Living_Area_PDA2b',
+    ratio: 0.7575757575757576
+  },
+  {
+    at: 6087,
+    len: 29,
+    key: 'OuterBiomeWreckLore2',
+    ratio: 0.7586206896551724
+  },
+  {
+    at: 6118,
+    len: 35,
+    key: 'Aurora_DriveRoom_Terminal1',
+    ratio: 0.8285714285714286
+  }
+]
+
+scanner/f9 tag 0x4a candidates 14
+[]
+
+=== Scene-wide encyclopedia-shaped entries (field 8) ===
+shaped count 65
+[
+  { at: 3250, key: 'Player', ts: null, len: 10 },
+  { at: 4955, key: 'Readme', ts: 480, len: 15 },
+  { at: 4972, key: 'SurvivalChecklist', ts: 480, len: 26 },
+  { at: 5000, key: 'AuroraOverview', ts: 480, len: 23 },
+  { at: 5025, key: 'AEPSuit', ts: 480, len: 16 },
+  { at: 5043, key: 'Lifepod', ts: 480, len: 16 },
+  { at: 5061, key: 'Builder', ts: 480, len: 16 },
+  { at: 5079, key: 'Welder', ts: 480, len: 15 },
+  { at: 5096, key: 'Seaglide', ts: 480, len: 17 },
+  { at: 5115, key: 'BlueprintCorruption', ts: 480, len: 28 },
+  { at: 5145, key: 'Scanner', ts: 480, len: 16 },
+  { at: 5163, key: 'SolarPanel', ts: 480, len: 19 },
+  { at: 5184, key: 'Fabricator', ts: 480, len: 19 },
+  { at: 5205, key: 'Aquarium', ts: 480, len: 17 },
+  { at: 5224, key: 'MVB', ts: 480, len: 12 },
+  { at: 5238, key: 'Airpumps', ts: 480, len: 17 },
+  { at: 5257, key: 'BigCoralTubes', ts: 941.5977783203125, len: 22 },
+  {
+    at: 5281,
+    key: 'SecondarySystems',
+    ts: 1089.0889892578125,
+    len: 25
+  },
+  { at: 5308, key: 'MetalSalvage', ts: 1318.7139892578125, len: 21 },
+  { at: 5331, key: 'Gasopod', ts: 1359.5263671875, len: 16 },
+  { at: 5349, key: 'Creepvine', ts: 1596.136962890625, len: 18 },
+  { at: 5369, key: 'Mesmer', ts: 1611.7950439453125, len: 15 },
+  { at: 5386, key: 'LifepodSeaglide', ts: 1827.3687744140625, len: 24 },
+  { at: 5412, key: 'Seamoth', ts: 1840.7669677734375, len: 16 },
+  { at: 5430, key: 'Bioreactor', ts: 1879.0457763671875, len: 19 },
+  {
+    at: 5451,
+    key: 'RadioShallows22NoSignalAltDatabank',
+    ts: 2505.033203125,
+    len: 43
+  },
+  { at: 5496, key: 'Lifepod3', ts: 2726.183837890625, len: 17 },
+  { at: 5515, key: 'Cyclops', ts: 2942.669921875, len: 16 },
+  { at: 5533, key: 'PropulsionCannon', ts: 3033.48486328125, len: 25 },
+  { at: 5560, key: 'StasisRifle', ts: 3126.49462890625, len: 20 },
+  { at: 5582, key: 'BasePlanter', ts: 3130.49951171875, len: 20 },
+  { at: 5604, key: 'Techlight', ts: 3168.6123046875, len: 18 },
+  { at: 5624, key: 'MapRoom', ts: 3543.186767578125, len: 16 },
+  { at: 5642, key: 'RadSuit', ts: 4516.93798828125, len: 16 },
+  { at: 5660, key: 'Aurora_Cargo_PDA1', ts: 4854.79833984375, len: 26 },
+  {
+    at: 5688,
+    key: 'Aurora_Office_Terminal1',
+    ts: 4895.798828125,
+    len: 32
+  },
+  {
+    at: 5722,
+    key: 'Aurora_Office_PDA1',
+    ts: 4899.45947265625,
+    len: 27
+  },
+  {
+    at: 5751,
+    key: 'Aurora_Living_Area_PDA1',
+    ts: 5103.216796875,
+    len: 32
+  },
+  {
+    at: 5785,
+    key: 'OuterBiomeWreckLore1',
+    ts: 5165.51416015625,
+    len: 29
+  },
+  { at: 5816, key: 'Aurora_Locker_PDA1', ts: 5233.0322265625, len: 27 },
+  {
+    at: 5845,
+    key: 'Aurora_Locker_PDA2',
+    ts: 5245.61376953125,
+    len: 27
+  },
+  { at: 5874, key: 'Exo', ts: 5511.314453125, len: 12 },
+  {
+    at: 5888,
+    key: 'Aurora_Living_Area_PDA3',
+    ts: 5580.61572265625,
+    len: 32
+  },
+  {
+    at: 5922,
+    key: 'Aurora_Living_Area_PDA2',
+    ts: 5703.51123046875,
+    len: 32
+  },
+  { at: 5956, key: 'CaptainPDA', ts: 5726.53857421875, len: 19 },
+  {
+    at: 5977,
+    key: 'Aurora_RingRoom_Terminal3',
+    ts: 5732.46826171875,
+    len: 34
+  },
+  { at: 6013, key: 'Rocket', ts: 5735.4697265625, len: 15 },
+  { at: 6030, key: 'TimeCapsule', ts: 5742.47509765625, len: 20 },
+  {
+    at: 6052,
+    key: 'Aurora_Living_Area_PDA2b',
+    ts: 5757.82861328125,
+    len: 33
+  },
+  {
+    at: 6087,
+    key: 'OuterBiomeWreckLore2',
+    ts: 5770.38232421875,
+    len: 29
+  },
+  {
+    at: 6118,
+    key: 'Aurora_DriveRoom_Terminal1',
+    ts: 5893.5302734375,
+    len: 35
+  },
+  { at: 6155, key: 'OuterBiomeWreckLore4', ts: 5949.359375, len: 29 },
+  { at: 6247, key: 'ModificationStation', ts: 6428.6875, len: 28 },
+  { at: 6277, key: 'TreeMushroom', ts: 6499.40966796875, len: 21 },
+  { at: 6300, key: 'Moonpool', ts: 6526.6787109375, len: 17 },
+  { at: 6319, key: 'LifepodCrashZone2', ts: 7290.28857421875, len: 26 },
+  { at: 6347, key: 'JellyPDABreadcrumb', ts: 7754.7939453125, len: 27 },
+  { at: 6376, key: 'NuclearReactor', ts: 7853.6298828125, len: 23 },
+  { at: 6401, key: 'WaterFilter', ts: 7889.0380859375, len: 20 },
+  { at: 6423, key: 'ThermalPlant', ts: 7894.318359375, len: 21 },
+  { at: 6446, key: 'JellyPDARoom1Desk', ts: 7948.33154296875, len: 26 },
+  { at: 6474, key: 'JellyPDARoom2Desk', ts: 8056.66943359375, len: 26 },
+  { at: 6502, key: 'LifepodKeenLog', ts: 8379.4296875, len: 23 },
+  { at: 6527, key: 'Airsack', ts: 480, len: 16 },
+  { at: 66986, key: 'ToggleLights', ts: null, len: 16 }
+]
+node : <anonymous_script>:2
+At C:\Users\Owner\AppData\Local\Temp\ps-script-b02836da-02bd-4299-a371-b69920220228.ps1:105 char:1
++ node "C:\Users\Owner\Downloads\ggdropmansmoddingtools\tools\subnautic ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (<anonymous_script>:2:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+	// Main menu
+	^
+
+SyntaxError: Expected property name or '}' in JSON at position 3 (line 2 column 2)
+    at JSON.parse (<anonymous>)
+    at Object.<anonymous> 
+(C:\Users\Owner\Downloads\ggdropmansmoddingtools\tools\subnautica-editor\_probe_ency6.js:191:18)
+    at Module._compile (node:internal/modules/cjs/loader:1871:14)
+    at Object..js (node:internal/modules/cjs/loader:2002:10)
+    at Module.load (node:internal/modules/cjs/loader:1594:32)
+    at Module._load (node:internal/modules/cjs/loader:1396:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+    at node:internal/main/run_main_module:33:47
+
+Node.js v24.18.0

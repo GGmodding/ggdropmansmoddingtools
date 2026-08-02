@@ -64,6 +64,77 @@
       matchFile: (name) => /SaveGame_.*\.sav$/i.test(name) || /^SaveGame_.*\.zip$/i.test(name),
       maxDepth: 2,
     },
+    subnautica: {
+      id: "subnautica",
+      name: "Subnautica / Below Zero",
+      pathTemplate: "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Subnautica\\SNAppData\\SavedGames",
+      pathHint: "Steam SN path is on the clipboard. Below Zero: …\\SubnauticaZero\\SNAppData\\SavedGames. Epic: LocalLow\\Unknown Worlds\\….",
+      batName: "open-subnautica-saves.bat",
+      tryPaths: [
+        "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Subnautica\\SNAppData\\SavedGames",
+        "C:\\Program Files (x86)\\Steam\\steamapps\\common\\SubnauticaZero\\SNAppData\\SavedGames",
+        "%USERPROFILE%\\AppData\\LocalLow\\Unknown Worlds\\Subnautica\\Subnautica\\SavedGames",
+        "%USERPROFILE%\\AppData\\LocalLow\\Unknown Worlds\\SubnauticaZero\\SubnauticaZero\\SavedGames",
+      ],
+      directory: true,
+      maxDepth: 6,
+      // Chrome/Edge refuse webkitdirectory + showDirectoryPicker under Program Files.
+      programFilesBlocked: true,
+      guideExtra: `
+        <div class="gg-sf-warn">
+          <strong>Chrome “system files” block:</strong> Steam keeps Subnautica under Program Files, so <em>folder</em> pickers often fail.
+          Workarounds that work:
+          <ol>
+            <li>Click <strong>Open in Explorer</strong>, copy your <code>slot00xx</code> folder to Desktop, then Choose folder on that Desktop copy.</li>
+            <li>Or zip the slot in Explorer and use <strong>Load ZIP</strong> in the editor.</li>
+            <li>Or use <strong>Load Files</strong> and multi-select <code>gameinfo.json</code>, <code>*.bin</code>, and <code>screenshot.jpg</code> inside the slot (file pick usually works).</li>
+          </ol>
+        </div>
+      `,
+    },
+    subnautica2: {
+      id: "subnautica2",
+      name: "Subnautica 2",
+      pathTemplate: "%LOCALAPPDATA%\\Subnautica2\\Saved\\SaveGames",
+      pathHint: "UE5 saves: %LOCALAPPDATA%\\Subnautica2\\Saved\\SaveGames (savegame_N.sav).",
+      batName: "open-subnautica2-saves.bat",
+      tryPaths: [
+        "%LOCALAPPDATA%\\Subnautica2\\Saved\\SaveGames",
+      ],
+      directory: true,
+      maxDepth: 2,
+      fileLabel: "SN2 save (.sav / .bak / .zip)",
+      matchFile: (name) => /^savegame_\d+(\.sav|_\d+\.bak|\.bak)$/i.test(name) || /\.zip$/i.test(name),
+      guideExtra: `
+        <div class="gg-sf-warn">
+          Close Subnautica 2 before overwriting. Live file is <code>savegame_N.sav</code>; the game also keeps <code>.bak</code> rollbacks next to it.
+        </div>
+      `,
+    },
+    grounded: {
+      id: "grounded",
+      name: "Grounded",
+      pathTemplate: "%USERPROFILE%\\Saved Games\\Grounded",
+      pathHint: "Steam slots are folders like (ID-…)(LOGOUT-SAVE). Pick the Grounded folder or one slot folder.",
+      batName: "open-grounded-saves.bat",
+      tryPaths: [
+        "%USERPROFILE%\\Saved Games\\Grounded",
+      ],
+      directory: true,
+      maxDepth: 3,
+      fileLabel: "Grounded slot (.csav / .savheader)",
+      matchFile: (name) =>
+        /^SaveGameHeaderData\.savheader$/i.test(name) ||
+        /\.csav$/i.test(name) ||
+        /^SaveGameScreenshot\.(jpg|jpeg|png)$/i.test(name) ||
+        /\.zip$/i.test(name),
+      guideExtra: `
+        <div class="gg-sf-warn">
+          Close Grounded before overwriting. Prefer a <code>LOGOUT-SAVE</code> or latest <code>GameTime</code> folder.
+          Game Pass players must export to Steam format first.
+        </div>
+      `,
+    },
   };
 
   const IDB_NAME = "ggdropman-save-folders";
@@ -215,6 +286,12 @@
       .gg-sf-list button:last-child{border-bottom:0}
       .gg-sf-list button:hover{background:#232833}
       .gg-sf-note{font-size:12px;opacity:.75;margin-top:.35rem}
+      .gg-sf-alts{margin:.35rem 0 .6rem;padding-left:1.1rem;font-size:12px;opacity:.85}
+      .gg-sf-alts li{margin:.2rem 0}
+      .gg-sf-alts code{font:500 11px/1.35 ui-monospace,Consolas,monospace;word-break:break-all}
+      .gg-sf-warn{margin:.65rem 0;padding:.65rem .75rem;border:1px solid #8a6a2a;border-radius:8px;background:rgba(240,180,41,.1);font-size:12.5px;line-height:1.45}
+      .gg-sf-warn ol{margin:.4rem 0 0;padding-left:1.15rem}
+      .gg-sf-warn li{margin:.25rem 0}
     `;
     document.head.appendChild(style);
   }
@@ -245,17 +322,35 @@
       const modal = getModal();
       const card = modal.querySelector(".gg-sf-card");
       await copyPath(game.pathTemplate);
-      card.innerHTML = `
-        <h2 id="gg-sf-title">Find ${game.name} saves</h2>
-        <p>Browsers can’t open AppData by themselves. Paste the path into the folder dialog:</p>
-        <code class="gg-sf-path">${game.pathTemplate}</code>
+      const altPaths = (game.tryPaths || []).filter((p) => p !== game.pathTemplate);
+      const altHtml = altPaths.length
+        ? `<p class="gg-sf-note">Also try:</p><ul class="gg-sf-alts">${altPaths
+            .map((p) => `<li><code>${p.replace(/</g, "&lt;")}</code></li>`)
+            .join("")}</ul>`
+        : "";
+      const extra = game.guideExtra || "";
+      const steps = game.programFilesBlocked
+        ? `
+        <ol>
+          <li>Click <strong>Open in Explorer</strong> first (recommended).</li>
+          <li>Copy your <code>slot00xx</code> folder to Desktop (or Documents).</li>
+          <li>Click <strong>Choose folder</strong> and select that Desktop copy — not the Program Files path.</li>
+        </ol>`
+        : `
         <ol>
           <li>Click <strong>Choose folder</strong> below (path is already on your clipboard).</li>
           <li>In the dialog: click the address bar (or press <kbd>Ctrl</kbd>+<kbd>L</kbd>).</li>
           <li>Paste (<kbd>Ctrl</kbd>+<kbd>V</kbd>) and press <kbd>Enter</kbd>.</li>
           <li>Click <strong>Select Folder</strong> — we’ll scan for saves.</li>
-        </ol>
-        <p class="gg-sf-note">${game.pathHint || ""} Next time we try to reopen this same folder automatically.</p>
+        </ol>`;
+      card.innerHTML = `
+        <h2 id="gg-sf-title">Find ${game.name} saves</h2>
+        <p>Browsers can’t open protected paths by themselves. Real save location:</p>
+        <code class="gg-sf-path">${game.pathTemplate}</code>
+        ${altHtml}
+        ${extra}
+        ${steps}
+        <p class="gg-sf-note">${game.pathHint || ""} Next time we try to reopen the same granted folder automatically.</p>
         <div class="gg-sf-actions">
           <button type="button" class="primary" data-act="choose">Choose folder</button>
           <button type="button" data-act="explorer">Open in Explorer (.bat)</button>
