@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GGdropmans Grounded 2 Save Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Rajdhani:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="drop-overlay" class="drop-overlay" hidden>
+    <div class="drop-overlay__panel">Drop Grounded 2 slot folder or ZIP</div>
+  </div>
+
+  <header class="topbar">
+    <a class="brand" href="../../index.html" style="text-decoration:none;color:inherit">
+      <span class="brand__mark">G2</span>
+      <div class="brand__text">
+        <h1>Grounded 2 Save Editor</h1>
+        <p>Augusta · Oodle .csav · Back to hub</p>
+      </div>
+    </a>
+    <div class="topbar__actions">
+      <label class="btn btn--primary">
+        Load Files
+        <input id="files-input" type="file" multiple accept=".csav,.savheader,.jpg,.jpeg,.png,.zip,application/zip" hidden />
+      </label>
+      <label class="btn">
+        Load Folder
+        <input id="folder-input" type="file" webkitdirectory multiple hidden />
+      </label>
+      <button id="btn-find-save" class="btn" type="button">Find Save</button>
+      <button id="btn-open-save-folder" class="btn" type="button">Open Folder</button>
+      <label class="btn">
+        Load ZIP
+        <input id="zip-input" type="file" accept=".zip,application/zip" hidden />
+      </label>
+      <label class="slot-pick" id="slot-wrap" hidden>
+        Slot
+        <select id="slot-select"></select>
+      </label>
+      <button id="btn-backup" class="btn" type="button" disabled>Download Backup ZIP</button>
+      <button id="btn-save" class="btn btn--accent" type="button" disabled>Save ZIP</button>
+      <button id="btn-install" class="btn" type="button" disabled>Install to Folder</button>
+      <span id="dirty-pill" class="pill" hidden>Unsaved</span>
+    </div>
+  </header>
+
+  <section class="path-banner">
+    <strong>Steam path</strong>
+    <span>Saves live under <code>%USERPROFILE%\Saved Games\Grounded2</code>.
+      Prefer <strong>Find Save</strong> on that folder, then use the Slot dropdown if multiple worlds appear.
+      Or <strong>Load Folder</strong> on a single <code>(ID-…)(LOGOUT-SAVE)</code> slot. Serve over HTTP (not <code>file://</code>). Close the game before overwriting.</span>
+  </section>
+
+  <nav class="tabs" id="tabs" aria-label="Editor sections" hidden>
+    <button class="tab is-active" data-tab="overview" type="button">Overview</button>
+    <button class="tab" data-tab="meta" type="button">Header</button>
+    <button class="tab" data-tab="vitals" type="button">Vitals &amp; Molars</button>
+    <button class="tab" data-tab="inventory" type="button">Items</button>
+    <button class="tab" data-tab="features" type="button">Feature map</button>
+    <button class="tab" data-tab="cheats" type="button">Notes</button>
+  </nav>
+
+  <main class="main">
+    <div id="empty-state" class="empty">
+      <h2>Load a Grounded 2 save</h2>
+      <p>Pick a slot folder from <code>%USERPROFILE%\Saved Games\Grounded2</code>, or use Find Save / Load ZIP.</p>
+    </div>
+
+    <section id="panel-overview" class="panel is-active" hidden>
+      <div class="panel__head">
+        <h2>Save status</h2>
+        <p>Slot metadata from the header + decompressed HostPlayer / World sizes.</p>
+      </div>
+      <div id="overview-meta" class="meta-strip"></div>
+      <div id="overview-shot" class="overview-shot" hidden>
+        <img id="overview-img" alt="Save screenshot" />
+      </div>
+      <div id="overview-files" class="file-list"></div>
+      <div class="callout">
+        Player edits rewrite <code>HostPlayer.csav</code> and every <code>Player_*.csav</code> copy in the slot (multiplayer sync).
+        Raw Science and party stack upgrades rewrite <code>World.csav</code>.
+        Close Grounded 2 before Install. Use Backup ZIP first.
+      </div>
+      <div class="form-grid" style="margin-top:1rem">
+        <label>Active player file
+          <select id="player-file-select"></select>
+        </label>
+        <label class="hint-label">Edit target
+          <select id="player-edit-mode">
+            <option value="mirror">Host + mirror all Player_*.csav</option>
+            <option value="solo">Only selected Player_*.csav / HostPlayer</option>
+          </select>
+        </label>
+      </div>
+      <p class="hint" id="player-file-hint">HostPlayer is the usual edit source; solo mode writes only the selected file.</p>
+      <div id="change-summary" class="callout" hidden></div>
+    </section>
+
+    <section id="panel-meta" class="panel" hidden>
+      <div class="panel__head">
+        <h2>SaveGameHeaderData</h2>
+        <p>World display name is rewritten in-place (must fit the original FString byte budget).</p>
+      </div>
+      <div class="form-grid">
+        <label>Game version<input id="f-version" type="text" readonly /></label>
+        <label>Save ID<input id="f-saveid" type="text" readonly /></label>
+        <label>World name<input id="f-world" type="text" maxlength="32" /></label>
+        <label>Area<input id="f-area" type="text" readonly /></label>
+        <label>Level<input id="f-level" type="text" readonly /></label>
+        <label>Player key<input id="f-player" type="text" readonly /></label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-meta-apply">Apply header</button>
+        <button type="button" class="btn" id="btn-meta-refresh">Reload</button>
+      </div>
+      <p class="hint" id="meta-hint">Shorter names are space-padded to keep the header size identical.</p>
+    </section>
+
+    <section id="panel-vitals" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Vitals, milk molars &amp; Raw Science</h2>
+        <p>Health / hunger / thirst on <code>HostPlayer.csav</code>. Milk molars = unspent personal upgrade points. Party points + Raw Science on <code>World.csav</code>.</p>
+      </div>
+      <div id="vitals-missing" class="callout" hidden>Could not locate health/survival patterns in HostPlayer.</div>
+      <div id="vitals-body">
+        <h3 class="subhead">Vitals</h3>
+        <div class="form-grid">
+          <label>Health<input id="v-health" type="number" min="0" max="10000" step="0.1" /></label>
+          <label>Hunger (scale ~0–5)<input id="v-hunger" type="number" min="0" max="20" step="0.01" /></label>
+          <label>Thirst (scale ~0–5)<input id="v-thirst" type="number" min="0" max="20" step="0.01" /></label>
+        </div>
+        <div class="quick-actions">
+          <button type="button" class="btn btn--accent" id="btn-vitals-apply">Apply vitals</button>
+          <button type="button" class="btn" id="btn-vitals-fill">Fill vitals</button>
+          <button type="button" class="btn" id="btn-vitals-refresh">Reload</button>
+        </div>
+      </div>
+      <div id="molars-missing" class="callout" hidden>Could not locate molar / science fields.</div>
+      <div id="molars-body">
+        <h3 class="subhead">Molars &amp; science</h3>
+        <div class="form-grid">
+          <label>Milk molars (unspent)<input id="v-milk" type="number" min="0" max="100000" step="1" /></label>
+          <label>Party upgrade points<input id="v-golden" type="number" min="0" max="100000" step="1" /></label>
+          <label>Raw Science<input id="v-science" type="number" min="0" max="5000000" step="1" /></label>
+        </div>
+        <p class="hint">Party points sit next to stack upgrades in World.csav (G1 called these golden molars). Editing spends nothing — it sets remaining balances.</p>
+        <h3 class="subhead">Personal upgrades</h3>
+        <div class="form-grid" id="upgrade-grid"></div>
+        <h3 class="subhead">Stack size upgrades (party)</h3>
+        <div class="form-grid" id="stack-upgrade-grid"></div>
+        <p class="hint" id="stack-upgrade-hint">Food / Resource / Ammo stack tiers from World.csav.</p>
+        <div class="quick-actions">
+          <button type="button" class="btn btn--accent" id="btn-molars-apply">Apply molars / upgrades</button>
+          <button type="button" class="btn" id="btn-giant-stacks">Giant stacks</button>
+          <button type="button" class="btn" id="btn-molars-add">+50 molars / +1000 science</button>
+          <button type="button" class="btn" id="btn-molars-refresh">Reload</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="panel-inventory" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Inventory</h2>
+        <p>HostPlayer inventory bags. Add clones a simple template item (or bumps stack if the id already exists). Remove deletes the record.</p>
+      </div>
+      <div class="form-grid">
+        <label>Item id
+          <input id="inv-add-name" type="text" list="inv-item-names" placeholder="Fiber" />
+          <datalist id="inv-item-names"></datalist>
+        </label>
+        <label>Quantity<input id="inv-add-qty" type="number" min="1" max="9999" step="1" value="1" /></label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-inv-add">Add / stack</button>
+        <button type="button" class="btn" id="btn-inv-refresh">Reload</button>
+      </div>
+      <p class="hint" id="inv-hint">Load a save to edit inventory.</p>
+      <div class="table-wrap">
+        <table class="data-table" id="inv-edit-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Stack</th>
+              <th>Path</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <h3 class="subhead">Item catalog</h3>
+      <label>Filter <input id="catalog-filter" type="search" placeholder="Fiber, Recipe…" /></label>
+      <p class="hint" id="catalog-hint">Soft object paths from HostPlayer + World.</p>
+      <div class="table-wrap">
+        <table class="data-table" id="catalog-table">
+          <thead><tr><th>Id</th><th>Mentions</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-features" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Feature map vs Grounded 1 editor</h2>
+        <p>Same Oodle <code>.csav</code> wrapper — Augusta component layout differs. Gear / tech / chests wait on G2 catalogs.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="feature-table">
+          <thead><tr><th>Feature</th><th>Status</th><th>Notes</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-cheats" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Notes &amp; safety</h2>
+        <p>Grounded 2 Early Access — prefer backups. No Cheat Engine table in this pass.</p>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn" id="btn-dry-run">Oodle dry-run</button>
+        <button type="button" class="btn" id="btn-check-game">Check if Grounded 2 may be running</button>
+      </div>
+      <pre id="dry-run-out" class="hint" style="white-space:pre-wrap"></pre>
+      <h3 class="subhead">Tips</h3>
+      <div class="table-wrap">
+        <table class="data-table" id="cheat-table">
+          <thead><tr><th>Tip</th><th>Detail</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="status-bar" id="status">Ready — load a Grounded 2 slot folder.</footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="../shared/save-folders.js"></script>
+  <script src="data.js"></script>
+  <script src="csav.js"></script>
+  <script src="header.js"></script>
+  <script src="player.js"></script>
+  <script src="inventory.js"></script>
+  <script src="save.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

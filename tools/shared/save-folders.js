@@ -135,6 +135,30 @@
         </div>
       `,
     },
+    grounded2: {
+      id: "grounded2",
+      name: "Grounded 2",
+      pathTemplate: "%USERPROFILE%\\Saved Games\\Grounded2",
+      pathHint: "Steam slots are folders like (ID-…)(LOGOUT-SAVE). Pick the Grounded2 folder or one slot folder.",
+      batName: "open-grounded2-saves.bat",
+      tryPaths: [
+        "%USERPROFILE%\\Saved Games\\Grounded2",
+      ],
+      directory: true,
+      maxDepth: 3,
+      fileLabel: "Grounded 2 slot (.csav / .savheader)",
+      matchFile: (name) =>
+        /^SaveGameHeaderData\.savheader$/i.test(name) ||
+        /\.csav$/i.test(name) ||
+        /^SaveGameScreenshot\.(jpg|jpeg|png)$/i.test(name) ||
+        /\.zip$/i.test(name),
+      guideExtra: `
+        <div class="gg-sf-warn">
+          Close Grounded 2 (Augusta) before overwriting. Prefer a <code>LOGOUT-SAVE</code> or latest <code>GameTime</code> folder.
+          Disable Steam Cloud while testing installs. Game Pass players must export to Steam format first.
+        </div>
+      `,
+    },
   };
 
   const IDB_NAME = "ggdropman-save-folders";

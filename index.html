@@ -483,6 +483,17 @@
         linear-gradient(125deg, rgba(80, 110, 40, 0.45), transparent 55%);
     }
 
+    .tile--grounded2 {
+      --accent: var(--grounded);
+      --art: url("https://cdn.cloudflare.steamstatic.com/steam/apps/2661300/header.jpg");
+    }
+
+    .tile--grounded2::after {
+      background:
+        radial-gradient(circle at 32% 40%, rgba(180, 210, 90, 0.34), transparent 46%),
+        linear-gradient(125deg, rgba(60, 100, 50, 0.5), transparent 55%);
+    }
+
     .tile--soon {
       opacity: 0.92;
     }
@@ -714,6 +725,15 @@
             <span class="tile__meta">Oodle .csav · + Cheat Engine table</span>
           </span>
         </a>
+
+        <a class="tile tile--grounded2" href="tools/grounded2-editor/editor.html">
+          <span class="tile__badge tile__badge--live">Live</span>
+          <span class="tile__body">
+            <span class="tile__game">Brookhollow Park</span>
+            <span class="tile__name">Grounded 2</span>
+            <span class="tile__meta">Augusta · Oodle .csav · EA saves</span>
+          </span>
+        </a>
       </nav>
     </section>
 
@@ -816,6 +836,7 @@
           <li><a href="tools/subnautica-editor/editor.html">Subnautica / Below Zero Save Editor</a> — GGdropman</li>
           <li><a href="tools/subnautica2-editor/editor.html">Subnautica 2 Save Editor</a> — GGdropman</li>
           <li><a href="tools/grounded-editor/editor.html">Grounded Save Editor</a> — GGdropman</li>
+          <li><a href="tools/grounded2-editor/editor.html">Grounded 2 Save Editor</a> — GGdropman</li>
         </ul>
         <p><strong>Cheat Tables:</strong></p>
         <ul>
