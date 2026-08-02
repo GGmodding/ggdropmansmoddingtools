@@ -405,7 +405,16 @@
         </table>
       </div>
       <h3 class="subhead">Buggy upgrades</h3>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-buggy-max">Max buggy tier (III)</button>
+      </div>
       <p class="hint" id="buggy-hint">—</p>
+      <h3 class="subhead">Hatchery</h3>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-hatch-finish">Finish hatchery jobs</button>
+        <button type="button" class="btn" id="btn-eggs-give">Give taming eggs ×5</button>
+      </div>
+      <p class="hint" id="hatch-hint">—</p>
       <h3 class="subhead">Hauling</h3>
       <p class="hint" id="haul-hint">Items currently on HaulingComponent (empty if not carrying).</p>
       <div class="table-wrap">
@@ -477,12 +486,14 @@
       </div>
       <div class="quick-actions">
         <button type="button" class="btn btn--accent" id="btn-op-preset">Make me OP</button>
+        <button type="button" class="btn btn--accent" id="btn-res-preset">Building resources dump</button>
+        <button type="button" class="btn" id="btn-food-preset">Food / smoothie bundle</button>
         <button type="button" class="btn" id="btn-status-clear">Clear status ailments</button>
         <button type="button" class="btn" id="btn-compare-folder">Compare folder…</button>
         <button type="button" class="btn" id="btn-dry-run">Oodle dry-run</button>
         <button type="button" class="btn" id="btn-check-game">Check if Grounded 2 may be running</button>
       </div>
-      <p class="hint" id="preset-hint">OP fills vitals, molars, science, mutations, quests, buildings, analyze, gear, fog, omni.</p>
+      <p class="hint" id="preset-hint">OP = vitals, molars, stacks, gear, mutations, quests, buildings, analyze, fog, omni, buggy tier, hatch finish, resources, eggs.</p>
       <pre id="compare-out" class="hint" style="white-space:pre-wrap"></pre>
       <pre id="dry-run-out" class="hint" style="white-space:pre-wrap"></pre>
       <h3 class="subhead">Tips</h3>
@@ -515,6 +526,7 @@
   <script src="hauling.js"></script>
   <script src="map.js"></script>
   <script src="pets.js"></script>
+  <script src="hatching.js"></script>
   <script src="presets.js"></script>
   <script src="save.js"></script>
   <script type="module" src="app.js"></script>

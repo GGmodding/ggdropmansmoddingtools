@@ -108,13 +108,63 @@
       payload + 4 <= buf.length
         ? new DataView(buf.buffer, buf.byteOffset + payload, 4).getUint32(0, true)
         : null;
+    const tiers = findBuggyTiers(buf);
     return {
       ok: true,
       at,
       payload,
       tag,
-      note: "Upgrade list empty / not catalogued on this HostPlayer — no safe max-all yet.",
+      tiers,
+      note: tiers.length
+        ? tiers.map((t) => t.name + " tier " + t.tier).join("; ")
+        : "No embedded *_Buggy character tier found.",
     };
+  }
+
+  /**
+   * HostPlayer embeds the active buggy as Table_CharacterData name ending in _Buggy.
+   * Observed: name FString, then u32 pad 0, then u32 tier (1–4).
+   */
+  function findBuggyTiers(buf) {
+    const CHAR_TABLE = "/Game/Blueprints/DataTables/Table_CharacterData.Table_CharacterData";
+    const out = [];
+    let from = 0;
+    while (out.length < 8) {
+      const tableAt = indexOfAscii(buf, CHAR_TABLE, from);
+      if (tableAt < 0) break;
+      from = tableAt + 1;
+      const nameOff = tableAt + CHAR_TABLE.length + 1;
+      if (nameOff + 4 > buf.length) continue;
+      const len = new DataView(buf.buffer, buf.byteOffset + nameOff, 4).getInt32(0, true);
+      if (len < 8 || len > 80 || nameOff + 4 + len > buf.length) continue;
+      let name = "";
+      for (let i = 0; i < len - 1; i++) name += String.fromCharCode(buf[nameOff + 4 + i]);
+      if (!/_Buggy$/i.test(name)) continue;
+      const after = nameOff + 4 + len;
+      if (after + 8 > buf.length) continue;
+      const pad = new DataView(buf.buffer, buf.byteOffset + after, 4).getUint32(0, true);
+      const tier = new DataView(buf.buffer, buf.byteOffset + after + 4, 4).getUint32(0, true);
+      if (pad !== 0 || tier < 1 || tier > 8) continue;
+      out.push({ name, tier, tierOff: after + 4, padOff: after });
+    }
+    return out;
+  }
+
+  function maxBuggyTiers(rawPlayer, tier) {
+    const lv = Math.max(1, Math.min(4, Math.floor(Number(tier) || 3)));
+    const buf = new Uint8Array(C.toBytes(rawPlayer));
+    const tiers = findBuggyTiers(buf);
+    if (!tiers.length) throw new Error("No buggy character tier found on HostPlayer.");
+    let changed = 0;
+    const was = [];
+    for (const t of tiers) {
+      was.push(t.name + ":" + t.tier);
+      if (t.tier !== lv) {
+        new DataView(buf.buffer, buf.byteOffset + t.tierOff, 4).setUint32(0, lv, true);
+        changed++;
+      }
+    }
+    return { bytes: buf, changed, tier: lv, was, now: tiers.map((t) => t.name + ":" + lv) };
   }
 
   window.GroundedPets = {
@@ -122,6 +172,8 @@
     maxOmniTool,
     parsePetStorage,
     parseBuggy,
+    maxBuggyTiers,
+    findBuggyTiers,
     OMNI_MAX_LEVEL,
   };
 })();

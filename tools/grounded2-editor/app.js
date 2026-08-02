@@ -19,6 +19,7 @@ import { decompress as oozDecompress } from "./vendor/index.js";
   const MapFog = window.GroundedMap;
   const Pets = window.GroundedPets;
   const Haul = window.GroundedHauling;
+  const Hatch = window.GroundedHatching;
   const D = window.GroundedData;
   const $ = (id) => document.getElementById(id);
 
@@ -773,8 +774,21 @@ import { decompress as oozDecompress } from "./vendor/index.js";
         : "";
       const buggy = Pets.parseBuggy(state.hostRaw);
       $("buggy-hint").textContent = buggy.ok
-        ? "PlayerBuggyUpgradeComponent tag " + buggy.tag + " — " + buggy.note
+        ? buggy.note + (buggy.tag != null ? " · component tag " + buggy.tag : "")
         : "PlayerBuggyUpgradeComponent not found.";
+    }
+    if (Hatch && state.worldRaw) {
+      const jobs = Hatch.parseHatcheryJobs(state.worldRaw);
+      $("hatch-hint").textContent = jobs.jobs.length
+        ? jobs.jobs
+            .map(
+              (j) =>
+                j.name +
+                (j.progress != null ? " · progress " + j.progress.toFixed(1) : "") +
+                (j.remain != null ? " · remain " + j.remain.toFixed(1) : "")
+            )
+            .join(" | ")
+        : "No AntHatch (etc.) jobs in World right now — place an egg in a Hatchery first.";
     }
     if (Haul && state.hostRaw) {
       const haul = Haul.parseHauling(state.hostRaw);
@@ -1759,6 +1773,36 @@ import { decompress as oozDecompress } from "./vendor/index.js";
         alert(err.message || String(err));
       }
     });
+    $("btn-buggy-max").addEventListener("click", () => {
+      try {
+        if (!state.hostRaw) throw new Error("HostPlayer not loaded.");
+        const r = Pets.maxBuggyTiers(state.hostRaw, 3);
+        commitHostRaw(r.bytes);
+        setStatus("Buggy tier → " + r.tier + " (" + r.was.join(", ") + ").");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-hatch-finish").addEventListener("click", () => {
+      try {
+        if (!state.worldRaw) throw new Error("World not loaded.");
+        const r = Hatch.finishHatcheryJobs(state.worldRaw);
+        commitWorldRaw(r.bytes);
+        setStatus("Hatchery: " + r.jobs + " job(s), " + r.changed + " field write(s).");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-eggs-give").addEventListener("click", () => {
+      try {
+        if (!state.hostRaw) throw new Error("HostPlayer not loaded.");
+        const r = Presets.applyTamingEggs(state.hostRaw);
+        commitHostRaw(r.bytes);
+        setStatus("Taming eggs: +" + r.ok + " stacks (" + r.fail + " skipped).");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
     $("btn-chest-refresh").addEventListener("click", () => refreshChestsEditor());
     $("chest-select").addEventListener("change", () => refreshChestsEditor());
     $("btn-chest-add").addEventListener("click", () => {
@@ -1793,7 +1837,7 @@ import { decompress as oozDecompress } from "./vendor/index.js";
     $("btn-op-preset").addEventListener("click", () => {
       try {
         if (!state.hostRaw && !state.worldRaw) throw new Error("Load a save first.");
-        if (!confirm("Apply OP preset (vitals, molars, gear, mutations, quests, buildings, analyze)?")) {
+        if (!confirm("Apply OP preset (unlocks, gear, fog, buggy, hatch, resources, eggs)?")) {
           return;
         }
         const r = Presets.applyOpPreset(state.hostRaw, state.worldRaw);
@@ -1811,6 +1855,23 @@ import { decompress as oozDecompress } from "./vendor/index.js";
       } catch (err) {
         alert(err.message || String(err));
       }
+    });
+    function applyHostPreset(fn, label) {
+      try {
+        if (!state.hostRaw) throw new Error("HostPlayer not loaded.");
+        const r = fn(state.hostRaw);
+        commitHostRaw(r.bytes);
+        setStatus(label + ": +" + r.ok + " (" + r.fail + " skipped).");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    }
+    $("btn-res-preset").addEventListener("click", () => {
+      if (!confirm("Add large stacks of building / upgrade resources to inventory?")) return;
+      applyHostPreset(Presets.applyBuildResources, "Resources");
+    });
+    $("btn-food-preset").addEventListener("click", () => {
+      applyHostPreset(Presets.applyFoodBundle, "Food");
     });
     $("btn-status-clear").addEventListener("click", () => {
       try {

@@ -12,6 +12,50 @@
     "/Script/Maine.StatusEffectComponent",
   ];
 
+  /** Building / craft staples seen in Augusta saves + upgrade stones / eggs. */
+  const BUILD_RESOURCES = [
+    ["FiberRaw", 999],
+    ["FiberDry", 999],
+    ["FiberWoven", 500],
+    ["Sap", 999],
+    ["Clay", 999],
+    ["Twig", 999],
+    ["GrassPlank", 999],
+    ["CloverTop", 500],
+    ["ThistleNeedle", 500],
+    ["AcornTop", 200],
+    ["AcornShell", 200],
+    ["AcornBits", 200],
+    ["StoneShale", 500],
+    ["Mushroom", 200],
+    ["GrubHide", 200],
+    ["GrubGoop", 200],
+    ["Web", 200],
+    ["Nectar", 200],
+    ["Honeydew", 200],
+    ["FlowerPetal", 200],
+    ["HedgeBerry", 100],
+    ["PumpinSeed", 50],
+    ["TarantulaChunk", 50],
+    ["UpgradeArmor1", 50],
+    ["UpgradeWeapon1", 50],
+    ["BandageTier3", 50],
+    ["ORCChip", 20],
+  ];
+
+  const FOOD_BUNDLE = [
+    ["FoodHotDog", 20],
+    ["FoodDonut", 20],
+    ["FoodCookieSandwich", 20],
+    ["FoodApple", 20],
+    ["GranolaBar", 20],
+    ["SmoothieFiber", 20],
+    ["SmoothieHealingReceived", 20],
+    ["DewDrop", 50],
+    ["JuiceDrop", 50],
+    ["SodaDrop", 50],
+  ];
+
   function readFString(buf, off) {
     if (off < 0 || off + 4 > buf.length) return null;
     const len = new DataView(buf.buffer, buf.byteOffset + off, 4).getInt32(0, true);
@@ -39,7 +83,6 @@
       let off = at + path.length + 1;
       const fs = readFString(buf, off);
       if (fs) off = fs.next;
-      // Zero a small payload window (best-effort; avoids rewriting component size)
       const end = Math.min(buf.length, off + 32);
       for (let i = off; i < end; i++) {
         if (buf[i] !== 0) {
@@ -49,6 +92,58 @@
       }
     }
     return { bytes: buf, touched };
+  }
+
+  function addItemList(rawPlayer, pairs) {
+    const Inv = window.GroundedInventory;
+    if (!Inv || !rawPlayer) throw new Error("Inventory API / HostPlayer required.");
+    let host = new Uint8Array(C.toBytes(rawPlayer));
+    const log = [];
+    let ok = 0;
+    let fail = 0;
+    for (const [name, qty] of pairs) {
+      try {
+        const r = Inv.addInventoryItem(host, name, qty);
+        host = r.bytes;
+        log.push(name + "×" + (r.stack || qty));
+        ok++;
+      } catch (e) {
+        fail++;
+      }
+    }
+    return { bytes: host, ok, fail, log };
+  }
+
+  function applyBuildResources(rawPlayer) {
+    return addItemList(rawPlayer, BUILD_RESOURCES);
+  }
+
+  function applyFoodBundle(rawPlayer) {
+    return addItemList(rawPlayer, FOOD_BUNDLE);
+  }
+
+  function applyTamingEggs(rawPlayer) {
+    const eggs = (window.GroundedHatching && window.GroundedHatching.TAMING_EGGS) || [
+      "Taming_EggAnt",
+      "Taming_EggBlackAnt",
+      "Taming_EggLadybug",
+      "Taming_EggOrb",
+    ];
+    return addItemList(
+      rawPlayer,
+      eggs.map((n) => [n, 5]).concat([["AntEgg", 5]])
+    );
+  }
+
+  function maxStackUpgrades(rawPlayer, rawWorld) {
+    const P = window.GroundedPlayer;
+    if (!P) throw new Error("Player module missing.");
+    const parsed = P.parseMolars(rawPlayer, rawWorld);
+    const stackUpgrades = {};
+    for (const e of parsed.stackUpgrades || []) stackUpgrades[e.name] = 20;
+    const upgrades = {};
+    for (const e of parsed.upgrades || []) upgrades[e.name] = 20;
+    return P.writeMolars(rawPlayer, rawWorld, { stackUpgrades, upgrades });
   }
 
   function applyOpPreset(rawPlayer, rawWorld) {
@@ -80,6 +175,14 @@
         log.push("molars/science");
       } catch (e) {
         log.push("molars fail");
+      }
+      try {
+        const s = maxStackUpgrades(host, world);
+        if (s.hostBytes) host = s.hostBytes;
+        if (s.worldBytes) world = s.worldBytes;
+        log.push("stack upgrades");
+      } catch (e) {
+        log.push("stacks fail");
       }
     }
     if (host && G) {
@@ -156,8 +259,38 @@
       } catch (e) {
         log.push("omni fail");
       }
+      try {
+        const b = window.GroundedPets.maxBuggyTiers(host, 3);
+        host = b.bytes;
+        log.push("buggy tier " + b.tier);
+      } catch (e) {
+        log.push("buggy skip");
+      }
+    }
+    if (world && window.GroundedHatching) {
+      try {
+        const h = window.GroundedHatching.finishHatcheryJobs(world);
+        world = h.bytes;
+        log.push("hatch jobs " + h.jobs);
+      } catch (e) {
+        log.push("hatch fail");
+      }
     }
     if (host) {
+      try {
+        const r = applyBuildResources(host);
+        host = r.bytes;
+        log.push("resources +" + r.ok);
+      } catch (e) {
+        log.push("resources fail");
+      }
+      try {
+        const e = applyTamingEggs(host);
+        host = e.bytes;
+        log.push("eggs +" + e.ok);
+      } catch (e) {
+        log.push("eggs fail");
+      }
       try {
         const c = clearStatusEffects(host);
         host = c.bytes;
@@ -171,6 +304,12 @@
 
   window.GroundedPresets = {
     applyOpPreset,
+    applyBuildResources,
+    applyFoodBundle,
+    applyTamingEggs,
+    maxStackUpgrades,
     clearStatusEffects,
+    BUILD_RESOURCES,
+    FOOD_BUNDLE,
   };
 })();
