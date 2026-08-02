@@ -25,6 +25,7 @@
       --grounded: #8fbf4a;
       --steam: #66c0f4;
       --visitor: #e8a87c;
+      --donate: #f0c14a;
       --font-display: "Bungee", cursive;
       --font-ui: "Chakra Petch", sans-serif;
     }
@@ -427,6 +428,66 @@
       padding: 8px 2px;
     }
 
+    /* —— Donate —— */
+    .donate {
+      display: grid;
+      gap: 16px;
+      padding: 22px 18px;
+      border-radius: 10px;
+      border: 2px solid rgba(240, 193, 74, 0.4);
+      background:
+        linear-gradient(135deg, rgba(240, 193, 74, 0.14), transparent 48%),
+        rgba(14, 18, 26, 0.9);
+    }
+
+    .donate__lead {
+      max-width: 40rem;
+      font-size: 1rem;
+      line-height: 1.5;
+      color: rgba(255, 255, 255, 0.78);
+    }
+
+    .donate__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .donate__btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 22px;
+      border-radius: 6px;
+      border: 2px solid rgba(240, 193, 74, 0.75);
+      background: linear-gradient(180deg, rgba(240, 193, 74, 0.32), rgba(200, 140, 40, 0.16));
+      color: #fff;
+      font-family: var(--font-ui);
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .donate__btn:hover {
+      transform: translateY(-2px);
+      border-color: #ffe56a;
+      background: linear-gradient(180deg, rgba(240, 193, 74, 0.45), rgba(200, 140, 40, 0.22));
+    }
+
+    .donate__note {
+      font-size: 0.88rem;
+      color: rgba(255, 255, 255, 0.5);
+      line-height: 1.4;
+    }
+
+    .donate__note a {
+      color: var(--donate);
+    }
+
     /* —— Sections —— */
     .hud-section {
       display: flex;
@@ -440,7 +501,6 @@
     .hud-section:nth-of-type(2) { animation-delay: 0.22s; }
     .hud-section:nth-of-type(3) { animation-delay: 0.32s; }
     .hud-section:nth-of-type(4) { animation-delay: 0.42s; }
-    .hud-section:nth-of-type(5) { animation-delay: 0.52s; }
 
     .hud-section__head {
       display: flex;
@@ -461,6 +521,64 @@
       color: rgba(255, 255, 255, 0.55);
       line-height: 1.45;
       max-width: 40rem;
+    }
+
+    /* —— Tools tabs —— */
+    .tools-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(12, 16, 24, 0.72);
+      backdrop-filter: blur(8px);
+    }
+
+    .tools-tab {
+      flex: 1 1 auto;
+      min-width: 7.5rem;
+      padding: 0.7rem 1rem;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.62);
+      font-family: var(--font-ui);
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+    }
+
+    .tools-tab:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tools-tab[aria-selected="true"] {
+      color: #0b0e14;
+      background: var(--gold);
+      border-color: color-mix(in srgb, var(--gold) 70%, #fff);
+    }
+
+    .tools-panel {
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+      animation: rise-in 0.35s ease both;
+    }
+
+    .tools-panel.is-active {
+      display: flex;
+    }
+
+    .tools-panel__sub {
+      font-size: 0.95rem;
+      color: rgba(255, 255, 255, 0.55);
+      line-height: 1.45;
+      max-width: 40rem;
+      padding: 0 2px;
     }
 
     .hud-grid {
@@ -819,6 +937,7 @@
       .tile--tcg,
       .tile--banner { grid-column: auto; }
       .hero { min-height: auto; padding-top: 88px; }
+      .tools-tab { min-width: 0; flex: 1 1 calc(33.333% - 6px); font-size: 0.85rem; padding: 0.65rem 0.5rem; }
       .visitors { grid-template-columns: 1fr; }
       .visitors-form__row { grid-template-columns: 1fr; }
       .visitor-count {
@@ -853,175 +972,180 @@
       <p class="hero__tag">Save editors &amp; cheat tables for the games you actually grind.</p>
       <p class="hero__sub">Pick a portal below — Midgar mako, Trumbull Valley, Planet 4546B, and more on the way.</p>
       <div class="hero__links">
-        <a class="hero__cta" href="#editors">Browse tools <span aria-hidden="true">↓</span></a>
+        <a class="hero__cta" href="#tools">Browse tools <span aria-hidden="true">↓</span></a>
         <a class="hero__link" href="#visitors">Leave a comment / request a tool</a>
+        <a class="hero__link" href="#donate">Donate to creator</a>
       </div>
     </header>
 
-    <section class="hud-section" id="editors" aria-labelledby="editors-title">
+    <section class="hud-section" id="tools" aria-labelledby="tools-title">
       <div class="hud-section__head">
-        <h2 class="hud-section__title" id="editors-title">Save Editors</h2>
-        <p class="hud-section__sub">Browser tools for editing save files offline. Load, tweak, download.</p>
+        <h2 class="hud-section__title" id="tools-title">Tools</h2>
+        <p class="hud-section__sub">Pick a category — editors stay hidden until you want them.</p>
       </div>
-      <nav class="hud-grid" aria-label="Save editors">
-        <a class="tile tile--tcg" href="tools/tcg-editor/editor.html">
-          <span class="tile__badge tile__badge--live">Live</span>
-          <span class="tile__body">
-            <span class="tile__game">Card Shop</span>
-            <span class="tile__name">TCG Card Shop Simulator</span>
-            <span class="tile__meta">Money · inventory · binders</span>
-          </span>
-        </a>
 
-        <a class="tile tile--ff7" href="tools/ff7-editor/editor.html">
-          <span class="tile__badge tile__badge--live">Live</span>
-          <span class="tile__body">
-            <span class="tile__game">Mako Reactor</span>
-            <span class="tile__name">Final Fantasy VII</span>
-            <span class="tile__meta">Steam editor · CT companion linked</span>
-          </span>
-        </a>
-
-        <a class="tile tile--epoch" href="tools/last-epoch-editor/editor.html">
-          <span class="tile__badge tile__badge--live">Live</span>
-          <span class="tile__body">
-            <span class="tile__game">Timeline</span>
-            <span class="tile__name">Last Epoch</span>
-            <span class="tile__meta">Offline · gold · characters</span>
-          </span>
-        </a>
-
-        <a class="tile tile--schedule" href="tools/schedule1-editor/editor.html">
-          <span class="tile__badge tile__badge--live">Live</span>
-          <span class="tile__body">
-            <span class="tile__game">Hyland Point</span>
-            <span class="tile__name">Schedule I</span>
-            <span class="tile__meta">Bank · rank · products</span>
-          </span>
-        </a>
-
-        <a class="tile tile--sod2" href="tools/sod2-editor/editor.html">
-          <span class="tile__badge tile__badge--live">Live</span>
-          <span class="tile__body">
-            <span class="tile__game">Trumbull Valley</span>
-            <span class="tile__name">State of Decay 2</span>
-            <span class="tile__meta">Influence · stockpile · plague hearts</span>
-          </span>
-        </a>
-
-        <a class="tile tile--subnautica" href="tools/subnautica-editor/editor.html">
-          <span class="tile__badge tile__badge--live">Live</span>
-          <span class="tile__body">
-            <span class="tile__game">Planet 4546B</span>
-            <span class="tile__name">Subnautica</span>
-            <span class="tile__meta">Mode · inventory · find saves</span>
-          </span>
-        </a>
-
-        <a class="tile tile--subnautica2" href="tools/subnautica2-editor/editor.html">
-          <span class="tile__badge tile__badge--live">Live</span>
-          <span class="tile__body">
-            <span class="tile__game">Sector Zero</span>
-            <span class="tile__name">Subnautica 2</span>
-            <span class="tile__meta">GVAS · metadata · EA saves</span>
-          </span>
-        </a>
-
-        <a class="tile tile--grounded" href="tools/grounded-editor/editor.html">
-          <span class="tile__badge tile__badge--live">Live</span>
-          <span class="tile__body">
-            <span class="tile__game">The Backyard</span>
-            <span class="tile__name">Grounded</span>
-            <span class="tile__meta">Oodle .csav · + Cheat Engine table</span>
-          </span>
-        </a>
-
-        <a class="tile tile--grounded2" href="tools/grounded2-editor/editor.html">
-          <span class="tile__badge tile__badge--live">Live</span>
-          <span class="tile__body">
-            <span class="tile__game">Brookhollow Park</span>
-            <span class="tile__name">Grounded 2</span>
-            <span class="tile__meta">Augusta · Oodle .csav · + Cheat Engine table</span>
-          </span>
-        </a>
-      </nav>
-    </section>
-
-    <section class="hud-section" id="cheats" aria-labelledby="cheats-title">
-      <div class="hud-section__head">
-        <h2 class="hud-section__title" id="cheats-title">Cheat Tables</h2>
-        <p class="hud-section__sub">Cheat Engine .CT files for live RAM edits while the game is running.</p>
+      <div class="tools-tabs" role="tablist" aria-label="Tool categories">
+        <button type="button" class="tools-tab" role="tab" id="tab-editors" data-tab="editors" aria-controls="panel-editors" aria-selected="true">Editors</button>
+        <button type="button" class="tools-tab" role="tab" id="tab-tables" data-tab="tables" aria-controls="panel-tables" aria-selected="false" tabindex="-1">Tables</button>
+        <button type="button" class="tools-tab" role="tab" id="tab-unlockers" data-tab="unlockers" aria-controls="panel-unlockers" aria-selected="false" tabindex="-1">Unlockers</button>
       </div>
-      <nav class="hud-grid" aria-label="Cheat tables">
-        <a class="tile tile--ff7" href="tools/ff7-editor/GGdropmanFF7V1.0.CT" download>
-          <span class="tile__badge tile__badge--live">.CT</span>
-          <span class="tile__body">
-            <span class="tile__game">Mako Reactor</span>
-            <span class="tile__name">FF7 Steam Table v1.0</span>
-            <span class="tile__meta">Pairs with the browser editor</span>
-          </span>
-        </a>
 
-        <a class="tile tile--tcg" href="tools/tcg-editor/GGdropmanTCG_v1.0.CT" download>
-          <span class="tile__badge tile__badge--live">.CT</span>
-          <span class="tile__body">
-            <span class="tile__game">Card Shop</span>
-            <span class="tile__name">TCG Mono Table v1.0</span>
-            <span class="tile__meta">Cheat Engine · Card Shop Simulator.exe</span>
-          </span>
-        </a>
+      <div class="tools-panel is-active" role="tabpanel" id="panel-editors" data-panel="editors" aria-labelledby="tab-editors">
+        <p class="tools-panel__sub">Browser tools for editing save files offline. Load, tweak, download.</p>
+        <nav class="hud-grid" aria-label="Save editors">
+          <a class="tile tile--tcg" href="tools/tcg-editor/editor.html">
+            <span class="tile__badge tile__badge--live">Live</span>
+            <span class="tile__body">
+              <span class="tile__game">Card Shop</span>
+              <span class="tile__name">TCG Card Shop Simulator</span>
+              <span class="tile__meta">Money · inventory · binders</span>
+            </span>
+          </a>
 
-        <a class="tile tile--schedule" href="tools/schedule1-editor/GGdropmanScedule1V1.7.CT" download>
-          <span class="tile__badge tile__badge--live">.CT</span>
-          <span class="tile__body">
-            <span class="tile__game">Hyland Point</span>
-            <span class="tile__name">Schedule I Table v1.7</span>
-            <span class="tile__meta">Cheat Engine · Schedule I</span>
-          </span>
-        </a>
+          <a class="tile tile--ff7" href="tools/ff7-editor/editor.html">
+            <span class="tile__badge tile__badge--live">Live</span>
+            <span class="tile__body">
+              <span class="tile__game">Mako Reactor</span>
+              <span class="tile__name">Final Fantasy VII</span>
+              <span class="tile__meta">Steam editor · CT companion linked</span>
+            </span>
+          </a>
 
-        <a class="tile tile--grounded" href="tools/grounded-editor/GGdropmanGroundedV1.0.CT" download>
-          <span class="tile__badge tile__badge--live">.CT</span>
-          <span class="tile__body">
-            <span class="tile__game">The Backyard</span>
-            <span class="tile__name">Grounded Table v1.0</span>
-            <span class="tile__meta">Speed · jump · vitals · settings</span>
-          </span>
-        </a>
+          <a class="tile tile--epoch" href="tools/last-epoch-editor/editor.html">
+            <span class="tile__badge tile__badge--live">Live</span>
+            <span class="tile__body">
+              <span class="tile__game">Timeline</span>
+              <span class="tile__name">Last Epoch</span>
+              <span class="tile__meta">Offline · gold · characters</span>
+            </span>
+          </a>
 
-        <a class="tile tile--grounded2" href="tools/grounded2-editor/GGdropmanGrounded2V1.0.CT" download>
-          <span class="tile__badge tile__badge--live">.CT</span>
-          <span class="tile__body">
-            <span class="tile__game">Brookhollow Park</span>
-            <span class="tile__name">Grounded 2 Table v1.0</span>
-            <span class="tile__meta">Augusta · AOB activate · speed / fly</span>
-          </span>
-        </a>
+          <a class="tile tile--schedule" href="tools/schedule1-editor/editor.html">
+            <span class="tile__badge tile__badge--live">Live</span>
+            <span class="tile__body">
+              <span class="tile__game">Hyland Point</span>
+              <span class="tile__name">Schedule I</span>
+              <span class="tile__meta">Bank · rank · products</span>
+            </span>
+          </a>
 
-        <button type="button" class="tile tile--banner" onclick="location.hash='visitors'" aria-label="Request a tool in Visitors">
-          <span class="tile__body">
-            <span class="tile__name">More worlds incoming</span>
-            <span class="tile__meta">Request one in Visitors ↓</span>
-          </span>
-        </button>
-      </nav>
-    </section>
+          <a class="tile tile--sod2" href="tools/sod2-editor/editor.html">
+            <span class="tile__badge tile__badge--live">Live</span>
+            <span class="tile__body">
+              <span class="tile__game">Trumbull Valley</span>
+              <span class="tile__name">State of Decay 2</span>
+              <span class="tile__meta">Influence · stockpile · plague hearts</span>
+            </span>
+          </a>
 
-    <section class="hud-section" id="achievements" aria-labelledby="achievements-title">
-      <div class="hud-section__head">
-        <h2 class="hud-section__title" id="achievements-title">Achievement Unlockers</h2>
-        <p class="hud-section__sub">Local Steam tools to list, unlock, or lock achievements for owned games.</p>
+          <a class="tile tile--subnautica" href="tools/subnautica-editor/editor.html">
+            <span class="tile__badge tile__badge--live">Live</span>
+            <span class="tile__body">
+              <span class="tile__game">Planet 4546B</span>
+              <span class="tile__name">Subnautica</span>
+              <span class="tile__meta">Mode · inventory · find saves</span>
+            </span>
+          </a>
+
+          <a class="tile tile--subnautica2" href="tools/subnautica2-editor/editor.html">
+            <span class="tile__badge tile__badge--live">Live</span>
+            <span class="tile__body">
+              <span class="tile__game">Sector Zero</span>
+              <span class="tile__name">Subnautica 2</span>
+              <span class="tile__meta">GVAS · metadata · EA saves</span>
+            </span>
+          </a>
+
+          <a class="tile tile--grounded" href="tools/grounded-editor/editor.html">
+            <span class="tile__badge tile__badge--live">Live</span>
+            <span class="tile__body">
+              <span class="tile__game">The Backyard</span>
+              <span class="tile__name">Grounded</span>
+              <span class="tile__meta">Oodle .csav · + Cheat Engine table</span>
+            </span>
+          </a>
+
+          <a class="tile tile--grounded2" href="tools/grounded2-editor/editor.html">
+            <span class="tile__badge tile__badge--live">Live</span>
+            <span class="tile__body">
+              <span class="tile__game">Brookhollow Park</span>
+              <span class="tile__name">Grounded 2</span>
+              <span class="tile__meta">Augusta · Oodle .csav · + Cheat Engine table</span>
+            </span>
+          </a>
+        </nav>
       </div>
-      <nav class="hud-grid" aria-label="Achievement unlockers">
-        <a class="tile tile--steam" href="tools/steam-achievement-unlocker/guide.html">
-          <span class="tile__badge tile__badge--live">CLI</span>
-          <span class="tile__body">
-            <span class="tile__game">Steamworks</span>
-            <span class="tile__name">Achievement Unlocker</span>
-            <span class="tile__meta">Node · SoD2 default · any AppID</span>
-          </span>
-        </a>
-      </nav>
+
+      <div class="tools-panel" role="tabpanel" id="panel-tables" data-panel="tables" aria-labelledby="tab-tables" hidden>
+        <p class="tools-panel__sub">Cheat Engine .CT files for live RAM edits while the game is running.</p>
+        <nav class="hud-grid" aria-label="Cheat tables">
+          <a class="tile tile--ff7" href="tools/ff7-editor/GGdropmanFF7V1.0.CT" download>
+            <span class="tile__badge tile__badge--live">.CT</span>
+            <span class="tile__body">
+              <span class="tile__game">Mako Reactor</span>
+              <span class="tile__name">FF7 Steam Table v1.0</span>
+              <span class="tile__meta">Pairs with the browser editor</span>
+            </span>
+          </a>
+
+          <a class="tile tile--tcg" href="tools/tcg-editor/GGdropmanTCG_v1.0.CT" download>
+            <span class="tile__badge tile__badge--live">.CT</span>
+            <span class="tile__body">
+              <span class="tile__game">Card Shop</span>
+              <span class="tile__name">TCG Mono Table v1.0</span>
+              <span class="tile__meta">Cheat Engine · Card Shop Simulator.exe</span>
+            </span>
+          </a>
+
+          <a class="tile tile--schedule" href="tools/schedule1-editor/GGdropmanScedule1V1.7.CT" download>
+            <span class="tile__badge tile__badge--live">.CT</span>
+            <span class="tile__body">
+              <span class="tile__game">Hyland Point</span>
+              <span class="tile__name">Schedule I Table v1.7</span>
+              <span class="tile__meta">Cheat Engine · Schedule I</span>
+            </span>
+          </a>
+
+          <a class="tile tile--grounded" href="tools/grounded-editor/GGdropmanGroundedV1.0.CT" download>
+            <span class="tile__badge tile__badge--live">.CT</span>
+            <span class="tile__body">
+              <span class="tile__game">The Backyard</span>
+              <span class="tile__name">Grounded Table v1.0</span>
+              <span class="tile__meta">Speed · jump · vitals · settings</span>
+            </span>
+          </a>
+
+          <a class="tile tile--grounded2" href="tools/grounded2-editor/GGdropmanGrounded2V1.0.CT" download>
+            <span class="tile__badge tile__badge--live">.CT</span>
+            <span class="tile__body">
+              <span class="tile__game">Brookhollow Park</span>
+              <span class="tile__name">Grounded 2 Table v1.0</span>
+              <span class="tile__meta">Augusta · AOB activate · speed / fly</span>
+            </span>
+          </a>
+
+          <button type="button" class="tile tile--banner" onclick="location.hash='visitors'" aria-label="Request a tool in Visitors">
+            <span class="tile__body">
+              <span class="tile__name">More worlds incoming</span>
+              <span class="tile__meta">Request one in Visitors ↓</span>
+            </span>
+          </button>
+        </nav>
+      </div>
+
+      <div class="tools-panel" role="tabpanel" id="panel-unlockers" data-panel="unlockers" aria-labelledby="tab-unlockers" hidden>
+        <p class="tools-panel__sub">Local Steam tools to list, unlock, or lock achievements for owned games.</p>
+        <nav class="hud-grid" aria-label="Achievement unlockers">
+          <a class="tile tile--steam" href="tools/steam-achievement-unlocker/guide.html">
+            <span class="tile__badge tile__badge--live">CLI</span>
+            <span class="tile__body">
+              <span class="tile__game">Steamworks</span>
+              <span class="tile__name">Achievement Unlocker</span>
+              <span class="tile__meta">Node · SoD2 default · any AppID</span>
+            </span>
+          </a>
+        </nav>
+      </div>
     </section>
 
     <section class="hud-section" id="visitors" aria-labelledby="visitors-title">
@@ -1079,6 +1203,28 @@
         </div>
       </div>
     </section>
+
+    <section class="hud-section" id="donate" aria-labelledby="donate-title">
+      <div class="hud-section__head">
+        <h2 class="hud-section__title" id="donate-title">Donate</h2>
+        <p class="hud-section__sub">Fuel the next editor, cheat table, and late-night RE session.</p>
+      </div>
+      <div class="donate">
+        <p class="donate__lead">
+          If these save editors and Cheat Engine tables saved you a grind, you can tip GGdropman on PayPal.
+          Every bit helps keep the hub expanding.
+        </p>
+        <div class="donate__actions">
+          <a class="donate__btn" href="https://paypal.me/kd19902" target="_blank" rel="noopener noreferrer">
+            Donate via PayPal
+          </a>
+          <p class="donate__note">
+            Opens <a href="https://paypal.me/kd19902" target="_blank" rel="noopener noreferrer">paypal.me/kd19902</a>.
+            Optional — tools stay free either way.
+          </p>
+        </div>
+      </div>
+    </section>
   </div>
 
   <div class="visitor-count" id="visitor-count">
@@ -1100,6 +1246,7 @@
       <div class="credits-body">
         <p><strong>Site:</strong> ggdropmansmoddingtools</p>
         <p><strong>Creator:</strong> GGdropman</p>
+        <p><strong>Donate:</strong> <a href="https://paypal.me/kd19902" target="_blank" rel="noopener noreferrer">paypal.me/kd19902</a></p>
         <p><strong>Partner / close friend:</strong> <a href="https://ynot-gzo.github.io/GameZoneOfficial/" target="_blank" rel="noopener noreferrer">GameZone Official</a></p>
         <p><strong>Save Editors:</strong></p>
         <ul>
@@ -1168,6 +1315,73 @@
           closeModal(soonModal);
         }
       });
+
+      const TAB_ALIASES = {
+        tools: "editors",
+        editors: "editors",
+        editor: "editors",
+        tables: "tables",
+        table: "tables",
+        cheats: "tables",
+        cheat: "tables",
+        unlockers: "unlockers",
+        unlocker: "unlockers",
+        achievements: "unlockers",
+      };
+
+      const tabButtons = [...document.querySelectorAll(".tools-tab")];
+      const tabPanels = [...document.querySelectorAll(".tools-panel")];
+
+      function activateToolsTab(name, { updateHash = true } = {}) {
+        const id = TAB_ALIASES[name] || "editors";
+        tabButtons.forEach((btn) => {
+          const on = btn.dataset.tab === id;
+          btn.setAttribute("aria-selected", on ? "true" : "false");
+          btn.tabIndex = on ? 0 : -1;
+        });
+        tabPanels.forEach((panel) => {
+          const on = panel.dataset.panel === id;
+          panel.classList.toggle("is-active", on);
+          panel.hidden = !on;
+        });
+        if (updateHash) {
+          const next = "#" + id;
+          if (location.hash !== next) {
+            history.replaceState(null, "", next);
+          }
+        }
+      }
+
+      tabButtons.forEach((btn) => {
+        btn.addEventListener("click", () => activateToolsTab(btn.dataset.tab));
+        btn.addEventListener("keydown", (e) => {
+          const i = tabButtons.indexOf(btn);
+          let next = -1;
+          if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (i + 1) % tabButtons.length;
+          if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (i - 1 + tabButtons.length) % tabButtons.length;
+          if (e.key === "Home") next = 0;
+          if (e.key === "End") next = tabButtons.length - 1;
+          if (next < 0) return;
+          e.preventDefault();
+          tabButtons[next].focus();
+          activateToolsTab(tabButtons[next].dataset.tab);
+        });
+      });
+
+      function syncToolsFromHash() {
+        const raw = (location.hash || "").replace(/^#/, "").toLowerCase();
+        if (!raw) {
+          activateToolsTab("editors", { updateHash: false });
+          return;
+        }
+        if (raw === "tools" || TAB_ALIASES[raw]) {
+          activateToolsTab(raw === "tools" ? "editors" : raw, { updateHash: false });
+          document.getElementById("tools")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }
+
+      window.addEventListener("hashchange", syncToolsFromHash);
+      syncToolsFromHash();
 
       try {
         const totalKey = "gg_visits_total";

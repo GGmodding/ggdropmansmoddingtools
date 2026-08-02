@@ -4,6 +4,10 @@ Companion Cheat Engine table for the [Grounded 2 save editor](editor.html) — l
 
 **File:** `GGdropmanGrounded2V1.0.CT`
 
+## Support
+
+If this table helps, tip the creator: [paypal.me/kd19902](https://paypal.me/kd19902)
+
 ## Requirements
 
 - [Cheat Engine](https://www.cheatengine.org/) 7.5+

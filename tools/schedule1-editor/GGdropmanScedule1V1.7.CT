@@ -9,6 +9,12 @@
       <GroupHeader>1</GroupHeader>
       <CheatEntries>
         <CheatEntry>
+          <ID>9900</ID>
+          <Description>"Donate to creator — paypal.me/kd19902"</Description>
+          <Color>00F0C14A</Color>
+          <GroupHeader>1</GroupHeader>
+        </CheatEntry>
+        <CheatEntry>
           <ID>2</ID>
           <Description>"Duplicate Any Item (only use 1 at a time)"</Description>
           <Options moHideChildren="1"/>

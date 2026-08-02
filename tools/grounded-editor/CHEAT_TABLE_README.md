@@ -4,6 +4,10 @@ Companion Cheat Engine table for the browser save editor — live RAM cheats whi
 
 **File:** `GGdropmanGroundedV1.0.CT`
 
+## Support
+
+If this table helps, tip the creator: [paypal.me/kd19902](https://paypal.me/kd19902)
+
 ## Requirements
 
 - [Cheat Engine](https://www.cheatengine.org/) 7.5+
