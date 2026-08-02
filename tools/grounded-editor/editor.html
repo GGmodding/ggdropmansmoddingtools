@@ -60,7 +60,11 @@
     <button class="tab" data-tab="meta" type="button">Header</button>
     <button class="tab" data-tab="vitals" type="button">Vitals &amp; Molars</button>
     <button class="tab" data-tab="gear" type="button">Weapons &amp; Armor</button>
+    <button class="tab" data-tab="mutations" type="button">Mutations</button>
+    <button class="tab" data-tab="tech" type="button">BURG.L / Tech</button>
+    <button class="tab" data-tab="travel" type="button">Travel / Time</button>
     <button class="tab" data-tab="inventory" type="button">Items</button>
+    <button class="tab" data-tab="chests" type="button">Chests</button>
     <button class="tab" data-tab="features" type="button">Feature map</button>
     <button class="tab" data-tab="cheats" type="button">Notes</button>
   </nav>
@@ -81,10 +85,18 @@
         <img id="overview-img" alt="Save screenshot" />
       </div>
       <div id="overview-files" class="file-list"></div>
-      <div class="callout">
-        Player edits rewrite <code>HostPlayer.csav</code> (and matching <code>Player_*.csav</code> when present).
-        Golden molar edits rewrite <code>World.csav</code>. World item scan is otherwise read-only.
+        <div class="callout">
+        Player edits rewrite <code>HostPlayer.csav</code> and every <code>Player_*.csav</code> copy in the slot (multiplayer sync).
+        Golden molars, Raw Science, chests, and BURG.L / calendar edits rewrite <code>World.csav</code>.
+        Close Grounded before Install. Use Backup ZIP first.
       </div>
+      <div class="form-grid" style="margin-top:1rem">
+        <label>Active player file
+          <select id="player-file-select"></select>
+        </label>
+      </div>
+      <p class="hint" id="player-file-hint">HostPlayer is the edit source; other Player_*.csav files are mirrored on save.</p>
+      <div id="change-summary" class="callout" hidden></div>
     </section>
 
     <section id="panel-meta" class="panel" hidden>
@@ -160,6 +172,17 @@
         <button type="button" class="btn" id="btn-gear-refresh">Reload</button>
       </div>
       <p class="hint">One-shot: Mighty IX + attack amp ×100 + max durability. God armor: Bulky IX + huge durability. Close the game before install.</p>
+      <div id="equip-doll" class="equip-doll" aria-label="Equipped gear">
+        <div class="equip-doll__grid">
+          <div class="equip-slot" data-slot="head"><span class="equip-slot__label">Head</span><span class="equip-slot__body" id="doll-head">—</span></div>
+          <div class="equip-slot" data-slot="mainhand"><span class="equip-slot__label">Main</span><span class="equip-slot__body" id="doll-mainhand">—</span></div>
+          <div class="equip-slot equip-slot--torso" data-slot="chest"><span class="equip-slot__label">Chest</span><span class="equip-slot__body" id="doll-chest">—</span></div>
+          <div class="equip-slot" data-slot="offhand"><span class="equip-slot__label">Off</span><span class="equip-slot__body" id="doll-offhand">—</span></div>
+          <div class="equip-slot" data-slot="legs"><span class="equip-slot__label">Legs</span><span class="equip-slot__body" id="doll-legs">—</span></div>
+          <div class="equip-slot" data-slot="trinket"><span class="equip-slot__label">Trinket</span><span class="equip-slot__body" id="doll-trinket">—</span></div>
+        </div>
+        <p class="hint" id="doll-hint">Equipped slots from EquipmentComponent.</p>
+      </div>
       <div id="gear-missing" class="callout" hidden>No weapons/armor parsed from HostPlayer inventory or equipment.</div>
       <div class="table-wrap">
         <table class="data-table" id="gear-table">
@@ -178,6 +201,113 @@
           <tbody></tbody>
         </table>
       </div>
+    </section>
+
+    <section id="panel-mutations" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Mutations (PerkComponent)</h2>
+        <p>Unlock / set mutation phase on HostPlayer. Phase −1 = locked, 0–2 = phases I–III. Slot upgrades come from milk-molar <code>Perks</code> (max 3 → 5 equip slots).</p>
+      </div>
+      <div class="form-grid">
+        <label>Mutation slots upgrade (0–3)
+          <input id="mut-slots" type="number" min="0" max="3" step="1" value="0" />
+        </label>
+        <label class="hint-label">Effective slots<span id="mut-slots-hint" class="hint">—</span></label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-mut-slots">Apply slots</button>
+        <button type="button" class="btn btn--accent" id="btn-mut-unlock">Unlock all (phase III)</button>
+        <button type="button" class="btn" id="btn-mut-refresh">Reload</button>
+      </div>
+      <p class="hint" id="mut-hint">Load a save to edit mutations.</p>
+      <div class="table-wrap">
+        <table class="data-table" id="mut-table">
+          <thead>
+            <tr>
+              <th>Mutation</th>
+              <th>Id</th>
+              <th>Phase</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-tech" class="panel" hidden>
+      <div class="panel__head">
+        <h2>BURG.L / recipes / tech</h2>
+        <p>PartyComponent in World.csav: PDA knowledge list + Resource Analyzer unlocks. Analyzing items teaches recipes; TechChip_* entries unlock BURG.L chip trees.</p>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-tech-analyze">Analyze starter bundle</button>
+        <button type="button" class="btn btn--accent" id="btn-tech-chips">Unlock TechChips</button>
+        <button type="button" class="btn" id="btn-tech-refresh">Reload</button>
+      </div>
+      <div class="form-grid">
+        <label>Add analyzed item
+          <input id="tech-analyze-name" type="text" list="tech-item-names" placeholder="Quartzite" />
+        </label>
+        <label>Add knowledge id
+          <input id="tech-know-name" type="text" list="tech-item-names" placeholder="TechChip_Mint" />
+          <datalist id="tech-item-names"></datalist>
+        </label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn" id="btn-tech-add-analyze">Add analyzed</button>
+        <button type="button" class="btn" id="btn-tech-add-know">Add knowledge</button>
+      </div>
+      <p class="hint" id="tech-hint">Load a save with World.csav.</p>
+      <h3 class="subhead">Analyzed items</h3>
+      <div class="table-wrap">
+        <table class="data-table" id="tech-analyzed-table">
+          <thead><tr><th>Item</th><th>a</th><th>b</th><th>c</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <h3 class="subhead">Knowledge (recipes / chips / POI)</h3>
+      <div class="table-wrap">
+        <table class="data-table" id="tech-know-table">
+          <thead><tr><th>Id</th><th>Kind</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <h3 class="subhead">Tech trees seen</h3>
+      <p class="hint" id="tech-trees-hint">—</p>
+    </section>
+
+    <section id="panel-travel" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Travel &amp; time</h2>
+        <p>HostPlayer transform XYZ + World CalendarComponent day float. Teleport presets are approximate backyard landmarks — fine-tune after load.</p>
+      </div>
+      <div class="form-grid">
+        <label>X<input id="pos-x" type="number" step="any" /></label>
+        <label>Y<input id="pos-y" type="number" step="any" /></label>
+        <label>Z<input id="pos-z" type="number" step="any" /></label>
+        <label>Preset
+          <select id="pos-preset"></select>
+        </label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-pos-apply">Apply position</button>
+        <button type="button" class="btn" id="btn-pos-refresh">Reload</button>
+      </div>
+      <p class="hint" id="pos-hint">—</p>
+      <h3 class="subhead">Calendar</h3>
+      <div class="form-grid">
+        <label>Day value<input id="cal-day" type="number" step="0.001" min="0" /></label>
+        <label>Hour hint (0–24)<input id="cal-hour" type="number" step="0.1" min="0" max="24" /></label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-cal-day">Apply day</button>
+        <button type="button" class="btn" id="btn-cal-dawn">Dawn</button>
+        <button type="button" class="btn" id="btn-cal-noon">Noon</button>
+        <button type="button" class="btn" id="btn-cal-dusk">Dusk</button>
+        <button type="button" class="btn" id="btn-cal-refresh">Reload</button>
+      </div>
+      <p class="hint" id="cal-hint">Day float is best-effort; hour adjusts the fractional part.</p>
     </section>
 
     <section id="panel-inventory" class="panel" hidden>
@@ -210,11 +340,63 @@
           <tbody></tbody>
         </table>
       </div>
+      <h3 class="subhead">Hauling / hot pouch</h3>
+      <p class="hint" id="haul-hint">Items currently on the hauling component (empty if you are not carrying a stack).</p>
+      <div class="table-wrap">
+        <table class="data-table" id="haul-table">
+          <thead><tr><th>Item</th><th>Stack</th><th>Note</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <h3 class="subhead">Item catalog</h3>
+      <label>Filter <input id="catalog-filter" type="search" placeholder="Fiber, Recipe, Head…" /></label>
+      <p class="hint" id="catalog-hint">Soft object paths from HostPlayer + World.</p>
+      <div class="table-wrap">
+        <table class="data-table" id="catalog-table">
+          <thead><tr><th>Id</th><th>Mentions</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
       <h3 class="subhead">World / Host path scan</h3>
       <p class="hint">Soft object path mentions (not stack counts).</p>
       <div class="table-wrap">
         <table class="data-table" id="inv-table">
           <thead><tr><th>Item / BP id</th><th>Mentions</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-chests" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Chests &amp; storage</h2>
+        <p>World.csav InventoryComponents (chests, baskets, fridges). Add clones an item already in that storage; empty chests need one in-game item first.</p>
+      </div>
+      <div class="form-grid">
+        <label>Storage
+          <select id="chest-select"></select>
+        </label>
+        <label>Item id
+          <input id="chest-add-name" type="text" list="chest-item-names" placeholder="Fiber" />
+          <datalist id="chest-item-names"></datalist>
+        </label>
+        <label>Quantity<input id="chest-add-qty" type="number" min="1" max="9999" step="1" value="1" /></label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-chest-add">Add / stack</button>
+        <button type="button" class="btn" id="btn-chest-refresh">Reload</button>
+      </div>
+      <p class="hint" id="chest-hint">Load a save with World.csav to browse storage.</p>
+      <div class="table-wrap">
+        <table class="data-table" id="chest-edit-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Stack</th>
+              <th>Note</th>
+              <th></th>
+            </tr>
+          </thead>
           <tbody></tbody>
         </table>
       </div>
@@ -257,6 +439,12 @@
   <script src="player.js"></script>
   <script src="gear.js"></script>
   <script src="inventory.js"></script>
+  <script src="storage.js"></script>
+  <script src="perks.js"></script>
+  <script src="tech.js"></script>
+  <script src="position.js"></script>
+  <script src="calendar.js"></script>
+  <script src="hauling.js"></script>
   <script src="save.js"></script>
   <script type="module" src="app.js"></script>
 </body>

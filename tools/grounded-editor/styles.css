@@ -436,8 +436,87 @@ select {
 .tone-bad { color: var(--danger); }
 .tone-muted { color: var(--muted); }
 
+.equip-doll {
+  margin: 0 0 1.25rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(165deg, rgba(36, 50, 28, 0.9), rgba(18, 24, 15, 0.75));
+}
+
+.equip-doll__grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  grid-template-areas:
+    ". head ."
+    "mainhand torso offhand"
+    ". legs ."
+    ". trinket .";
+  gap: 0.55rem;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.equip-slot[data-slot="head"] { grid-area: head; }
+.equip-slot[data-slot="mainhand"] { grid-area: mainhand; }
+.equip-slot[data-slot="chest"] { grid-area: torso; }
+.equip-slot[data-slot="offhand"] { grid-area: offhand; }
+.equip-slot[data-slot="legs"] { grid-area: legs; }
+.equip-slot[data-slot="trinket"] { grid-area: trinket; }
+
+.equip-slot {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.55rem 0.65rem;
+  background: rgba(12, 16, 10, 0.55);
+  min-height: 4.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.equip-slot--torso {
+  min-height: 5.5rem;
+  border-color: rgba(143, 191, 74, 0.35);
+}
+
+.equip-slot__label {
+  font: 700 0.68rem/1 var(--display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.equip-slot__body {
+  font: 600 0.88rem/1.25 var(--font);
+  word-break: break-word;
+}
+
+.equip-slot__meta {
+  font: 500 0.75rem/1.2 var(--mono);
+  color: var(--accent-2);
+}
+
+.equip-slot__actions {
+  margin-top: auto;
+}
+
+.equip-slot.is-empty .equip-slot__body {
+  color: var(--muted);
+  font-weight: 500;
+}
+
 @media (max-width: 700px) {
   .topbar { flex-direction: column; align-items: stretch; }
   .brand__text h1 { font-size: 1.1rem; }
   .main { padding: 1rem; }
+  .equip-doll__grid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "head head"
+      "mainhand offhand"
+      "torso torso"
+      "legs trinket";
+    max-width: none;
+  }
 }

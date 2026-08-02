@@ -9,19 +9,39 @@ import { decompress as oozDecompress } from "./vendor/index.js";
   const S = window.GroundedSave;
   const G = window.GroundedGear;
   const Inv = window.GroundedInventory;
+  const Stor = window.GroundedStorage;
+  const Perks = window.GroundedPerks;
+  const Tech = window.GroundedTech;
+  const Pos = window.GroundedPosition;
+  const Cal = window.GroundedCalendar;
+  const Haul = window.GroundedHauling;
   const D = window.GroundedData;
   const $ = (id) => document.getElementById(id);
 
-  const PANELS = ["overview", "meta", "vitals", "gear", "inventory", "features", "cheats"];
+  const PANELS = [
+    "overview",
+    "meta",
+    "vitals",
+    "gear",
+    "mutations",
+    "tech",
+    "travel",
+    "inventory",
+    "chests",
+    "features",
+    "cheats",
+  ];
 
   const state = {
     slotName: "GroundedSave",
     files: new Map(), // name -> Uint8Array
+    originalFiles: new Map(),
     slots: new Map(),
     hostRaw: null,
     worldRaw: null,
     dirty: false,
     screenshotUrl: null,
+    catalogItems: [],
   };
 
   function setStatus(msg) {
@@ -35,6 +55,117 @@ import { decompress as oozDecompress } from "./vendor/index.js";
     $("btn-save").disabled = !has;
     $("btn-backup").disabled = !has;
     $("btn-install").disabled = !has;
+    refreshChangeSummary();
+  }
+
+  function snapshotOriginals() {
+    state.originalFiles = new Map();
+    for (const [n, bytes] of state.files.entries()) {
+      state.originalFiles.set(n, bytes.slice(0));
+    }
+  }
+
+  function changedFileSummary() {
+    const rows = [];
+    for (const [name, bytes] of state.files.entries()) {
+      const orig = state.originalFiles.get(name);
+      if (!orig) {
+        rows.push({ name, kind: "new", before: 0, after: bytes.length });
+        continue;
+      }
+      if (orig.length !== bytes.length) {
+        rows.push({
+          name,
+          kind: "resized",
+          before: orig.length,
+          after: bytes.length,
+        });
+        continue;
+      }
+      let same = true;
+      for (let i = 0; i < bytes.length; i++) {
+        if (bytes[i] !== orig[i]) {
+          same = false;
+          break;
+        }
+      }
+      if (!same) {
+        rows.push({
+          name,
+          kind: "edited",
+          before: orig.length,
+          after: bytes.length,
+        });
+      }
+    }
+    return rows;
+  }
+
+  function refreshChangeSummary() {
+    const el = $("change-summary");
+    if (!el) return;
+    if (!state.files.size) {
+      el.hidden = true;
+      el.innerHTML = "";
+      return;
+    }
+    const rows = changedFileSummary();
+    if (!rows.length) {
+      el.hidden = true;
+      el.textContent = "No byte changes vs loaded originals.";
+      return;
+    }
+    el.hidden = false;
+    el.innerHTML =
+      "<strong>Pending writes</strong> (" +
+      rows.length +
+      " file" +
+      (rows.length === 1 ? "" : "s") +
+      "): " +
+      rows
+        .map(
+          (r) =>
+            "<code>" +
+            escapeHtml(r.name) +
+            "</code> " +
+            r.kind +
+            " " +
+            S.formatBytes(r.before) +
+            " → " +
+            S.formatBytes(r.after)
+        )
+        .join(" · ");
+  }
+
+  function confirmWrite(actionLabel) {
+    const rows = changedFileSummary();
+    const lines = [
+      actionLabel + " will write " + (rows.length || state.files.size) + " file(s).",
+      "",
+      "Close Grounded (Maine-Win64-Shipping) first so the game cannot overwrite your edits.",
+      "",
+    ];
+    if (rows.length) {
+      lines.push("Changed:");
+      for (const r of rows.slice(0, 12)) {
+        lines.push(
+          "- " +
+            r.name +
+            " (" +
+            r.kind +
+            ", " +
+            S.formatBytes(r.before) +
+            " → " +
+            S.formatBytes(r.after) +
+            ")"
+        );
+      }
+      if (rows.length > 12) lines.push("- … +" + (rows.length - 12) + " more");
+    } else {
+      lines.push("No detected byte diffs vs load — writing full slot anyway.");
+    }
+    lines.push("", "Continue?");
+    return confirm(lines.join("\n"));
   }
 
   function escapeHtml(s) {
@@ -168,6 +299,7 @@ import { decompress as oozDecompress } from "./vendor/index.js";
     state.slots.set(slotKey, materialized);
     state.files = new Map();
     for (const f of materialized) state.files.set(f.name, f.bytes);
+    snapshotOriginals();
     if (!getFile("SaveGameHeaderData.savheader") && !getFile("HostPlayer.csav")) {
       throw new Error(
         "Slot missing SaveGameHeaderData.savheader / HostPlayer.csav.\n\n" +
@@ -436,6 +568,7 @@ import { decompress as oozDecompress } from "./vendor/index.js";
     const sorted = [...merged.entries()]
       .map(([id, count]) => ({ id, count }))
       .sort((a, b) => b.count - a.count || a.id.localeCompare(b.id));
+    state.catalogItems = sorted;
     $("inv-hint").textContent =
       sorted.length + " unique item/BP paths (HostPlayer + World).";
     $("inv-table").querySelector("tbody").innerHTML = sorted
@@ -452,6 +585,13 @@ import { decompress as oozDecompress } from "./vendor/index.js";
 
     refreshGearTable();
     refreshInventoryEditor();
+    refreshChestsEditor();
+    refreshMutationsEditor();
+    refreshTechEditor();
+    refreshTravelEditor();
+    refreshHauling();
+    refreshCatalog();
+    refreshPlayerFileSelect();
 
     $("feature-table").querySelector("tbody").innerHTML = D.FEATURE_MATRIX.map(
       (f) =>
@@ -653,6 +793,7 @@ import { decompress as oozDecompress } from "./vendor/index.js";
   function refreshGearTable() {
     const missing = $("gear-missing");
     const tbody = $("gear-table").querySelector("tbody");
+    refreshEquipDoll();
     if (!state.hostRaw || !G) {
       missing.hidden = false;
       tbody.innerHTML = "";
@@ -705,11 +846,451 @@ import { decompress as oozDecompress } from "./vendor/index.js";
       .join("");
   }
 
+  function refreshEquipDoll() {
+    const hint = $("doll-hint");
+    const slotIds = ["head", "chest", "legs", "mainhand", "offhand", "trinket"];
+    if (!state.hostRaw || !G || typeof G.parseEquipmentDoll !== "function") {
+      slotIds.forEach((id) => {
+        const el = $("doll-" + id);
+        if (el) el.innerHTML = "—";
+        const wrap = el && el.closest(".equip-slot");
+        if (wrap) wrap.classList.add("is-empty");
+      });
+      if (hint) hint.textContent = "HostPlayer not loaded.";
+      return;
+    }
+    const doll = G.parseEquipmentDoll(state.hostRaw);
+    let filled = 0;
+    for (const id of slotIds) {
+      const el = $("doll-" + id);
+      const wrap = el && el.closest(".equip-slot");
+      const it = doll.slots[id];
+      if (!el) continue;
+      if (!it) {
+        el.innerHTML = "Empty";
+        if (wrap) {
+          wrap.classList.add("is-empty");
+          const act = wrap.querySelector(".equip-slot__actions");
+          if (act) act.remove();
+        }
+        continue;
+      }
+      filled++;
+      if (wrap) wrap.classList.remove("is-empty");
+      const path =
+        it.kind === "armor"
+          ? it.mid && it.mid !== "None"
+            ? it.mid
+            : "—"
+          : it.enhancement && it.enhancement !== "None"
+            ? it.enhancement
+            : "—";
+      el.innerHTML =
+        "<code>" +
+        escapeHtml(it.name) +
+        "</code>" +
+        "<div class=\"equip-slot__meta\">Lv " +
+        it.level +
+        " · " +
+        escapeHtml(path) +
+        "</div>";
+      let act = wrap.querySelector(".equip-slot__actions");
+      if (!act) {
+        act = document.createElement("div");
+        act.className = "equip-slot__actions";
+        wrap.appendChild(act);
+      }
+      const canMax = it.kind === "weapon" || it.kind === "armor" || it.kind === "shield";
+      act.innerHTML = canMax
+        ? "<button type=\"button\" class=\"btn btn-doll-max\" data-slot=\"" +
+          id +
+          "\">Max</button>"
+        : "";
+    }
+    if (hint) {
+      hint.textContent = doll.ok
+        ? filled + " equipped slot(s) from EquipmentComponent."
+        : "No equipped gear found.";
+    }
+  }
+
   function commitHostRaw(bytes) {
     state.hostRaw = bytes;
     syncPlayerCopies(C.compressCsav(state.hostRaw));
     setDirty(true);
     refreshAll();
+  }
+
+  function commitWorldRaw(bytes) {
+    state.worldRaw = bytes;
+    setFile("World.csav", C.compressCsav(state.worldRaw));
+    setDirty(true);
+    refreshAll();
+  }
+
+  function refreshChestsEditor() {
+    const hint = $("chest-hint");
+    const sel = $("chest-select");
+    const tbody = $("chest-edit-table").querySelector("tbody");
+    const list = $("chest-item-names");
+    if (!state.worldRaw || !Stor) {
+      hint.textContent = "World.csav not loaded.";
+      sel.innerHTML = "";
+      tbody.innerHTML = "";
+      list.innerHTML = "";
+      return;
+    }
+    const listed = Stor.listStorages(state.worldRaw);
+    if (!listed.ok) {
+      hint.textContent = "No storage inventories found in World.csav.";
+      sel.innerHTML = "";
+      tbody.innerHTML = "";
+      return;
+    }
+
+    const prev = sel.value;
+    sel.innerHTML = listed.storages
+      .map((st, i) => {
+        const tag = st.building ? " · " + st.building : "";
+        const label =
+          st.label + tag + " (" + st.itemCount + " item" + (st.itemCount === 1 ? "" : "s") + ")";
+        return (
+          "<option value=\"" +
+          i +
+          "\">" +
+          escapeHtml(label) +
+          "</option>"
+        );
+      })
+      .join("");
+    if (prev !== "" && Number(prev) < listed.storages.length) {
+      sel.value = prev;
+    }
+    const idx = Number(sel.value || 0);
+    const st = listed.storages[idx];
+    if (!st) {
+      hint.textContent = "Select a storage.";
+      tbody.innerHTML = "";
+      return;
+    }
+    hint.textContent =
+      st.label +
+      (st.building ? " [" + st.building + "]" : "") +
+      " — " +
+      st.items.length +
+      " item(s)" +
+      (st.editableCount ? ", header count " + st.count : ", count header unknown") +
+      ".";
+    tbody.innerHTML = st.items
+      .map((it, i) => {
+        return (
+          "<tr>" +
+          "<td><code>" +
+          escapeHtml(it.name) +
+          "</code></td>" +
+          "<td><input data-chest-stack=\"" +
+          i +
+          "\" type=\"number\" min=\"1\" max=\"9999\" value=\"" +
+          it.stack +
+          "\" style=\"width:5rem\" /></td>" +
+          "<td>" +
+          escapeHtml(it.enhancement === "None" ? "—" : it.enhancement) +
+          "</td>" +
+          "<td>" +
+          "<button type=\"button\" class=\"btn btn-chest-apply-stack\" data-idx=\"" +
+          i +
+          "\">Set</button> " +
+          "<button type=\"button\" class=\"btn btn-chest-remove\" data-idx=\"" +
+          i +
+          "\">Remove</button>" +
+          "</td>" +
+          "</tr>"
+        );
+      })
+      .join("");
+
+    const names = new Set(st.items.map((x) => x.name));
+    for (const s of listed.storages) {
+      for (const it of s.items) names.add(it.name);
+    }
+    if (Inv && Inv.TEMPLATE_PREFS) {
+      for (const pref of Inv.TEMPLATE_PREFS) names.add(pref);
+    }
+    list.innerHTML = [...names]
+      .sort((a, b) => a.localeCompare(b))
+      .slice(0, 400)
+      .map((n) => "<option value=\"" + escapeHtml(n) + "\"></option>")
+      .join("");
+  }
+
+  function refreshMutationsEditor() {
+    const hint = $("mut-hint");
+    const tbody = $("mut-table").querySelector("tbody");
+    const slotsEl = $("mut-slots");
+    const slotsHint = $("mut-slots-hint");
+    if (!state.hostRaw || !Perks) {
+      hint.textContent = "HostPlayer not loaded.";
+      tbody.innerHTML = "";
+      return;
+    }
+    const parsed = Perks.parsePerkComponent(state.hostRaw);
+    const slots = Perks.parsePerksUpgrade(state.hostRaw);
+    if (slots) {
+      slotsEl.value = String(slots.level);
+      slotsHint.textContent = "→ " + (2 + slots.level) + " equip slots";
+    } else {
+      slotsEl.value = "0";
+      slotsHint.textContent = "Perks upgrade not found";
+    }
+    if (!parsed.ok) {
+      hint.textContent = "Could not parse PerkComponent.";
+      tbody.innerHTML = "";
+      return;
+    }
+    const unlocked = parsed.entries.filter((e) => e.unlocked).length;
+    hint.textContent =
+      parsed.entries.length +
+      " mutations · " +
+      unlocked +
+      " unlocked (phase ≥ 0). Equipped loadout is still chosen in-game.";
+    tbody.innerHTML = parsed.entries
+      .map((e, idx) => {
+        return (
+          "<tr>" +
+          "<td>" +
+          escapeHtml(e.display) +
+          "</td>" +
+          "<td><code>" +
+          escapeHtml(e.id) +
+          "</code></td>" +
+          "<td><input data-mut-phase=\"" +
+          idx +
+          "\" type=\"number\" min=\"-1\" max=\"2\" value=\"" +
+          e.phase +
+          "\" style=\"width:4.5rem\" /></td>" +
+          "<td>" +
+          "<button type=\"button\" class=\"btn btn-mut-set\" data-idx=\"" +
+          idx +
+          "\">Set</button> " +
+          "<button type=\"button\" class=\"btn btn-mut-max\" data-idx=\"" +
+          idx +
+          "\">Max</button>" +
+          "</td>" +
+          "</tr>"
+        );
+      })
+      .join("");
+  }
+
+  function knowledgeKind(name) {
+    if (/^Recipe/i.test(name)) return "recipe";
+    if (/^TechChip/i.test(name)) return "tech chip";
+    if (/^Bestiary/i.test(name)) return "bestiary";
+    if (/^POI/i.test(name)) return "POI";
+    if (/^AudioLog/i.test(name)) return "audio log";
+    return "other";
+  }
+
+  function refreshTechEditor() {
+    const hint = $("tech-hint");
+    const treesHint = $("tech-trees-hint");
+    const aBody = $("tech-analyzed-table").querySelector("tbody");
+    const kBody = $("tech-know-table").querySelector("tbody");
+    const list = $("tech-item-names");
+    if (!state.worldRaw || !Tech) {
+      hint.textContent = "World.csav not loaded.";
+      aBody.innerHTML = "";
+      kBody.innerHTML = "";
+      return;
+    }
+    const parsed = Tech.parsePartyTech(state.worldRaw);
+    if (!parsed.ok) {
+      hint.textContent = "Could not parse PartyComponent tech lists.";
+      aBody.innerHTML = "";
+      kBody.innerHTML = "";
+      return;
+    }
+    hint.textContent =
+      parsed.analyzed.length +
+      " analyzed · " +
+      parsed.knowledge.length +
+      " knowledge entries · " +
+      parsed.techTrees.length +
+      " tech-tree refs.";
+    treesHint.textContent = parsed.techTrees.length
+      ? parsed.techTrees.map((t) => t.name).join(", ")
+      : "None found near PartyComponent.";
+    aBody.innerHTML = parsed.analyzed
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(
+        (e) =>
+          "<tr><td><code>" +
+          escapeHtml(e.name) +
+          "</code></td><td>" +
+          e.a +
+          "</td><td>" +
+          e.b +
+          "</td><td>" +
+          e.c +
+          "</td></tr>"
+      )
+      .join("");
+    kBody.innerHTML = parsed.knowledge
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(
+        (e) =>
+          "<tr><td><code>" +
+          escapeHtml(e.name) +
+          "</code></td><td>" +
+          escapeHtml(knowledgeKind(e.name)) +
+          "</td></tr>"
+      )
+      .join("");
+    const names = new Set();
+    for (const e of parsed.analyzed) names.add(e.name);
+    for (const e of parsed.knowledge) names.add(e.name);
+    for (const n of Tech.ANALYZE_STARTER || []) names.add(n);
+    list.innerHTML = [...names]
+      .sort((a, b) => a.localeCompare(b))
+      .slice(0, 500)
+      .map((n) => "<option value=\"" + escapeHtml(n) + "\"></option>")
+      .join("");
+  }
+
+  function refreshTravelEditor() {
+    const posHint = $("pos-hint");
+    const calHint = $("cal-hint");
+    const preset = $("pos-preset");
+    if (Pos && preset && !preset.options.length) {
+      preset.innerHTML =
+        "<option value=\"\">Custom</option>" +
+        Pos.PRESETS.map(
+          (p) =>
+            "<option value=\"" +
+            escapeHtml(p.id) +
+            "\">" +
+            escapeHtml(p.label) +
+            "</option>"
+        ).join("");
+    }
+    if (!state.hostRaw || !Pos) {
+      posHint.textContent = "HostPlayer not loaded.";
+    } else {
+      const pos = Pos.findPosition(state.hostRaw);
+      if (!pos.ok) {
+        posHint.textContent = "Position not found.";
+      } else {
+        $("pos-x").value = String(Math.round(pos.x * 100) / 100);
+        $("pos-y").value = String(Math.round(pos.y * 100) / 100);
+        $("pos-z").value = String(Math.round(pos.z * 100) / 100);
+        posHint.textContent =
+          "Transform at byte " + pos.off + " (scale marker " + pos.scaleAt + ").";
+      }
+    }
+    if (!state.worldRaw || !Cal) {
+      calHint.textContent = "World.csav not loaded.";
+      return;
+    }
+    const cal = Cal.parseCalendar(state.worldRaw);
+    if (!cal.ok) {
+      calHint.textContent = "CalendarComponent not found.";
+      return;
+    }
+    $("cal-day").value = String(Math.round(cal.day * 1000) / 1000);
+    $("cal-hour").value = String(Math.round(cal.hourHint * 100) / 100);
+    calHint.textContent =
+      "Day float " +
+      cal.day.toFixed(3) +
+      " · hour hint " +
+      cal.hourHint.toFixed(2) +
+      " (fractional day × 24, best-effort).";
+  }
+
+  function refreshHauling() {
+    const hint = $("haul-hint");
+    const tbody = $("haul-table").querySelector("tbody");
+    if (!hint || !tbody) return;
+    if (!state.hostRaw || !Haul) {
+      hint.textContent = "HostPlayer not loaded.";
+      tbody.innerHTML = "";
+      return;
+    }
+    const haul = Haul.parseHauling(state.hostRaw);
+    if (!haul.ok) {
+      hint.textContent = "HaulingComponent not found.";
+      tbody.innerHTML = "";
+      return;
+    }
+    hint.textContent =
+      haul.items.length +
+      " hauled item(s). Add/remove uses the bag inventory editor while empty.";
+    tbody.innerHTML = haul.items.length
+      ? haul.items
+          .map(
+            (it) =>
+              "<tr><td><code>" +
+              escapeHtml(it.name) +
+              "</code></td><td>" +
+              it.stack +
+              "</td><td>" +
+              escapeHtml(it.enhancement === "None" ? "—" : it.enhancement) +
+              "</td></tr>"
+          )
+          .join("")
+      : "<tr><td colspan=\"3\">Nothing hauled right now.</td></tr>";
+  }
+
+  function refreshCatalog() {
+    const hint = $("catalog-hint");
+    const tbody = $("catalog-table") && $("catalog-table").querySelector("tbody");
+    if (!tbody) return;
+    const q = (($("catalog-filter") && $("catalog-filter").value) || "")
+      .trim()
+      .toLowerCase();
+    const items = (state.catalogItems || []).filter(
+      (it) => !q || it.id.toLowerCase().includes(q)
+    );
+    if (hint) {
+      hint.textContent =
+        items.length +
+        " shown" +
+        (q ? " matching “" + q + "”" : "") +
+        " of " +
+        (state.catalogItems || []).length +
+        ".";
+    }
+    tbody.innerHTML = items
+      .slice(0, 300)
+      .map(
+        (it) =>
+          "<tr><td><code>" +
+          escapeHtml(it.id) +
+          "</code></td><td>" +
+          it.count +
+          "</td></tr>"
+      )
+      .join("");
+  }
+
+  function refreshPlayerFileSelect() {
+    const sel = $("player-file-select");
+    const hint = $("player-file-hint");
+    if (!sel) return;
+    const players = [...state.files.keys()].filter(
+      (n) =>
+        /^HostPlayer\.csav$/i.test(n) || /^Player_.+\.csav$/i.test(n)
+    );
+    sel.innerHTML = players
+      .map((n) => "<option value=\"" + escapeHtml(n) + "\">" + escapeHtml(n) + "</option>")
+      .join("");
+    if (hint) {
+      hint.textContent = players.length
+        ? players.length +
+          " player file(s). Edits apply to HostPlayer and are mirrored to all Player_*.csav on write."
+        : "No HostPlayer / Player_*.csav in this slot.";
+    }
   }
 
   function maxSingleGear(idx) {
@@ -849,6 +1430,24 @@ import { decompress as oozDecompress } from "./vendor/index.js";
       }
     });
 
+    $("equip-doll").addEventListener("click", (e) => {
+      const btn = e.target.closest(".btn-doll-max");
+      if (!btn) return;
+      try {
+        if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+        const slot = btn.getAttribute("data-slot");
+        const doll = G.parseEquipmentDoll(state.hostRaw);
+        const it = doll.slots[slot];
+        if (!it) throw new Error("Slot empty.");
+        const idx = G.gearIndexForDollItem(state.hostRaw, it);
+        if (idx < 0) throw new Error("That slot is not smithable here (trinket?).");
+        const values = maxSingleGear(idx);
+        setStatus("Maxed " + slot + ": " + JSON.stringify(values));
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+
     $("btn-inv-refresh").addEventListener("click", () => refreshAll());
     $("btn-inv-add").addEventListener("click", () => {
       try {
@@ -899,6 +1498,160 @@ import { decompress as oozDecompress } from "./vendor/index.js";
       }
     });
 
+    $("chest-select").addEventListener("change", () => refreshChestsEditor());
+    $("btn-chest-refresh").addEventListener("click", () => refreshAll());
+    $("btn-mut-refresh").addEventListener("click", () => refreshAll());
+    $("btn-tech-refresh").addEventListener("click", () => refreshAll());
+    $("btn-tech-analyze").addEventListener("click", () => {
+      try {
+        if (!state.worldRaw) throw new Error("World.csav not decompressed.");
+        const r = Tech.unlockAnalyzeStarter(state.worldRaw);
+        commitWorldRaw(r.bytes);
+        setStatus(
+          "Analyze starter: added " + r.added + ", already had " + r.skipped + "."
+        );
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-tech-chips").addEventListener("click", () => {
+      try {
+        if (!state.worldRaw) throw new Error("World.csav not decompressed.");
+        const r = Tech.unlockTechChips(state.worldRaw);
+        commitWorldRaw(r.bytes);
+        setStatus(
+          "TechChips: added " + r.added + ", already had " + r.skipped + "."
+        );
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-tech-add-analyze").addEventListener("click", () => {
+      try {
+        if (!state.worldRaw) throw new Error("World.csav not decompressed.");
+        const r = Tech.addAnalyzedItem(state.worldRaw, $("tech-analyze-name").value);
+        commitWorldRaw(r.bytes);
+        setStatus(
+          (r.mode === "exists" ? "Already analyzed " : "Analyzed ") + r.added
+        );
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-tech-add-know").addEventListener("click", () => {
+      try {
+        if (!state.worldRaw) throw new Error("World.csav not decompressed.");
+        const r = Tech.addKnowledgeItem(state.worldRaw, $("tech-know-name").value);
+        commitWorldRaw(r.bytes);
+        setStatus(
+          (r.mode === "exists" ? "Already knew " : "Added knowledge ") + r.added
+        );
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-mut-slots").addEventListener("click", () => {
+      try {
+        if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+        const r = Perks.writePerksSlotUpgrade(state.hostRaw, $("mut-slots").value);
+        commitHostRaw(r.bytes);
+        setStatus("Mutation slots upgrade " + r.level + " (" + r.slots + " slots).");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-mut-unlock").addEventListener("click", () => {
+      try {
+        if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+        const r = Perks.unlockAllMutations(state.hostRaw, Perks.MAX_PHASE);
+        commitHostRaw(r.bytes);
+        setStatus("Unlocked " + r.changed + "/" + r.total + " mutations at phase " + r.phase + ".");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("mut-table").addEventListener("click", (e) => {
+      const setBtn = e.target.closest(".btn-mut-set");
+      const maxBtn = e.target.closest(".btn-mut-max");
+      try {
+        if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+        if (setBtn) {
+          const idx = Number(setBtn.getAttribute("data-idx"));
+          const input = document.querySelector(
+            '#mut-table input[data-mut-phase="' + idx + '"]'
+          );
+          const r = Perks.writePerkPhase(
+            state.hostRaw,
+            idx,
+            input ? input.value : 0
+          );
+          commitHostRaw(r.bytes);
+          setStatus("Set " + r.id + " phase to " + r.phase + ".");
+        } else if (maxBtn) {
+          const idx = Number(maxBtn.getAttribute("data-idx"));
+          const r = Perks.writePerkPhase(state.hostRaw, idx, Perks.MAX_PHASE);
+          commitHostRaw(r.bytes);
+          setStatus("Maxed " + r.id + " to phase " + r.phase + ".");
+        }
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-chest-add").addEventListener("click", () => {
+      try {
+        if (!state.worldRaw) throw new Error("World.csav not decompressed.");
+        const idx = Number($("chest-select").value || 0);
+        const r = Stor.addStorageItem(
+          state.worldRaw,
+          idx,
+          $("chest-add-name").value,
+          $("chest-add-qty").value
+        );
+        commitWorldRaw(r.bytes);
+        setStatus(
+          (r.mode === "stack" ? "Stacked " : "Added ") +
+            r.added +
+            " ×" +
+            r.stack +
+            " in " +
+            r.storage
+        );
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("chest-edit-table").addEventListener("click", (e) => {
+      const removeBtn = e.target.closest(".btn-chest-remove");
+      const stackBtn = e.target.closest(".btn-chest-apply-stack");
+      try {
+        if (!state.worldRaw) throw new Error("World.csav not decompressed.");
+        const storIdx = Number($("chest-select").value || 0);
+        if (removeBtn) {
+          const idx = Number(removeBtn.getAttribute("data-idx"));
+          const r = Stor.removeStorageItem(state.worldRaw, storIdx, idx);
+          commitWorldRaw(r.bytes);
+          setStatus("Removed " + r.removed + " from " + r.storage + ".");
+        } else if (stackBtn) {
+          const idx = Number(stackBtn.getAttribute("data-idx"));
+          const input = document.querySelector(
+            '#chest-edit-table input[data-chest-stack="' + idx + '"]'
+          );
+          const r = Stor.setStorageStack(
+            state.worldRaw,
+            storIdx,
+            idx,
+            input ? input.value : 1
+          );
+          commitWorldRaw(r.bytes);
+          setStatus(
+            "Set " + r.name + " ×" + r.stack + " in " + r.storage + "."
+          );
+        }
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+
     for (const id of ["files-input", "folder-input", "zip-input"]) {
       $(id).addEventListener("change", async (e) => {
         try {
@@ -911,14 +1664,83 @@ import { decompress as oozDecompress } from "./vendor/index.js";
     }
 
     $("btn-save").addEventListener("click", () => {
+      if (!confirmWrite("Save ZIP")) return;
       downloadZip(false).catch((err) => alert(err.message || String(err)));
     });
     $("btn-backup").addEventListener("click", () => {
       downloadZip(true).catch((err) => alert(err.message || String(err)));
     });
     $("btn-install").addEventListener("click", () => {
+      if (!confirmWrite("Install to folder")) return;
       installToFolder().catch((err) => alert(err.message || String(err)));
     });
+
+    if ($("catalog-filter")) {
+      $("catalog-filter").addEventListener("input", () => refreshCatalog());
+    }
+
+    $("btn-pos-refresh") &&
+      $("btn-pos-refresh").addEventListener("click", () => refreshAll());
+    $("btn-cal-refresh") &&
+      $("btn-cal-refresh").addEventListener("click", () => refreshAll());
+    $("pos-preset") &&
+      $("pos-preset").addEventListener("change", () => {
+        const id = $("pos-preset").value;
+        const p = (Pos.PRESETS || []).find((x) => x.id === id);
+        if (!p) return;
+        $("pos-x").value = p.x;
+        $("pos-y").value = p.y;
+        $("pos-z").value = p.z;
+      });
+    $("btn-pos-apply") &&
+      $("btn-pos-apply").addEventListener("click", () => {
+        try {
+          if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+          const r = Pos.writePosition(
+            state.hostRaw,
+            $("pos-x").value,
+            $("pos-y").value,
+            $("pos-z").value
+          );
+          commitHostRaw(r.bytes);
+          setStatus(
+            "Position set to " +
+              r.x.toFixed(1) +
+              ", " +
+              r.y.toFixed(1) +
+              ", " +
+              r.z.toFixed(1)
+          );
+        } catch (err) {
+          alert(err.message || String(err));
+        }
+      });
+    $("btn-cal-day") &&
+      $("btn-cal-day").addEventListener("click", () => {
+        try {
+          if (!state.worldRaw) throw new Error("World.csav not decompressed.");
+          const r = Cal.writeCalendarDay(state.worldRaw, $("cal-day").value);
+          commitWorldRaw(r.bytes);
+          setStatus("Calendar day set to " + r.day);
+        } catch (err) {
+          alert(err.message || String(err));
+        }
+      });
+    function setHour(h) {
+      try {
+        if (!state.worldRaw) throw new Error("World.csav not decompressed.");
+        const r = Cal.writeTimeOfDay(state.worldRaw, h);
+        commitWorldRaw(r.bytes);
+        setStatus("Time-of-day hour hint → " + h + " (day " + r.day.toFixed(3) + ")");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    }
+    $("btn-cal-dawn") && $("btn-cal-dawn").addEventListener("click", () => setHour(6));
+    $("btn-cal-noon") && $("btn-cal-noon").addEventListener("click", () => setHour(12));
+    $("btn-cal-dusk") && $("btn-cal-dusk").addEventListener("click", () => setHour(18));
+    $("cal-hour") &&
+      $("cal-hour").addEventListener("change", () => setHour($("cal-hour").value));
 
     const overlay = $("drop-overlay");
     window.addEventListener("dragover", (e) => {

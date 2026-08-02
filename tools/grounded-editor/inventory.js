@@ -360,6 +360,7 @@
 
   window.GroundedInventory = {
     parseInventory,
+    parseItemRecord,
     removeInventoryItem,
     addInventoryItem,
     setInventoryStack,

@@ -49,13 +49,61 @@
       id: "gear",
       title: "Weapons & armor (smithing)",
       status: "beta",
-      note: "Smithing level/path on HostPlayer gear. One-shot = Mighty IX + amp; god armor = Bulky IX + max durability.",
+      note: "Smithing level/path on HostPlayer gear. Paper-doll for equipped slots. One-shot = Mighty IX + amp; god armor = Bulky IX.",
     },
     {
       id: "inventory",
       title: "Inventory add/remove",
       status: "beta",
       note: "Clone/remove HostPlayer InventoryComponent records; bump stacks in place",
+    },
+    {
+      id: "mutations",
+      title: "Mutations / perks",
+      status: "beta",
+      note: "PerkComponent phases (−1 locked, 0–2); PlayerUpgrade Perks for equip slot count. Equipped loadout still set in-game.",
+    },
+    {
+      id: "tech",
+      title: "BURG.L / recipes / tech",
+      status: "beta",
+      note: "PartyComponent: analyzed items + knowledge (Recipe*/TechChip*). Starter analyze + TechChip unlock buttons.",
+    },
+    {
+      id: "travel",
+      title: "Position / teleport",
+      status: "beta",
+      note: "HostPlayer transform XYZ before scale(1,1,1); landmark presets are approximate",
+    },
+    {
+      id: "calendar",
+      title: "Time / calendar",
+      status: "beta",
+      note: "World CalendarComponent day float; dawn/noon/dusk adjust fractional day",
+    },
+    {
+      id: "hauling",
+      title: "Hauling / hot pouch",
+      status: "beta",
+      note: "Read-only list of HaulingComponent items (empty when not carrying)",
+    },
+    {
+      id: "catalog",
+      title: "Item catalog browser",
+      status: "beta",
+      note: "Filterable HostPlayer + World soft-path scan on the Items tab",
+    },
+    {
+      id: "multiplayer",
+      title: "Multiplayer Player_*.csav",
+      status: "beta",
+      note: "HostPlayer edits mirrored to all Player_*.csav in the slot on write",
+    },
+    {
+      id: "safety",
+      title: "Safer writes",
+      status: "beta",
+      note: "Change summary on Overview; confirm dialog lists dirty files before Save ZIP / Install",
     },
     {
       id: "science",
@@ -66,14 +114,14 @@
     {
       id: "chests",
       title: "Storage contents",
-      status: "soon",
-      note: "Named chests are editable in hex with care; structured editor TBD",
+      status: "beta",
+      note: "Chests tab: list World InventoryComponents; add/remove/stack like HostPlayer bags",
     },
     {
       id: "world",
       title: "World / base state",
-      status: "soon",
-      note: "World.csav is large (~MB uncompressed); browse-only item scan for now",
+      status: "beta",
+      note: "World.csav: molars/science + chest inventory edits; other actors still browse-only",
     },
   ];
 

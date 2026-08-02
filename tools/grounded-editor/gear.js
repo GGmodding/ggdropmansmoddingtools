@@ -19,7 +19,35 @@
     /^(Head|Chest|Legs)|Armor|Mask|Helmet|Pauldron|Greaves|Vambrace|Glider|BubbleHelmet|GasMask|Rebreather/i;
   const SHIELD_RE = /Shield/i;
   const SKIP_RE =
-    /Smoothie|Arrow|Bomb|UpgradeWeapon|UpgradeArmor|Trinket|Accessory|BossKey|Part$|Paper$|Wing$|Slime|Mold|Torch|Wasp(?!)|Crafted$/i;
+    /Smoothie|Arrow|Bomb|UpgradeWeapon|UpgradeArmor|BossKey|Part$|Paper$|Wing$|Slime|Mold|Torch|Wasp(?!)|Crafted$/i;
+  // Trinkets are skipped from the smithing table but shown on the doll
+  const TRINKET_RE = /Trinket|Accessory/i;
+
+  const DOLL_SLOTS = [
+    { id: "head", label: "Head" },
+    { id: "chest", label: "Chest" },
+    { id: "legs", label: "Legs" },
+    { id: "mainhand", label: "Main hand" },
+    { id: "offhand", label: "Off hand" },
+    { id: "trinket", label: "Trinket" },
+  ];
+
+  function dollSlotFor(name, kind) {
+    if (/^Head|Helmet|Mask|Rebreather|GasMask|BubbleHelmet|Face/i.test(name)) {
+      return "head";
+    }
+    if (/^Chest|Pauldron|Vambrace/i.test(name)) return "chest";
+    if (/^Legs|Greaves/i.test(name)) return "legs";
+    if (kind === "shield" || /Shield/i.test(name)) return "offhand";
+    if (TRINKET_RE.test(name)) return "trinket";
+    if (kind === "weapon") return "mainhand";
+    if (kind === "armor") {
+      if (/Head/i.test(name)) return "head";
+      if (/Chest/i.test(name)) return "chest";
+      if (/Legs/i.test(name)) return "legs";
+    }
+    return null;
+  }
 
   function readFString(buf, off) {
     if (off < 0 || off + 4 > buf.length) return null;
@@ -181,13 +209,62 @@
         const at = indexOfAsciiFrom(buf, FULL_TABLE, i);
         if (at < 0 || at >= region.to) break;
         const it = parseItemAt(buf, at, region.id);
-        if (it && it.kind !== "other" && !SKIP_RE.test(it.name)) {
+        if (
+          it &&
+          it.kind !== "other" &&
+          !SKIP_RE.test(it.name) &&
+          !TRINKET_RE.test(it.name)
+        ) {
           items.push(it);
         }
         i = at + 1;
       }
     }
     return { ok: items.length > 0, items, size: buf.length };
+  }
+
+  function parseEquipmentDoll(rawPlayer) {
+    const buf = C.toBytes(rawPlayer);
+    const eqRegion = regionBounds(buf).find((r) => r.id === "equipment");
+    const slots = {};
+    for (const s of DOLL_SLOTS) slots[s.id] = null;
+    if (!eqRegion) {
+      return { ok: false, slots, items: [], defs: DOLL_SLOTS };
+    }
+    const items = [];
+    let i = eqRegion.from;
+    while (i < eqRegion.to) {
+      const at = indexOfAsciiFrom(buf, FULL_TABLE, i);
+      if (at < 0 || at >= eqRegion.to) break;
+      const it = parseItemAt(buf, at, "equipment");
+      if (it) {
+        const slot = dollSlotFor(it.name, it.kind);
+        if (slot) {
+          items.push({ ...it, slot });
+          if (!slots[slot]) slots[slot] = { ...it, slot };
+        }
+      }
+      i = at + 1;
+    }
+    return {
+      ok: items.length > 0,
+      slots,
+      items,
+      defs: DOLL_SLOTS,
+      size: buf.length,
+    };
+  }
+
+  /** Map doll slot item back to parseGear index for writeGearItem (trinkets excluded). */
+  function gearIndexForDollItem(rawPlayer, dollItem) {
+    if (!dollItem || TRINKET_RE.test(dollItem.name)) return -1;
+    const gear = parseGear(rawPlayer);
+    return gear.items.findIndex(
+      (x) =>
+        x.region === "equipment" &&
+        x.name === dollItem.name &&
+        x.tableAt === dollItem.tableAt
+    );
   }
 
   function replaceFString(buf, stringOff, oldLen, newStr) {
@@ -335,10 +412,14 @@
 
   window.GroundedGear = {
     parseGear,
+    parseEquipmentDoll,
+    gearIndexForDollItem,
     writeGearItem,
     applyOneShotWeapons,
     applyGodArmor,
     classifyName,
+    dollSlotFor,
+    DOLL_SLOTS,
     MAX_SMITH_LEVEL,
     ONE_SHOT_ATTACK_MULT,
     GOD_DURABILITY,
