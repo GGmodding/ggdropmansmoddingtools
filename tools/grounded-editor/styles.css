@@ -238,6 +238,15 @@ kbd {
   color: var(--muted);
 }
 
+.subhead {
+  margin: 1.25rem 0 0.65rem;
+  font-family: var(--display);
+  font-size: 1.05rem;
+  letter-spacing: 0.03em;
+  font-weight: 700;
+  color: var(--text);
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

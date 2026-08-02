@@ -58,7 +58,8 @@
   <nav class="tabs" id="tabs" aria-label="Editor sections" hidden>
     <button class="tab is-active" data-tab="overview" type="button">Overview</button>
     <button class="tab" data-tab="meta" type="button">Header</button>
-    <button class="tab" data-tab="vitals" type="button">Vitals</button>
+    <button class="tab" data-tab="vitals" type="button">Vitals &amp; Molars</button>
+    <button class="tab" data-tab="gear" type="button">Weapons &amp; Armor</button>
     <button class="tab" data-tab="inventory" type="button">Items</button>
     <button class="tab" data-tab="features" type="button">Feature map</button>
     <button class="tab" data-tab="cheats" type="button">Notes</button>
@@ -82,7 +83,7 @@
       <div id="overview-files" class="file-list"></div>
       <div class="callout">
         Player edits rewrite <code>HostPlayer.csav</code> (and matching <code>Player_*.csav</code> when present).
-        World item scan is read-only for now.
+        Golden molar edits rewrite <code>World.csav</code>. World item scan is otherwise read-only.
       </div>
     </section>
 
@@ -108,11 +109,12 @@
 
     <section id="panel-vitals" class="panel" hidden>
       <div class="panel__head">
-        <h2>Host player vitals (beta)</h2>
-        <p>Edits floats inside decompressed <code>HostPlayer.csav</code> (<code>HealthComponent</code> / <code>SurvivalComponent</code>).</p>
+        <h2>Vitals, milk molars &amp; golden molars</h2>
+        <p>Health / hunger / thirst on <code>HostPlayer.csav</code>. Milk molars = unspent personal upgrade points. Golden molars = unspent party (mega) points on <code>World.csav</code>.</p>
       </div>
       <div id="vitals-missing" class="callout" hidden>Could not locate health/survival patterns in HostPlayer.</div>
       <div id="vitals-body">
+        <h3 class="subhead">Vitals</h3>
         <div class="form-grid">
           <label>Health<input id="v-health" type="number" min="0" max="10000" step="0.1" /></label>
           <label>Hunger (scale ~0–5)<input id="v-hunger" type="number" min="0" max="20" step="0.01" /></label>
@@ -120,18 +122,96 @@
         </div>
         <div class="quick-actions">
           <button type="button" class="btn btn--accent" id="btn-vitals-apply">Apply vitals</button>
-          <button type="button" class="btn" id="btn-vitals-fill">Fill health 100</button>
+          <button type="button" class="btn" id="btn-vitals-fill">Fill vitals</button>
           <button type="button" class="btn" id="btn-vitals-refresh">Reload</button>
         </div>
+      </div>
+      <div id="molars-missing" class="callout" hidden>Could not locate milk/golden molar point fields.</div>
+      <div id="molars-body">
+        <h3 class="subhead">Molars</h3>
+        <div class="form-grid">
+          <label>Milk molars (unspent)<input id="v-milk" type="number" min="0" max="100000" step="1" /></label>
+          <label>Golden molars (unspent party)<input id="v-golden" type="number" min="0" max="100000" step="1" /></label>
+          <label>Raw Science<input id="v-science" type="number" min="0" max="5000000" step="1" /></label>
+        </div>
+        <p class="hint">NG+ can push these past the backyard totals. Editing spends nothing — it sets remaining BURG.L / science balances. Golden molars live next to stack upgrades in World.csav.</p>
+        <h3 class="subhead">Personal upgrades (BURG.L)</h3>
+        <div class="form-grid" id="upgrade-grid"></div>
+        <h3 class="subhead">Stack size upgrades (party)</h3>
+        <div class="form-grid" id="stack-upgrade-grid"></div>
+        <p class="hint" id="stack-upgrade-hint">Food / Resource / Ammo stack tiers from World.csav. Vanilla max is ~5; Giant stacks sets tier 20.</p>
+        <div class="quick-actions">
+          <button type="button" class="btn btn--accent" id="btn-molars-apply">Apply molars / upgrades</button>
+          <button type="button" class="btn" id="btn-giant-stacks">Giant stacks</button>
+          <button type="button" class="btn" id="btn-molars-add">+50 molars / +1000 science</button>
+          <button type="button" class="btn" id="btn-molars-refresh">Reload</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="panel-gear" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Weapons &amp; armor (smithing)</h2>
+        <p>Smithing Station fields on HostPlayer inventory / equipment: enhancement level (0–9), path (Mighty / Bulky…), durability. One-shot &amp; god-armor push max station upgrades.</p>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-oneshot">One-shot weapons</button>
+        <button type="button" class="btn btn--accent" id="btn-godarmor">God mode armor</button>
+        <button type="button" class="btn" id="btn-gear-refresh">Reload</button>
+      </div>
+      <p class="hint">One-shot: Mighty IX + attack amp ×100 + max durability. God armor: Bulky IX + huge durability. Close the game before install.</p>
+      <div id="gear-missing" class="callout" hidden>No weapons/armor parsed from HostPlayer inventory or equipment.</div>
+      <div class="table-wrap">
+        <table class="data-table" id="gear-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Where</th>
+              <th>Kind</th>
+              <th>Level</th>
+              <th>Path</th>
+              <th>Armor path</th>
+              <th>Durability</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
     </section>
 
     <section id="panel-inventory" class="panel" hidden>
       <div class="panel__head">
-        <h2>Item path scan (beta)</h2>
-        <p>Soft object paths from HostPlayer + World. Mentions ≠ stack counts; add/remove not implemented.</p>
+        <h2>Inventory</h2>
+        <p>HostPlayer inventory bags. Add clones a simple template item (or bumps stack if the id already exists). Remove deletes the record.</p>
       </div>
-      <p class="hint" id="inv-hint">Load a save to scan.</p>
+      <div class="form-grid">
+        <label>Item id
+          <input id="inv-add-name" type="text" list="inv-item-names" placeholder="Fiber" />
+          <datalist id="inv-item-names"></datalist>
+        </label>
+        <label>Quantity<input id="inv-add-qty" type="number" min="1" max="9999" step="1" value="1" /></label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-inv-add">Add / stack</button>
+        <button type="button" class="btn" id="btn-inv-refresh">Reload</button>
+      </div>
+      <p class="hint" id="inv-hint">Load a save to edit inventory.</p>
+      <div class="table-wrap">
+        <table class="data-table" id="inv-edit-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Stack</th>
+              <th>Path</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <h3 class="subhead">World / Host path scan</h3>
+      <p class="hint">Soft object path mentions (not stack counts).</p>
       <div class="table-wrap">
         <table class="data-table" id="inv-table">
           <thead><tr><th>Item / BP id</th><th>Mentions</th></tr></thead>
@@ -175,6 +255,8 @@
   <script src="csav.js"></script>
   <script src="header.js"></script>
   <script src="player.js"></script>
+  <script src="gear.js"></script>
+  <script src="inventory.js"></script>
   <script src="save.js"></script>
   <script type="module" src="app.js"></script>
 </body>

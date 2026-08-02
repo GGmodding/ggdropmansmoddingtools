@@ -7,10 +7,12 @@ import { decompress as oozDecompress } from "./vendor/index.js";
   const H = window.GroundedHeader;
   const P = window.GroundedPlayer;
   const S = window.GroundedSave;
+  const G = window.GroundedGear;
+  const Inv = window.GroundedInventory;
   const D = window.GroundedData;
   const $ = (id) => document.getElementById(id);
 
-  const PANELS = ["overview", "meta", "vitals", "inventory", "features", "cheats"];
+  const PANELS = ["overview", "meta", "vitals", "gear", "inventory", "features", "cheats"];
 
   const state = {
     slotName: "GroundedSave",
@@ -354,6 +356,78 @@ import { decompress as oozDecompress } from "./vendor/index.js";
         vitals.thirst != null ? Math.round(vitals.thirst * 100) / 100 : "";
     }
 
+    const molars = P.parseMolars(state.hostRaw, state.worldRaw);
+    const molarsMissing = $("molars-missing");
+    const molarsBody = $("molars-body");
+    if (!molars.ok) {
+      molarsMissing.hidden = false;
+      molarsBody.hidden = true;
+    } else {
+      molarsMissing.hidden = true;
+      molarsBody.hidden = false;
+      $("v-milk").value = molars.milkMolars != null ? molars.milkMolars : "";
+      $("v-golden").value = molars.goldenMolars != null ? molars.goldenMolars : "";
+      $("v-science").value = molars.rawScience != null ? molars.rawScience : "";
+      $("v-milk").disabled = molars.milkMolars == null;
+      $("v-golden").disabled = molars.goldenMolars == null;
+      $("v-science").disabled = molars.rawScience == null;
+      const grid = $("upgrade-grid");
+      const known = ["Health", "Stamina", "Thirst", "Healing", "Perks"];
+      const byName = new Map(molars.upgrades.map((u) => [u.name, u.level]));
+      const names = [
+        ...known.filter((n) => byName.has(n)),
+        ...molars.upgrades.map((u) => u.name).filter((n) => !known.includes(n)),
+      ];
+      if (!names.length) {
+        grid.innerHTML =
+          '<p class="hint">No personal upgrade tiers found on HostPlayer.</p>';
+      } else {
+        grid.innerHTML = names
+          .map(
+            (name) =>
+              "<label>" +
+              escapeHtml(name) +
+              ' <input data-upgrade="' +
+              escapeHtml(name) +
+              '" type="number" min="0" max="20" step="1" value="' +
+              (byName.get(name) ?? 0) +
+              '" /></label>'
+          )
+          .join("");
+      }
+
+      const stackGrid = $("stack-upgrade-grid");
+      const stackByName = new Map(
+        (molars.stackUpgrades || []).map((u) => [u.name, u.level])
+      );
+      const stackNames = [
+        ...(P.STACK_UPGRADE_NAMES || []).filter((n) => stackByName.has(n)),
+        ...(molars.stackUpgrades || [])
+          .map((u) => u.name)
+          .filter((n) => !(P.STACK_UPGRADE_NAMES || []).includes(n)),
+      ];
+      $("btn-giant-stacks").disabled = !stackNames.length;
+      if (!stackNames.length) {
+        stackGrid.innerHTML =
+          '<p class="hint">No StackSize.* upgrades found in World.csav.</p>';
+      } else {
+        stackGrid.innerHTML = stackNames
+          .map((name) => {
+            const label = name.replace(/^StackSize\./, "");
+            return (
+              "<label>" +
+              escapeHtml(label) +
+              ' <input data-stack-upgrade="' +
+              escapeHtml(name) +
+              '" type="number" min="0" max="99" step="1" value="' +
+              (stackByName.get(name) ?? 0) +
+              '" /></label>'
+            );
+          })
+          .join("");
+      }
+    }
+
     const items = [];
     if (state.hostRaw) items.push(...P.listItemPaths(state.hostRaw));
     if (state.worldRaw) items.push(...P.listItemPaths(state.worldRaw));
@@ -375,6 +449,9 @@ import { decompress as oozDecompress } from "./vendor/index.js";
           "</td></tr>"
       )
       .join("");
+
+    refreshGearTable();
+    refreshInventoryEditor();
 
     $("feature-table").querySelector("tbody").innerHTML = D.FEATURE_MATRIX.map(
       (f) =>
@@ -457,12 +534,206 @@ import { decompress as oozDecompress } from "./vendor/index.js";
       health: $("v-health").value,
       hunger: $("v-hunger").value,
       thirst: $("v-thirst").value,
+      third: $("v-thirst").value,
     });
     state.hostRaw = result.bytes;
     const csav = C.compressCsav(state.hostRaw);
     syncPlayerCopies(csav);
     setDirty(true);
     refreshAll();
+    return result.values;
+  }
+
+  function collectUpgradeInputs() {
+    const upgrades = {};
+    document.querySelectorAll("#upgrade-grid input[data-upgrade]").forEach((el) => {
+      upgrades[el.getAttribute("data-upgrade")] = el.value;
+    });
+    return upgrades;
+  }
+
+  function collectStackUpgradeInputs() {
+    const stackUpgrades = {};
+    document
+      .querySelectorAll("#stack-upgrade-grid input[data-stack-upgrade]")
+      .forEach((el) => {
+        stackUpgrades[el.getAttribute("data-stack-upgrade")] = el.value;
+      });
+    return stackUpgrades;
+  }
+
+  function applyMolars() {
+    if (!state.hostRaw && !state.worldRaw) {
+      throw new Error("HostPlayer / World not decompressed.");
+    }
+    const result = P.writeMolars(state.hostRaw, state.worldRaw, {
+      milkMolars: $("v-milk").disabled ? "" : $("v-milk").value,
+      goldenMolars: $("v-golden").disabled ? "" : $("v-golden").value,
+      rawScience: $("v-science").disabled ? "" : $("v-science").value,
+      upgrades: collectUpgradeInputs(),
+      stackUpgrades: collectStackUpgradeInputs(),
+    });
+    if (result.hostBytes) {
+      state.hostRaw = result.hostBytes;
+      syncPlayerCopies(C.compressCsav(state.hostRaw));
+    }
+    if (result.worldBytes) {
+      state.worldRaw = result.worldBytes;
+      setFile("World.csav", C.compressCsav(state.worldRaw));
+    }
+    setDirty(true);
+    refreshAll();
+    return result.values;
+  }
+
+  function refreshInventoryEditor() {
+    const hint = $("inv-hint");
+    const tbody = $("inv-edit-table").querySelector("tbody");
+    const list = $("inv-item-names");
+    if (!state.hostRaw || !Inv) {
+      hint.textContent = "HostPlayer not loaded.";
+      tbody.innerHTML = "";
+      list.innerHTML = "";
+      return;
+    }
+    const inv = Inv.parseInventory(state.hostRaw);
+    if (!inv.ok) {
+      hint.textContent = "Could not parse inventory records.";
+      tbody.innerHTML = "";
+      return;
+    }
+    hint.textContent =
+      inv.items.length +
+      " bag items (header count " +
+      inv.count +
+      "). Add clones a template if the id is new.";
+    tbody.innerHTML = inv.items
+      .map((it, idx) => {
+        return (
+          "<tr>" +
+          "<td><code>" +
+          escapeHtml(it.name) +
+          "</code></td>" +
+          "<td><input data-inv-stack=\"" +
+          idx +
+          "\" type=\"number\" min=\"1\" max=\"9999\" value=\"" +
+          it.stack +
+          "\" style=\"width:5rem\" /></td>" +
+          "<td>" +
+          escapeHtml(it.enhancement === "None" ? "—" : it.enhancement) +
+          "</td>" +
+          "<td>" +
+          "<button type=\"button\" class=\"btn btn-inv-apply-stack\" data-idx=\"" +
+          idx +
+          "\">Set</button> " +
+          "<button type=\"button\" class=\"btn btn-inv-remove\" data-idx=\"" +
+          idx +
+          "\">Remove</button>" +
+          "</td>" +
+          "</tr>"
+        );
+      })
+      .join("");
+
+    const names = new Set(inv.items.map((x) => x.name));
+    if (state.hostRaw) {
+      for (const it of P.listItemPaths(state.hostRaw)) names.add(it.id);
+    }
+    if (state.worldRaw) {
+      for (const it of P.listItemPaths(state.worldRaw)) names.add(it.id);
+    }
+    for (const pref of Inv.TEMPLATE_PREFS || []) names.add(pref);
+    list.innerHTML = [...names]
+      .sort((a, b) => a.localeCompare(b))
+      .slice(0, 400)
+      .map((n) => "<option value=\"" + escapeHtml(n) + "\"></option>")
+      .join("");
+  }
+
+  function refreshGearTable() {
+    const missing = $("gear-missing");
+    const tbody = $("gear-table").querySelector("tbody");
+    if (!state.hostRaw || !G) {
+      missing.hidden = false;
+      tbody.innerHTML = "";
+      return;
+    }
+    const gear = G.parseGear(state.hostRaw);
+    if (!gear.ok) {
+      missing.hidden = false;
+      tbody.innerHTML = "";
+      return;
+    }
+    missing.hidden = true;
+    tbody.innerHTML = gear.items
+      .map((it, idx) => {
+        const armorPath =
+          it.kind === "armor" ? escapeHtml(it.mid || "—") : "—";
+        const weaponPath =
+          it.kind === "armor" ? "—" : escapeHtml(it.enhancement || "—");
+        return (
+          "<tr data-gear-idx=\"" +
+          idx +
+          "\">" +
+          "<td><code>" +
+          escapeHtml(it.name) +
+          "</code></td>" +
+          "<td>" +
+          escapeHtml(it.region) +
+          "</td>" +
+          "<td>" +
+          escapeHtml(it.kind) +
+          "</td>" +
+          "<td>" +
+          it.level +
+          "</td>" +
+          "<td>" +
+          weaponPath +
+          "</td>" +
+          "<td>" +
+          armorPath +
+          "</td>" +
+          "<td>" +
+          (Math.round(it.durability * 10) / 10) +
+          "</td>" +
+          "<td><button type=\"button\" class=\"btn btn-gear-max\" data-idx=\"" +
+          idx +
+          "\">Max</button></td>" +
+          "</tr>"
+        );
+      })
+      .join("");
+  }
+
+  function commitHostRaw(bytes) {
+    state.hostRaw = bytes;
+    syncPlayerCopies(C.compressCsav(state.hostRaw));
+    setDirty(true);
+    refreshAll();
+  }
+
+  function maxSingleGear(idx) {
+    if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+    const gear = G.parseGear(state.hostRaw);
+    const it = gear.items[idx];
+    if (!it) throw new Error("Item not found.");
+    const patch =
+      it.kind === "armor"
+        ? {
+            level: G.MAX_SMITH_LEVEL,
+            mid: "Bulky",
+            durability: G.GOD_DURABILITY,
+            fullDurabilityHead: true,
+          }
+        : {
+            level: G.MAX_SMITH_LEVEL,
+            enhancement: "Mighty",
+            attackMult: G.ONE_SHOT_ATTACK_MULT,
+            durability: G.GOD_DURABILITY,
+            fullDurabilityHead: true,
+          };
+    const result = G.writeGearItem(state.hostRaw, idx, patch);
+    commitHostRaw(result.bytes);
     return result.values;
   }
 
@@ -499,8 +770,133 @@ import { decompress as oozDecompress } from "./vendor/index.js";
       }
     });
     $("btn-vitals-fill").addEventListener("click", () => {
-      $("v-health").value = 100;
+      $("v-health").value = 200;
+      $("v-hunger").value = 5;
+      $("v-thirst").value = 5;
       $("btn-vitals-apply").click();
+    });
+
+    $("btn-molars-refresh").addEventListener("click", () => refreshAll());
+    $("btn-molars-apply").addEventListener("click", () => {
+      try {
+        const values = applyMolars();
+        setStatus("Molars/upgrades applied: " + JSON.stringify(values));
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-giant-stacks").addEventListener("click", () => {
+      const tier = P.GIANT_STACK_TIER || 20;
+      const inputs = document.querySelectorAll(
+        "#stack-upgrade-grid input[data-stack-upgrade]"
+      );
+      if (!inputs.length) {
+        alert("No stack size upgrades found in this save.");
+        return;
+      }
+      inputs.forEach((el) => {
+        el.value = String(tier);
+      });
+      try {
+        const values = applyMolars();
+        setStatus("Giant stacks (tier " + tier + "): " + JSON.stringify(values));
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-molars-add").addEventListener("click", () => {
+      if (!$("v-milk").disabled) {
+        $("v-milk").value = Math.max(0, Number($("v-milk").value || 0) + 50);
+      }
+      if (!$("v-golden").disabled) {
+        $("v-golden").value = Math.max(0, Number($("v-golden").value || 0) + 50);
+      }
+      if (!$("v-science").disabled) {
+        $("v-science").value = Math.max(0, Number($("v-science").value || 0) + 1000);
+      }
+      $("btn-molars-apply").click();
+    });
+
+    $("btn-gear-refresh").addEventListener("click", () => refreshAll());
+    $("btn-oneshot").addEventListener("click", () => {
+      try {
+        if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+        const r = G.applyOneShotWeapons(state.hostRaw);
+        commitHostRaw(r.bytes);
+        setStatus("One-shot weapons applied to " + r.changed + " item(s).");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-godarmor").addEventListener("click", () => {
+      try {
+        if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+        const r = G.applyGodArmor(state.hostRaw);
+        commitHostRaw(r.bytes);
+        setStatus("God mode armor applied to " + r.changed + " item(s).");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("gear-table").addEventListener("click", (e) => {
+      const btn = e.target.closest(".btn-gear-max");
+      if (!btn) return;
+      try {
+        const values = maxSingleGear(Number(btn.getAttribute("data-idx")));
+        setStatus("Maxed gear: " + JSON.stringify(values));
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+
+    $("btn-inv-refresh").addEventListener("click", () => refreshAll());
+    $("btn-inv-add").addEventListener("click", () => {
+      try {
+        if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+        const r = Inv.addInventoryItem(
+          state.hostRaw,
+          $("inv-add-name").value,
+          $("inv-add-qty").value
+        );
+        commitHostRaw(r.bytes);
+        setStatus(
+          (r.mode === "stack" ? "Stacked " : "Added ") +
+            r.added +
+            " ×" +
+            r.stack +
+            (r.template ? " (cloned " + r.template + ")" : "")
+        );
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("inv-edit-table").addEventListener("click", (e) => {
+      const removeBtn = e.target.closest(".btn-inv-remove");
+      const stackBtn = e.target.closest(".btn-inv-apply-stack");
+      try {
+        if (removeBtn) {
+          if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+          const idx = Number(removeBtn.getAttribute("data-idx"));
+          const r = Inv.removeInventoryItem(state.hostRaw, idx);
+          commitHostRaw(r.bytes);
+          setStatus("Removed " + r.removed + " (count " + r.count + ").");
+        } else if (stackBtn) {
+          if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+          const idx = Number(stackBtn.getAttribute("data-idx"));
+          const input = document.querySelector(
+            '#inv-edit-table input[data-inv-stack="' + idx + '"]'
+          );
+          const r = Inv.setInventoryStack(
+            state.hostRaw,
+            idx,
+            input ? input.value : 1
+          );
+          commitHostRaw(r.bytes);
+          setStatus("Set " + r.name + " stack to " + r.stack + ".");
+        }
+      } catch (err) {
+        alert(err.message || String(err));
+      }
     });
 
     for (const id of ["files-input", "folder-input", "zip-input"]) {

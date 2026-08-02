@@ -3,6 +3,11 @@
 
   const C = window.GroundedCsav;
 
+  const PUC_PATH = "/Script/Maine.PlayerUpgradeComponent";
+  const PARTY_PATH = "/Script/Maine.PartyComponent";
+  const HEALTH_PATH = "/Script/Maine.HealthComponent";
+  const SURVIVAL_PATH = "/Script/Maine.SurvivalComponent";
+
   function findAscii(buf, ascii) {
     const enc = new TextEncoder().encode(ascii);
     const hits = [];
@@ -23,15 +28,35 @@
     new DataView(buf.buffer, buf.byteOffset + o, 4).setFloat32(0, value, true);
   }
 
+  function readI32(buf, o) {
+    return new DataView(buf.buffer, buf.byteOffset + o, 4).getInt32(0, true);
+  }
+
+  function writeI32(buf, o, value) {
+    new DataView(buf.buffer, buf.byteOffset + o, 4).setInt32(0, value, true);
+  }
+
+  function readFString(buf, o) {
+    if (o < 0 || o + 4 > buf.length) return null;
+    const len = readI32(buf, o);
+    if (len <= 0 || len > 512 || o + 4 + len > buf.length) return null;
+    const bytes = buf.subarray(o + 4, o + 4 + len);
+    let end = bytes.length;
+    if (end > 0 && bytes[end - 1] === 0) end -= 1;
+    let s = "";
+    for (let i = 0; i < end; i++) s += String.fromCharCode(bytes[i]);
+    return { s, next: o + 4 + len, len };
+  }
+
   /**
    * HealthComponent packs: uint8 marker + float32 current health (+ float32 sentinel -1).
-   * Observed on live Steam 1.4.x HostPlayer.csav blobs.
+   * Observed on live Steam 1.4.x HostPlayer.csav blobs. 0 is a valid saved value.
    */
   function findHealth(buf) {
-    const hits = findAscii(buf, "/Script/Maine.HealthComponent");
+    const hits = findAscii(buf, HEALTH_PATH);
     if (!hits.length) return null;
     const nameAt = hits[0];
-    const dataAt = nameAt + "/Script/Maine.HealthComponent".length + 1;
+    const dataAt = nameAt + HEALTH_PATH.length + 1;
     if (dataAt + 5 > buf.length) return null;
     const marker = buf[dataAt];
     const valueAt = dataAt + 1;
@@ -42,22 +67,41 @@
 
   /**
    * SurvivalComponent: after the class path, a u32 then tightly packed float32 vitals
-   * (often unaligned). Prefer a cluster of 2–3 values in ~0.25–10 (hunger/thirst scale).
+   * (often unaligned). Prefer fixed +5/+13/+21 when present, else heuristic cluster.
    */
   function findSurvival(buf) {
-    const hits = findAscii(buf, "/Script/Maine.SurvivalComponent");
+    const hits = findAscii(buf, SURVIVAL_PATH);
     if (!hits.length) return null;
     const nameAt = hits[0];
-    const dataAt = nameAt + "/Script/Maine.SurvivalComponent".length + 1;
+    const dataAt = nameAt + SURVIVAL_PATH.length + 1;
     if (dataAt + 40 > buf.length) return null;
     const flag = C.readU32(buf, dataAt);
+
+    const fixedOffs = [5, 13, 21];
+    const fixed = fixedOffs.map((off) => ({ off, v: readF32(buf, dataAt + off) }));
+    const fixedOk = fixed.every(
+      (p) => Number.isFinite(p.v) && p.v >= 0 && p.v <= 20
+    );
+    if (fixedOk && fixed[0].v >= 0.05) {
+      return {
+        nameAt,
+        dataAt,
+        flag,
+        hungerAt: dataAt + fixed[0].off,
+        thirstAt: dataAt + fixed[1].off,
+        thirdAt: dataAt + fixed[2].off,
+        hunger: fixed[0].v,
+        thirst: fixed[1].v,
+        third: fixed[2].v,
+      };
+    }
+
     const candidates = [];
     for (let off = 4; off <= 28; off++) {
       const v = readF32(buf, dataAt + off);
       if (!Number.isFinite(v)) continue;
-      if (v >= 0.25 && v <= 10) candidates.push({ off, v });
+      if (v >= 0.05 && v <= 10) candidates.push({ off, v });
     }
-    // Prefer a spaced triplet (hunger / thirst / related), typical stride ~8 bytes
     let best = null;
     for (let i = 0; i < candidates.length; i++) {
       for (let j = i + 1; j < candidates.length; j++) {
@@ -95,6 +139,140 @@
       thirst: picks[1].v,
       third: picks[2] ? picks[2].v : null,
     };
+  }
+
+  /**
+   * Unspent milk molars (personal upgrade points) sit immediately before
+   * PlayerUpgradeComponent: u32 points, u32 zero, u32 pathLen(37), path.
+   */
+  function findPersonalMolars(buf) {
+    const hits = findAscii(buf, PUC_PATH);
+    if (!hits.length) return null;
+    const nameAt = hits[0];
+    if (nameAt < 12) return null;
+    const pathLen = C.readU32(buf, nameAt - 4);
+    const zero = C.readU32(buf, nameAt - 8);
+    const pointsAt = nameAt - 12;
+    const points = C.readU32(buf, pointsAt);
+    if (pathLen !== PUC_PATH.length + 1) return null;
+    if (zero !== 0) return null;
+    if (points > 100000) return null;
+    return { nameAt, pointsAt, points };
+  }
+
+  /**
+   * Upgrade tiers inside PlayerUpgradeComponent:
+   * u8 tag, u32 count, u32 unk, then {FString name, i32 level, i32 unk2}*.
+   */
+  function findUpgrades(buf) {
+    const hits = findAscii(buf, PUC_PATH);
+    if (!hits.length) return null;
+    const nameAt = hits[0];
+    let off = nameAt + PUC_PATH.length + 1;
+    if (off + 9 > buf.length) return null;
+    const tag = buf[off];
+    off += 1;
+    const count = C.readU32(buf, off);
+    off += 4;
+    const unk = C.readU32(buf, off);
+    off += 4;
+    if (count < 0 || count > 32) return null;
+    const entries = [];
+    for (let i = 0; i < count; i++) {
+      const fs = readFString(buf, off);
+      if (!fs) return null;
+      if (fs.next + 8 > buf.length) return null;
+      const levelAt = fs.next;
+      const level = readI32(buf, levelAt);
+      const unk2 = readI32(buf, levelAt + 4);
+      if (level < 0 || level > 20) return null;
+      entries.push({ name: fs.s, level, levelAt, unk2 });
+      off = levelAt + 8;
+    }
+    return { nameAt, tag, count, unk, entries };
+  }
+
+  /**
+   * Unspent golden/mega molars (party upgrade points) sit in World.csav
+   * just before the StackSize.* upgrade list: u32 points, u32 aux, u32 count, u32 unk, entries…
+   * (The u32 after PartyComponent is the party knowledge-list count — not molars.)
+   */
+  function findPartyMolars(buf) {
+    if (!buf || !buf.length) return null;
+    const hits = findAscii(buf, "StackSize.Food");
+    if (!hits.length) return null;
+    const firstNameAt = hits[0];
+    const start = firstNameAt - 4;
+    if (start < 16) return null;
+    const nameLen = readI32(buf, start);
+    if (nameLen !== "StackSize.Food".length + 1) return null;
+    const count = C.readU32(buf, start - 8);
+    if (count < 1 || count > 8) return null;
+    const pointsAt = start - 16;
+    const points = C.readU32(buf, pointsAt);
+    if (points > 100000) return null;
+    return { pointsAt, points, start, count };
+  }
+
+  /**
+   * Raw Science (ScienceFound) sits immediately before PartyComponent in World.csav:
+   * u32 science, u32 zero, u32 pathLen, path — same framing as personal molars.
+   */
+  function findRawScience(buf) {
+    if (!buf || !buf.length) return null;
+    const hits = findAscii(buf, PARTY_PATH);
+    if (!hits.length) return null;
+    const nameAt = hits[0];
+    if (nameAt < 12) return null;
+    const pathLen = C.readU32(buf, nameAt - 4);
+    const zero = C.readU32(buf, nameAt - 8);
+    const pointsAt = nameAt - 12;
+    const points = C.readU32(buf, pointsAt);
+    if (pathLen !== PARTY_PATH.length + 1) return null;
+    if (zero !== 0) return null;
+    if (points > 5000000) return null;
+    return { nameAt, pointsAt, points };
+  }
+
+  /** Vanilla BURG.L stack tiers top out around 5; editor "giant" pushes higher. */
+  const GIANT_STACK_TIER = 20;
+  const STACK_UPGRADE_NAMES = [
+    "StackSize.Food",
+    "StackSize.Resource",
+    "StackSize.Ammo",
+  ];
+
+  /**
+   * Party item-stack upgrades in World.csav:
+   * u32 count, u32 unk, then {FString name, i32 level, i32 unk2}*
+   * Names: StackSize.Food / StackSize.Resource / StackSize.Ammo
+   */
+  function findStackUpgrades(buf) {
+    if (!buf || !buf.length) return null;
+    const hits = findAscii(buf, "StackSize.Food");
+    if (!hits.length) return null;
+    const firstNameAt = hits[0];
+    const start = firstNameAt - 4;
+    if (start < 8) return null;
+    const nameLen = readI32(buf, start);
+    if (nameLen !== "StackSize.Food".length + 1) return null;
+    const count = C.readU32(buf, start - 8);
+    const unk = C.readU32(buf, start - 4);
+    if (count < 1 || count > 8) return null;
+    let off = start;
+    const entries = [];
+    for (let i = 0; i < count; i++) {
+      const fs = readFString(buf, off);
+      if (!fs || !fs.s.startsWith("StackSize.")) return null;
+      if (fs.next + 8 > buf.length) return null;
+      const levelAt = fs.next;
+      const level = readI32(buf, levelAt);
+      const unk2 = readI32(buf, levelAt + 4);
+      if (level < 0 || level > 99) return null;
+      entries.push({ name: fs.s, level, levelAt, unk2 });
+      off = levelAt + 8;
+    }
+    return { start, count, unk, entries };
   }
 
   function parsePlayerVitals(rawPlayer) {
@@ -139,11 +317,123 @@
         writeF32(out, parsed._survival.thirstAt, n);
         applied.thirst = n;
       }
+      if (
+        parsed._survival.thirdAt != null &&
+        values.third != null &&
+        values.third !== ""
+      ) {
+        const n = Math.max(0, Math.min(20, Number(values.third)));
+        if (!Number.isFinite(n)) throw new Error("Invalid survival third.");
+        writeF32(out, parsed._survival.thirdAt, n);
+        applied.third = n;
+      }
     }
     if (!Object.keys(applied).length) {
       throw new Error("No vitals fields to write (component pattern not found).");
     }
     return { bytes: out, values: applied };
+  }
+
+  function parseMolars(rawPlayer, rawWorld) {
+    const host = rawPlayer ? C.toBytes(rawPlayer) : null;
+    const world = rawWorld ? C.toBytes(rawWorld) : null;
+    const personal = host ? findPersonalMolars(host) : null;
+    const upgrades = host ? findUpgrades(host) : null;
+    const party = world ? findPartyMolars(world) : null;
+    const stacks = world ? findStackUpgrades(world) : null;
+    const science = world ? findRawScience(world) : null;
+    return {
+      ok: !!(personal || party || upgrades || stacks || science),
+      milkMolars: personal ? personal.points : null,
+      goldenMolars: party ? party.points : null,
+      rawScience: science ? science.points : null,
+      upgrades: upgrades
+        ? upgrades.entries.map((e) => ({ name: e.name, level: e.level }))
+        : [],
+      stackUpgrades: stacks
+        ? stacks.entries.map((e) => ({ name: e.name, level: e.level }))
+        : [],
+      _personal: personal,
+      _party: party,
+      _upgrades: upgrades,
+      _stacks: stacks,
+      _science: science,
+    };
+  }
+
+  function writeMolars(rawPlayer, rawWorld, values) {
+    const hostOut = rawPlayer ? new Uint8Array(C.toBytes(rawPlayer)) : null;
+    const worldOut = rawWorld ? new Uint8Array(C.toBytes(rawWorld)) : null;
+    const parsed = parseMolars(hostOut, worldOut);
+    const applied = {};
+
+    if (
+      hostOut &&
+      parsed._personal &&
+      values.milkMolars != null &&
+      values.milkMolars !== ""
+    ) {
+      const n = Math.max(0, Math.min(100000, Math.floor(Number(values.milkMolars))));
+      if (!Number.isFinite(n)) throw new Error("Invalid milk molars.");
+      C.writeU32(hostOut, parsed._personal.pointsAt, n);
+      applied.milkMolars = n;
+    }
+
+    if (
+      worldOut &&
+      parsed._party &&
+      values.goldenMolars != null &&
+      values.goldenMolars !== ""
+    ) {
+      const n = Math.max(
+        0,
+        Math.min(100000, Math.floor(Number(values.goldenMolars)))
+      );
+      if (!Number.isFinite(n)) throw new Error("Invalid golden molars.");
+      C.writeU32(worldOut, parsed._party.pointsAt, n);
+      applied.goldenMolars = n;
+    }
+
+    if (
+      worldOut &&
+      parsed._science &&
+      values.rawScience != null &&
+      values.rawScience !== ""
+    ) {
+      const n = Math.max(0, Math.min(5000000, Math.floor(Number(values.rawScience))));
+      if (!Number.isFinite(n)) throw new Error("Invalid raw science.");
+      C.writeU32(worldOut, parsed._science.pointsAt, n);
+      applied.rawScience = n;
+    }
+
+    if (hostOut && parsed._upgrades && values.upgrades) {
+      for (const e of parsed._upgrades.entries) {
+        const raw = values.upgrades[e.name];
+        if (raw == null || raw === "") continue;
+        const n = Math.max(0, Math.min(20, Math.floor(Number(raw))));
+        if (!Number.isFinite(n)) throw new Error("Invalid upgrade level for " + e.name);
+        writeI32(hostOut, e.levelAt, n);
+        applied["upgrade." + e.name] = n;
+      }
+    }
+
+    if (worldOut && parsed._stacks && values.stackUpgrades) {
+      for (const e of parsed._stacks.entries) {
+        const raw = values.stackUpgrades[e.name];
+        if (raw == null || raw === "") continue;
+        const n = Math.max(0, Math.min(99, Math.floor(Number(raw))));
+        if (!Number.isFinite(n)) {
+          throw new Error("Invalid stack upgrade level for " + e.name);
+        }
+        writeI32(worldOut, e.levelAt, n);
+        applied["stack." + e.name] = n;
+      }
+    }
+
+    if (!Object.keys(applied).length) {
+      throw new Error("No molar/upgrade fields to write.");
+    }
+    return { hostBytes: hostOut, worldBytes: worldOut, values: applied };
   }
 
   function listItemPaths(raw) {
@@ -181,9 +471,18 @@
   window.GroundedPlayer = {
     parsePlayerVitals,
     writePlayerVitals,
+    parseMolars,
+    writeMolars,
     listItemPaths,
     parseSlotFolderName,
     findHealth,
     findSurvival,
+    findPersonalMolars,
+    findPartyMolars,
+    findRawScience,
+    findUpgrades,
+    findStackUpgrades,
+    GIANT_STACK_TIER,
+    STACK_UPGRADE_NAMES,
   };
 })();
