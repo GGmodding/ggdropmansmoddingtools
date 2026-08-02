@@ -15,6 +15,12 @@
           <GroupHeader>1</GroupHeader>
         </CheatEntry>
         <CheatEntry>
+          <ID>9901</ID>
+          <Description>"Discord — discord.gg/PTwyDTFyR"</Description>
+          <Color>00F26558</Color>
+          <GroupHeader>1</GroupHeader>
+        </CheatEntry>
+        <CheatEntry>
           <ID>2</ID>
           <Description>"Duplicate Any Item (only use 1 at a time)"</Description>
           <Options moHideChildren="1"/>

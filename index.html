@@ -26,6 +26,7 @@
       --steam: #66c0f4;
       --visitor: #e8a87c;
       --donate: #f0c14a;
+      --discord: #5865f2;
       --font-display: "Bungee", cursive;
       --font-ui: "Chakra Petch", sans-serif;
     }
@@ -486,6 +487,18 @@
 
     .donate__note a {
       color: var(--donate);
+    }
+
+    .donate__btn--discord {
+      background: linear-gradient(180deg, #6a75f5 0%, var(--discord) 100%);
+      border-color: color-mix(in srgb, var(--discord) 55%, #fff);
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(88, 101, 242, 0.28);
+    }
+
+    .donate__btn--discord:hover {
+      filter: brightness(1.06);
+      box-shadow: 0 10px 28px rgba(88, 101, 242, 0.38);
     }
 
     /* —— Sections —— */
@@ -969,10 +982,11 @@
   <div class="page">
     <header class="hero">
       <h1 class="hero__brand">GGdropmans</h1>
-      <p class="hero__tag">Save editors &amp; cheat tables for the games you actually grind.</p>
+      <p class="hero__tag">Welcome to GGdropmans Evil Lair — all tools are free, please enjoy, and consider a small donation if you are enjoying the tools.</p>
       <p class="hero__sub">Pick a portal below — Midgar mako, Trumbull Valley, Planet 4546B, and more on the way.</p>
       <div class="hero__links">
         <a class="hero__cta" href="#tools">Browse tools <span aria-hidden="true">↓</span></a>
+        <a class="hero__link" href="https://discord.gg/PTwyDTFyR" target="_blank" rel="noopener noreferrer">Join Discord</a>
         <a class="hero__link" href="#visitors">Leave a comment / request a tool</a>
         <a class="hero__link" href="#donate">Donate to creator</a>
       </div>
@@ -1211,15 +1225,20 @@
       </div>
       <div class="donate">
         <p class="donate__lead">
-          If these save editors and Cheat Engine tables saved you a grind, you can tip GGdropman on PayPal.
+          If these save editors and Cheat Engine tables saved you a grind, you can tip GGdropman on PayPal
+          or hang with the crew on Discord.
           Every bit helps keep the hub expanding.
         </p>
         <div class="donate__actions">
+          <a class="donate__btn donate__btn--discord" href="https://discord.gg/PTwyDTFyR" target="_blank" rel="noopener noreferrer">
+            Join Discord
+          </a>
           <a class="donate__btn" href="https://paypal.me/kd19902" target="_blank" rel="noopener noreferrer">
             Donate via PayPal
           </a>
           <p class="donate__note">
-            Opens <a href="https://paypal.me/kd19902" target="_blank" rel="noopener noreferrer">paypal.me/kd19902</a>.
+            Discord: <a href="https://discord.gg/PTwyDTFyR" target="_blank" rel="noopener noreferrer">discord.gg/PTwyDTFyR</a>
+            · PayPal: <a href="https://paypal.me/kd19902" target="_blank" rel="noopener noreferrer">paypal.me/kd19902</a>.
             Optional — tools stay free either way.
           </p>
         </div>
@@ -1246,6 +1265,7 @@
       <div class="credits-body">
         <p><strong>Site:</strong> ggdropmansmoddingtools</p>
         <p><strong>Creator:</strong> GGdropman</p>
+        <p><strong>Discord:</strong> <a href="https://discord.gg/PTwyDTFyR" target="_blank" rel="noopener noreferrer">discord.gg/PTwyDTFyR</a></p>
         <p><strong>Donate:</strong> <a href="https://paypal.me/kd19902" target="_blank" rel="noopener noreferrer">paypal.me/kd19902</a></p>
         <p><strong>Partner / close friend:</strong> <a href="https://ynot-gzo.github.io/GameZoneOfficial/" target="_blank" rel="noopener noreferrer">GameZone Official</a></p>
         <p><strong>Save Editors:</strong></p>
