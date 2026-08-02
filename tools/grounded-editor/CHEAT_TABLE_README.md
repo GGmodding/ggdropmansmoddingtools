@@ -23,7 +23,7 @@ Companion Cheat Engine table for the browser save editor — live RAM cheats whi
 
 | Section | Features |
 |--------|----------|
-| Movement | Super speed, super jump, **no-clip fly**, soft fly, movement mode, collision |
+| Movement | Super speed, super jump, no-clip fly, soft fly, **teleport to aim (F6)**, movement mode, collision |
 | Vitals | Health, stamina, hunger, thirst, oxygen (+ fill / freeze scripts) |
 | Economy | Raw Science, milk molars, mega milk molars |
 | Gear | Held item durability / stack / enhancement pointers |
@@ -37,7 +37,7 @@ Companion Cheat Engine table for the browser save editor — live RAM cheats whi
 
 | Better in **save editor** | Better in **this .CT** |
 |---------------------------|-------------------------|
-| BURG.L purchases / buildings | Super speed / super jump / no-clip fly |
+| BURG.L purchases / buildings | Super speed / super jump / no-clip fly / teleport to aim |
 | Achievements bulk unlock | Live health / stamina / oxygen freeze |
 | Chest / inventory cloning | Free build & world toggles while playing |
 | OP preset + Oodle rewrite | Raw Science / molars without saving |

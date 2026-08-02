@@ -2,7 +2,7 @@
 <CheatTable CheatEngineTableVersion="45">
   <CheatEntries>
     <CheatEntry>
-      <ID>75</ID>
+      <ID>77</ID>
       <Description>"=== GGdropmans Grounded V1.0 ==="</Description>
       <Options moHideChildren="1"/>
       <Color>0000C080</Color>
@@ -22,15 +22,15 @@
         1. Load into a world
         2. Attach CE to Maine-Win64-Shipping.exe
         3. Enable [ACTIVATE]
-        4. Use Movement scripts for super speed / super jump / no-clip fly
-        5. Use Vitals / Economy / Settings for live cheats
+                4. Use Movement scripts for super speed / super jump / no-clip fly / teleport to aim (F6)
+                5. Use Vitals / Economy / Settings for live cheats
 
-        Offline unlocks (buildings, BURG.L purchases, achievements, OP preset)
-        stay in the browser save editor — they are not stable as one-click RAM patches.
-        }
-        [ENABLE]
-        [DISABLE]
-        </AssemblerScript>
+                Offline unlocks (buildings, BURG.L purchases, achievements, OP preset)
+                stay in the browser save editor — they are not stable as one-click RAM patches.
+                }
+                [ENABLE]
+                [DISABLE]
+                </AssemblerScript>
         </CheatEntry>
         <CheatEntry>
           <ID>2</ID>
@@ -72,7 +72,7 @@
         </AssemblerScript>
         </CheatEntry>
         <CheatEntry>
-          <ID>10</ID>
+          <ID>12</ID>
           <Description>"Movement (speed / jump / fly)"</Description>
           <Options moHideChildren="1" moManualExpandCollapse="1"/>
           <Color>0040C0FF</Color>
@@ -109,10 +109,10 @@
               local bestOff, bestScore = nil, 999
               for off = 0x140, 0x360, 4 do
                 local v = readFloat(c + off)
-                if v and v > 80 and v < 2500 then
+                if v and v &gt; 80 and v &lt; 2500 then
                   for _, t in ipairs(targets) do
                     local d = math.abs(v - t)
-                    if d < bestScore then
+                    if d &lt; bestScore then
                       bestScore = d
                       bestOff = off
                       st.baseWalk = t
@@ -139,7 +139,7 @@
               -- Also push nearby speed-like siblings (MaxWalkSpeedCrouched / MaxFlySpeed) if present.
               for _, d in ipairs({-8, -4, 4, 8, 12, 16}) do
                 local v = readFloat(c + st.off + d)
-                if v and v > 50 and v < 2500 then
+                if v and v &gt; 50 and v &lt; 2500 then
                   writeFloat(c + st.off + d, math.max(v, (st.baseWalk or 600) * st.mult * 0.6))
                 end
               end
@@ -194,10 +194,10 @@
               local bestOff, bestScore = nil, 80
               for off = 0x140, 0x380, 4 do
                 local v = readFloat(c + off)
-                if v and v > 200 and v < 3000 then
+                if v and v &gt; 200 and v &lt; 3000 then
                   for _, t in ipairs(targets) do
                     local d = math.abs(v - t)
-                    if d < bestScore then
+                    if d &lt; bestScore then
                       bestScore = d
                       bestOff = off
                       st.baseJump = v
@@ -290,7 +290,7 @@
                   -- GravityScale-ish floats near movement: nudge toward 0 while noclip is on
                   for _, off in ipairs({0x170, 0x174, 0x178, 0x17C, 0x180}) do
                     local v = readFloat(cmc + off)
-                    if v and v > 0.2 and v < 5.0 then
+                    if v and v &gt; 0.2 and v &lt; 5.0 then
                       writeFloat(cmc + off, 0.0)
                     end
                   end
@@ -400,6 +400,227 @@
             </CheatEntry>
             <CheatEntry>
               <ID>7</ID>
+              <Description>"[Script] Teleport to aim (F6)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+            {$lua}
+            if syntaxcheck then return end
+            if getAddressSafe("Player") == nil then
+              showMessage("Enable [ACTIVATE] first")
+              error("no Player")
+            end
+
+            gg_grounded_tp = gg_grounded_tp or {}
+            local st = gg_grounded_tp
+            -- Distance in Unreal units (~cm). 2500 ≈ 25m. Raise for longer blinks.
+            st.dist = st.dist or 2500
+
+            local function looksPos(x, y, z)
+              if x == nil or y == nil or z == nil then return false end
+              if not (x == x and y == y and z == z) then return false end -- NaN
+              local a = math.abs(x) + math.abs(y)
+              -- Grounded yard coords are large; reject origin/ junk
+              return a &gt; 500 and a &lt; 500000 and math.abs(z) &lt; 200000
+            end
+
+            local function readVec(addr)
+              return readFloat(addr), readFloat(addr + 4), readFloat(addr + 8)
+            end
+
+            local function writeVec(addr, x, y, z)
+              writeFloat(addr, x)
+              writeFloat(addr + 4, y)
+              writeFloat(addr + 8, z)
+            end
+
+            local function pawn()
+              local p = readQword(getAddress("Player"))
+              if p == nil or p == 0 then return nil end
+              return p
+            end
+
+            -- Find writable world XYZ near the character (root / capsule / CMC).
+            local function findLocAddr(p)
+              if st.locAddr and looksPos(readVec(st.locAddr)) then return st.locAddr end
+              local candidates = {}
+              local function consider(addr, tag)
+                local x, y, z = readVec(addr)
+                if looksPos(x, y, z) then
+                  table.insert(candidates, {addr = addr, tag = tag, score = math.abs(x) + math.abs(y)})
+                end
+              end
+
+              local rootOffs = {0x130, 0x138, 0x140, 0x190, 0x198, 0x1A0, 0x1A8, 0x128, 0x120}
+              local locOffs = {0x11C, 0x120, 0x128, 0x140, 0x1C0, 0x1D0, 0x1E0, 0x220, 0x250}
+              for _, ro in ipairs(rootOffs) do
+                local root = readQword(p + ro)
+                if root and root &gt; 0x10000 then
+                  for _, lo in ipairs(locOffs) do
+                    consider(root + lo, string.format("root+%X loc+%X", ro, lo))
+                  end
+                end
+              end
+
+              local cmc = readQword(p + 0xDC8)
+              if cmc and cmc &gt; 0x10000 then
+                for _, lo in ipairs({0x2A0, 0x2B0, 0x2C0, 0x2D0, 0x300, 0x310, 0x320, 0x340, 0x360, 0x380, 0x3A0}) do
+                  consider(cmc + lo, string.format("cmc+%X", lo))
+                end
+                -- UpdatedComponent → RelativeLocation
+                for _, uo in ipairs({0x160, 0x168, 0x170, 0x178, 0x188, 0x190}) do
+                  local upd = readQword(cmc + uo)
+                  if upd and upd &gt; 0x10000 then
+                    for _, lo in ipairs(locOffs) do
+                      consider(upd + lo, string.format("upd+%X loc+%X", uo, lo))
+                    end
+                  end
+                end
+              end
+
+              table.sort(candidates, function(a, b) return a.score &gt; b.score end)
+              if #candidates == 0 then return nil end
+              st.locAddr = candidates[1].addr
+              st.locTag = candidates[1].tag
+              print(string.format("TP loc @ %X (%s) = %.1f %.1f %.1f", st.locAddr, st.locTag, readVec(st.locAddr)))
+              return st.locAddr
+            end
+
+            -- ControlRotation / camera POV → forward vector (UE degrees).
+            local function findAim(p)
+              local ctrlOffs = {0x260, 0x268, 0x270, 0x2A8, 0x2B0, 0x2B8, 0x2C0, 0x320}
+              local rotOffs = {0x288, 0x290, 0x298, 0x3D0, 0x3D8, 0x408, 0x410}
+              for _, co in ipairs(ctrlOffs) do
+                local ctrl = readQword(p + co)
+                if ctrl and ctrl &gt; 0x10000 then
+                  for _, ro in ipairs(rotOffs) do
+                    local pitch = readFloat(ctrl + ro)
+                    local yaw = readFloat(ctrl + ro + 4)
+                    if pitch and yaw and math.abs(pitch) &lt;= 90.5 and math.abs(yaw) &lt;= 360.5 then
+                      -- Prefer non-zero yaw (looking around)
+                      if math.abs(yaw) &gt; 0.01 or math.abs(pitch) &gt; 0.01 then
+                        return pitch, yaw, "ctrl"
+                      end
+                    end
+                  end
+                  -- PlayerCameraManager → CameraCache POV
+                  for _, cmo in ipairs({0x340, 0x348, 0x350, 0x2B8, 0x2C8, 0x438}) do
+                    local cam = readQword(ctrl + cmo)
+                    if cam and cam &gt; 0x10000 then
+                      for _, po in ipairs({0x1BA0, 0x1BB0, 0x1A90, 0x1AA0, 0x22B0, 0x22C0, 0x10, 0x20}) do
+                        local lx, ly, lz = readVec(cam + po)
+                        local pitch = readFloat(cam + po + 12)
+                        local yaw = readFloat(cam + po + 16)
+                        if looksPos(lx, ly, lz) and pitch and yaw and math.abs(pitch) &lt;= 90.5 then
+                          st.camLoc = {lx, ly, lz}
+                          return pitch, yaw, "cam"
+                        end
+                      end
+                    end
+                  end
+                end
+              end
+              return nil
+            end
+
+            local function forward(pitch, yaw)
+              local pr = math.rad(pitch)
+              local yr = math.rad(yaw)
+              local cp = math.cos(pr)
+              return cp * math.cos(yr), cp * math.sin(yr), math.sin(pr)
+            end
+
+            local function teleportToAim()
+              local p = pawn()
+              if not p then
+                print("TP: no pawn")
+                return
+              end
+              local loc = findLocAddr(p)
+              if not loc then
+                showMessage("Teleport: could not find player XYZ. Move a bit and try again.")
+                return
+              end
+              local pitch, yaw, src = findAim(p)
+              if not pitch then
+                showMessage("Teleport: could not find aim rotation. Look around and try again.")
+                return
+              end
+              local fx, fy, fz = forward(pitch, yaw)
+              local x, y, z = readVec(loc)
+              local ox, oy, oz = x, y, z
+              -- Prefer camera origin when available so aim matches crosshair
+              if st.camLoc then
+                ox, oy, oz = st.camLoc[1], st.camLoc[2], st.camLoc[3]
+              end
+              local nx = ox + fx * st.dist
+              local ny = oy + fy * st.dist
+              local nz = oz + fz * st.dist
+              writeVec(loc, nx, ny, nz)
+              -- Also poke CMC location mirrors if present so physics catches up
+              local cmc = readQword(p + 0xDC8)
+              if cmc and cmc &gt; 0x10000 then
+                for _, lo in ipairs({0x2A0, 0x2B0, 0x2C0, 0x2D0, 0x300, 0x310, 0x320}) do
+                  local tx, ty, tz = readVec(cmc + lo)
+                  if looksPos(tx, ty, tz) then writeVec(cmc + lo, nx, ny, nz) end
+                end
+              end
+              print(string.format(
+                "TP aim (%s) pitch=%.1f yaw=%.1f dist=%.0f -&gt; %.1f %.1f %.1f",
+                src or "?", pitch, yaw, st.dist, nx, ny, nz
+              ))
+            end
+
+            -- Discover once on enable
+            do
+              local p = pawn()
+              if p then findLocAddr(p); findAim(p) end
+            end
+
+            st.hk = createHotkey(function()
+              teleportToAim()
+            end, VK_F6)
+
+            print(string.format(
+              "Teleport to aim ON — press F6 to blink along crosshair (dist=%.0f uu). Edit gg_grounded_tp.dist in Lua Engine to change range.",
+              st.dist
+            ))
+
+            [DISABLE]
+            {$lua}
+            if syntaxcheck then return end
+            local st = gg_grounded_tp
+            if st and st.hk then
+              st.hk.destroy()
+              st.hk = nil
+            end
+            print("Teleport to aim OFF")
+            </AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>8</ID>
+              <Description>"[Script] Set teleport distance…"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+            {$lua}
+            if syntaxcheck then return end
+            gg_grounded_tp = gg_grounded_tp or {}
+            local cur = gg_grounded_tp.dist or 2500
+            local n = inputQuery("Teleport distance (Unreal units, ~cm)", "How far along aim to blink?", tostring(cur))
+            if n == nil or n == "" then error("cancelled") end
+            local v = tonumber(n)
+            if not v or v &lt; 100 or v &gt; 200000 then
+              showMessage("Use a number between 100 and 200000")
+              error("bad dist")
+            end
+            gg_grounded_tp.dist = v
+            print("Teleport distance set to "..tostring(v))
+            [DISABLE]
+            </AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>9</ID>
               <Description>"Movement Mode (1=walk 5=fly)"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Byte</VariableType>
@@ -410,7 +631,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>8</ID>
+              <ID>10</ID>
               <Description>"Flying Cheat flag"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Byte</VariableType>
@@ -421,7 +642,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>9</ID>
+              <ID>11</ID>
               <Description>"Collision byte (0=noclip)"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Byte</VariableType>
@@ -433,14 +654,14 @@
           </CheatEntries>
         </CheatEntry>
         <CheatEntry>
-          <ID>31</ID>
+          <ID>33</ID>
           <Description>"Vitals"</Description>
           <Options moHideChildren="1" moManualExpandCollapse="1"/>
           <Color>004080FF</Color>
           <GroupHeader>1</GroupHeader>
           <CheatEntries>
             <CheatEntry>
-              <ID>11</ID>
+              <ID>13</ID>
               <Description>"[Script] Fill vitals once"</Description>
               <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
@@ -494,7 +715,7 @@
             </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>12</ID>
+              <ID>14</ID>
               <Description>"[Script] God mode (freeze HP/stamina)"</Description>
               <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
@@ -539,7 +760,7 @@
             </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>13</ID>
+              <ID>15</ID>
               <Description>"[Script] Infinite hunger/thirst/oxygen"</Description>
               <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
@@ -584,14 +805,14 @@
             </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>16</ID>
+              <ID>18</ID>
               <Description>"Health"</Description>
               <Options moHideChildren="1" moManualExpandCollapse="1"/>
               <Color>00FF8080</Color>
               <GroupHeader>1</GroupHeader>
               <CheatEntries>
                 <CheatEntry>
-                  <ID>14</ID>
+                  <ID>16</ID>
                   <Description>"Health Damaged (0=full)"</Description>
                   <ShowAsSigned>0</ShowAsSigned>
                   <VariableType>Float</VariableType>
@@ -603,7 +824,7 @@
                   </Offsets>
                 </CheatEntry>
                 <CheatEntry>
-                  <ID>15</ID>
+                  <ID>17</ID>
                   <Description>"Base Health"</Description>
                   <ShowAsSigned>0</ShowAsSigned>
                   <VariableType>Float</VariableType>
@@ -617,14 +838,14 @@
               </CheatEntries>
             </CheatEntry>
             <CheatEntry>
-              <ID>21</ID>
+              <ID>23</ID>
               <Description>"Stamina"</Description>
               <Options moHideChildren="1" moManualExpandCollapse="1"/>
               <Color>00FF8080</Color>
               <GroupHeader>1</GroupHeader>
               <CheatEntries>
                 <CheatEntry>
-                  <ID>17</ID>
+                  <ID>19</ID>
                   <Description>"Current Stamina"</Description>
                   <ShowAsSigned>0</ShowAsSigned>
                   <VariableType>Float</VariableType>
@@ -636,7 +857,7 @@
                   </Offsets>
                 </CheatEntry>
                 <CheatEntry>
-                  <ID>18</ID>
+                  <ID>20</ID>
                   <Description>"Base Stamina"</Description>
                   <ShowAsSigned>0</ShowAsSigned>
                   <VariableType>Float</VariableType>
@@ -648,7 +869,7 @@
                   </Offsets>
                 </CheatEntry>
                 <CheatEntry>
-                  <ID>19</ID>
+                  <ID>21</ID>
                   <Description>"Regen Delay"</Description>
                   <ShowAsSigned>0</ShowAsSigned>
                   <VariableType>Float</VariableType>
@@ -660,7 +881,7 @@
                   </Offsets>
                 </CheatEntry>
                 <CheatEntry>
-                  <ID>20</ID>
+                  <ID>22</ID>
                   <Description>"Regen Rate"</Description>
                   <ShowAsSigned>0</ShowAsSigned>
                   <VariableType>Float</VariableType>
@@ -674,14 +895,14 @@
               </CheatEntries>
             </CheatEntry>
             <CheatEntry>
-              <ID>30</ID>
+              <ID>32</ID>
               <Description>"Survival"</Description>
               <Options moHideChildren="1" moManualExpandCollapse="1"/>
               <Color>00FF8080</Color>
               <GroupHeader>1</GroupHeader>
               <CheatEntries>
                 <CheatEntry>
-                  <ID>22</ID>
+                  <ID>24</ID>
                   <Description>"Hunger"</Description>
                   <ShowAsSigned>0</ShowAsSigned>
                   <VariableType>Float</VariableType>
@@ -693,7 +914,7 @@
                   </Offsets>
                 </CheatEntry>
                 <CheatEntry>
-                  <ID>23</ID>
+                  <ID>25</ID>
                   <Description>"Thirst"</Description>
                   <ShowAsSigned>0</ShowAsSigned>
                   <VariableType>Float</VariableType>
@@ -705,7 +926,7 @@
                   </Offsets>
                 </CheatEntry>
                 <CheatEntry>
-                  <ID>24</ID>
+                  <ID>26</ID>
                   <Description>"Oxygen"</Description>
                   <ShowAsSigned>0</ShowAsSigned>
                   <VariableType>Float</VariableType>
@@ -717,7 +938,7 @@
                   </Offsets>
                 </CheatEntry>
                 <CheatEntry>
-                  <ID>25</ID>
+                  <ID>27</ID>
                   <Description>"Max Hunger"</Description>
                   <ShowAsSigned>0</ShowAsSigned>
                   <VariableType>Float</VariableType>
@@ -729,7 +950,7 @@
                   </Offsets>
                 </CheatEntry>
                 <CheatEntry>
-                  <ID>26</ID>
+                  <ID>28</ID>
                   <Description>"Max Thirst"</Description>
                   <ShowAsSigned>0</ShowAsSigned>
                   <VariableType>Float</VariableType>
@@ -741,7 +962,7 @@
                   </Offsets>
                 </CheatEntry>
                 <CheatEntry>
-                  <ID>27</ID>
+                  <ID>29</ID>
                   <Description>"Max Oxygen"</Description>
                   <ShowAsSigned>0</ShowAsSigned>
                   <VariableType>Float</VariableType>
@@ -753,7 +974,7 @@
                   </Offsets>
                 </CheatEntry>
                 <CheatEntry>
-                  <ID>28</ID>
+                  <ID>30</ID>
                   <Description>"Oxygen Rate"</Description>
                   <ShowAsSigned>0</ShowAsSigned>
                   <VariableType>Float</VariableType>
@@ -765,7 +986,7 @@
                   </Offsets>
                 </CheatEntry>
                 <CheatEntry>
-                  <ID>29</ID>
+                  <ID>31</ID>
                   <Description>"Decay Rate"</Description>
                   <ShowAsSigned>0</ShowAsSigned>
                   <VariableType>Float</VariableType>
@@ -781,14 +1002,14 @@
           </CheatEntries>
         </CheatEntry>
         <CheatEntry>
-          <ID>38</ID>
+          <ID>40</ID>
           <Description>"Economy (science / molars)"</Description>
           <Options moHideChildren="1" moManualExpandCollapse="1"/>
           <Color>0040C080</Color>
           <GroupHeader>1</GroupHeader>
           <CheatEntries>
             <CheatEntry>
-              <ID>32</ID>
+              <ID>34</ID>
               <Description>"[Script] Max science + molars"</Description>
               <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
@@ -819,7 +1040,7 @@
             </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>33</ID>
+              <ID>35</ID>
               <Description>"Raw Science"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>4 Bytes</VariableType>
@@ -833,7 +1054,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>34</ID>
+              <ID>36</ID>
               <Description>"Milk Molars"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>4 Bytes</VariableType>
@@ -847,7 +1068,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>35</ID>
+              <ID>37</ID>
               <Description>"Mega Milk Molars"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>4 Bytes</VariableType>
@@ -861,7 +1082,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>36</ID>
+              <ID>38</ID>
               <Description>"Brainpower"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>4 Bytes</VariableType>
@@ -875,7 +1096,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>37</ID>
+              <ID>39</ID>
               <Description>"Level"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>4 Bytes</VariableType>
@@ -891,14 +1112,14 @@
           </CheatEntries>
         </CheatEntry>
         <CheatEntry>
-          <ID>43</ID>
+          <ID>45</ID>
           <Description>"Mutations / hauling"</Description>
           <Options moHideChildren="1" moManualExpandCollapse="1"/>
           <Color>00C08040</Color>
           <GroupHeader>1</GroupHeader>
           <CheatEntries>
             <CheatEntry>
-              <ID>39</ID>
+              <ID>41</ID>
               <Description>"Max Mutations"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>4 Bytes</VariableType>
@@ -911,7 +1132,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>40</ID>
+              <ID>42</ID>
               <Description>"Active Mutations"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>4 Bytes</VariableType>
@@ -924,7 +1145,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>41</ID>
+              <ID>43</ID>
               <Description>"Haul Capacity"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>4 Bytes</VariableType>
@@ -937,7 +1158,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>42</ID>
+              <ID>44</ID>
               <Description>"Haul"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>4 Bytes</VariableType>
@@ -952,14 +1173,14 @@
           </CheatEntries>
         </CheatEntry>
         <CheatEntry>
-          <ID>49</ID>
+          <ID>51</ID>
           <Description>"Held gear (right hand)"</Description>
           <Options moHideChildren="1" moManualExpandCollapse="1"/>
           <Color>008080C0</Color>
           <GroupHeader>1</GroupHeader>
           <CheatEntries>
             <CheatEntry>
-              <ID>44</ID>
+              <ID>46</ID>
               <Description>"Stack"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>4 Bytes</VariableType>
@@ -971,7 +1192,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>45</ID>
+              <ID>47</ID>
               <Description>"Durability"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Float</VariableType>
@@ -983,7 +1204,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>46</ID>
+              <ID>48</ID>
               <Description>"Base Enhancement"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>4 Bytes</VariableType>
@@ -995,7 +1216,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>47</ID>
+              <ID>49</ID>
               <Description>"Bonus Enhancement"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>4 Bytes</VariableType>
@@ -1007,7 +1228,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>48</ID>
+              <ID>50</ID>
               <Description>"Spoil Time"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Float</VariableType>
@@ -1021,14 +1242,14 @@
           </CheatEntries>
         </CheatEntry>
         <CheatEntry>
-          <ID>70</ID>
+          <ID>72</ID>
           <Description>"World settings (GameState)"</Description>
           <Options moHideChildren="1" moManualExpandCollapse="1"/>
           <Color>00C04080</Color>
           <GroupHeader>1</GroupHeader>
           <CheatEntries>
             <CheatEntry>
-              <ID>50</ID>
+              <ID>52</ID>
               <Description>"All Recipes Unlocked"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Byte</VariableType>
@@ -1041,7 +1262,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>51</ID>
+              <ID>53</ID>
               <Description>"Free Build"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Byte</VariableType>
@@ -1054,7 +1275,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>52</ID>
+              <ID>54</ID>
               <Description>"Building Integrity"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Byte</VariableType>
@@ -1067,7 +1288,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>53</ID>
+              <ID>55</ID>
               <Description>"All Recipes Free"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Byte</VariableType>
@@ -1080,7 +1301,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>54</ID>
+              <ID>56</ID>
               <Description>"Bugs Spawn"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Byte</VariableType>
@@ -1093,7 +1314,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>55</ID>
+              <ID>57</ID>
               <Description>"Bugs Ignore Player"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Byte</VariableType>
@@ -1106,7 +1327,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>56</ID>
+              <ID>58</ID>
               <Description>"Stamina Drain"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Byte</VariableType>
@@ -1119,7 +1340,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>57</ID>
+              <ID>59</ID>
               <Description>"Food Spoiling"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Byte</VariableType>
@@ -1132,7 +1353,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>58</ID>
+              <ID>60</ID>
               <Description>"Pet Invincibility"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Byte</VariableType>
@@ -1145,7 +1366,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>59</ID>
+              <ID>61</ID>
               <Description>"All Mutations Unlocked"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Byte</VariableType>
@@ -1158,7 +1379,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>60</ID>
+              <ID>62</ID>
               <Description>"Fully Yoked"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Byte</VariableType>
@@ -1171,7 +1392,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>61</ID>
+              <ID>63</ID>
               <Description>"Player Damage (byte toggle)"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Byte</VariableType>
@@ -1184,7 +1405,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>62</ID>
+              <ID>64</ID>
               <Description>"Friendly Fire"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Byte</VariableType>
@@ -1197,7 +1418,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>63</ID>
+              <ID>65</ID>
               <Description>"Player Damage scale"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Float</VariableType>
@@ -1210,7 +1431,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>64</ID>
+              <ID>66</ID>
               <Description>"Enemy Damage scale"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Float</VariableType>
@@ -1223,7 +1444,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>65</ID>
+              <ID>67</ID>
               <Description>"Time of Day Rate"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Float</VariableType>
@@ -1236,7 +1457,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>66</ID>
+              <ID>68</ID>
               <Description>"Hunger Burn Rate"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Float</VariableType>
@@ -1249,7 +1470,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>67</ID>
+              <ID>69</ID>
               <Description>"Thirst Burn Rate"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Float</VariableType>
@@ -1262,7 +1483,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>68</ID>
+              <ID>70</ID>
               <Description>"Creature Health Scaling"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Float</VariableType>
@@ -1275,7 +1496,7 @@
               </Offsets>
             </CheatEntry>
             <CheatEntry>
-              <ID>69</ID>
+              <ID>71</ID>
               <Description>"Fall Damage Scaling"</Description>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>Float</VariableType>
@@ -1290,14 +1511,14 @@
           </CheatEntries>
         </CheatEntry>
         <CheatEntry>
-          <ID>74</ID>
+          <ID>76</ID>
           <Description>"DEBUG"</Description>
           <Options moHideChildren="1" moManualExpandCollapse="1"/>
           <Color>00808080</Color>
           <GroupHeader>1</GroupHeader>
           <CheatEntries>
             <CheatEntry>
-              <ID>71</ID>
+              <ID>73</ID>
               <Description>"Fetch Base Addresses (AOB)"</Description>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>{$lua}
@@ -1331,7 +1552,7 @@
             </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>72</ID>
+              <ID>74</ID>
               <Description>"Player static (hex)"</Description>
               <ShowAsHex>1</ShowAsHex>
               <ShowAsSigned>0</ShowAsSigned>
@@ -1339,7 +1560,7 @@
               <Address>Player</Address>
             </CheatEntry>
             <CheatEntry>
-              <ID>73</ID>
+              <ID>75</ID>
               <Description>"Statistics static (hex)"</Description>
               <ShowAsHex>1</ShowAsHex>
               <ShowAsSigned>0</ShowAsSigned>

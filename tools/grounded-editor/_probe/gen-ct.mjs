@@ -13,6 +13,14 @@ function esc(s) {
     .replace(/"/g, "&quot;");
 }
 
+/** Escape Lua/AA script bodies for CE XML (must escape < > &). */
+function escScript(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 function indent(lines, n) {
   const pad = "  ".repeat(n);
   return lines.map((l) => (l ? pad + l : l));
@@ -42,7 +50,9 @@ function entry(opts, children) {
     lines.push("  </Offsets>");
   }
   if (opts.script) {
-    lines.push(`  <AssemblerScript>${opts.script}</AssemblerScript>`);
+    lines.push(
+      `  <AssemblerScript>${escScript(opts.script)}</AssemblerScript>`
+    );
   }
   if (children?.length) {
     lines.push("  <CheatEntries>");
@@ -123,15 +133,15 @@ Companion to tools/grounded-editor (browser save editor).
 1. Load into a world
 2. Attach CE to Maine-Win64-Shipping.exe
 3. Enable [ACTIVATE]
-4. Use Movement scripts for super speed / super jump / no-clip fly
-5. Use Vitals / Economy / Settings for live cheats
+        4. Use Movement scripts for super speed / super jump / no-clip fly / teleport to aim (F6)
+        5. Use Vitals / Economy / Settings for live cheats
 
-Offline unlocks (buildings, BURG.L purchases, achievements, OP preset)
-stay in the browser save editor — they are not stable as one-click RAM patches.
-}
-[ENABLE]
-[DISABLE]
-`;
+        Offline unlocks (buildings, BURG.L purchases, achievements, OP preset)
+        stay in the browser save editor — they are not stable as one-click RAM patches.
+        }
+        [ENABLE]
+        [DISABLE]
+        `;
 
 const FETCH_BASES = `{$lua}
 if syntaxcheck then return end
@@ -618,6 +628,217 @@ end
 print("No-clip fly OFF")
 `;
 
+const TELEPORT_AIM = `[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+gg_grounded_tp = gg_grounded_tp or {}
+local st = gg_grounded_tp
+-- Distance in Unreal units (~cm). 2500 ≈ 25m. Raise for longer blinks.
+st.dist = st.dist or 2500
+
+local function looksPos(x, y, z)
+  if x == nil or y == nil or z == nil then return false end
+  if not (x == x and y == y and z == z) then return false end -- NaN
+  local a = math.abs(x) + math.abs(y)
+  -- Grounded yard coords are large; reject origin/ junk
+  return a > 500 and a < 500000 and math.abs(z) < 200000
+end
+
+local function readVec(addr)
+  return readFloat(addr), readFloat(addr + 4), readFloat(addr + 8)
+end
+
+local function writeVec(addr, x, y, z)
+  writeFloat(addr, x)
+  writeFloat(addr + 4, y)
+  writeFloat(addr + 8, z)
+end
+
+local function pawn()
+  local p = readQword(getAddress("Player"))
+  if p == nil or p == 0 then return nil end
+  return p
+end
+
+-- Find writable world XYZ near the character (root / capsule / CMC).
+local function findLocAddr(p)
+  if st.locAddr and looksPos(readVec(st.locAddr)) then return st.locAddr end
+  local candidates = {}
+  local function consider(addr, tag)
+    local x, y, z = readVec(addr)
+    if looksPos(x, y, z) then
+      table.insert(candidates, {addr = addr, tag = tag, score = math.abs(x) + math.abs(y)})
+    end
+  end
+
+  local rootOffs = {0x130, 0x138, 0x140, 0x190, 0x198, 0x1A0, 0x1A8, 0x128, 0x120}
+  local locOffs = {0x11C, 0x120, 0x128, 0x140, 0x1C0, 0x1D0, 0x1E0, 0x220, 0x250}
+  for _, ro in ipairs(rootOffs) do
+    local root = readQword(p + ro)
+    if root and root > 0x10000 then
+      for _, lo in ipairs(locOffs) do
+        consider(root + lo, string.format("root+%X loc+%X", ro, lo))
+      end
+    end
+  end
+
+  local cmc = readQword(p + 0xDC8)
+  if cmc and cmc > 0x10000 then
+    for _, lo in ipairs({0x2A0, 0x2B0, 0x2C0, 0x2D0, 0x300, 0x310, 0x320, 0x340, 0x360, 0x380, 0x3A0}) do
+      consider(cmc + lo, string.format("cmc+%X", lo))
+    end
+    -- UpdatedComponent → RelativeLocation
+    for _, uo in ipairs({0x160, 0x168, 0x170, 0x178, 0x188, 0x190}) do
+      local upd = readQword(cmc + uo)
+      if upd and upd > 0x10000 then
+        for _, lo in ipairs(locOffs) do
+          consider(upd + lo, string.format("upd+%X loc+%X", uo, lo))
+        end
+      end
+    end
+  end
+
+  table.sort(candidates, function(a, b) return a.score > b.score end)
+  if #candidates == 0 then return nil end
+  st.locAddr = candidates[1].addr
+  st.locTag = candidates[1].tag
+  print(string.format("TP loc @ %X (%s) = %.1f %.1f %.1f", st.locAddr, st.locTag, readVec(st.locAddr)))
+  return st.locAddr
+end
+
+-- ControlRotation / camera POV → forward vector (UE degrees).
+local function findAim(p)
+  local ctrlOffs = {0x260, 0x268, 0x270, 0x2A8, 0x2B0, 0x2B8, 0x2C0, 0x320}
+  local rotOffs = {0x288, 0x290, 0x298, 0x3D0, 0x3D8, 0x408, 0x410}
+  for _, co in ipairs(ctrlOffs) do
+    local ctrl = readQword(p + co)
+    if ctrl and ctrl > 0x10000 then
+      for _, ro in ipairs(rotOffs) do
+        local pitch = readFloat(ctrl + ro)
+        local yaw = readFloat(ctrl + ro + 4)
+        if pitch and yaw and math.abs(pitch) <= 90.5 and math.abs(yaw) <= 360.5 then
+          -- Prefer non-zero yaw (looking around)
+          if math.abs(yaw) > 0.01 or math.abs(pitch) > 0.01 then
+            return pitch, yaw, "ctrl"
+          end
+        end
+      end
+      -- PlayerCameraManager → CameraCache POV
+      for _, cmo in ipairs({0x340, 0x348, 0x350, 0x2B8, 0x2C8, 0x438}) do
+        local cam = readQword(ctrl + cmo)
+        if cam and cam > 0x10000 then
+          for _, po in ipairs({0x1BA0, 0x1BB0, 0x1A90, 0x1AA0, 0x22B0, 0x22C0, 0x10, 0x20}) do
+            local lx, ly, lz = readVec(cam + po)
+            local pitch = readFloat(cam + po + 12)
+            local yaw = readFloat(cam + po + 16)
+            if looksPos(lx, ly, lz) and pitch and yaw and math.abs(pitch) <= 90.5 then
+              st.camLoc = {lx, ly, lz}
+              return pitch, yaw, "cam"
+            end
+          end
+        end
+      end
+    end
+  end
+  return nil
+end
+
+local function forward(pitch, yaw)
+  local pr = math.rad(pitch)
+  local yr = math.rad(yaw)
+  local cp = math.cos(pr)
+  return cp * math.cos(yr), cp * math.sin(yr), math.sin(pr)
+end
+
+local function teleportToAim()
+  local p = pawn()
+  if not p then
+    print("TP: no pawn")
+    return
+  end
+  local loc = findLocAddr(p)
+  if not loc then
+    showMessage("Teleport: could not find player XYZ. Move a bit and try again.")
+    return
+  end
+  local pitch, yaw, src = findAim(p)
+  if not pitch then
+    showMessage("Teleport: could not find aim rotation. Look around and try again.")
+    return
+  end
+  local fx, fy, fz = forward(pitch, yaw)
+  local x, y, z = readVec(loc)
+  local ox, oy, oz = x, y, z
+  -- Prefer camera origin when available so aim matches crosshair
+  if st.camLoc then
+    ox, oy, oz = st.camLoc[1], st.camLoc[2], st.camLoc[3]
+  end
+  local nx = ox + fx * st.dist
+  local ny = oy + fy * st.dist
+  local nz = oz + fz * st.dist
+  writeVec(loc, nx, ny, nz)
+  -- Also poke CMC location mirrors if present so physics catches up
+  local cmc = readQword(p + 0xDC8)
+  if cmc and cmc > 0x10000 then
+    for _, lo in ipairs({0x2A0, 0x2B0, 0x2C0, 0x2D0, 0x300, 0x310, 0x320}) do
+      local tx, ty, tz = readVec(cmc + lo)
+      if looksPos(tx, ty, tz) then writeVec(cmc + lo, nx, ny, nz) end
+    end
+  end
+  print(string.format(
+    "TP aim (%s) pitch=%.1f yaw=%.1f dist=%.0f -> %.1f %.1f %.1f",
+    src or "?", pitch, yaw, st.dist, nx, ny, nz
+  ))
+end
+
+-- Discover once on enable
+do
+  local p = pawn()
+  if p then findLocAddr(p); findAim(p) end
+end
+
+st.hk = createHotkey(function()
+  teleportToAim()
+end, VK_F6)
+
+print(string.format(
+  "Teleport to aim ON — press F6 to blink along crosshair (dist=%.0f uu). Edit gg_grounded_tp.dist in Lua Engine to change range.",
+  st.dist
+))
+
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local st = gg_grounded_tp
+if st and st.hk then
+  st.hk.destroy()
+  st.hk = nil
+end
+print("Teleport to aim OFF")
+`;
+
+const TELEPORT_DIST = `[ENABLE]
+{$lua}
+if syntaxcheck then return end
+gg_grounded_tp = gg_grounded_tp or {}
+local cur = gg_grounded_tp.dist or 2500
+local n = inputQuery("Teleport distance (Unreal units, ~cm)", "How far along aim to blink?", tostring(cur))
+if n == nil or n == "" then error("cancelled") end
+local v = tonumber(n)
+if not v or v < 100 or v > 200000 then
+  showMessage("Use a number between 100 and 200000")
+  error("bad dist")
+end
+gg_grounded_tp.dist = v
+print("Teleport distance set to "..tostring(v))
+[DISABLE]
+`;
+
 const rootKids = [];
 
 rootKids.push(
@@ -631,6 +852,8 @@ rootKids.push(
     script("[Script] Super Jump x4", SUPER_JUMP, "0000FF00"),
     script("[Script] No-clip fly", NOCLIP_FLY, "0000FF00"),
     script("[Script] Fly mode (collision on)", FLY, "0000FF00"),
+    script("[Script] Teleport to aim (F6)", TELEPORT_AIM, "0000FF00"),
+    script("[Script] Set teleport distance…", TELEPORT_DIST, "0000FF00"),
     ptr("Movement Mode (1=walk 5=fly)", "Byte", "Player", ["178", "DC8"]),
     ptr("Flying Cheat flag", "Byte", "Player", ["3A8", "DC8"]),
     ptr("Collision byte (0=noclip)", "Byte", "Player", ["64"]),
