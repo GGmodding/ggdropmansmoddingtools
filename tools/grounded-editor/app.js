@@ -12,6 +12,8 @@ import { decompress as oozDecompress } from "./vendor/index.js";
   const Stor = window.GroundedStorage;
   const Perks = window.GroundedPerks;
   const Tech = window.GroundedTech;
+  const Progress = window.GroundedProgress;
+  const Presets = window.GroundedPresets;
   const Pos = window.GroundedPosition;
   const Cal = window.GroundedCalendar;
   const Haul = window.GroundedHauling;
@@ -25,6 +27,7 @@ import { decompress as oozDecompress } from "./vendor/index.js";
     "gear",
     "mutations",
     "tech",
+    "progress",
     "travel",
     "inventory",
     "chests",
@@ -243,12 +246,41 @@ import { decompress as oozDecompress } from "./vendor/index.js";
   }
 
   function syncPlayerCopies(hostCsavBytes) {
+    const mode = ($("player-edit-mode") && $("player-edit-mode").value) || "mirror";
+    const selected =
+      ($("player-file-select") && $("player-file-select").value) || "HostPlayer.csav";
+    if (mode === "solo") {
+      setFile(selected, hostCsavBytes);
+      return;
+    }
     setFile("HostPlayer.csav", hostCsavBytes);
     for (const name of [...state.files.keys()]) {
       if (/^Player_.+\.csav$/i.test(name)) {
         state.files.set(name, hostCsavBytes);
       }
     }
+  }
+
+  async function loadEditTargetPlayer() {
+    const mode = ($("player-edit-mode") && $("player-edit-mode").value) || "mirror";
+    const selected =
+      ($("player-file-select") && $("player-file-select").value) || "HostPlayer.csav";
+    const target =
+      mode === "solo" ? selected : "HostPlayer.csav";
+    const bytes = getFile(target) || getFile("HostPlayer.csav");
+    if (!bytes) {
+      state.hostRaw = null;
+      return;
+    }
+    state.hostRaw = await C.decompressCsav(bytes, oozDecompress);
+  }
+
+  function commitSelectedPlayerRaw(bytes) {
+    const packed = C.compressCsav(bytes);
+    state.hostRaw = bytes;
+    syncPlayerCopies(packed);
+    setDirty(true);
+    refreshAll();
   }
 
   function slotOptionLabel(key) {
@@ -588,6 +620,7 @@ import { decompress as oozDecompress } from "./vendor/index.js";
     refreshChestsEditor();
     refreshMutationsEditor();
     refreshTechEditor();
+    refreshProgressEditor();
     refreshTravelEditor();
     refreshHauling();
     refreshCatalog();
@@ -676,11 +709,7 @@ import { decompress as oozDecompress } from "./vendor/index.js";
       thirst: $("v-thirst").value,
       third: $("v-thirst").value,
     });
-    state.hostRaw = result.bytes;
-    const csav = C.compressCsav(state.hostRaw);
-    syncPlayerCopies(csav);
-    setDirty(true);
-    refreshAll();
+    commitHostRaw(result.bytes);
     return result.values;
   }
 
@@ -724,6 +753,112 @@ import { decompress as oozDecompress } from "./vendor/index.js";
     setDirty(true);
     refreshAll();
     return result.values;
+  }
+
+  function applyOpPreset(ngPlus) {
+    if (!Presets) throw new Error("Presets module missing.");
+    if (!state.hostRaw && !state.worldRaw) {
+      throw new Error("Load a save first.");
+    }
+    const r = Presets.applyOpPreset(state.hostRaw, state.worldRaw, {
+      ngPlus: !!ngPlus,
+    });
+    if (r.hostBytes) {
+      state.hostRaw = r.hostBytes;
+      syncPlayerCopies(C.compressCsav(state.hostRaw));
+    }
+    if (r.worldBytes) {
+      state.worldRaw = r.worldBytes;
+      setFile("World.csav", C.compressCsav(state.worldRaw));
+    }
+    setDirty(true);
+    refreshAll();
+    return r;
+  }
+
+  async function runOodleDryRun() {
+    const lines = [];
+    let ok = 0;
+    let fail = 0;
+    for (const [name, packed] of state.files.entries()) {
+      if (!C.isCsavName(name)) continue;
+      try {
+        const raw = await C.decompressCsav(packed, oozDecompress);
+        const recompressed = C.compressCsav(raw);
+        const round = await C.decompressCsav(recompressed, oozDecompress);
+        if (raw.length !== round.length) {
+          fail++;
+          lines.push(
+            name +
+              ": FAIL length " +
+              raw.length +
+              " → " +
+              round.length
+          );
+          continue;
+        }
+        let same = true;
+        for (let i = 0; i < raw.length; i++) {
+          if (raw[i] !== round[i]) {
+            same = false;
+            break;
+          }
+        }
+        if (!same) {
+          fail++;
+          lines.push(name + ": FAIL byte mismatch after recompress");
+        } else {
+          ok++;
+          lines.push(
+            name +
+              ": OK raw " +
+              S.formatBytes(raw.length) +
+              " · packed " +
+              S.formatBytes(packed.length) +
+              " → rewrite " +
+              S.formatBytes(recompressed.length)
+          );
+        }
+      } catch (err) {
+        fail++;
+        lines.push(name + ": ERROR " + (err.message || err));
+      }
+    }
+    return { ok, fail, lines };
+  }
+
+  function snapshotSlotStats(hostRaw, worldRaw) {
+    const snap = { gear: 0, mutations: 0, purchases: 0, buildings: 0, knowledge: 0 };
+    try {
+      if (hostRaw && G) snap.gear = G.parseGear(hostRaw).items.length;
+    } catch (_) {}
+    try {
+      if (hostRaw && Perks) {
+        snap.mutations = Perks.parsePerkComponent(hostRaw).entries.filter(
+          (e) => e.phase >= 0
+        ).length;
+      }
+    } catch (_) {}
+    try {
+      if (worldRaw && Progress) {
+        const p = Progress.parsePurchases(worldRaw);
+        if (p.ok) snap.purchases = p.entries.length;
+        const b = Progress.parseBuildings(worldRaw);
+        if (b.ok) snap.buildings = b.entries.length;
+      }
+    } catch (_) {}
+    try {
+      if (worldRaw && Tech) {
+        const t = Tech.parsePartyTech(worldRaw);
+        if (t && t.ok && t.knowledge) snap.knowledge = t.knowledge.length;
+      }
+    } catch (_) {}
+    try {
+      if (hostRaw && P) {
+        snap.molars = P.parseMolars(hostRaw, worldRaw);
+      }
+    } catch (_) {}
+    return snap;
   }
 
   function refreshInventoryEditor() {
@@ -915,10 +1050,7 @@ import { decompress as oozDecompress } from "./vendor/index.js";
   }
 
   function commitHostRaw(bytes) {
-    state.hostRaw = bytes;
-    syncPlayerCopies(C.compressCsav(state.hostRaw));
-    setDirty(true);
-    refreshAll();
+    commitSelectedPlayerRaw(bytes);
   }
 
   function commitWorldRaw(bytes) {
@@ -948,9 +1080,20 @@ import { decompress as oozDecompress } from "./vendor/index.js";
       return;
     }
 
+    const filter = (($("chest-filter") && $("chest-filter").value) || "")
+      .trim()
+      .toLowerCase();
+    const filtered = listed.storages
+      .map((st, i) => ({ st, i }))
+      .filter(({ st }) => {
+        if (!filter) return true;
+        const hay = (st.label + " " + (st.building || "")).toLowerCase();
+        return hay.includes(filter);
+      });
+
     const prev = sel.value;
-    sel.innerHTML = listed.storages
-      .map((st, i) => {
+    sel.innerHTML = filtered
+      .map(({ st, i }) => {
         const tag = st.building ? " · " + st.building : "";
         const label =
           st.label + tag + " (" + st.itemCount + " item" + (st.itemCount === 1 ? "" : "s") + ")";
@@ -963,13 +1106,15 @@ import { decompress as oozDecompress } from "./vendor/index.js";
         );
       })
       .join("");
-    if (prev !== "" && Number(prev) < listed.storages.length) {
+    if (prev !== "" && filtered.some(({ i }) => String(i) === prev)) {
       sel.value = prev;
     }
-    const idx = Number(sel.value || 0);
+    const idx = Number(sel.value || (filtered[0] && filtered[0].i) || 0);
     const st = listed.storages[idx];
     if (!st) {
-      hint.textContent = "Select a storage.";
+      hint.textContent = filter
+        ? "No chests match filter."
+        : "Select a storage.";
       tbody.innerHTML = "";
       return;
     }
@@ -980,6 +1125,7 @@ import { decompress as oozDecompress } from "./vendor/index.js";
       st.items.length +
       " item(s)" +
       (st.editableCount ? ", header count " + st.count : ", count header unknown") +
+      (filter ? " · filter “" + filter + "” (" + filtered.length + ")" : "") +
       ".";
     tbody.innerHTML = st.items
       .map((it, i) => {
@@ -1021,6 +1167,70 @@ import { decompress as oozDecompress } from "./vendor/index.js";
       .slice(0, 400)
       .map((n) => "<option value=\"" + escapeHtml(n) + "\"></option>")
       .join("");
+  }
+
+  function refreshProgressEditor() {
+    const hint = $("prog-hint");
+    if (!hint) return;
+    const achBody = $("prog-ach-table") && $("prog-ach-table").querySelector("tbody");
+    if (!state.worldRaw && !state.hostRaw) {
+      hint.textContent = "Load a save first.";
+      return;
+    }
+    let purchaseN = "—";
+    let buildingN = "—";
+    let achN = "—";
+    if (state.worldRaw && Progress) {
+      try {
+        const p = Progress.parsePurchases(state.worldRaw);
+        purchaseN = p.ok ? String(p.entries.length) : "parse fail";
+      } catch (_) {
+        purchaseN = "err";
+      }
+      try {
+        const b = Progress.parseBuildings(state.worldRaw);
+        buildingN = b.ok ? String(b.entries.length) : "parse fail";
+      } catch (_) {
+        buildingN = "err";
+      }
+    }
+    if (state.hostRaw && Progress) {
+      try {
+        const a = Progress.parseAchievements(state.hostRaw);
+        achN = a.ok ? a.entries.length + " (" + a.entries.filter((e) => e.unlocked).length + " flagged)" : "parse fail";
+        if (achBody && a.ok) {
+          achBody.innerHTML = a.entries
+            .map(
+              (e) =>
+                "<tr><td><code>" +
+                escapeHtml(e.id) +
+                "</code></td><td>" +
+                e.a +
+                "," +
+                e.b +
+                "," +
+                e.c +
+                "," +
+                e.d +
+                "</td></tr>"
+            )
+            .join("");
+        }
+      } catch (_) {
+        achN = "err";
+      }
+    }
+    if ($("prog-purchase-count")) $("prog-purchase-count").textContent = purchaseN;
+    if ($("prog-building-count")) $("prog-building-count").textContent = buildingN;
+    if ($("prog-ach-count")) $("prog-ach-count").textContent = achN;
+    hint.textContent =
+      "Purchases " +
+      purchaseN +
+      " · Buildings " +
+      buildingN +
+      " · Achievements " +
+      achN +
+      ". Equipped mutation loadout is not a stable save field (unlock/phase only).";
   }
 
   function refreshMutationsEditor() {
@@ -1278,6 +1488,7 @@ import { decompress as oozDecompress } from "./vendor/index.js";
     const sel = $("player-file-select");
     const hint = $("player-file-hint");
     if (!sel) return;
+    const prev = sel.value;
     const players = [...state.files.keys()].filter(
       (n) =>
         /^HostPlayer\.csav$/i.test(n) || /^Player_.+\.csav$/i.test(n)
@@ -1285,11 +1496,22 @@ import { decompress as oozDecompress } from "./vendor/index.js";
     sel.innerHTML = players
       .map((n) => "<option value=\"" + escapeHtml(n) + "\">" + escapeHtml(n) + "</option>")
       .join("");
+    if (prev && players.some((n) => n === prev)) sel.value = prev;
+    const mode = ($("player-edit-mode") && $("player-edit-mode").value) || "mirror";
     if (hint) {
-      hint.textContent = players.length
-        ? players.length +
-          " player file(s). Edits apply to HostPlayer and are mirrored to all Player_*.csav on write."
-        : "No HostPlayer / Player_*.csav in this slot.";
+      if (!players.length) {
+        hint.textContent = "No HostPlayer / Player_*.csav in this slot.";
+      } else if (mode === "solo") {
+        hint.textContent =
+          players.length +
+          " player file(s). Solo mode: edits write only to “" +
+          (sel.value || "HostPlayer.csav") +
+          "”.";
+      } else {
+        hint.textContent =
+          players.length +
+          " player file(s). Mirror mode: HostPlayer edits copy to all Player_*.csav on write.";
+      }
     }
   }
 
@@ -1419,6 +1641,43 @@ import { decompress as oozDecompress } from "./vendor/index.js";
         alert(err.message || String(err));
       }
     });
+    $("btn-sleekarmor") &&
+      $("btn-sleekarmor").addEventListener("click", () => {
+        try {
+          if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+          const r = G.applySleekArmor(state.hostRaw);
+          commitHostRaw(r.bytes);
+          setStatus("Sleek armor applied to " + r.changed + " item(s) @ " + r.level + ".");
+        } catch (err) {
+          alert(err.message || String(err));
+        }
+      });
+    $("btn-oneshot-ngp") &&
+      $("btn-oneshot-ngp").addEventListener("click", () => {
+        try {
+          if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+          const r = G.applyOneShotWeapons(state.hostRaw, { ngPlus: true });
+          commitHostRaw(r.bytes);
+          setStatus(
+            "One-shot NG+ weapons: " + r.changed + " item(s) @ Mighty " + r.level + "."
+          );
+        } catch (err) {
+          alert(err.message || String(err));
+        }
+      });
+    $("btn-sleek-ngp") &&
+      $("btn-sleek-ngp").addEventListener("click", () => {
+        try {
+          if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+          const r = G.applySleekArmor(state.hostRaw, { ngPlus: true });
+          commitHostRaw(r.bytes);
+          setStatus(
+            "Sleek NG+ armor: " + r.changed + " item(s) @ Sleek " + r.level + "."
+          );
+        } catch (err) {
+          alert(err.message || String(err));
+        }
+      });
     $("gear-table").addEventListener("click", (e) => {
       const btn = e.target.closest(".btn-gear-max");
       if (!btn) return;
@@ -1499,9 +1758,69 @@ import { decompress as oozDecompress } from "./vendor/index.js";
     });
 
     $("chest-select").addEventListener("change", () => refreshChestsEditor());
+    $("chest-filter") &&
+      $("chest-filter").addEventListener("input", () => refreshChestsEditor());
     $("btn-chest-refresh").addEventListener("click", () => refreshAll());
     $("btn-mut-refresh").addEventListener("click", () => refreshAll());
     $("btn-tech-refresh").addEventListener("click", () => refreshAll());
+    $("btn-prog-refresh") &&
+      $("btn-prog-refresh").addEventListener("click", () => refreshAll());
+    $("btn-prog-purchases") &&
+      $("btn-prog-purchases").addEventListener("click", () => {
+        try {
+          if (!state.worldRaw) throw new Error("World.csav not decompressed.");
+          const r = Progress.unlockPurchaseCatalog(state.worldRaw);
+          commitWorldRaw(r.bytes);
+          setStatus(
+            "BURG.L purchases: +" + r.added + " (skipped " + r.skipped + ")."
+          );
+        } catch (err) {
+          alert(err.message || String(err));
+        }
+      });
+    $("btn-prog-buildings") &&
+      $("btn-prog-buildings").addEventListener("click", () => {
+        try {
+          if (!state.worldRaw) throw new Error("World.csav not decompressed.");
+          const r = Progress.unlockAllBuildingsFromSave(state.worldRaw);
+          commitWorldRaw(r.bytes);
+          setStatus(
+            "Buildings: +" +
+              r.added +
+              " (owned " +
+              r.owned +
+              ", skipped " +
+              r.skipped +
+              ")."
+          );
+        } catch (err) {
+          alert(err.message || String(err));
+        }
+      });
+    $("btn-prog-knowledge") &&
+      $("btn-prog-knowledge").addEventListener("click", () => {
+        try {
+          if (!state.worldRaw) throw new Error("World.csav not decompressed.");
+          const r = Progress.unlockAllKnowledgeCategories(state.worldRaw);
+          commitWorldRaw(r.bytes);
+          setStatus("Knowledge bulk: " + JSON.stringify(r.summary));
+        } catch (err) {
+          alert(err.message || String(err));
+        }
+      });
+    $("btn-prog-achievements") &&
+      $("btn-prog-achievements").addEventListener("click", () => {
+        try {
+          if (!state.hostRaw) throw new Error("HostPlayer not decompressed.");
+          const r = Progress.completeAllAchievements(state.hostRaw);
+          commitHostRaw(r.bytes);
+          setStatus(
+            "Achievements flagged: " + r.changed + " field(s) across " + r.total + "."
+          );
+        } catch (err) {
+          alert(err.message || String(err));
+        }
+      });
     $("btn-tech-analyze").addEventListener("click", () => {
       try {
         if (!state.worldRaw) throw new Error("World.csav not decompressed.");
@@ -1620,6 +1939,31 @@ import { decompress as oozDecompress } from "./vendor/index.js";
         alert(err.message || String(err));
       }
     });
+    $("btn-chest-dup-all") &&
+      $("btn-chest-dup-all").addEventListener("click", () => {
+        try {
+          if (!state.worldRaw) throw new Error("World.csav not decompressed.");
+          const r = Stor.duplicateItemToAllChests(
+            state.worldRaw,
+            $("chest-add-name").value,
+            $("chest-add-qty").value
+          );
+          commitWorldRaw(r.bytes);
+          setStatus(
+            "Duplicated " +
+              r.item +
+              " ×" +
+              r.stack +
+              " into " +
+              r.touched +
+              " chests (skipped " +
+              r.skipped +
+              ")."
+          );
+        } catch (err) {
+          alert(err.message || String(err));
+        }
+      });
     $("chest-edit-table").addEventListener("click", (e) => {
       const removeBtn = e.target.closest(".btn-chest-remove");
       const stackBtn = e.target.closest(".btn-chest-apply-stack");
@@ -1741,6 +2085,196 @@ import { decompress as oozDecompress } from "./vendor/index.js";
     $("btn-cal-dusk") && $("btn-cal-dusk").addEventListener("click", () => setHour(18));
     $("cal-hour") &&
       $("cal-hour").addEventListener("change", () => setHour($("cal-hour").value));
+
+    $("player-edit-mode") &&
+      $("player-edit-mode").addEventListener("change", async () => {
+        try {
+          await loadEditTargetPlayer();
+          refreshAll();
+        } catch (err) {
+          alert(err.message || String(err));
+        }
+      });
+    $("player-file-select") &&
+      $("player-file-select").addEventListener("change", async () => {
+        try {
+          const mode =
+            ($("player-edit-mode") && $("player-edit-mode").value) || "mirror";
+          if (mode === "solo") {
+            await loadEditTargetPlayer();
+          }
+          refreshPlayerFileSelect();
+          refreshAll();
+        } catch (err) {
+          alert(err.message || String(err));
+        }
+      });
+
+    $("btn-op-preset") &&
+      $("btn-op-preset").addEventListener("click", () => {
+        try {
+          if (
+            !confirm(
+              "Apply OP preset? This maxes vitals, molars, science, stacks, Sleek/Mighty gear, mutations, achievements, analyze/tech, purchases, buildings."
+            )
+          ) {
+            return;
+          }
+          const r = applyOpPreset(false);
+          setStatus("OP preset: " + (r.log || []).join(" · "));
+          if ($("preset-hint")) {
+            $("preset-hint").textContent = "OP applied: " + (r.log || []).join(" · ");
+          }
+        } catch (err) {
+          alert(err.message || String(err));
+        }
+      });
+    $("btn-op-ngp") &&
+      $("btn-op-ngp").addEventListener("click", () => {
+        try {
+          if (
+            !confirm(
+              "Apply OP preset with NG+ XV smithing (Mighty/Sleek 15)?"
+            )
+          ) {
+            return;
+          }
+          const r = applyOpPreset(true);
+          setStatus("OP NG+ preset: " + (r.log || []).join(" · "));
+          if ($("preset-hint")) {
+            $("preset-hint").textContent =
+              "OP NG+ applied: " + (r.log || []).join(" · ");
+          }
+        } catch (err) {
+          alert(err.message || String(err));
+        }
+      });
+    $("btn-export-loadout") &&
+      $("btn-export-loadout").addEventListener("click", () => {
+        try {
+          if (!Presets) throw new Error("Presets module missing.");
+          const data = Presets.exportLoadout(state.hostRaw, state.worldRaw);
+          Presets.downloadJson(
+            data,
+            String(state.slotName || "grounded").replace(/[^\w.-]+/g, "_") +
+              "-loadout.json"
+          );
+          setStatus("Exported loadout JSON.");
+        } catch (err) {
+          alert(err.message || String(err));
+        }
+      });
+    $("btn-dry-run") &&
+      $("btn-dry-run").addEventListener("click", async () => {
+        try {
+          if (!state.files.size) throw new Error("Load a save first.");
+          setStatus("Running Oodle dry-run…");
+          const r = await runOodleDryRun();
+          const msg =
+            "Oodle dry-run: " +
+            r.ok +
+            " OK, " +
+            r.fail +
+            " fail.\n\n" +
+            r.lines.join("\n");
+          if ($("compare-out")) $("compare-out").textContent = msg;
+          setStatus("Oodle dry-run: " + r.ok + " OK, " + r.fail + " fail.");
+          if (r.fail) alert(msg);
+        } catch (err) {
+          alert(err.message || String(err));
+        }
+      });
+    $("btn-check-game") &&
+      $("btn-check-game").addEventListener("click", async () => {
+        const ps =
+          "Get-Process Maine-Win64-Shipping,Grounded -ErrorAction SilentlyContinue | Format-Table Name,Id -AutoSize";
+        let copied = false;
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(ps);
+            copied = true;
+          }
+        } catch (_) {}
+        alert(
+          "Browsers cannot list Windows processes.\n\n" +
+            "Close Maine-Win64-Shipping (Grounded) in Task Manager before Install.\n\n" +
+            "PowerShell check" +
+            (copied ? " (copied to clipboard)" : "") +
+            ":\n" +
+            ps
+        );
+      });
+    $("btn-compare-folder") &&
+      $("btn-compare-folder").addEventListener("click", () => {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.webkitdirectory = true;
+        input.multiple = true;
+        input.addEventListener("change", async () => {
+          try {
+            if (!state.hostRaw && !state.worldRaw) {
+              throw new Error("Load the primary save first.");
+            }
+            const files = [...(input.files || [])];
+            if (!files.length) return;
+            const byName = new Map();
+            for (const f of files) {
+              const base = f.name.split(/[/\\]/).pop();
+              byName.set(base.toLowerCase(), f);
+            }
+            const hostF = byName.get("hostplayer.csav");
+            const worldF = byName.get("world.csav");
+            if (!hostF && !worldF) {
+              throw new Error(
+                "Compare folder needs HostPlayer.csav and/or World.csav."
+              );
+            }
+            let otherHost = null;
+            let otherWorld = null;
+            if (hostF) {
+              otherHost = await C.decompressCsav(
+                new Uint8Array(await hostF.arrayBuffer()),
+                oozDecompress
+              );
+            }
+            if (worldF) {
+              otherWorld = await C.decompressCsav(
+                new Uint8Array(await worldF.arrayBuffer()),
+                oozDecompress
+              );
+            }
+            const a = snapshotSlotStats(state.hostRaw, state.worldRaw);
+            const b = snapshotSlotStats(otherHost, otherWorld);
+            const molA = a.molars || {};
+            const molB = b.molars || {};
+            const lines = [
+              "Loaded vs compare folder",
+              "gear: " + a.gear + " → " + b.gear,
+              "mutations unlocked: " + a.mutations + " → " + b.mutations,
+              "purchases: " + a.purchases + " → " + b.purchases,
+              "buildings: " + a.buildings + " → " + b.buildings,
+              "knowledge: " + a.knowledge + " → " + b.knowledge,
+              "milk molars: " +
+                (molA.milkMolars ?? "—") +
+                " → " +
+                (molB.milkMolars ?? "—"),
+              "golden molars: " +
+                (molA.goldenMolars ?? "—") +
+                " → " +
+                (molB.goldenMolars ?? "—"),
+              "raw science: " +
+                (molA.rawScience ?? "—") +
+                " → " +
+                (molB.rawScience ?? "—"),
+            ];
+            if ($("compare-out")) $("compare-out").textContent = lines.join("\n");
+            setStatus("Compared against folder (" + files.length + " files).");
+          } catch (err) {
+            alert(err.message || String(err));
+          }
+        });
+        input.click();
+      });
 
     const overlay = $("drop-overlay");
     window.addEventListener("dragover", (e) => {

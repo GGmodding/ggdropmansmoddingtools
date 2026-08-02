@@ -1,0 +1,1354 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="45">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>75</ID>
+      <Description>"=== GGdropmans Grounded V1.0 ==="</Description>
+      <Options moHideChildren="1"/>
+      <Color>0000C080</Color>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>1</ID>
+          <Description>"README — how to use"</Description>
+          <Color>00808080</Color>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{
+        GGdropmans Grounded Cheat Table V1.0
+        ====================================
+        Process: Maine-Win64-Shipping.exe (Steam)
+        Companion to tools/grounded-editor (browser save editor).
+
+        1. Load into a world
+        2. Attach CE to Maine-Win64-Shipping.exe
+        3. Enable [ACTIVATE]
+        4. Use Movement scripts for super speed / super jump / no-clip fly
+        5. Use Vitals / Economy / Settings for live cheats
+
+        Offline unlocks (buildings, BURG.L purchases, achievements, OP preset)
+        stay in the browser save editor — they are not stable as one-click RAM patches.
+        }
+        [ENABLE]
+        [DISABLE]
+        </AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>2</ID>
+          <Description>"[ACTIVATE] register symbols"</Description>
+          <Color>0000FF00</Color>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+        {$lua}
+        if syntaxcheck then return end
+        if getAddressSafe(process) == nil then
+          showMessage("Attach to Maine-Win64-Shipping.exe first")
+          error("no process")
+        end
+        -- Bases resolved from AOBs on the local Steam build (Maine-Win64-Shipping).
+        -- After a patch: run DEBUG → Fetch Base Addresses and update these defines.
+        autoAssemble([[
+        define(Player,Maine-Win64-Shipping.exe+61A3D20)
+        define(Statistics,Maine-Win64-Shipping.exe+619EB40)
+        define(GearData,Maine-Win64-Shipping.exe+6426A20)
+        define(EngineData,Maine-Win64-Shipping.exe+6427EE0)
+        define(GameState,Maine-Win64-Shipping.exe+642BE78)
+        registersymbol(Player)
+        registersymbol(Statistics)
+        registersymbol(GearData)
+        registersymbol(EngineData)
+        registersymbol(GameState)
+        ]])
+        print("GGdropman Grounded V1.0 activated ("..tostring(process)..")")
+        [DISABLE]
+        {$lua}
+        if syntaxcheck then return end
+        autoAssemble([[
+        unregistersymbol(Player)
+        unregistersymbol(Statistics)
+        unregistersymbol(GearData)
+        unregistersymbol(EngineData)
+        unregistersymbol(GameState)
+        ]])
+        </AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>10</ID>
+          <Description>"Movement (speed / jump / fly)"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <Color>0040C0FF</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>3</ID>
+              <Description>"[Script] Super Speed x5"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+            {$lua}
+            if syntaxcheck then return end
+            if getAddressSafe("Player") == nil then
+              showMessage("Enable [ACTIVATE] first")
+              error("no Player symbol")
+            end
+
+            gg_grounded_speed = gg_grounded_speed or {}
+            local st = gg_grounded_speed
+            st.mult = 5.0
+            st.baseWalk = nil
+            st.off = nil
+
+            local function cmc()
+              local p = readQword(getAddress("Player"))
+              if p == nil or p == 0 then return nil end
+              return readQword(p + 0xDC8)
+            end
+
+            local function findWalk(c)
+              -- Prefer floats that look like MaxWalkSpeed / MaxFlySpeed defaults.
+              local targets = {600, 500, 450, 400, 350, 300}
+              local bestOff, bestScore = nil, 999
+              for off = 0x140, 0x360, 4 do
+                local v = readFloat(c + off)
+                if v and v > 80 and v < 2500 then
+                  for _, t in ipairs(targets) do
+                    local d = math.abs(v - t)
+                    if d < bestScore then
+                      bestScore = d
+                      bestOff = off
+                      st.baseWalk = t
+                    end
+                  end
+                end
+              end
+              return bestOff
+            end
+
+            st.off = findWalk(cmc())
+            if not st.off then
+              showMessage("Could not find MaxWalkSpeed near CharacterMovement. Try flying/moving first, then re-enable.")
+              error("no walk float")
+            end
+            print(string.format("Super Speed: CMC+0x%X (base~%.0f) x%.1f", st.off, st.baseWalk or 600, st.mult))
+
+            st.timer = createTimer(nil, false)
+            st.timer.Interval = 50
+            st.timer.OnTimer = function()
+              local c = cmc()
+              if not c or not st.off then return end
+              writeFloat(c + st.off, (st.baseWalk or 600) * st.mult)
+              -- Also push nearby speed-like siblings (MaxWalkSpeedCrouched / MaxFlySpeed) if present.
+              for _, d in ipairs({-8, -4, 4, 8, 12, 16}) do
+                local v = readFloat(c + st.off + d)
+                if v and v > 50 and v < 2500 then
+                  writeFloat(c + st.off + d, math.max(v, (st.baseWalk or 600) * st.mult * 0.6))
+                end
+              end
+            end
+            st.timer.Enabled = true
+
+            [DISABLE]
+            {$lua}
+            if syntaxcheck then return end
+            local st = gg_grounded_speed
+            if st and st.timer then
+              st.timer.Enabled = false
+              st.timer.destroy()
+              st.timer = nil
+            end
+            if st and st.off then
+              local p = readQword(getAddressSafe("Player") or 0)
+              if p and p ~= 0 then
+                local c = readQword(p + 0xDC8)
+                if c and st.baseWalk then writeFloat(c + st.off, st.baseWalk) end
+              end
+            end
+            </AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>4</ID>
+              <Description>"[Script] Super Jump x4"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+            {$lua}
+            if syntaxcheck then return end
+            if getAddressSafe("Player") == nil then
+              showMessage("Enable [ACTIVATE] first")
+              error("no Player symbol")
+            end
+
+            gg_grounded_jump = gg_grounded_jump or {}
+            local st = gg_grounded_jump
+            st.mult = 4.0
+            st.baseJump = nil
+            st.off = nil
+
+            local function cmc()
+              local p = readQword(getAddress("Player"))
+              if p == nil or p == 0 then return nil end
+              return readQword(p + 0xDC8)
+            end
+
+            local function findJump(c)
+              local targets = {420, 700, 800, 900, 1000, 350, 500}
+              local bestOff, bestScore = nil, 80
+              for off = 0x140, 0x380, 4 do
+                local v = readFloat(c + off)
+                if v and v > 200 and v < 3000 then
+                  for _, t in ipairs(targets) do
+                    local d = math.abs(v - t)
+                    if d < bestScore then
+                      bestScore = d
+                      bestOff = off
+                      st.baseJump = v
+                    end
+                  end
+                end
+              end
+              return bestOff
+            end
+
+            st.off = findJump(cmc())
+            if not st.off then
+              showMessage("Could not find JumpZVelocity. Jump once in-game, then re-enable.")
+              error("no jump float")
+            end
+            print(string.format("Super Jump: CMC+0x%X (base~%.1f) x%.1f", st.off, st.baseJump or 420, st.mult))
+
+            st.timer = createTimer(nil, false)
+            st.timer.Interval = 50
+            st.timer.OnTimer = function()
+              local c = cmc()
+              if not c or not st.off then return end
+              writeFloat(c + st.off, (st.baseJump or 420) * st.mult)
+            end
+            st.timer.Enabled = true
+
+            [DISABLE]
+            {$lua}
+            if syntaxcheck then return end
+            local st = gg_grounded_jump
+            if st and st.timer then
+              st.timer.Enabled = false
+              st.timer.destroy()
+              st.timer = nil
+            end
+            if st and st.off and st.baseJump then
+              local p = readQword(getAddressSafe("Player") or 0)
+              if p and p ~= 0 then
+                local c = readQword(p + 0xDC8)
+                if c then writeFloat(c + st.off, st.baseJump) end
+              end
+            end
+            </AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>5</ID>
+              <Description>"[Script] No-clip fly"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+            {$lua}
+            if syntaxcheck then return end
+            if getAddressSafe("Player") == nil then
+              showMessage("Enable [ACTIVATE] first")
+              error("no Player")
+            end
+
+            local function resolve(baseSym, offsets)
+              local a = getAddress(baseSym)
+              if not a then return nil end
+              for i = #offsets, 2, -1 do
+                a = readQword(a + offsets[i])
+                if a == nil or a == 0 then return nil end
+              end
+              return a + offsets[1]
+            end
+
+            gg_grounded_noclip = gg_grounded_noclip or {}
+            local st = gg_grounded_noclip
+            st.prevCollision = nil
+
+            -- Snapshot collision so we can restore on disable
+            do
+              local col = resolve("Player", {0x64})
+              if col then st.prevCollision = readBytes(col, 1, true) end
+            end
+
+            local function apply()
+              local fly = resolve("Player", {0x3A8,0xDC8})
+              local mode = resolve("Player", {0x178,0xDC8})
+              local col = resolve("Player", {0x64})
+              if fly then writeByte(fly, 1) end
+              if mode then writeByte(mode, 5) end -- MOVE_Flying
+              if col then writeByte(col, 0) end   -- NoCollision
+              -- CharacterMovement: clear grounded / force flying-friendly flags when present
+              local p = readQword(getAddress("Player"))
+              if p and p ~= 0 then
+                local cmc = readQword(p + 0xDC8)
+                if cmc and cmc ~= 0 then
+                  -- GravityScale-ish floats near movement: nudge toward 0 while noclip is on
+                  for _, off in ipairs({0x170, 0x174, 0x178, 0x17C, 0x180}) do
+                    local v = readFloat(cmc + off)
+                    if v and v > 0.2 and v < 5.0 then
+                      writeFloat(cmc + off, 0.0)
+                    end
+                  end
+                end
+              end
+            end
+
+            apply()
+            st.timer = createTimer(nil, false)
+            st.timer.Interval = 50
+            st.timer.OnTimer = function() apply() end
+            st.timer.Enabled = true
+            print("No-clip fly ON (fly + collision off). Disable this script to restore walking/collision.")
+
+            [DISABLE]
+            {$lua}
+            if syntaxcheck then return end
+            local function resolve(baseSym, offsets)
+              local a = getAddressSafe(baseSym)
+              if not a then return nil end
+              for i = #offsets, 2, -1 do
+                a = readQword(a + offsets[i])
+                if a == nil or a == 0 then return nil end
+              end
+              return a + offsets[1]
+            end
+
+            local st = gg_grounded_noclip
+            if st and st.timer then
+              st.timer.Enabled = false
+              st.timer.destroy()
+              st.timer = nil
+            end
+
+            local fly = resolve("Player", {0x3A8,0xDC8})
+            local mode = resolve("Player", {0x178,0xDC8})
+            local col = resolve("Player", {0x64})
+            if fly then writeByte(fly, 0) end
+            if mode then writeByte(mode, 1) end -- MOVE_Walking
+            if col then
+              if st and st.prevCollision ~= nil then
+                writeByte(col, st.prevCollision)
+              else
+                writeByte(col, 1) -- QueryAndPhysics-ish default
+              end
+            end
+            -- Restore a normal gravity scale if we zeroed one
+            local p = readQword(getAddressSafe("Player") or 0)
+            if p and p ~= 0 then
+              local cmc = readQword(p + 0xDC8)
+              if cmc and cmc ~= 0 then
+                for _, off in ipairs({0x170, 0x174, 0x178, 0x17C, 0x180}) do
+                  local v = readFloat(cmc + off)
+                  if v ~= nil and v == 0.0 then
+                    writeFloat(cmc + off, 1.0)
+                    break
+                  end
+                end
+              end
+            end
+            print("No-clip fly OFF")
+            </AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>6</ID>
+              <Description>"[Script] Fly mode (collision on)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+            {$lua}
+            if syntaxcheck then return end
+            if getAddressSafe("Player") == nil then
+              showMessage("Enable [ACTIVATE] first")
+              error("no Player")
+            end
+            local function resolve(baseSym, offsets)
+              local a = getAddress(baseSym)
+              if not a then return nil end
+              for i = #offsets, 2, -1 do
+                a = readQword(a + offsets[i])
+                if a == nil or a == 0 then return nil end
+              end
+              return a + offsets[1]
+            end
+            local fly = resolve("Player", {0x3A8,0xDC8})
+            local mode = resolve("Player", {0x178,0xDC8})
+            if fly then writeByte(fly, 1) end
+            if mode then writeByte(mode, 5) end -- MOVE_Flying
+            print("Fly mode on (MovementMode=5) — collision still on. Use No-clip fly to phase through geometry.")
+            [DISABLE]
+            {$lua}
+            if syntaxcheck then return end
+            local function resolve(baseSym, offsets)
+              local a = getAddressSafe(baseSym)
+              if not a then return nil end
+              for i = #offsets, 2, -1 do
+                a = readQword(a + offsets[i])
+                if a == nil or a == 0 then return nil end
+              end
+              return a + offsets[1]
+            end
+            local fly = resolve("Player", {0x3A8,0xDC8})
+            local mode = resolve("Player", {0x178,0xDC8})
+            if fly then writeByte(fly, 0) end
+            if mode then writeByte(mode, 1) end -- MOVE_Walking
+            </AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>7</ID>
+              <Description>"Movement Mode (1=walk 5=fly)"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>Player</Address>
+              <Offsets>
+                <Offset>178</Offset>
+                <Offset>DC8</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>8</ID>
+              <Description>"Flying Cheat flag"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>Player</Address>
+              <Offsets>
+                <Offset>3A8</Offset>
+                <Offset>DC8</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>9</ID>
+              <Description>"Collision byte (0=noclip)"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>Player</Address>
+              <Offsets>
+                <Offset>64</Offset>
+              </Offsets>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>31</ID>
+          <Description>"Vitals"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <Color>004080FF</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>11</ID>
+              <Description>"[Script] Fill vitals once"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+            {$lua}
+            if syntaxcheck then return end
+            if getAddressSafe("Player") == nil then
+              showMessage("Enable [ACTIVATE] first")
+              error("no Player")
+            end
+            local function wchain(baseSym, offsets, isFloat, value)
+              local a = getAddress(baseSym)
+              for i = #offsets, 1, -1 do
+                a = readQword(a + offsets[i])
+                if a == nil or a == 0 then return false end
+              end
+              -- last offset is field
+              -- rebuild: CE order is final field first
+              return true
+            end
+
+            -- Helper: resolve CE-style offsets (list is top=final field ... bottom=first deref)
+            local function resolve(baseSym, offsets)
+              local a = getAddress(baseSym)
+              if not a then return nil end
+              for i = #offsets, 2, -1 do
+                a = readQword(a + offsets[i])
+                if a == nil or a == 0 then return nil end
+              end
+              return a + offsets[1]
+            end
+
+            local writes = {
+              {desc="health damaged", off={0x284,0x30,0x1B8}, v=0, float=true},
+              {desc="base health", off={0x280,0x30,0x1B8}, v=200, float=true},
+              {desc="stamina", off={0xD8,0x150,0x1B8}, v=200, float=true},
+              {desc="hunger", off={0x278,0x130,0x1B8}, v=5, float=true},
+              {desc="thirst", off={0x27C,0x130,0x1B8}, v=5, float=true},
+              {desc="oxygen", off={0x280,0x130,0x1B8}, v=100, float=true},
+            }
+            for _, w in ipairs(writes) do
+              local addr = resolve("Player", w.off)
+              if addr then
+                if w.float then writeFloat(addr, w.v) else writeInteger(addr, w.v) end
+                print("set "..w.desc)
+              else
+                print("miss "..w.desc)
+              end
+            end
+            [DISABLE]
+            </AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>12</ID>
+              <Description>"[Script] God mode (freeze HP/stamina)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+            {$lua}
+            if syntaxcheck then return end
+            if getAddressSafe("Player") == nil then
+              showMessage("Enable [ACTIVATE] first")
+              error("no Player")
+            end
+            local function resolve(baseSym, offsets)
+              local a = getAddress(baseSym)
+              if not a then return nil end
+              for i = #offsets, 2, -1 do
+                a = readQword(a + offsets[i])
+                if a == nil or a == 0 then return nil end
+              end
+              return a + offsets[1]
+            end
+            gg_grounded_god = gg_grounded_god or {}
+            local st = gg_grounded_god
+            st.timer = createTimer(nil, false)
+            st.timer.Interval = 100
+            st.timer.OnTimer = function()
+              local dmg = resolve("Player", {0x284,0x30,0x1B8})
+              local base = resolve("Player", {0x280,0x30,0x1B8})
+              local stam = resolve("Player", {0xD8,0x150,0x1B8})
+              if dmg then writeFloat(dmg, 0) end
+              if base then writeFloat(base, 200) end
+              if stam then writeFloat(stam, 200) end
+            end
+            st.timer.Enabled = true
+            [DISABLE]
+            {$lua}
+            if syntaxcheck then return end
+            local st = gg_grounded_god
+            if st and st.timer then
+              st.timer.Enabled = false
+              st.timer.destroy()
+              st.timer = nil
+            end
+            </AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>13</ID>
+              <Description>"[Script] Infinite hunger/thirst/oxygen"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+            {$lua}
+            if syntaxcheck then return end
+            if getAddressSafe("Player") == nil then
+              showMessage("Enable [ACTIVATE] first")
+              error("no Player")
+            end
+            local function resolve(baseSym, offsets)
+              local a = getAddress(baseSym)
+              if not a then return nil end
+              for i = #offsets, 2, -1 do
+                a = readQword(a + offsets[i])
+                if a == nil or a == 0 then return nil end
+              end
+              return a + offsets[1]
+            end
+            gg_grounded_surv = gg_grounded_surv or {}
+            local st = gg_grounded_surv
+            st.timer = createTimer(nil, false)
+            st.timer.Interval = 250
+            st.timer.OnTimer = function()
+              local hunger = resolve("Player", {0x278,0x130,0x1B8})
+              local thirst = resolve("Player", {0x27C,0x130,0x1B8})
+              local oxygen = resolve("Player", {0x280,0x130,0x1B8})
+              if hunger then writeFloat(hunger, 5) end
+              if thirst then writeFloat(thirst, 5) end
+              if oxygen then writeFloat(oxygen, 100) end
+            end
+            st.timer.Enabled = true
+            [DISABLE]
+            {$lua}
+            if syntaxcheck then return end
+            local st = gg_grounded_surv
+            if st and st.timer then
+              st.timer.Enabled = false
+              st.timer.destroy()
+              st.timer = nil
+            end
+            </AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>16</ID>
+              <Description>"Health"</Description>
+              <Options moHideChildren="1" moManualExpandCollapse="1"/>
+              <Color>00FF8080</Color>
+              <GroupHeader>1</GroupHeader>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>14</ID>
+                  <Description>"Health Damaged (0=full)"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>Player</Address>
+                  <Offsets>
+                    <Offset>284</Offset>
+                    <Offset>30</Offset>
+                    <Offset>1B8</Offset>
+                  </Offsets>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>15</ID>
+                  <Description>"Base Health"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>Player</Address>
+                  <Offsets>
+                    <Offset>280</Offset>
+                    <Offset>30</Offset>
+                    <Offset>1B8</Offset>
+                  </Offsets>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>21</ID>
+              <Description>"Stamina"</Description>
+              <Options moHideChildren="1" moManualExpandCollapse="1"/>
+              <Color>00FF8080</Color>
+              <GroupHeader>1</GroupHeader>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>17</ID>
+                  <Description>"Current Stamina"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>Player</Address>
+                  <Offsets>
+                    <Offset>D8</Offset>
+                    <Offset>150</Offset>
+                    <Offset>1B8</Offset>
+                  </Offsets>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>18</ID>
+                  <Description>"Base Stamina"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>Player</Address>
+                  <Offsets>
+                    <Offset>DC</Offset>
+                    <Offset>150</Offset>
+                    <Offset>1B8</Offset>
+                  </Offsets>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>19</ID>
+                  <Description>"Regen Delay"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>Player</Address>
+                  <Offsets>
+                    <Offset>E0</Offset>
+                    <Offset>150</Offset>
+                    <Offset>1B8</Offset>
+                  </Offsets>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>20</ID>
+                  <Description>"Regen Rate"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>Player</Address>
+                  <Offsets>
+                    <Offset>E4</Offset>
+                    <Offset>150</Offset>
+                    <Offset>1B8</Offset>
+                  </Offsets>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>30</ID>
+              <Description>"Survival"</Description>
+              <Options moHideChildren="1" moManualExpandCollapse="1"/>
+              <Color>00FF8080</Color>
+              <GroupHeader>1</GroupHeader>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>22</ID>
+                  <Description>"Hunger"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>Player</Address>
+                  <Offsets>
+                    <Offset>278</Offset>
+                    <Offset>130</Offset>
+                    <Offset>1B8</Offset>
+                  </Offsets>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>23</ID>
+                  <Description>"Thirst"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>Player</Address>
+                  <Offsets>
+                    <Offset>27C</Offset>
+                    <Offset>130</Offset>
+                    <Offset>1B8</Offset>
+                  </Offsets>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>24</ID>
+                  <Description>"Oxygen"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>Player</Address>
+                  <Offsets>
+                    <Offset>280</Offset>
+                    <Offset>130</Offset>
+                    <Offset>1B8</Offset>
+                  </Offsets>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>25</ID>
+                  <Description>"Max Hunger"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>Player</Address>
+                  <Offsets>
+                    <Offset>138</Offset>
+                    <Offset>130</Offset>
+                    <Offset>1B8</Offset>
+                  </Offsets>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>26</ID>
+                  <Description>"Max Thirst"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>Player</Address>
+                  <Offsets>
+                    <Offset>180</Offset>
+                    <Offset>130</Offset>
+                    <Offset>1B8</Offset>
+                  </Offsets>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>27</ID>
+                  <Description>"Max Oxygen"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>Player</Address>
+                  <Offsets>
+                    <Offset>1C8</Offset>
+                    <Offset>130</Offset>
+                    <Offset>1B8</Offset>
+                  </Offsets>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>28</ID>
+                  <Description>"Oxygen Rate"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>Player</Address>
+                  <Offsets>
+                    <Offset>1CC</Offset>
+                    <Offset>130</Offset>
+                    <Offset>1B8</Offset>
+                  </Offsets>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>29</ID>
+                  <Description>"Decay Rate"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>Player</Address>
+                  <Offsets>
+                    <Offset>284</Offset>
+                    <Offset>130</Offset>
+                    <Offset>1B8</Offset>
+                  </Offsets>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>38</ID>
+          <Description>"Economy (science / molars)"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <Color>0040C080</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>32</ID>
+              <Description>"[Script] Max science + molars"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+            {$lua}
+            if syntaxcheck then return end
+            if getAddressSafe("Statistics") == nil then
+              showMessage("Enable [ACTIVATE] first")
+              error("no Statistics")
+            end
+            local function resolve(baseSym, offsets)
+              local a = getAddress(baseSym)
+              if not a then return nil end
+              for i = #offsets, 2, -1 do
+                a = readQword(a + offsets[i])
+                if a == nil or a == 0 then return nil end
+              end
+              return a + offsets[1]
+            end
+            local science = resolve("Statistics", {0x470,0x2D0,0x170,0xB0,0x20})
+            local milk = resolve("Statistics", {0x480,0x2D0,0x170,0xB0,0x20})
+            local mega = resolve("Statistics", {0x47C,0x2D0,0x170,0xB0,0x20})
+            if science then writeInteger(science, 999999) end
+            if milk then writeInteger(milk, 999) end
+            if mega then writeInteger(mega, 999) end
+            print("Science/molars topped up")
+            [DISABLE]
+            </AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>33</ID>
+              <Description>"Raw Science"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>Statistics</Address>
+              <Offsets>
+                <Offset>470</Offset>
+                <Offset>2D0</Offset>
+                <Offset>170</Offset>
+                <Offset>B0</Offset>
+                <Offset>20</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>34</ID>
+              <Description>"Milk Molars"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>Statistics</Address>
+              <Offsets>
+                <Offset>480</Offset>
+                <Offset>2D0</Offset>
+                <Offset>170</Offset>
+                <Offset>B0</Offset>
+                <Offset>20</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>35</ID>
+              <Description>"Mega Milk Molars"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>Statistics</Address>
+              <Offsets>
+                <Offset>47C</Offset>
+                <Offset>2D0</Offset>
+                <Offset>170</Offset>
+                <Offset>B0</Offset>
+                <Offset>20</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>36</ID>
+              <Description>"Brainpower"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>Statistics</Address>
+              <Offsets>
+                <Offset>474</Offset>
+                <Offset>2D0</Offset>
+                <Offset>170</Offset>
+                <Offset>B0</Offset>
+                <Offset>20</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>37</ID>
+              <Description>"Level"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>Statistics</Address>
+              <Offsets>
+                <Offset>478</Offset>
+                <Offset>2D0</Offset>
+                <Offset>170</Offset>
+                <Offset>B0</Offset>
+                <Offset>20</Offset>
+              </Offsets>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>43</ID>
+          <Description>"Mutations / hauling"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <Color>00C08040</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>39</ID>
+              <Description>"Max Mutations"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>Player</Address>
+              <Offsets>
+                <Offset>100</Offset>
+                <Offset>8</Offset>
+                <Offset>1A8</Offset>
+                <Offset>258</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>40</ID>
+              <Description>"Active Mutations"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>Player</Address>
+              <Offsets>
+                <Offset>104</Offset>
+                <Offset>8</Offset>
+                <Offset>1A8</Offset>
+                <Offset>258</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>41</ID>
+              <Description>"Haul Capacity"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>Player</Address>
+              <Offsets>
+                <Offset>E0</Offset>
+                <Offset>198</Offset>
+                <Offset>18</Offset>
+                <Offset>1A8</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>42</ID>
+              <Description>"Haul"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>Player</Address>
+              <Offsets>
+                <Offset>120</Offset>
+                <Offset>198</Offset>
+                <Offset>18</Offset>
+                <Offset>1A8</Offset>
+              </Offsets>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>49</ID>
+          <Description>"Held gear (right hand)"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <Color>008080C0</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>44</ID>
+              <Description>"Stack"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>Player</Address>
+              <Offsets>
+                <Offset>140</Offset>
+                <Offset>200</Offset>
+                <Offset>16E8</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>45</ID>
+              <Description>"Durability"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>Player</Address>
+              <Offsets>
+                <Offset>228</Offset>
+                <Offset>200</Offset>
+                <Offset>16E8</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>46</ID>
+              <Description>"Base Enhancement"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>Player</Address>
+              <Offsets>
+                <Offset>250</Offset>
+                <Offset>200</Offset>
+                <Offset>16E8</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>47</ID>
+              <Description>"Bonus Enhancement"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>Player</Address>
+              <Offsets>
+                <Offset>254</Offset>
+                <Offset>200</Offset>
+                <Offset>16E8</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>48</ID>
+              <Description>"Spoil Time"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>Player</Address>
+              <Offsets>
+                <Offset>158</Offset>
+                <Offset>200</Offset>
+                <Offset>16E8</Offset>
+              </Offsets>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>70</ID>
+          <Description>"World settings (GameState)"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <Color>00C04080</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>50</ID>
+              <Description>"All Recipes Unlocked"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>GameState</Address>
+              <Offsets>
+                <Offset>3A</Offset>
+                <Offset>138</Offset>
+                <Offset>388</Offset>
+                <Offset>170</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>51</ID>
+              <Description>"Free Build"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>GameState</Address>
+              <Offsets>
+                <Offset>3B</Offset>
+                <Offset>138</Offset>
+                <Offset>388</Offset>
+                <Offset>170</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>52</ID>
+              <Description>"Building Integrity"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>GameState</Address>
+              <Offsets>
+                <Offset>3C</Offset>
+                <Offset>138</Offset>
+                <Offset>388</Offset>
+                <Offset>170</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>53</ID>
+              <Description>"All Recipes Free"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>GameState</Address>
+              <Offsets>
+                <Offset>3D</Offset>
+                <Offset>138</Offset>
+                <Offset>388</Offset>
+                <Offset>170</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>54</ID>
+              <Description>"Bugs Spawn"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>GameState</Address>
+              <Offsets>
+                <Offset>3E</Offset>
+                <Offset>138</Offset>
+                <Offset>388</Offset>
+                <Offset>170</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>55</ID>
+              <Description>"Bugs Ignore Player"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>GameState</Address>
+              <Offsets>
+                <Offset>3F</Offset>
+                <Offset>138</Offset>
+                <Offset>388</Offset>
+                <Offset>170</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>56</ID>
+              <Description>"Stamina Drain"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>GameState</Address>
+              <Offsets>
+                <Offset>40</Offset>
+                <Offset>138</Offset>
+                <Offset>388</Offset>
+                <Offset>170</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>57</ID>
+              <Description>"Food Spoiling"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>GameState</Address>
+              <Offsets>
+                <Offset>44</Offset>
+                <Offset>138</Offset>
+                <Offset>388</Offset>
+                <Offset>170</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>58</ID>
+              <Description>"Pet Invincibility"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>GameState</Address>
+              <Offsets>
+                <Offset>47</Offset>
+                <Offset>138</Offset>
+                <Offset>388</Offset>
+                <Offset>170</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>59</ID>
+              <Description>"All Mutations Unlocked"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>GameState</Address>
+              <Offsets>
+                <Offset>49</Offset>
+                <Offset>138</Offset>
+                <Offset>388</Offset>
+                <Offset>170</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>60</ID>
+              <Description>"Fully Yoked"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>GameState</Address>
+              <Offsets>
+                <Offset>4A</Offset>
+                <Offset>138</Offset>
+                <Offset>388</Offset>
+                <Offset>170</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>61</ID>
+              <Description>"Player Damage (byte toggle)"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>GameState</Address>
+              <Offsets>
+                <Offset>41</Offset>
+                <Offset>138</Offset>
+                <Offset>388</Offset>
+                <Offset>170</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>62</ID>
+              <Description>"Friendly Fire"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>GameState</Address>
+              <Offsets>
+                <Offset>42</Offset>
+                <Offset>138</Offset>
+                <Offset>388</Offset>
+                <Offset>170</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>63</ID>
+              <Description>"Player Damage scale"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>GameState</Address>
+              <Offsets>
+                <Offset>50</Offset>
+                <Offset>138</Offset>
+                <Offset>388</Offset>
+                <Offset>170</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>64</ID>
+              <Description>"Enemy Damage scale"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>GameState</Address>
+              <Offsets>
+                <Offset>54</Offset>
+                <Offset>138</Offset>
+                <Offset>388</Offset>
+                <Offset>170</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>65</ID>
+              <Description>"Time of Day Rate"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>GameState</Address>
+              <Offsets>
+                <Offset>70</Offset>
+                <Offset>138</Offset>
+                <Offset>388</Offset>
+                <Offset>170</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>66</ID>
+              <Description>"Hunger Burn Rate"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>GameState</Address>
+              <Offsets>
+                <Offset>74</Offset>
+                <Offset>138</Offset>
+                <Offset>388</Offset>
+                <Offset>170</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>67</ID>
+              <Description>"Thirst Burn Rate"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>GameState</Address>
+              <Offsets>
+                <Offset>78</Offset>
+                <Offset>138</Offset>
+                <Offset>388</Offset>
+                <Offset>170</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>68</ID>
+              <Description>"Creature Health Scaling"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>GameState</Address>
+              <Offsets>
+                <Offset>80</Offset>
+                <Offset>138</Offset>
+                <Offset>388</Offset>
+                <Offset>170</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>69</ID>
+              <Description>"Fall Damage Scaling"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>GameState</Address>
+              <Offsets>
+                <Offset>84</Offset>
+                <Offset>138</Offset>
+                <Offset>388</Offset>
+                <Offset>170</Offset>
+              </Offsets>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>74</ID>
+          <Description>"DEBUG"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <Color>00808080</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>71</ID>
+              <Description>"Fetch Base Addresses (AOB)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+            if syntaxcheck then return end
+            [ENABLE]
+            print("Fetching Base Addresses...")
+            local aobList = {
+            "4C 8B 05 ?? ?? ?? ?? 4D 85 C0 0F 84 ?? ?? ?? ?? 49 8B 80 40 01 00 00 48 89 9C 24 A0 00 00 00 48 85 C0",
+            "4C 8B 35 ?? ?? ?? ?? 48 63 05 ?? ?? ?? ?? 4D 8D 24 C6 4D 3B F4",
+            "48 8B 05 ?? ?? ?? ?? 48 89 3C D8 48 8B 9C 24 C0 00 00 00 44 88 A7 C0",
+            "48 8B 05 ?? ?? ?? ?? 48 8B D1 48 8B 88 F8 0A 00 00 48 85 C9 74 07 48 8B",
+            "48 8B 05 ?? ?? ?? ?? 49 8B D3 45 33 C0 48 8B 0A 48 39 81 80 02 00 00 74 11"
+            }
+            local aobNames = {"Player","Statistics","GearData","EngineData","GameState"}
+            local xbase = getAddress(process)
+            print(string.format("Base: %X", xbase))
+            for i = 1, #aobList do
+              local aob = AOBScan(aobList[i], "+X*C*W")
+              if aob == nil or aob.Count == 0 then
+                print(aobNames[i]..": MISS")
+              else
+                local instruct = getAddressSafe(aob[0])
+                local distance = readInteger(instruct + 3)
+                local instructSize = getInstructionSize(instruct)
+                local address = (instruct + distance + instructSize) - xbase
+                print(string.format("%s: %s+%X", aobNames[i], process, address))
+              end
+              if aob then aob.destroy() end
+            end
+            [DISABLE]
+            </AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>72</ID>
+              <Description>"Player static (hex)"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>8 Bytes</VariableType>
+              <Address>Player</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>73</ID>
+              <Description>"Statistics static (hex)"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>8 Bytes</VariableType>
+              <Address>Statistics</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+</CheatTable>

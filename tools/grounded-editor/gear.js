@@ -10,6 +10,7 @@
 
   const FULL_DURABILITY_HEAD = new Uint8Array([0x99, 0x99, 0x99, 0x09, 0, 0, 0, 0]);
   const MAX_SMITH_LEVEL = 9;
+  const MAX_SMITH_LEVEL_NGP = 15;
   const ONE_SHOT_ATTACK_MULT = 100;
   const GOD_DURABILITY = 99999;
 
@@ -357,7 +358,9 @@
     return { bytes: buf, values: applied };
   }
 
-  function applyOneShotWeapons(rawPlayer) {
+  function applyOneShotWeapons(rawPlayer, opts) {
+    const maxLevel =
+      opts && opts.ngPlus ? MAX_SMITH_LEVEL_NGP : MAX_SMITH_LEVEL;
     let buf = new Uint8Array(C.toBytes(rawPlayer));
     let changed = 0;
     for (;;) {
@@ -365,13 +368,13 @@
       const next = items.findIndex(
         (it) =>
           (it.kind === "weapon" || it.kind === "shield") &&
-          (it.level < MAX_SMITH_LEVEL ||
+          (it.level < maxLevel ||
             it.enhancement === "None" ||
             it.attackMult < ONE_SHOT_ATTACK_MULT)
       );
       if (next < 0) break;
       const r = writeGearItem(buf, next, {
-        level: MAX_SMITH_LEVEL,
+        level: maxLevel,
         enhancement: "Mighty",
         attackMult: ONE_SHOT_ATTACK_MULT,
         durability: GOD_DURABILITY,
@@ -379,12 +382,15 @@
       });
       buf = r.bytes;
       changed++;
-      if (changed > 40) break;
+      if (changed > 60) break;
     }
-    return { bytes: buf, changed };
+    return { bytes: buf, changed, level: maxLevel };
   }
 
-  function applyGodArmor(rawPlayer) {
+  function applyGodArmor(rawPlayer, opts) {
+    const maxLevel =
+      opts && opts.ngPlus ? MAX_SMITH_LEVEL_NGP : MAX_SMITH_LEVEL;
+    const pathName = (opts && opts.path) || "Bulky";
     let buf = new Uint8Array(C.toBytes(rawPlayer));
     let changed = 0;
     for (;;) {
@@ -392,22 +398,29 @@
       const next = items.findIndex(
         (it) =>
           it.kind === "armor" &&
-          (it.level < MAX_SMITH_LEVEL ||
-            it.mid === "None" ||
+          (it.level < maxLevel ||
+            it.mid !== pathName ||
             it.durability < GOD_DURABILITY)
       );
       if (next < 0) break;
       const r = writeGearItem(buf, next, {
-        level: MAX_SMITH_LEVEL,
-        mid: "Bulky",
+        level: maxLevel,
+        mid: pathName,
         durability: GOD_DURABILITY,
         fullDurabilityHead: true,
       });
       buf = r.bytes;
       changed++;
-      if (changed > 40) break;
+      if (changed > 60) break;
     }
-    return { bytes: buf, changed };
+    return { bytes: buf, changed, path: pathName, level: maxLevel };
+  }
+
+  function applySleekArmor(rawPlayer, opts) {
+    return applyGodArmor(rawPlayer, {
+      path: "Sleek",
+      ngPlus: !!(opts && opts.ngPlus),
+    });
   }
 
   window.GroundedGear = {
@@ -417,10 +430,12 @@
     writeGearItem,
     applyOneShotWeapons,
     applyGodArmor,
+    applySleekArmor,
     classifyName,
     dollSlotFor,
     DOLL_SLOTS,
     MAX_SMITH_LEVEL,
+    MAX_SMITH_LEVEL_NGP,
     ONE_SHOT_ATTACK_MULT,
     GOD_DURABILITY,
   };

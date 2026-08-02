@@ -62,6 +62,7 @@
     <button class="tab" data-tab="gear" type="button">Weapons &amp; Armor</button>
     <button class="tab" data-tab="mutations" type="button">Mutations</button>
     <button class="tab" data-tab="tech" type="button">BURG.L / Tech</button>
+    <button class="tab" data-tab="progress" type="button">Progress</button>
     <button class="tab" data-tab="travel" type="button">Travel / Time</button>
     <button class="tab" data-tab="inventory" type="button">Items</button>
     <button class="tab" data-tab="chests" type="button">Chests</button>
@@ -94,8 +95,14 @@
         <label>Active player file
           <select id="player-file-select"></select>
         </label>
+        <label class="hint-label">Edit target
+          <select id="player-edit-mode">
+            <option value="mirror">Host + mirror all Player_*.csav</option>
+            <option value="solo">Only selected Player_*.csav / HostPlayer</option>
+          </select>
+        </label>
       </div>
-      <p class="hint" id="player-file-hint">HostPlayer is the edit source; other Player_*.csav files are mirrored on save.</p>
+      <p class="hint" id="player-file-hint">HostPlayer is the usual edit source; solo mode writes only the selected file.</p>
       <div id="change-summary" class="callout" hidden></div>
     </section>
 
@@ -168,7 +175,10 @@
       </div>
       <div class="quick-actions">
         <button type="button" class="btn btn--accent" id="btn-oneshot">One-shot weapons</button>
-        <button type="button" class="btn btn--accent" id="btn-godarmor">God mode armor</button>
+        <button type="button" class="btn btn--accent" id="btn-godarmor">God mode armor (Bulky)</button>
+        <button type="button" class="btn btn--accent" id="btn-sleekarmor">Sleek IX armor</button>
+        <button type="button" class="btn" id="btn-oneshot-ngp">One-shot NG+ XV</button>
+        <button type="button" class="btn" id="btn-sleek-ngp">Sleek NG+ XV</button>
         <button type="button" class="btn" id="btn-gear-refresh">Reload</button>
       </div>
       <p class="hint">One-shot: Mighty IX + attack amp ×100 + max durability. God armor: Bulky IX + huge durability. Close the game before install.</p>
@@ -277,6 +287,33 @@
       <p class="hint" id="tech-trees-hint">—</p>
     </section>
 
+    <section id="panel-progress" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Progress unlocks</h2>
+        <p>BURG.L purchases, building blueprints, knowledge bulk unlocks, and HostPlayer achievements (MIX.R / labs / SCABs flags, etc.).</p>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-prog-purchases">Unlock BURG.L purchases</button>
+        <button type="button" class="btn btn--accent" id="btn-prog-buildings">Unlock all buildings</button>
+        <button type="button" class="btn btn--accent" id="btn-prog-knowledge">Unlock bestiary/POI/keys/SCABs</button>
+        <button type="button" class="btn btn--accent" id="btn-prog-achievements">Complete achievements</button>
+        <button type="button" class="btn" id="btn-prog-refresh">Reload</button>
+      </div>
+      <p class="hint" id="prog-hint">Load a save to unlock progress lists.</p>
+      <div class="form-grid">
+        <label>Purchases<span id="prog-purchase-count" class="hint">—</span></label>
+        <label>Buildings<span id="prog-building-count" class="hint">—</span></label>
+        <label>Achievements<span id="prog-ach-count" class="hint">—</span></label>
+      </div>
+      <h3 class="subhead">Achievements</h3>
+      <div class="table-wrap">
+        <table class="data-table" id="prog-ach-table">
+          <thead><tr><th>Id</th><th>Flags</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
     <section id="panel-travel" class="panel" hidden>
       <div class="panel__head">
         <h2>Travel &amp; time</h2>
@@ -373,6 +410,9 @@
         <p>World.csav InventoryComponents (chests, baskets, fridges). Add clones an item already in that storage; empty chests need one in-game item first.</p>
       </div>
       <div class="form-grid">
+        <label>Storage filter
+          <input id="chest-filter" type="search" placeholder="Legit gear, Tier3, Fridge…" />
+        </label>
         <label>Storage
           <select id="chest-select"></select>
         </label>
@@ -384,6 +424,7 @@
       </div>
       <div class="quick-actions">
         <button type="button" class="btn btn--accent" id="btn-chest-add">Add / stack</button>
+        <button type="button" class="btn" id="btn-chest-dup-all">Duplicate into all non-empty chests</button>
         <button type="button" class="btn" id="btn-chest-refresh">Reload</button>
       </div>
       <p class="hint" id="chest-hint">Load a save with World.csav to browse storage.</p>
@@ -417,9 +458,32 @@
 
     <section id="panel-cheats" class="panel" hidden>
       <div class="panel__head">
-        <h2>Notes &amp; paths</h2>
-        <p>ooz-wasm (GPL-3.0) decompresses Kraken blocks in-browser; writes use Oodle copy framing.</p>
+        <h2>Presets, compare, safety</h2>
+        <p>One-click OP preset, loadout JSON export, slot compare, and write safety checks.</p>
       </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-op-preset">Make me OP</button>
+        <button type="button" class="btn" id="btn-op-ngp">Make me OP (NG+ XV)</button>
+        <button type="button" class="btn" id="btn-export-loadout">Export loadout JSON</button>
+        <button type="button" class="btn" id="btn-dry-run">Oodle dry-run</button>
+        <button type="button" class="btn" id="btn-check-game">Check if Grounded is running</button>
+      </div>
+      <p class="hint" id="preset-hint">OP fills vitals, molars, science, mutations, Sleek/Mighty gear, analyze/tech/buildings/purchases.</p>
+      <h3 class="subhead">Live cheats (Cheat Engine)</h3>
+      <p class="hint">
+        Super speed, super jump, fly, and live vitals need RAM edits —
+        download
+        <a href="GGdropmanGroundedV1.0.CT" download>GGdropmanGroundedV1.0.CT</a>
+        (see <a href="CHEAT_TABLE_README.md">CHEAT_TABLE_README.md</a>).
+        Attach to <code>Maine-Win64-Shipping.exe</code>, enable <strong>[ACTIVATE]</strong>, then Movement scripts (super speed / jump / <strong>no-clip fly</strong>).
+      </p>
+      <h3 class="subhead">Compare another slot folder</h3>
+      <p class="hint">Pick a second Grounded slot folder to diff molars / gear counts / knowledge vs the loaded save.</p>
+      <div class="quick-actions">
+        <button type="button" class="btn" id="btn-compare-folder">Compare folder…</button>
+      </div>
+      <pre id="compare-out" class="hint" style="white-space:pre-wrap"></pre>
+      <h3 class="subhead">Notes &amp; paths</h3>
       <div class="table-wrap">
         <table class="data-table" id="cheat-table">
           <thead><tr><th>Tip</th><th>Detail</th></tr></thead>
@@ -442,6 +506,8 @@
   <script src="storage.js"></script>
   <script src="perks.js"></script>
   <script src="tech.js"></script>
+  <script src="progress.js"></script>
+  <script src="presets.js"></script>
   <script src="position.js"></script>
   <script src="calendar.js"></script>
   <script src="hauling.js"></script>

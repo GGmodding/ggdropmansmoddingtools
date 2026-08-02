@@ -347,11 +347,48 @@
     };
   }
 
+  function duplicateItemToAllChests(rawWorld, itemName, stackCount) {
+    const name = String(itemName || "").trim();
+    if (!/^[A-Za-z][A-Za-z0-9_]{1,60}$/.test(name)) {
+      throw new Error("Invalid item id.");
+    }
+    const qty = Math.max(1, Math.min(9999, Math.floor(Number(stackCount) || 1)));
+    let buf = new Uint8Array(C.toBytes(rawWorld));
+    const listed = listStorages(buf);
+    let touched = 0;
+    let skipped = 0;
+    for (let i = 0; i < listed.storages.length; i++) {
+      const st = listed.storages[i];
+      if (!st.items.length) {
+        skipped++;
+        continue;
+      }
+      try {
+        // Re-resolve index after prior mutations
+        const now = listStorages(buf);
+        const match = now.storages.find(
+          (s) => s.invAt === st.invAt || s.label === st.label
+        );
+        if (!match || !match.items.length) {
+          skipped++;
+          continue;
+        }
+        const r = addStorageItem(buf, match.index, name, qty);
+        buf = new Uint8Array(r.bytes);
+        touched++;
+      } catch (_) {
+        skipped++;
+      }
+    }
+    return { bytes: buf, touched, skipped, item: name, stack: qty };
+  }
+
   window.GroundedStorage = {
     listStorages,
     getStorage,
     removeStorageItem,
     setStorageStack,
     addStorageItem,
+    duplicateItemToAllChests,
   };
 })();
