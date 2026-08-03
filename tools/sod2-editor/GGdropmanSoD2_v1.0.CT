@@ -2,8 +2,8 @@
 <CheatTable CheatEngineTableVersion="46">
   <CheatEntries>
     <CheatEntry>
-      <ID>86</ID>
-      <Description>"=== GGdropmans State of Decay 2 v1.1 ==="</Description>
+      <ID>108</ID>
+      <Description>"=== GGdropmans State of Decay 2 v1.2 ==="</Description>
       <Options moHideChildren="1"/>
       <Color>00C45A2A</Color>
       <GroupHeader>1</GroupHeader>
@@ -25,7 +25,7 @@
           <Description>"README — how to use"</Description>
           <VariableType>Auto Assembler Script</VariableType>
           <AssemblerScript>{
-GGdropmans State of Decay 2 Hybrid Cheat Table v1.1
+GGdropmans State of Decay 2 Hybrid Cheat Table v1.2
 =====================================================
 Process (live): StateOfDecay2-Win64-Shipping.exe
 Save bridge: Node.js + ct-cli.js next to this .CT
@@ -40,25 +40,20 @@ TWO LAYERS
    - Install Node.js and ensure "node" is on PATH.
    - Tick ENABLE — Load save-bridge helpers
    - Tick Set / remember save path → pick SaveGame_*.sav
-   - Tick any Preset, Action, or Spawn kit (auto-backs up to .bak)
+   - Tick Presets, Actions, Spawn items/vehicles (auto .bak)
 
    Steam: %LOCALAPPDATA%\StateOfDecay2\Saved\Steam\
    Epic:  %LOCALAPPDATA%\StateOfDecay2\Saved\Epic\
 
 2) LIVE SESSION
    - Attach CE to StateOfDecay2-Win64-Shipping.exe in-game.
-   - Find Influence / Resource / Health / Stamina
-   - LIVE — Infinite ammo / Speed / Jump / Fly:
-       Find Ammo → Infinite Ammo timer
-       Find Speed → Super Speed
-       Find Jump → Super Jump
-       Find Gravity → Fly Gravity 0 (+ optional Z Velocity)
-
-Deep trait/skill/outfit/item pickers stay in the browser editor:
-  editor.html
+   - Infinite ammo / Speed / Jump / Fly (Find → timer)
+   - LIVE — Summon vehicle: Find Player + Vehicle pos → summon
+     (teleports existing car; does not create new actors)
+   - New cars/Plane: SAVE — Spawn vehicles → reload community
 
 Plane is a cut asset — drives on land, does not fly.
-True collision noclip AOBs still deferred.
+True live SpawnActor / noclip AOBs still deferred.
 }
 [ENABLE]
 [DISABLE]
@@ -1171,13 +1166,586 @@ GG_SOD2.oneShotUntick()
         </CheatEntry>
         <CheatEntry>
           <ID>58</ID>
+          <Description>"=== SAVE — Spawn vehicles (reload) ==="</Description>
+          <Options moHideChildren="1"/>
+          <Color>00FFA500</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>59</ID>
+              <Description>"Notes — cannot create actors mid-session via CE alone"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+SoD2 has no public console spawnvehicle like YOSE.
+True live spawn needs a native game mod (e.g. Nexus vehicle spawn).
+
+This table:
+1) SAVE spawn — clones a VehicleSave + sets class, parks near base.
+   Close game → tick a spawn → launch → load community.
+2) LIVE summon — teleports an EXISTING world vehicle to you.
+
+Plane/golf cart/RV are cut assets; Plane does not fly.
+}
+[ENABLE]
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>60</ID>
+              <Description>"Spawn Plane near base (reload)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'spawn-vehicle', 'plane'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>61</ID>
+              <Description>"Spawn Golf cart (reload)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'spawn-vehicle', 'golfcart'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>62</ID>
+              <Description>"Spawn RV (reload)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'spawn-vehicle', 'rv'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>63</ID>
+              <Description>"Spawn Sport 4-wheeler (reload)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'spawn-vehicle', 'sport4x4'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>64</ID>
+              <Description>"Spawn Sport coupe (reload)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'spawn-vehicle', 'coupe'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>65</ID>
+              <Description>"Spawn Old sedan (reload)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'spawn-vehicle', 'sedan'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>66</ID>
+              <Description>"Spawn Hatchback (reload)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'spawn-vehicle', 'hatchback'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>67</ID>
+              <Description>"Spawn Utility truck (reload)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'spawn-vehicle', 'utility'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>68</ID>
+              <Description>"Spawn Apoc van (reload)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'spawn-vehicle', 'van'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>69</ID>
+              <Description>"Spawn Taxi (reload)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'spawn-vehicle', 'taxi'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>70</ID>
+              <Description>"Spawn Modern SUV (reload)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'spawn-vehicle', 'suv'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>71</ID>
+              <Description>"Spawn Classic truck (reload)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'spawn-vehicle', 'classictruck'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>72</ID>
+              <Description>"Custom vehicle path (prompt)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+local path = inputQuery('Vehicle class', 'Full /Game/Art/Driveables/..._C path', '/Game/Art/Driveables/Plane/Vehicle_Plane.Vehicle_Plane_C')
+if not path or path == '' then error('cancelled', 0) end
+GG_SOD2.runCli({'action', 'spawn-vehicle', path})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>73</ID>
+          <Description>"=== LIVE — Summon vehicle to you ==="</Description>
+          <Options moHideChildren="1"/>
+          <Color>00FFA500</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>74</ID>
+              <Description>"Notes — teleport existing car (not create new)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+Attach in-game.
+
+1) Find Player position — walk to change X, narrow scan
+2) Find Vehicle position — enter a car or push it so X changes
+3) Tick Summon vehicle to player
+
+This moves that vehicle actor to you. It does NOT spawn a new car from nothing.
+For a new Plane/truck in the save, use SAVE — Spawn vehicles, then reload.
+}
+[ENABLE]
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>75</ID>
+              <Description>"Find Player position (FVector X)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+
+local function fail(msg)
+  showMessage('GGdropman SoD2 Live: '..tostring(msg))
+  error(msg, 0)
+end
+
+if getOpenedProcessID() == 0 then
+  fail('Attach to StateOfDecay2-Win64-Shipping.exe first')
+end
+
+local key = 'PlayerPos'
+local st = GG_SOD2.live[key] or { step = 0 }
+GG_SOD2.live[key] = st
+
+if st.step == 0 then
+  local v = inputQuery('Find PlayerPos X', 'Note your world X if known, or use CE Unknown→Changed while walking then enter X here.\nEnter CURRENT X (float). UE FVector is usually X,Y,Z contiguous.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if st.ms then pcall(function() st.ms.destroy() end) end
+  st.ms = createMemScan()
+  st.ms.firstScan(soExactValue, vtSingle, rtRoundedDefault, v, '', '0', '7fffffffffffffff', '+W-C', fsmNotAligned, '1', false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  fl.deinitialize()
+  st.step = 1
+  showMessage('First scan ('..tostring(n)..' hits).\nMove (change X), then tick Find PlayerPos again with the NEW X.')
+elseif st.step == 1 then
+  local v = inputQuery('Find PlayerPos X (next)', 'Enter the NEW X value.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if not st.ms then fail('Restart Find') end
+  st.ms.nextScan(soExactValue, rtRoundedDefault, v, '', false, false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  if n == 0 then
+    fl.deinitialize()
+    st.step = 0
+    fail('0 results — restart Find PlayerPos')
+  end
+  local addr = fl.Address[0]
+  local num = tonumber(addr, 16) or getAddress(addr)
+  st.addr = num
+  st.addrStr = addr
+  fl.deinitialize()
+  st.step = 0
+  showMessage('PlayerPos FVector @ '..tostring(addr)..' (Y=+4 Z=+8 assumed)\n'..tostring(n)..' hit(s); using first.')
+end
+
+createThread(function()
+  sleep(200)
+  if memrec then memrec.Active = false end
+end)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>76</ID>
+              <Description>"Find Vehicle position (FVector X)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+
+local function fail(msg)
+  showMessage('GGdropman SoD2 Live: '..tostring(msg))
+  error(msg, 0)
+end
+
+if getOpenedProcessID() == 0 then
+  fail('Attach to StateOfDecay2-Win64-Shipping.exe first')
+end
+
+local key = 'VehiclePos'
+local st = GG_SOD2.live[key] or { step = 0 }
+GG_SOD2.live[key] = st
+
+if st.step == 0 then
+  local v = inputQuery('Find VehiclePos X', 'Enter/exit or nudge a vehicle so its X changes.\nEnter CURRENT X (float). UE FVector is usually X,Y,Z contiguous.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if st.ms then pcall(function() st.ms.destroy() end) end
+  st.ms = createMemScan()
+  st.ms.firstScan(soExactValue, vtSingle, rtRoundedDefault, v, '', '0', '7fffffffffffffff', '+W-C', fsmNotAligned, '1', false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  fl.deinitialize()
+  st.step = 1
+  showMessage('First scan ('..tostring(n)..' hits).\nMove (change X), then tick Find VehiclePos again with the NEW X.')
+elseif st.step == 1 then
+  local v = inputQuery('Find VehiclePos X (next)', 'Enter the NEW X value.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if not st.ms then fail('Restart Find') end
+  st.ms.nextScan(soExactValue, rtRoundedDefault, v, '', false, false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  if n == 0 then
+    fl.deinitialize()
+    st.step = 0
+    fail('0 results — restart Find VehiclePos')
+  end
+  local addr = fl.Address[0]
+  local num = tonumber(addr, 16) or getAddress(addr)
+  st.addr = num
+  st.addrStr = addr
+  fl.deinitialize()
+  st.step = 0
+  showMessage('VehiclePos FVector @ '..tostring(addr)..' (Y=+4 Z=+8 assumed)\n'..tostring(n)..' hit(s); using first.')
+end
+
+createThread(function()
+  sleep(200)
+  if memrec then memrec.Active = false end
+end)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>77</ID>
+              <Description>"Summon vehicle to player"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+local p = GG_SOD2.live.PlayerPos
+local v = GG_SOD2.live.VehiclePos
+if not p or not p.addr then
+  showMessage('Run Find Player position first')
+  error('no player', 0)
+end
+if not v or not v.addr then
+  showMessage('Run Find Vehicle position first (stand near / enter a car, or scan while it moves)')
+  error('no vehicle', 0)
+end
+local off = inputQuery('Forward offset', 'Meters-ish UE units to place the car in front of you', '400')
+off = tonumber(off) or 400
+local px = readFloat(p.addr)
+local py = readFloat(p.addr + 4)
+local pz = readFloat(p.addr + 8)
+writeFloat(v.addr, px + off)
+writeFloat(v.addr + 4, py)
+writeFloat(v.addr + 8, pz + 60)
+showMessage(string.format('Summoned vehicle to player\nPlayer %.1f,%.1f,%.1f\nVehicle written +%.0f on X', px, py, pz, off))
+createThread(function()
+  sleep(200)
+  if memrec then memrec.Active = false end
+end)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>78</ID>
+              <Description>"Infinite vehicle fuel (find float first)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+
+local function fail(msg)
+  showMessage('GGdropman SoD2 Live: '..tostring(msg))
+  error(msg, 0)
+end
+
+if getOpenedProcessID() == 0 then
+  fail('Attach to StateOfDecay2-Win64-Shipping.exe first')
+end
+
+local key = 'VehFuel'
+local st = GG_SOD2.live[key] or { step = 0 }
+GG_SOD2.live[key] = st
+
+if st.step == 0 then
+  local v = inputQuery('Find VehFuel', 'Enter a car, note fuel float (0-1), drive to change, next-scan.\nEnter the CURRENT value, then OK.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if st.ms then pcall(function() st.ms.destroy() end) end
+  st.ms = createMemScan()
+  st.ms.firstScan(soExactValue, vtSingle, rtRoundedDefault, v, '', '0', '7fffffffffffffff', '+W-C', fsmNotAligned, '1', false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  fl.deinitialize()
+  st.step = 1
+  showMessage('First scan done ('..tostring(n)..' hits).\nChange VehFuel in-game, then tick this entry AGAIN.')
+elseif st.step == 1 then
+  local v = inputQuery('Find VehFuel (next)', 'Enter the NEW value after changing it in-game.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if not st.ms then fail('Restart Find (step 0 missing)') end
+  st.ms.nextScan(soExactValue, rtRoundedDefault, v, '', false, false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  if n == 0 then
+    fl.deinitialize()
+    st.step = 0
+    fail('0 results — untick and restart Find VehFuel')
+  end
+  local addr = fl.Address[0]
+  if n > 1 then
+    showMessage(tostring(n)..' results left. Using first: '..addr..'\nNarrow further with CE scan UI if needed.')
+  end
+  local num = tonumber(addr, 16) or getAddress(addr)
+  st.addr = num
+  st.addrStr = addr
+  fl.deinitialize()
+  st.step = 0
+  showMessage('VehFuel address: '..tostring(addr)..'\nEnable a Freeze entry below.')
+end
+
+createThread(function()
+  sleep(200)
+  if memrec then memrec.Active = false end
+end)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>79</ID>
+              <Description>"Infinite vehicle fuel (timer 1.0)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+local st = GG_SOD2.live['VehFuel']
+if not st or not st.addr then
+  showMessage('Run Find VehFuel first')
+  error('no addr', 0)
+end
+local key = 'timer_VehFuel'
+if GG_SOD2.live[key] then
+  pcall(function() GG_SOD2.live[key].destroy() end)
+  GG_SOD2.live[key] = nil
+end
+local t = createTimer(nil, false)
+t.Interval = 50
+t.OnTimer = function(timer)
+  if not st.addr then return end
+  writeFloat(st.addr, 1)
+end
+t.Enabled = true
+GG_SOD2.live[key] = t
+showMessage('Infinite Veh Fuel ON @ '..string.format('%X', st.addr)..' = 1 (every 50ms)\nUntick to stop.')
+{$asm}
+[DISABLE]
+{$lua}
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+local key = 'timer_VehFuel'
+if GG_SOD2.live[key] then
+  pcall(function() GG_SOD2.live[key].destroy() end)
+  GG_SOD2.live[key] = nil
+end
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>80</ID>
           <Description>"=== LIVE — Scan / Freeze ==="</Description>
           <Options moHideChildren="1"/>
           <Color>000080FF</Color>
           <GroupHeader>1</GroupHeader>
           <CheatEntries>
             <CheatEntry>
-              <ID>59</ID>
+              <ID>81</ID>
               <Description>"Notes — live usage"</Description>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>{
@@ -1198,7 +1766,7 @@ Addresses move; re-find after relaunch.
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>60</ID>
+              <ID>82</ID>
               <Description>"Find Influence"</Description>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
@@ -1268,7 +1836,7 @@ end)
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>61</ID>
+              <ID>83</ID>
               <Description>"Freeze Influence 9999"</Description>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
@@ -1301,7 +1869,7 @@ showMessage('Freezing '..desc..' @ '..mr.Address..' = 9999')
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>62</ID>
+              <ID>84</ID>
               <Description>"Find Resource (food/meds/ammo/mat/fuel)"</Description>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
@@ -1371,7 +1939,7 @@ end)
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>63</ID>
+              <ID>85</ID>
               <Description>"Freeze Resource 999"</Description>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
@@ -1404,7 +1972,7 @@ showMessage('Freezing '..desc..' @ '..mr.Address..' = 999')
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>64</ID>
+              <ID>86</ID>
               <Description>"Find Health"</Description>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
@@ -1474,7 +2042,7 @@ end)
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>65</ID>
+              <ID>87</ID>
               <Description>"Freeze Health"</Description>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
@@ -1507,7 +2075,7 @@ showMessage('Freezing '..desc..' @ '..mr.Address..' = 1')
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>66</ID>
+              <ID>88</ID>
               <Description>"Find Stamina"</Description>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
@@ -1577,7 +2145,7 @@ end)
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>67</ID>
+              <ID>89</ID>
               <Description>"Freeze Stamina"</Description>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
@@ -1612,14 +2180,14 @@ showMessage('Freezing '..desc..' @ '..mr.Address..' = 1')
           </CheatEntries>
         </CheatEntry>
         <CheatEntry>
-          <ID>68</ID>
+          <ID>90</ID>
           <Description>"=== LIVE — Infinite ammo / Speed / Jump / Fly ==="</Description>
           <Options moHideChildren="1"/>
           <Color>0000FF80</Color>
           <GroupHeader>1</GroupHeader>
           <CheatEntries>
             <CheatEntry>
-              <ID>69</ID>
+              <ID>91</ID>
               <Description>"Notes — movement &amp; ammo"</Description>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>{
@@ -1652,7 +2220,7 @@ True collision noclip needs an AOB (still deferred).
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>70</ID>
+              <ID>92</ID>
               <Description>"Find Ammo (int magazine)"</Description>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
@@ -1723,7 +2291,7 @@ end)
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>71</ID>
+              <ID>93</ID>
               <Description>"Infinite Ammo (int timer)"</Description>
               <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
@@ -1764,7 +2332,7 @@ end
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>72</ID>
+              <ID>94</ID>
               <Description>"Find Ammo (float)"</Description>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
@@ -1834,7 +2402,7 @@ end)
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>73</ID>
+              <ID>95</ID>
               <Description>"Infinite Ammo (float timer)"</Description>
               <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
@@ -1875,7 +2443,7 @@ end
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>74</ID>
+              <ID>96</ID>
               <Description>"Find Speed (walk/sprint float)"</Description>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
@@ -1945,7 +2513,7 @@ end)
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>75</ID>
+              <ID>97</ID>
               <Description>"Super Speed (freeze 2500)"</Description>
               <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
@@ -1979,7 +2547,7 @@ showMessage('Freezing '..desc..' @ '..mr.Address..' = 2500')
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>76</ID>
+              <ID>98</ID>
               <Description>"Super Speed (timer 2500)"</Description>
               <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
@@ -2020,7 +2588,7 @@ end
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>77</ID>
+              <ID>99</ID>
               <Description>"Find Jump (JumpZ float)"</Description>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
@@ -2090,7 +2658,7 @@ end)
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>78</ID>
+              <ID>100</ID>
               <Description>"Super Jump (freeze 2500)"</Description>
               <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
@@ -2124,7 +2692,7 @@ showMessage('Freezing '..desc..' @ '..mr.Address..' = 2500')
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>79</ID>
+              <ID>101</ID>
               <Description>"Find Gravity (GravityScale)"</Description>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
@@ -2194,7 +2762,7 @@ end)
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>80</ID>
+              <ID>102</ID>
               <Description>"Fly — Gravity 0 (timer)"</Description>
               <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
@@ -2235,7 +2803,7 @@ end
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>81</ID>
+              <ID>103</ID>
               <Description>"Find Z Velocity"</Description>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
@@ -2305,7 +2873,7 @@ end)
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>82</ID>
+              <ID>104</ID>
               <Description>"Fly up — Z Velocity timer 800"</Description>
               <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
@@ -2348,14 +2916,14 @@ end
           </CheatEntries>
         </CheatEntry>
         <CheatEntry>
-          <ID>83</ID>
+          <ID>105</ID>
           <Description>"=== LIVE — experimental AOBs (coming) ==="</Description>
           <Options moHideChildren="1"/>
           <Color>00808080</Color>
           <GroupHeader>1</GroupHeader>
           <CheatEntries>
             <CheatEntry>
-              <ID>84</ID>
+              <ID>106</ID>
               <Description>"Placeholder — true noclip / no reload AOB"</Description>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>{
@@ -2369,7 +2937,7 @@ Use Infinite Ammo timers + Gravity 0 / ZVel for soft fly until then.
           </CheatEntries>
         </CheatEntry>
         <CheatEntry>
-          <ID>85</ID>
+          <ID>107</ID>
           <Description>"Browser editor for deep edits"</Description>
           <VariableType>Auto Assembler Script</VariableType>
           <AssemblerScript>{

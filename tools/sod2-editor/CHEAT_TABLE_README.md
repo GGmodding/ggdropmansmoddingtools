@@ -2,7 +2,7 @@
 
 Hybrid Cheat Engine table for State of Decay 2 (Juggernaut).
 
-**File:** [`GGdropmanSoD2_v1.0.CT`](GGdropmanSoD2_v1.0.CT) (table header: **v1.1**)
+**File:** [`GGdropmanSoD2_v1.0.CT`](GGdropmanSoD2_v1.0.CT) (table header: **v1.2**)
 
 **Save bridge:** [`ct-cli.js`](ct-cli.js) (Node.js) — same GVAS codec as the browser editor.
 
@@ -71,6 +71,16 @@ Deep per-survivor traits/skills/outfits, item catalog pickers, WGS UI, and Diff 
 | Super speed | Find Speed → **Super Speed** (2500) |
 | Super jump | Find Jump → **Super Jump** (2500) |
 | Soft fly | Find Gravity → **Fly Gravity 0**; optional **Z Velocity** timer to rise |
+
+### Vehicles
+
+| Goal | How |
+| --- | --- |
+| Summon car to you (live) | Find Player pos → Find Vehicle pos → **Summon vehicle to player** (teleports an existing actor) |
+| Add Plane / new car | Close game → **SAVE — Spawn vehicles** → launch → load community |
+| Infinite fuel | Find VehFuel → timer 1.0 |
+
+SoD2 has no public `spawnvehicle` console. Creating brand-new vehicle actors mid-session needs a native mod; this table does save-spawn + live teleport instead.
 
 True collision noclip / instruction-level no-reload AOBs are still deferred.
 

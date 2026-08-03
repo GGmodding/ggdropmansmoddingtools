@@ -98,6 +98,7 @@ function usage() {
     "  spawn-kit <kitId> [locker=0]",
     "",
     "Kits: ammo-all, meds, throwables, stimulants, loadout-assault, resources, snacks",
+    "Vehicles: spawn-vehicle <id|path>   ids: plane,golfcart,rv,sport4x4,coupe,sedan,hatchback,utility,van,taxi,suv,classictruck",
   ].join("\n");
 }
 
@@ -426,6 +427,18 @@ function runAction(S, save, actionId, args) {
     let msg = "kit " + kitId + " → " + n + "/" + kit.length + " items in locker #" + locker;
     if (errors.length) msg += "\nSkipped: " + errors.slice(0, 5).join("; ");
     return msg;
+  }
+  if (a === "spawn-vehicle" || a === "spawn-veh") {
+    const id = args[0] || "plane";
+    if (!S.spawnVehicleExtraNearBase) throw new Error("Vehicle API missing");
+    const r = S.spawnVehicleExtraNearBase(save, id);
+    return (
+      "spawned vehicle " +
+      (r.shortName || id) +
+      " → #" +
+      (r.index + 1) +
+      " near base (reload community in-game to see it)"
+    );
   }
 
   throw new Error("Unknown action: " + actionId + "\n\n" + usage());

@@ -310,7 +310,7 @@ rootChildren.push({
 rootChildren.push({
   id: nid(),
   desc: "README — how to use",
-  aa: readmeAa(`GGdropmans State of Decay 2 Hybrid Cheat Table v1.1
+  aa: readmeAa(`GGdropmans State of Decay 2 Hybrid Cheat Table v1.2
 =====================================================
 Process (live): StateOfDecay2-Win64-Shipping.exe
 Save bridge: Node.js + ct-cli.js next to this .CT
@@ -325,25 +325,20 @@ TWO LAYERS
    - Install Node.js and ensure "node" is on PATH.
    - Tick ENABLE — Load save-bridge helpers
    - Tick Set / remember save path → pick SaveGame_*.sav
-   - Tick any Preset, Action, or Spawn kit (auto-backs up to .bak)
+   - Tick Presets, Actions, Spawn items/vehicles (auto .bak)
 
    Steam: %LOCALAPPDATA%\\StateOfDecay2\\Saved\\Steam\\
    Epic:  %LOCALAPPDATA%\\StateOfDecay2\\Saved\\Epic\\
 
 2) LIVE SESSION
    - Attach CE to StateOfDecay2-Win64-Shipping.exe in-game.
-   - Find Influence / Resource / Health / Stamina
-   - LIVE — Infinite ammo / Speed / Jump / Fly:
-       Find Ammo → Infinite Ammo timer
-       Find Speed → Super Speed
-       Find Jump → Super Jump
-       Find Gravity → Fly Gravity 0 (+ optional Z Velocity)
-
-Deep trait/skill/outfit/item pickers stay in the browser editor:
-  editor.html
+   - Infinite ammo / Speed / Jump / Fly (Find → timer)
+   - LIVE — Summon vehicle: Find Player + Vehicle pos → summon
+     (teleports existing car; does not create new actors)
+   - New cars/Plane: SAVE — Spawn vehicles → reload community
 
 Plane is a cut asset — drives on land, does not fly.
-True collision noclip AOBs still deferred.`),
+True live SpawnActor / noclip AOBs still deferred.`),
 });
 
 rootChildren.push({
@@ -608,6 +603,116 @@ end)
 [DISABLE]
 `;
 
+const LIVE_FIND_VEC = (kind, prompt) => `[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+
+local function fail(msg)
+  showMessage('GGdropman SoD2 Live: '..tostring(msg))
+  error(msg, 0)
+end
+
+if getOpenedProcessID() == 0 then
+  fail('Attach to StateOfDecay2-Win64-Shipping.exe first')
+end
+
+local key = '${kind}'
+local st = GG_SOD2.live[key] or { step = 0 }
+GG_SOD2.live[key] = st
+
+if st.step == 0 then
+  local v = inputQuery('Find ${kind} X', '${prompt}\\nEnter CURRENT X (float). UE FVector is usually X,Y,Z contiguous.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if st.ms then pcall(function() st.ms.destroy() end) end
+  st.ms = createMemScan()
+  st.ms.firstScan(soExactValue, vtSingle, rtRoundedDefault, v, '', '0', '7fffffffffffffff', '+W-C', fsmNotAligned, '1', false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  fl.deinitialize()
+  st.step = 1
+  showMessage('First scan ('..tostring(n)..' hits).\\nMove (change X), then tick Find ${kind} again with the NEW X.')
+elseif st.step == 1 then
+  local v = inputQuery('Find ${kind} X (next)', 'Enter the NEW X value.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if not st.ms then fail('Restart Find') end
+  st.ms.nextScan(soExactValue, rtRoundedDefault, v, '', false, false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  if n == 0 then
+    fl.deinitialize()
+    st.step = 0
+    fail('0 results — restart Find ${kind}')
+  end
+  local addr = fl.Address[0]
+  local num = tonumber(addr, 16) or getAddress(addr)
+  st.addr = num
+  st.addrStr = addr
+  fl.deinitialize()
+  st.step = 0
+  showMessage('${kind} FVector @ '..tostring(addr)..' (Y=+4 Z=+8 assumed)\\n'..tostring(n)..' hit(s); using first.')
+end
+
+createThread(function()
+  sleep(200)
+  if memrec then memrec.Active = false end
+end)
+{$asm}
+[DISABLE]
+`;
+
+const LIVE_SUMMON_VEH = `[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+local p = GG_SOD2.live.PlayerPos
+local v = GG_SOD2.live.VehiclePos
+if not p or not p.addr then
+  showMessage('Run Find Player position first')
+  error('no player', 0)
+end
+if not v or not v.addr then
+  showMessage('Run Find Vehicle position first (stand near / enter a car, or scan while it moves)')
+  error('no vehicle', 0)
+end
+local off = inputQuery('Forward offset', 'Meters-ish UE units to place the car in front of you', '400')
+off = tonumber(off) or 400
+local px = readFloat(p.addr)
+local py = readFloat(p.addr + 4)
+local pz = readFloat(p.addr + 8)
+writeFloat(v.addr, px + off)
+writeFloat(v.addr + 4, py)
+writeFloat(v.addr + 8, pz + 60)
+showMessage(string.format('Summoned vehicle to player\\nPlayer %.1f,%.1f,%.1f\\nVehicle written +%.0f on X', px, py, pz, off))
+createThread(function()
+  sleep(200)
+  if memrec then memrec.Active = false end
+end)
+{$asm}
+[DISABLE]
+`;
+
+const VEHICLE_SPAWN_IDS = [
+  ["plane", "Spawn Plane near base (reload)"],
+  ["golfcart", "Spawn Golf cart (reload)"],
+  ["rv", "Spawn RV (reload)"],
+  ["sport4x4", "Spawn Sport 4-wheeler (reload)"],
+  ["coupe", "Spawn Sport coupe (reload)"],
+  ["sedan", "Spawn Old sedan (reload)"],
+  ["hatchback", "Spawn Hatchback (reload)"],
+  ["utility", "Spawn Utility truck (reload)"],
+  ["van", "Spawn Apoc van (reload)"],
+  ["taxi", "Spawn Taxi (reload)"],
+  ["suv", "Spawn Modern SUV (reload)"],
+  ["classictruck", "Spawn Classic truck (reload)"],
+];
+
 const SPAWN_CUSTOM_LUA = oneshotLua(`GG_SOD2.requireHelpers()
 local cat = inputQuery('Category', 'ammo | consumable | ranged | melee | resource | misc | backpack | closeCombat | rangedMod | facilityMod', 'ammo')
 if not cat or cat == '' then error('cancelled', 0) end
@@ -679,6 +784,92 @@ GG_SOD2.runCli({'action', 'spawn-kit', 'loadout-assault'})`),
       id: nid(),
       desc: "Custom spawn item (prompt)",
       aa: SPAWN_CUSTOM_LUA,
+    },
+  ],
+});
+
+rootChildren.push({
+  id: nid(),
+  desc: "=== SAVE — Spawn vehicles (reload) ===",
+  options: 'moHideChildren="1"',
+  color: "00FFA500",
+  group: true,
+  children: [
+    {
+      id: nid(),
+      desc: "Notes — cannot create actors mid-session via CE alone",
+      aa: readmeAa(`SoD2 has no public console spawnvehicle like YOSE.
+True live spawn needs a native game mod (e.g. Nexus vehicle spawn).
+
+This table:
+1) SAVE spawn — clones a VehicleSave + sets class, parks near base.
+   Close game → tick a spawn → launch → load community.
+2) LIVE summon — teleports an EXISTING world vehicle to you.
+
+Plane/golf cart/RV are cut assets; Plane does not fly.`),
+    },
+    ...VEHICLE_SPAWN_IDS.map(([id, label]) => ({
+      id: nid(),
+      desc: label,
+      aa: oneshotLua(`GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'spawn-vehicle', '${id}'})`),
+    })),
+    {
+      id: nid(),
+      desc: "Custom vehicle path (prompt)",
+      aa: oneshotLua(`GG_SOD2.requireHelpers()
+local path = inputQuery('Vehicle class', 'Full /Game/Art/Driveables/..._C path', '/Game/Art/Driveables/Plane/Vehicle_Plane.Vehicle_Plane_C')
+if not path or path == '' then error('cancelled', 0) end
+GG_SOD2.runCli({'action', 'spawn-vehicle', path})`),
+    },
+  ],
+});
+
+rootChildren.push({
+  id: nid(),
+  desc: "=== LIVE — Summon vehicle to you ===",
+  options: 'moHideChildren="1"',
+  color: "00FFA500",
+  group: true,
+  children: [
+    {
+      id: nid(),
+      desc: "Notes — teleport existing car (not create new)",
+      aa: readmeAa(`Attach in-game.
+
+1) Find Player position — walk to change X, narrow scan
+2) Find Vehicle position — enter a car or push it so X changes
+3) Tick Summon vehicle to player
+
+This moves that vehicle actor to you. It does NOT spawn a new car from nothing.
+For a new Plane/truck in the save, use SAVE — Spawn vehicles, then reload.`),
+    },
+    {
+      id: nid(),
+      desc: "Find Player position (FVector X)",
+      aa: LIVE_FIND_VEC("PlayerPos", "Note your world X if known, or use CE Unknown→Changed while walking then enter X here."),
+    },
+    {
+      id: nid(),
+      desc: "Find Vehicle position (FVector X)",
+      aa: LIVE_FIND_VEC("VehiclePos", "Enter/exit or nudge a vehicle so its X changes."),
+    },
+    {
+      id: nid(),
+      desc: "Summon vehicle to player",
+      color: "0000FF00",
+      aa: LIVE_SUMMON_VEH,
+    },
+    {
+      id: nid(),
+      desc: "Infinite vehicle fuel (find float first)",
+      aa: LIVE_FIND("VehFuel", "Enter a car, note fuel float (0-1), drive to change, next-scan."),
+    },
+    {
+      id: nid(),
+      desc: "Infinite vehicle fuel (timer 1.0)",
+      color: "0000FF00",
+      aa: LIVE_TIMER("VehFuel", "1", "float", "Infinite Veh Fuel"),
     },
   ],
 });
@@ -885,7 +1076,7 @@ rootChildren.push({
 
 const root = {
   id: nid(),
-  desc: "=== GGdropmans State of Decay 2 v1.1 ===",
+  desc: "=== GGdropmans State of Decay 2 v1.2 ===",
   options: 'moHideChildren="1"',
   color: "00C45A2A",
   group: true,

@@ -48,6 +48,51 @@
       path: "/Game/Art/Driveables/RV/Vehicle_RV.Vehicle_RV_C",
       hint: "Unused radio-call vehicle.",
     },
+    {
+      id: "sport4x4",
+      label: "Sport 4-wheeler",
+      path: "/Game/Art/Driveables/4wheeler_Sport/Vehicle_4wheeler_Sport.Vehicle_4wheeler_Sport_C",
+    },
+    {
+      id: "coupe",
+      label: "Sport coupe",
+      path: "/Game/Art/Driveables/Sport_Coupe_Basic/Vehicle_sport_coupe_basic.Vehicle_sport_coupe_basic_C",
+    },
+    {
+      id: "sedan",
+      label: "Old sedan (green)",
+      path: "/Game/Art/Driveables/Sedan_Old_Basic/Vehicle_Sedan_Old_Basic_green.Vehicle_Sedan_Old_Basic_green_C",
+    },
+    {
+      id: "hatchback",
+      label: "Hatchback (black)",
+      path: "/Game/Art/Driveables/Hatchback_Basic/Vehicle_Hatchback_Basic_black.Vehicle_Hatchback_Basic_black_C",
+    },
+    {
+      id: "utility",
+      label: "Modern utility truck",
+      path: "/Game/Art/Driveables/Truck_Modern_Utility/Vehicle_Truck_Modern_Utility.Vehicle_Truck_Modern_Utility_C",
+    },
+    {
+      id: "van",
+      label: "Apoc van",
+      path: "/Game/Art/Driveables/Van_Apoc/Vehicle_van_apoc.vehicle_van_apoc_C",
+    },
+    {
+      id: "taxi",
+      label: "Iconic taxi",
+      path: "/Game/Art/Driveables/Sedan_Iconic_Taxi/Vehicle_Sedan_Iconic_Taxi.Vehicle_Sedan_Iconic_Taxi_C",
+    },
+    {
+      id: "suv",
+      label: "Modern SUV (blue)",
+      path: "/Game/Art/Driveables/SUV_Modern_Apoc/Vehicle_SUV_Modern_Apoc_blue.Vehicle_SUV_Modern_Apoc_blue_C",
+    },
+    {
+      id: "classictruck",
+      label: "Classic apoc truck",
+      path: "/Game/Art/Driveables/Truck_Classic_Apoc/Vehicle_Truck_Classic_Apoc_Resto_black.Vehicle_Truck_Classic_Apoc_Resto_black_C",
+    },
   ];
 
   function u32(buf, o) {
