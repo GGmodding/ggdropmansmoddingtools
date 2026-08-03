@@ -95,7 +95,7 @@
     <a class="brand" href="../../index.html">
       <span class="brand__mark">SA</span>
       <div class="brand__text">
-        <h1>Steam Achievement Unlocker</h1>
+        <h1>GGdropmans Steam Achievement Unlocker</h1>
         <p>Local Node CLI · Back to hub</p>
       </div>
     </a>
@@ -103,11 +103,30 @@
 
   <main class="main">
     <p class="lead">
-      Achievements can’t be unlocked from the browser. This is a small <strong>local Node.js tool</strong> that talks to the Steam client via Steamworks. Default game: <strong>State of Decay 2</strong> (AppID <code>495720</code>). Any owned AppID works.
+      Achievements can’t be unlocked from the browser. This is a small <strong>local Node.js tool</strong> that talks to the Steam client via Steamworks.
+      Presets include <strong>State of Decay 2</strong> (<code>495720</code>) and <strong>Clair Obscur: Expedition 33</strong> (<code>1903340</code>). Any owned AppID works.
     </p>
 
     <p class="warn">
       Requires Steam running &amp; logged in, Node.js 18+, and ownership of the game. Close the game before unlocking. Use at your own risk — some online games may treat this as cheating.
+    </p>
+
+    <h2 id="expedition33">Expedition 33 (quick start)</h2>
+    <p>AppID <code>1903340</code> · ~55 achievements. Close Clair Obscur first.</p>
+<pre>cd tools/steam-achievement-unlocker
+npm install
+
+:: Double-click unlock-expedition33.bat  OR:
+
+node unlock.js --app e33 --list
+node unlock.js --app expedition33 --unlock-all
+node unlock.js --app e33 --lock-all
+
+:: npm scripts
+npm run e33:list
+npm run e33:unlock-all</pre>
+    <p>
+      <a class="btn" href="unlock-expedition33.bat" download>Download unlock-expedition33.bat</a>
     </p>
 
     <h2>Setup (once)</h2>
@@ -116,7 +135,7 @@
       <li>Open a terminal in <code>tools/steam-achievement-unlocker</code>.</li>
       <li>Run <code>npm install</code>.</li>
     </ol>
-    <p>On Windows you can also double-click <code>unlock.bat</code> (it runs <code>npm install</code> if needed, then lists achievements).</p>
+    <p>On Windows you can also double-click <code>unlock.bat</code> (SoD2 default) or <code>unlock-expedition33.bat</code>.</p>
 
     <h2>Commands</h2>
 <pre>cd tools/steam-achievement-unlocker
@@ -136,11 +155,13 @@ node unlock.js --lock-all
 
 :: Another game (AppID or preset)
 node unlock.js --app 480 --list
-node unlock.js --app sod2 --locked-only</pre>
+node unlock.js --app sod2 --locked-only
+node unlock.js --app e33 --list</pre>
 
     <h2>Presets</h2>
     <ul>
       <li><code>sod2</code> / <code>state-of-decay-2</code> → <code>495720</code></li>
+      <li><code>expedition33</code> / <code>e33</code> / <code>clair-obscur</code> → <code>1903340</code></li>
       <li><code>spacewar</code> → <code>480</code> (Steam test app)</li>
     </ul>
 
@@ -148,7 +169,7 @@ node unlock.js --app sod2 --locked-only</pre>
     <p>
       Tool lives next to this page:
       <code>tools/steam-achievement-unlocker/</code>
-      (<code>unlock.js</code>, <code>unlock.bat</code>, <code>package.json</code>).
+      (<code>unlock.js</code>, <code>unlock.bat</code>, <code>unlock-expedition33.bat</code>, <code>package.json</code>).
     </p>
     <p>
       <a class="btn" href="unlock.bat" download>Download unlock.bat</a>

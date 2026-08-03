@@ -218,12 +218,383 @@
     if (!item) {
       throw new Error(
         key +
-          " is not in this save's inventory map. Pick the item up in-game once, then edit the count."
+          " is not in this save's inventory map. Use Insert on Resources, or pick it up in-game first."
       );
     }
     const out = new Uint8Array(buf);
     writeI32(out, item.valAt, value);
     return { bytes: out, value: value | 0, key };
+  }
+
+  /** Locate InventoryItems count + payload-size fields for splicing. */
+  function locateInventoryMeta(buf) {
+    const inv = findNamedProperty(buf, "InventoryItems", "MapProperty");
+    const goldProp = findNamedProperty(buf, "Gold", "IntProperty");
+    const parsed = parseInventory(buf);
+    if (!inv || !parsed.regionStart || parsed.regionEnd == null) return null;
+    // Count is always immediately before the first entry.
+    const countAt = parsed.regionStart - 4;
+    const count = readU32(buf, countAt);
+    if (count !== parsed.items.length) return null;
+    // Payload size sits 8 bytes before count: [size u32][zero u32][count u32][entries…]
+    const sizeAt = countAt - 8;
+    const size = readU32(buf, sizeAt);
+    return {
+      inv,
+      goldProp,
+      items: parsed.items,
+      regionStart: parsed.regionStart,
+      regionEnd: parsed.regionEnd,
+      countAt,
+      sizeAt,
+      count,
+      size,
+    };
+  }
+
+  function encodeInventoryEntry(key, value) {
+    const enc = new TextEncoder().encode(key);
+    const out = new Uint8Array(4 + enc.length + 1 + 4);
+    writeI32(out, 0, enc.length + 1);
+    out.set(enc, 4);
+    out[4 + enc.length] = 0;
+    writeI32(out, 4 + enc.length + 1, value | 0);
+    return out;
+  }
+
+  function spliceBytes(buf, at, insert) {
+    const out = new Uint8Array(buf.length + insert.length);
+    out.set(buf.subarray(0, at), 0);
+    out.set(insert, at);
+    out.set(buf.subarray(at), at + insert.length);
+    return out;
+  }
+
+  function insertInventoryItem(buf, key, value) {
+    if (!/^[A-Za-z][A-Za-z0-9_]{1,80}$/.test(key)) {
+      throw new Error("Invalid inventory key.");
+    }
+    const existing = findInventoryItem(buf, key);
+    if (existing) return writeInventoryItem(buf, key, value);
+    const meta = locateInventoryMeta(buf);
+    if (!meta) throw new Error("Could not locate InventoryItems map for insert.");
+    const entry = encodeInventoryEntry(key, value);
+    const insertAt = meta.regionEnd;
+    let out = spliceBytes(buf, insertAt, entry);
+    writeI32(out, meta.countAt, (meta.count | 0) + 1);
+    // Some UE builds store an extra length near count; bump it when it looks like a payload size.
+    if (meta.size > 32 && meta.size < 5e6) {
+      writeI32(out, meta.sizeAt, (meta.size | 0) + entry.length);
+    }
+    return { bytes: out, value: value | 0, key, inserted: true };
+  }
+
+  function ensureInventoryItem(buf, key, value) {
+    if (findInventoryItem(buf, key)) return writeInventoryItem(buf, key, value);
+    return insertInventoryItem(buf, key, value);
+  }
+
+  const WEAPON_DEF = "DefinitionID_3_60EB24664894755B19F4EBA18A21AF1A";
+  const WEAPON_LEVEL = "CurrentLevel_6_227A00644D035BDD595B2D86C8455B71";
+  const ATTR_MAP = "AssignedAttributePoints_190_4E4BA51441F1E8D8E07ECA95442E0B7E";
+  const SKILL_UNLOCKED = "UnlockedSkills_197_FAA1BD934F68CFC542FB048E3C0F3592";
+  const SKILL_EQUIPPED = "EquippedSkills_201_05B6B5E9490E2586B23751B11CDA521F";
+  const PASSIVE_NAME = "PassiveEffectName_3_A92DB6CC4549450728A867A714ADF6C5";
+  const PASSIVE_LEARNT = "IsLearnt_9_2561000E49D90653437DE9A45BE2A86D";
+  const PASSIVE_STEPS = "LearntSteps_6_A14D681549E830249C77BD95F2B4CF3F";
+
+  function parseWeapons(buf) {
+    const defHits = findNamedProperties(buf, WEAPON_DEF).filter((h) => h.type === "NameProperty");
+    const lvlHits = findNamedProperties(buf, WEAPON_LEVEL).filter((h) => h.type === "IntProperty");
+    const weapons = [];
+    for (const dh of defHits) {
+      const [name] = readFString(buf, dh.valueAt);
+      let level = null;
+      let levelAt = null;
+      let best = Infinity;
+      for (const lh of lvlHits) {
+        const d = lh.nameAt - dh.nameAt;
+        if (d >= 0 && d < best && d < 300) {
+          best = d;
+          level = readI32(buf, lh.valueAt);
+          levelAt = lh.valueAt;
+        }
+      }
+      if (name) weapons.push({ name, level, levelAt });
+    }
+    return weapons;
+  }
+
+  function writeWeaponLevel(buf, levelAt, level) {
+    if (levelAt == null) throw new Error("Weapon level offset missing.");
+    const out = new Uint8Array(buf);
+    writeI32(out, levelAt, Math.max(1, Math.min(33, level | 0)));
+    return { bytes: out, value: Math.max(1, Math.min(33, level | 0)) };
+  }
+
+  function parseAttributes(buf) {
+    const hits = [];
+    const needle = new TextEncoder().encode("ECharacterAttribute::NewEnumerator");
+    for (let i = 0; i < buf.length - needle.length - 8; i++) {
+      let ok = true;
+      for (let j = 0; j < needle.length; j++) {
+        if (buf[i + j] !== needle[j]) {
+          ok = false;
+          break;
+        }
+      }
+      if (!ok) continue;
+      const len = readU32(buf, i - 4);
+      if (!len || len > 80 || i - 4 + 4 + len > buf.length) continue;
+      const [full, end] = readFString(buf, i - 4);
+      if (!full || full.indexOf("ECharacterAttribute::NewEnumerator") !== 0) continue;
+      const value = readI32(buf, end);
+      const m = /NewEnumerator(\d+)/.exec(full);
+      hits.push({
+        id: full,
+        index: m ? Number(m[1]) : -1,
+        value,
+        valAt: end,
+      });
+    }
+    // Prefer ones near AssignedAttributePoints
+    const ap = findNamedProperty(buf, ATTR_MAP, "MapProperty");
+    if (ap) {
+      return hits.filter((h) => h.valAt > ap.nameAt && h.valAt < ap.nameAt + 4000);
+    }
+    return hits;
+  }
+
+  function writeAttribute(buf, valAt, value) {
+    const out = new Uint8Array(buf);
+    writeI32(out, valAt, Math.max(0, value | 0));
+    return { bytes: out, value: Math.max(0, value | 0) };
+  }
+
+  function parseNameArrayNear(buf, propName) {
+    const h = findNamedProperty(buf, propName, "ArrayProperty");
+    if (!h) return [];
+    const names = [];
+    // Scan a window after the property for FString-looking names
+    const start = h.afterType;
+    const end = Math.min(buf.length, start + 8000);
+    let o = start;
+    while (o + 8 < end && names.length < 500) {
+      const [s, next] = readFString(buf, o);
+      if (s && /^[A-Za-z][A-Za-z0-9_]{1,64}$/.test(s) && s !== "NameProperty" && s !== "ArrayProperty" && s !== "None") {
+        // Heuristic: skill-like tokens
+        if (
+          propName.indexOf("Skill") >= 0 ||
+          /^(Combo|Magic_|Skill|Gradient|Attack|Unleash|Paint)/.test(s) ||
+          s.indexOf("_") >= 0
+        ) {
+          names.push({ name: s, at: o });
+        }
+        o = next;
+        continue;
+      }
+      o++;
+    }
+    // Tighter: after NameProperty marker, read count then names
+    const marker = new TextEncoder().encode("NameProperty\0");
+    for (let i = h.afterType; i < h.afterType + 60; i++) {
+      let ok = true;
+      for (let j = 0; j < marker.length; j++) {
+        if (buf[i + j] !== marker[j]) {
+          ok = false;
+          break;
+        }
+      }
+      if (!ok) continue;
+      let p = i + marker.length;
+      // skip zeros / size until a small count
+      for (let skip = 0; skip < 20; skip++) {
+        const count = readU32(buf, p + skip);
+        if (count > 0 && count < 200) {
+          const out = [];
+          let q = p + skip + 4;
+          for (let n = 0; n < count; n++) {
+            const [nm, nend] = readFString(buf, q);
+            if (!nm) break;
+            out.push({ name: nm, at: q });
+            q = nend;
+          }
+          if (out.length === count) return out;
+        }
+      }
+    }
+    return names;
+  }
+
+  function parseSkills(buf) {
+    return {
+      unlocked: parseNameArrayNear(buf, SKILL_UNLOCKED),
+      equipped: parseNameArrayNear(buf, SKILL_EQUIPPED),
+    };
+  }
+
+  function parseExploration(buf) {
+    const caps = [];
+    const needle = new TextEncoder().encode("E_ExplorationCapacity::NewEnumerator");
+    for (let i = 0; i < buf.length - needle.length; i++) {
+      let ok = true;
+      for (let j = 0; j < needle.length; j++) {
+        if (buf[i + j] !== needle[j]) {
+          ok = false;
+          break;
+        }
+      }
+      if (!ok) continue;
+      const [full] = readFString(buf, i - 4);
+      if (full && full.indexOf("E_ExplorationCapacity::") === 0) {
+        const m = /NewEnumerator(\d+)/.exec(full);
+        caps.push({ id: full, index: m ? Number(m[1]) : -1, at: i - 4 });
+      }
+    }
+    const world = [];
+    const needle2 = new TextEncoder().encode("E_WorldMapExplorationCapacity::NewEnumerator");
+    for (let i = 0; i < buf.length - needle2.length; i++) {
+      let ok = true;
+      for (let j = 0; j < needle2.length; j++) {
+        if (buf[i + j] !== needle2[j]) {
+          ok = false;
+          break;
+        }
+      }
+      if (!ok) continue;
+      const [full] = readFString(buf, i - 4);
+      if (full && full.indexOf("E_WorldMapExplorationCapacity::") === 0) {
+        const m = /NewEnumerator(\d+)/.exec(full);
+        world.push({ id: full, index: m ? Number(m[1]) : -1, at: i - 4 });
+      }
+    }
+    return { exploration: caps, worldMap: world };
+  }
+
+  function parseSpawn(buf) {
+    const map = readNameProperty(buf, "MapToLoad");
+    let spawnTag = null;
+    let spawnAt = null;
+    const sp = findNamedProperty(buf, "SpawnPointTagToLoadAt", "StructProperty");
+    if (sp) {
+      const tagHits = findNamedProperties(buf, "TagName").filter((h) => h.type === "NameProperty");
+      for (const th of tagHits) {
+        if (th.nameAt > sp.nameAt && th.nameAt < sp.nameAt + 250) {
+          const [v] = readFString(buf, th.valueAt);
+          spawnTag = v;
+          spawnAt = th.valueAt;
+          break;
+        }
+      }
+    }
+    return {
+      mapToLoad: map ? map.value : null,
+      mapAt: map ? map.stringAt : null,
+      spawnTag,
+      spawnAt,
+    };
+  }
+
+  function rewriteFStringInPlace(buf, stringAt, newValue) {
+    const oldLen = readI32(buf, stringAt);
+    if (oldLen == null || oldLen <= 0) throw new Error("Unsupported string encoding.");
+    const enc = new TextEncoder().encode(newValue);
+    const capacity = oldLen - 1;
+    if (enc.length > capacity) {
+      throw new Error(
+        "New value too long (max " + capacity + " chars for in-place edit). Keep similar length."
+      );
+    }
+    const out = new Uint8Array(buf);
+    const payload = new Uint8Array(oldLen);
+    payload.set(enc, 0);
+    for (let i = enc.length; i < capacity; i++) payload[i] = 0x20;
+    payload[oldLen - 1] = 0;
+    out.set(payload, stringAt + 4);
+    return { bytes: out, value: newValue, padded: enc.length < capacity };
+  }
+
+  function writeMapToLoad(buf, newMap) {
+    const map = readNameProperty(buf, "MapToLoad");
+    if (!map) throw new Error("MapToLoad not found.");
+    return rewriteFStringInPlace(buf, map.stringAt, newMap);
+  }
+
+  function writeSpawnTag(buf, newTag) {
+    const sp = parseSpawn(buf);
+    if (sp.spawnAt == null) throw new Error("Spawn TagName not found.");
+    return rewriteFStringInPlace(buf, sp.spawnAt, newTag);
+  }
+
+  function parsePictos(buf) {
+    const nameHits = findNamedProperties(buf, PASSIVE_NAME).filter(
+      (h) => h.type === "NameProperty" || h.type === "StrProperty"
+    );
+    const learntHits = findNamedProperties(buf, PASSIVE_LEARNT).filter((h) => h.type === "BoolProperty");
+    const stepHits = findNamedProperties(buf, PASSIVE_STEPS).filter((h) => h.type === "IntProperty");
+    const pictos = [];
+    for (const nh of nameHits) {
+      const [name] = readFString(buf, nh.valueAt);
+      if (!name) continue;
+      let learnt = null;
+      let learntAt = null;
+      let steps = null;
+      let stepsAt = null;
+      for (const lh of learntHits) {
+        const d = lh.nameAt - nh.nameAt;
+        if (d >= 0 && d < 200) {
+          learnt = buf[lh.afterType + BOOL_OFF] !== 0;
+          learntAt = lh.afterType + BOOL_OFF;
+          break;
+        }
+      }
+      for (const sh of stepHits) {
+        const d = sh.nameAt - nh.nameAt;
+        if (d >= 0 && d < 250) {
+          steps = readI32(buf, sh.valueAt);
+          stepsAt = sh.valueAt;
+          break;
+        }
+      }
+      pictos.push({ name, learnt, learntAt, steps, stepsAt });
+    }
+    return pictos;
+  }
+
+  function writePictoFlags(buf, learntAt, stepsAt, learnt, steps) {
+    const out = new Uint8Array(buf);
+    if (learntAt != null) out[learntAt] = learnt ? 1 : 0;
+    if (stepsAt != null) writeI32(out, stepsAt, Math.max(0, steps | 0));
+    return { bytes: out };
+  }
+
+  function parseTintLevels(buf) {
+    const inv = parseInventory(buf);
+    const levels = {};
+    for (const it of inv.items) {
+      const m = /^(Consumable_(?:Health|Energy|Revive)_Level)(\d)$/.exec(it.key);
+      if (!m) continue;
+      levels[m[1]] = {
+        base: m[1],
+        level: Number(m[2]),
+        key: it.key,
+        nameAt: it.nameAt,
+      };
+    }
+    return levels;
+  }
+
+  function setTintLevel(buf, base, newLevel) {
+    const n = Math.max(0, Math.min(2, newLevel | 0));
+    const levels = parseTintLevels(buf);
+    const cur = levels[base];
+    if (!cur) throw new Error(base + " not found in inventory.");
+    if (cur.level === n) return { bytes: new Uint8Array(buf), key: cur.key };
+    // Same-length key: rewrite final digit in place
+    const out = new Uint8Array(buf);
+    const digitAt = cur.nameAt + base.length;
+    out[digitAt] = 0x30 + n;
+    return { bytes: out, key: base + String(n), level: n };
   }
 
   function parseCharacters(buf) {
@@ -270,7 +641,25 @@
         luminaAt: lumH ? lumH.valueAt : null,
         excluded: exclH ? buf[exclH.afterType + BOOL_OFF] !== 0 : null,
         excludedAt: exclH ? exclH.afterType + BOOL_OFF : null,
+        attributes: [],
+        skillsUnlocked: [],
+        skillsEquipped: [],
       });
+    }
+    // Attach attributes/skills once (shared maps live inside character structs)
+    const attrs = parseAttributes(buf);
+    const skills = parseSkills(buf);
+    if (chars.length === 1) {
+      chars[0].attributes = attrs;
+      chars[0].skillsUnlocked = skills.unlocked;
+      chars[0].skillsEquipped = skills.equipped;
+    } else if (chars.length) {
+      // Split attributes by proximity to each character block
+      for (const c of chars) {
+        c.attributes = attrs.filter((a) => a.valAt > c.nameAt && a.valAt < c.nameAt + 5000);
+        c.skillsUnlocked = skills.unlocked.filter((s) => s.at > c.nameAt && s.at < c.nameAt + 8000);
+        c.skillsEquipped = skills.equipped.filter((s) => s.at > c.nameAt && s.at < c.nameAt + 8000);
+      }
     }
     return chars;
   }
@@ -305,10 +694,14 @@
     const buf = toBytes(bytes);
     const gold = readIntProperty(buf, "Gold");
     const time = readDoubleProperty(buf, "TimePlayed");
-    const map = readNameProperty(buf, "MapToLoad");
     const ng = readIntProperty(buf, "FinishedGameCount");
     const inventory = parseInventory(buf);
     const characters = parseCharacters(buf);
+    const weapons = parseWeapons(buf);
+    const pictos = parsePictos(buf);
+    const exploration = parseExploration(buf);
+    const spawn = parseSpawn(buf);
+    const tintLevels = parseTintLevels(buf);
     const invGet = (key) => {
       const it = inventory.items.find((x) => x.key === key);
       return it ? it.value : null;
@@ -320,11 +713,18 @@
       goldAt: gold ? gold.valueAt : null,
       timePlayed: time ? time.value : null,
       timePlayedAt: time ? time.valueAt : null,
-      mapToLoad: map ? map.value : null,
+      mapToLoad: spawn.mapToLoad,
+      mapAt: spawn.mapAt,
+      spawnTag: spawn.spawnTag,
+      spawnAt: spawn.spawnAt,
       ngPlus: ng ? ng.value : null,
       ngPlusAt: ng ? ng.valueAt : null,
       inventory: inventory.items,
       characters,
+      weapons,
+      pictos,
+      exploration,
+      tintLevels,
       chroma: gold ? gold.value : null,
       recoat: invGet("Consumable_Respec"),
       luminaPoints: invGet("Consumable_LuminaPoint"),
@@ -348,6 +748,13 @@
     parseSave,
     parseInventory,
     parseCharacters,
+    parseWeapons,
+    parseAttributes,
+    parseSkills,
+    parseExploration,
+    parseSpawn,
+    parsePictos,
+    parseTintLevels,
     readIntProperty,
     writeIntProperty,
     readDoubleProperty,
@@ -357,8 +764,17 @@
     writeBoolProperty,
     findInventoryItem,
     writeInventoryItem,
+    insertInventoryItem,
+    ensureInventoryItem,
     writeCharacterField,
     writeCharacterExcluded,
+    writeWeaponLevel,
+    writeAttribute,
+    writeMapToLoad,
+    writeSpawnTag,
+    writePictoFlags,
+    setTintLevel,
+    locateInventoryMeta,
     CHAR_LEVEL,
     CHAR_XP,
     CHAR_AP,

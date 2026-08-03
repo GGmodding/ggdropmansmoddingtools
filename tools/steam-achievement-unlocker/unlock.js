@@ -5,6 +5,7 @@
  * GGdropman Steam Achievement Unlocker
  * Requires: Steam client running & logged in, Node 18+, ownership of the AppID.
  * Default AppID: State of Decay 2 (495720).
+ * Expedition 33 preset: expedition33 / e33 / clair-obscur → 1903340
  */
 
 const fs = require("fs");
@@ -14,6 +15,10 @@ const PRESETS = {
   sod2: 495720,
   "state-of-decay-2": 495720,
   spacewar: 480,
+  expedition33: 1903340,
+  e33: 1903340,
+  "clair-obscur": 1903340,
+  "clair-obscur-expedition-33": 1903340,
 };
 
 function printHelp() {
@@ -23,7 +28,7 @@ Usage:
   node unlock.js [options]
 
 Options:
-  --app <id|name>     Steam AppID or preset (sod2, spacewar). Default: 495720 (SoD2)
+  --app <id|name>     Steam AppID or preset (sod2, e33, spacewar…). Default: 495720 (SoD2)
   --list              List achievements and unlock state
   --unlock <name>     Unlock one achievement API name (repeatable)
   --lock <name>       Clear/lock one achievement API name (repeatable)
@@ -36,6 +41,8 @@ Options:
 Examples:
   node unlock.js --list
   node unlock.js --app sod2 --unlock-all
+  node unlock.js --app e33 --list
+  node unlock.js --app expedition33 --unlock-all
   node unlock.js --app 480 --unlock ACH_WIN_ONE_GAME
   node unlock.js --lock-all
 

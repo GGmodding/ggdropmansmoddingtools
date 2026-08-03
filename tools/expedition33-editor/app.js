@@ -6,7 +6,20 @@
   const D = window.E33Data;
   const $ = (id) => document.getElementById(id);
 
-  const PANELS = ["overview", "resources", "characters", "inventory", "features", "notes"];
+  const PANELS = [
+    "overview",
+    "resources",
+    "characters",
+    "weapons",
+    "pictos",
+    "exploration",
+    "spawn",
+    "collectibles",
+    "inventory",
+    "features",
+    "achievements",
+    "notes",
+  ];
 
   const state = {
     fileName: "EXPEDITION_0.sav",
@@ -75,9 +88,8 @@
     ];
     grid.innerHTML = rows
       .map((r) => {
-        const disabled = r.present ? "" : " disabled";
         const val = r.present ? r.value : "";
-        const note = r.present ? "" : " (not in save)";
+        const note = r.present ? "" : " (will insert on Apply/Insert)";
         return (
           "<label>" +
           escapeHtml(r.label) +
@@ -86,16 +98,31 @@
           escapeHtml(r.id) +
           '" type="number" min="0" step="1" value="' +
           escapeHtml(String(val)) +
-          '"' +
-          disabled +
-          " /></label>"
+          '" /></label>'
         );
       })
       .join("");
-    const missing = rows.filter((r) => !r.present).map((r) => r.label);
+    const missing = rows.filter((r) => !r.present && r.id !== "gold").map((r) => r.label);
     $("resources-hint").textContent = missing.length
-      ? "Missing from this save (pick up in-game first): " + missing.join(", ")
+      ? "Missing (insertable): " + missing.join(", ")
       : "All listed resources are present in this save.";
+
+    const tintGrid = $("tint-levels-grid");
+    tintGrid.innerHTML = D.TINT_LEVEL_BASES.map((t) => {
+      const cur = parsed.tintLevels[t.base];
+      const val = cur ? cur.level : "";
+      return (
+        "<label>" +
+        escapeHtml(t.label) +
+        '<input data-tint="' +
+        escapeHtml(t.base) +
+        '" type="number" min="0" max="2" step="1" value="' +
+        escapeHtml(String(val)) +
+        '" ' +
+        (cur ? "" : "disabled") +
+        " /></label>"
+      );
+    }).join("");
   }
 
   function buildCharacters(parsed) {
@@ -111,6 +138,20 @@
       .map((c, idx) => {
         const title = D.displayChar(c.name);
         const sub = title !== c.name ? " · hardcoded " + c.name : "";
+        const attrHtml = (c.attributes || [])
+          .map(
+            (a) =>
+              "<label>" +
+              escapeHtml(D.attrLabel(a.index)) +
+              '<input data-attr-at="' +
+              a.valAt +
+              '" type="number" min="0" step="1" value="' +
+              a.value +
+              '" /></label>'
+          )
+          .join("");
+        const skillsU = (c.skillsUnlocked || []).map((s) => s.name).join(", ") || "—";
+        const skillsE = (c.skillsEquipped || []).map((s) => s.name).join(", ") || "—";
         return (
           '<div class="char-card" data-char="' +
           idx +
@@ -142,6 +183,17 @@
           (c.luminaAt == null ? "disabled" : "") +
           " /></label>" +
           "</div>" +
+          (attrHtml
+            ? '<p class="hint" style="margin-top:0.85rem">Assigned attributes</p><div class="form-grid">' +
+              attrHtml +
+              "</div>"
+            : "") +
+          '<p class="hint">Unlocked skills: ' +
+          escapeHtml(skillsU) +
+          "</p>" +
+          '<p class="hint">Equipped skills: ' +
+          escapeHtml(skillsE) +
+          "</p>" +
           (c.excludedAt != null
             ? '<label class="check" style="margin-top:0.75rem;flex-direction:row"><input data-field="excluded" type="checkbox" ' +
               (c.excluded ? "checked" : "") +
@@ -151,6 +203,113 @@
         );
       })
       .join("");
+  }
+
+  function buildWeapons(parsed) {
+    $("weapons-hint").textContent = parsed.weapons.length
+      ? parsed.weapons.length + " weapon progression(s) in save."
+      : "No WeaponProgressions entries yet.";
+    $("weapons-table").querySelector("tbody").innerHTML = parsed.weapons
+      .map(
+        (w, i) =>
+          "<tr><td><code>" +
+          escapeHtml(w.name) +
+          "</code></td><td><input data-wpn=\"" +
+          i +
+          "\" type=\"number\" min=\"1\" max=\"33\" value=\"" +
+          (w.level != null ? w.level : 1) +
+          "\" /></td><td><button type=\"button\" class=\"btn\" data-wpn-apply=\"" +
+          i +
+          "\">Set</button></td></tr>"
+      )
+      .join("");
+  }
+
+  function buildPictos(parsed) {
+    $("pictos-hint").textContent = parsed.pictos.length
+      ? parsed.pictos.length + " picto progression(s)."
+      : "No pictos in this save yet — unlock some in-game first.";
+    $("pictos-table").querySelector("tbody").innerHTML = parsed.pictos
+      .map(
+        (p, i) =>
+          "<tr><td><code>" +
+          escapeHtml(p.name) +
+          "</code></td><td><input data-pic-learnt=\"" +
+          i +
+          "\" type=\"checkbox\" " +
+          (p.learnt ? "checked" : "") +
+          " /></td><td><input data-pic-steps=\"" +
+          i +
+          "\" type=\"number\" min=\"0\" max=\"99\" value=\"" +
+          (p.steps != null ? p.steps : 0) +
+          "\" /></td><td><button type=\"button\" class=\"btn\" data-pic-apply=\"" +
+          i +
+          "\">Set</button></td></tr>"
+      )
+      .join("");
+  }
+
+  function buildExploration(parsed) {
+    const ex = parsed.exploration.exploration || [];
+    const wm = parsed.exploration.worldMap || [];
+    let html = "<div class=\"meta-strip\">";
+    html +=
+      "<span>Exploration flags <strong>" +
+      ex.length +
+      "</strong></span><span>World map <strong>" +
+      wm.length +
+      "</strong></span></div>";
+    html += '<div class="table-wrap"><table class="data-table"><thead><tr><th>Type</th><th>Flag</th></tr></thead><tbody>';
+    ex.forEach((c) => {
+      html +=
+        "<tr><td>Exploration</td><td>" +
+        escapeHtml((D.EXPLORATION_LABELS[c.index] || "Enumerator " + c.index) + " · " + c.id) +
+        "</td></tr>";
+    });
+    wm.forEach((c) => {
+      html +=
+        "<tr><td>World map</td><td>" +
+        escapeHtml((D.WORLD_MAP_LABELS[c.index] || "Enumerator " + c.index) + " · " + c.id) +
+        "</td></tr>";
+    });
+    if (!ex.length && !wm.length) {
+      html += "<tr><td colspan=\"2\">No exploration capacity flags found.</td></tr>";
+    }
+    html += "</tbody></table></div>";
+    $("exploration-body").innerHTML = html;
+  }
+
+  function buildSpawn(parsed) {
+    $("f-map-edit").value = parsed.mapToLoad || "";
+    $("f-spawn-edit").value = parsed.spawnTag || "";
+    $("map-list").innerHTML = D.KNOWN_MAPS.map(
+      (m) => "<option value=\"" + escapeHtml(m) + "\"></option>"
+    ).join("");
+    $("spawn-hint").textContent =
+      "Current map length budget: " +
+      (parsed.mapToLoad ? parsed.mapToLoad.length : 0) +
+      " chars. Spawn: " +
+      (parsed.spawnTag ? parsed.spawnTag.length : 0) +
+      " chars.";
+  }
+
+  function buildCollectibles(parsed) {
+    $("collectibles-table").querySelector("tbody").innerHTML = D.COLLECTIBLE_KEYS.map((key) => {
+      const it = parsed.inventory.find((x) => x.key === key);
+      return (
+        "<tr><td><code>" +
+        escapeHtml(key) +
+        "</code></td><td><input data-col=\"" +
+        escapeHtml(key) +
+        "\" type=\"number\" min=\"0\" value=\"" +
+        (it ? it.value : 0) +
+        "\" /></td><td><button type=\"button\" class=\"btn\" data-col-apply=\"" +
+        escapeHtml(key) +
+        "\">" +
+        (it ? "Set" : "Insert") +
+        "</button></td></tr>"
+      );
+    }).join("");
   }
 
   function buildInventoryTable(parsed) {
@@ -218,6 +377,11 @@
 
     buildResourcesGrid(parsed);
     buildCharacters(parsed);
+    buildWeapons(parsed);
+    buildPictos(parsed);
+    buildExploration(parsed);
+    buildSpawn(parsed);
+    buildCollectibles(parsed);
     buildInventoryTable(parsed);
 
     $("feature-table").querySelector("tbody").innerHTML = D.FEATURE_MATRIX.map(
@@ -375,7 +539,7 @@
     const inputs = $("resources-grid").querySelectorAll("input[data-res]");
     const applied = [];
     inputs.forEach((input) => {
-      if (input.disabled || input.value === "") return;
+      if (input.value === "") return;
       const key = input.getAttribute("data-res");
       const n = Math.max(0, Number(input.value) | 0);
       if (key === "gold") {
@@ -383,15 +547,40 @@
         bytes = r.bytes;
         applied.push("Gold=" + n);
       } else {
-        const r = G.writeInventoryItem(bytes, key, n);
+        const r = G.ensureInventoryItem(bytes, key, n);
         bytes = r.bytes;
-        applied.push(key + "=" + n);
+        applied.push(key + "=" + n + (r.inserted ? " (inserted)" : ""));
       }
+    });
+    $("tint-levels-grid").querySelectorAll("input[data-tint]").forEach((input) => {
+      if (input.disabled || input.value === "") return;
+      const base = input.getAttribute("data-tint");
+      const r = G.setTintLevel(bytes, base, Number(input.value) | 0);
+      bytes = r.bytes;
+      applied.push(r.key);
     });
     state.bytes = bytes;
     setDirty(true);
     refreshAll();
     setStatus("Resources applied: " + (applied.join(", ") || "nothing"));
+  }
+
+  function insertMissingResources() {
+    let bytes = state.bytes;
+    const parsed = G.parseSave(bytes);
+    const log = [];
+    D.INSERTABLE_RESOURCES.forEach((key) => {
+      if (parsed.inventory.find((x) => x.key === key)) return;
+      const input = $("resources-grid").querySelector('input[data-res="' + key + '"]');
+      const n = input && input.value !== "" ? Math.max(0, Number(input.value) | 0) : 1;
+      const r = G.insertInventoryItem(bytes, key, n || 1);
+      bytes = r.bytes;
+      log.push(key);
+    });
+    state.bytes = bytes;
+    setDirty(true);
+    refreshAll();
+    setStatus(log.length ? "Inserted: " + log.join(", ") : "Nothing missing to insert.");
   }
 
   function applyCharacters() {
@@ -422,6 +611,10 @@
       if (excl && c.excludedAt != null) {
         bytes = G.writeCharacterExcluded(bytes, c.excludedAt, excl.checked).bytes;
       }
+      card.querySelectorAll("input[data-attr-at]").forEach((input) => {
+        const at = Number(input.getAttribute("data-attr-at"));
+        bytes = G.writeAttribute(bytes, at, Number(input.value) | 0).bytes;
+      });
     });
     state.bytes = bytes;
     setDirty(true);
@@ -452,10 +645,16 @@
         alert(err.message || String(err));
       }
     });
+    $("btn-resources-insert").addEventListener("click", () => {
+      try {
+        insertMissingResources();
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
     $("btn-resources-max").addEventListener("click", () => {
       const inputs = $("resources-grid").querySelectorAll("input[data-res]");
       inputs.forEach((input) => {
-        if (input.disabled) return;
         const key = input.getAttribute("data-res");
         if (key === "gold") input.value = 999999;
         else if (key.indexOf("UpgradeMaterial") === 0) input.value = 99;
@@ -468,6 +667,109 @@
     $("btn-characters-apply").addEventListener("click", () => {
       try {
         applyCharacters();
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+
+    $("btn-weapons-refresh").addEventListener("click", () => refreshAll());
+    $("btn-weapons-max").addEventListener("click", () => {
+      try {
+        const parsed = G.parseSave(state.bytes);
+        let bytes = state.bytes;
+        parsed.weapons.forEach((w) => {
+          if (w.levelAt != null) bytes = G.writeWeaponLevel(bytes, w.levelAt, 33).bytes;
+        });
+        state.bytes = bytes;
+        setDirty(true);
+        refreshAll();
+        setStatus("All weapon levels set to 33.");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("weapons-table").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-wpn-apply]");
+      if (!btn) return;
+      try {
+        const i = Number(btn.getAttribute("data-wpn-apply"));
+        const parsed = G.parseSave(state.bytes);
+        const w = parsed.weapons[i];
+        const input = $("weapons-table").querySelector('input[data-wpn="' + i + '"]');
+        if (!w || !input) return;
+        state.bytes = G.writeWeaponLevel(state.bytes, w.levelAt, Number(input.value) | 0).bytes;
+        setDirty(true);
+        refreshAll();
+        setStatus("Weapon " + w.name + " level set.");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+
+    $("pictos-table").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-pic-apply]");
+      if (!btn) return;
+      try {
+        const i = Number(btn.getAttribute("data-pic-apply"));
+        const parsed = G.parseSave(state.bytes);
+        const p = parsed.pictos[i];
+        if (!p) return;
+        const learnt = $("pictos-table").querySelector('input[data-pic-learnt="' + i + '"]').checked;
+        const steps = Number(
+          $("pictos-table").querySelector('input[data-pic-steps="' + i + '"]').value
+        ) | 0;
+        state.bytes = G.writePictoFlags(state.bytes, p.learntAt, p.stepsAt, learnt, steps).bytes;
+        setDirty(true);
+        refreshAll();
+        setStatus("Picto " + p.name + " updated.");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+
+    $("btn-spawn-refresh").addEventListener("click", () => refreshAll());
+    $("btn-spawn-apply").addEventListener("click", () => {
+      try {
+        let bytes = state.bytes;
+        const map = ($("f-map-edit").value || "").trim();
+        const tag = ($("f-spawn-edit").value || "").trim();
+        if (map) bytes = G.writeMapToLoad(bytes, map).bytes;
+        if (tag) bytes = G.writeSpawnTag(bytes, tag).bytes;
+        state.bytes = bytes;
+        setDirty(true);
+        refreshAll();
+        setStatus("Map / spawn applied.");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+
+    $("btn-collect-refresh").addEventListener("click", () => refreshAll());
+    $("btn-collect-insert-all").addEventListener("click", () => {
+      try {
+        let bytes = state.bytes;
+        D.COLLECTIBLE_KEYS.forEach((key) => {
+          bytes = G.ensureInventoryItem(bytes, key, 1).bytes;
+        });
+        state.bytes = bytes;
+        setDirty(true);
+        refreshAll();
+        setStatus("Collectible keys ensured.");
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("collectibles-table").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-col-apply]");
+      if (!btn) return;
+      try {
+        const key = btn.getAttribute("data-col-apply");
+        const input = $("collectibles-table").querySelector('input[data-col="' + key + '"]');
+        const n = Math.max(0, Number(input.value) | 0);
+        state.bytes = G.ensureInventoryItem(state.bytes, key, n || 1).bytes;
+        setDirty(true);
+        refreshAll();
+        setStatus(key + " = " + (n || 1));
       } catch (err) {
         alert(err.message || String(err));
       }
@@ -537,6 +839,28 @@
     $("btn-install").addEventListener("click", () => {
       installToFolder().catch((err) => alert(err.message || String(err)));
     });
+
+    function copyText(text, label) {
+      const done = () => setStatus("Copied " + label + " to clipboard.");
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(() => {
+          window.prompt("Copy this:", text);
+        });
+      } else {
+        window.prompt("Copy this:", text);
+      }
+    }
+
+    const ACH_LIST =
+      "cd tools/steam-achievement-unlocker\nnpm install\nnode unlock.js --app e33 --list";
+    const ACH_UNLOCK =
+      "cd tools/steam-achievement-unlocker\nnpm install\nnode unlock.js --app expedition33 --unlock-all";
+    const ACH_LOCK =
+      "cd tools/steam-achievement-unlocker\nnode unlock.js --app e33 --lock-all";
+
+    $("btn-ach-copy-list").addEventListener("click", () => copyText(ACH_LIST, "list command"));
+    $("btn-ach-copy-unlock").addEventListener("click", () => copyText(ACH_UNLOCK, "unlock-all command"));
+    $("btn-ach-copy-lock").addEventListener("click", () => copyText(ACH_LOCK, "lock-all command"));
 
     const overlay = $("drop-overlay");
     window.addEventListener("dragover", (e) => {

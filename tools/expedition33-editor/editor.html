@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>GGdropmans Clair Obscur: Expedition 33 Save Editor</title>
+  <title>GGdropmans Clair Obscur Expedition 33 Editor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -18,7 +18,7 @@
     <a class="brand" href="../../index.html" style="text-decoration:none;color:inherit">
       <span class="brand__mark">33</span>
       <div class="brand__text">
-        <h1>Expedition 33 Save Editor</h1>
+        <h1>GGdropmans Clair Obscur Expedition 33 Editor</h1>
         <p>Clair Obscur · GVAS · Back to hub</p>
       </div>
     </a>
@@ -58,8 +58,14 @@
     <button class="tab is-active" data-tab="overview" type="button">Overview</button>
     <button class="tab" data-tab="resources" type="button">Resources</button>
     <button class="tab" data-tab="characters" type="button">Characters</button>
+    <button class="tab" data-tab="weapons" type="button">Weapons</button>
+    <button class="tab" data-tab="pictos" type="button">Pictos</button>
+    <button class="tab" data-tab="exploration" type="button">Exploration</button>
+    <button class="tab" data-tab="spawn" type="button">Map / Spawn</button>
+    <button class="tab" data-tab="collectibles" type="button">Collectibles</button>
     <button class="tab" data-tab="inventory" type="button">Inventory</button>
     <button class="tab" data-tab="features" type="button">Feature map</button>
+    <button class="tab" data-tab="achievements" type="button">Steam Achievements</button>
     <button class="tab" data-tab="notes" type="button">Notes</button>
   </nav>
 
@@ -93,11 +99,17 @@
     <section id="panel-resources" class="panel" hidden>
       <div class="panel__head">
         <h2>Chroma &amp; resources</h2>
-        <p>Gold (Chroma) is a root int. Everything else is an InventoryItems Name→Int entry.</p>
+        <p>Gold is a root int. Other resources are InventoryItems entries — missing ones can be inserted.</p>
       </div>
       <div class="form-grid" id="resources-grid"></div>
+      <div class="panel__head" style="margin-top:1.25rem">
+        <h2>Tint shard levels</h2>
+        <p>Levels 0–2 (rewrites the Level digit on the inventory key).</p>
+      </div>
+      <div class="form-grid" id="tint-levels-grid"></div>
       <div class="quick-actions">
         <button type="button" class="btn btn--accent" id="btn-resources-apply">Apply resources</button>
+        <button type="button" class="btn" id="btn-resources-insert">Insert missing</button>
         <button type="button" class="btn" id="btn-resources-max">Max common</button>
         <button type="button" class="btn" id="btn-resources-refresh">Reload</button>
       </div>
@@ -107,13 +119,89 @@
     <section id="panel-characters" class="panel" hidden>
       <div class="panel__head">
         <h2>Expeditioners</h2>
-        <p>Level, unspent attribute points, and lumina from consumables. Hardcoded names come from the save.</p>
+        <p>Level, attributes, skills, lumina, and party exclude flags.</p>
       </div>
       <div id="characters-missing" class="callout" hidden>No CharactersCollection entries found.</div>
       <div id="characters-body"></div>
       <div class="quick-actions">
         <button type="button" class="btn btn--accent" id="btn-characters-apply">Apply characters</button>
         <button type="button" class="btn" id="btn-characters-refresh">Reload</button>
+      </div>
+    </section>
+
+    <section id="panel-weapons" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Weapons</h2>
+        <p>Levels from WeaponProgressions (1–33). Unlocking brand-new weapons still needs an inventory insert of the weapon id.</p>
+      </div>
+      <p class="hint" id="weapons-hint"></p>
+      <div class="table-wrap">
+        <table class="data-table" id="weapons-table">
+          <thead><tr><th>Weapon</th><th>Level</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-weapons-max">Max all levels (33)</button>
+        <button type="button" class="btn" id="btn-weapons-refresh">Reload</button>
+      </div>
+    </section>
+
+    <section id="panel-pictos" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Pictos</h2>
+        <p>Passive effect progressions when present (learnt + steps). Early saves may be empty.</p>
+      </div>
+      <p class="hint" id="pictos-hint"></p>
+      <div class="table-wrap" style="max-height:420px">
+        <table class="data-table" id="pictos-table">
+          <thead><tr><th>Picto</th><th>Mastered</th><th>Steps</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-exploration" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Exploration</h2>
+        <p>Unlocked exploration / world-map capacity flags currently stored in the save.</p>
+      </div>
+      <div id="exploration-body"></div>
+    </section>
+
+    <section id="panel-spawn" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Map / spawn</h2>
+        <p>In-place string rewrite — new values must fit the existing byte length (pad/shorten).</p>
+      </div>
+      <div class="form-grid">
+        <label>MapToLoad
+          <input id="f-map-edit" type="text" list="map-list" />
+          <datalist id="map-list"></datalist>
+        </label>
+        <label>Spawn tag<input id="f-spawn-edit" type="text" /></label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-spawn-apply">Apply map / spawn</button>
+        <button type="button" class="btn" id="btn-spawn-refresh">Reload</button>
+      </div>
+      <p class="hint" id="spawn-hint"></p>
+    </section>
+
+    <section id="panel-collectibles" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Collectibles</h2>
+        <p>Insert known music / journal inventory keys if missing, or bump counts.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="collectibles-table">
+          <thead><tr><th>Key</th><th>Count</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-collect-insert-all">Insert all listed</button>
+        <button type="button" class="btn" id="btn-collect-refresh">Reload</button>
       </div>
     </section>
 
@@ -143,6 +231,43 @@
         <table class="data-table" id="feature-table">
           <thead><tr><th>Feature</th><th>Status</th><th>Notes</th></tr></thead>
           <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-achievements" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Steam achievements</h2>
+        <p>Browsers can’t talk to Steamworks. Use the local Node CLI (AppID <code>1903340</code>, ~55 achievements).</p>
+      </div>
+      <div class="callout">
+        Close Expedition 33 first. Steam must be running and you must own the game.
+        Full guide: <a href="../steam-achievement-unlocker/guide.html#expedition33">Steam Achievement Unlocker → Expedition 33</a>.
+      </div>
+      <div class="form-grid">
+        <label>AppID<input type="text" value="1903340" readonly /></label>
+        <label>Preset names<input type="text" value="e33 · expedition33 · clair-obscur" readonly /></label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-ach-copy-list">Copy list command</button>
+        <button type="button" class="btn btn--accent" id="btn-ach-copy-unlock">Copy unlock-all</button>
+        <button type="button" class="btn" id="btn-ach-copy-lock">Copy lock-all</button>
+        <a class="btn" href="../steam-achievement-unlocker/unlock-expedition33.bat" download>Download E33 .bat</a>
+        <a class="btn" href="../steam-achievement-unlocker/guide.html#expedition33">Open guide</a>
+      </div>
+      <pre id="ach-commands" class="hint" style="white-space:pre-wrap;font-family:var(--mono);background:var(--bg-2);border:1px solid var(--line);border-radius:8px;padding:0.85rem 1rem;color:var(--text);margin-top:1rem">cd tools/steam-achievement-unlocker
+npm install
+node unlock.js --app e33 --list
+node unlock.js --app expedition33 --unlock-all</pre>
+      <div class="table-wrap" style="margin-top:1rem">
+        <table class="data-table">
+          <thead><tr><th>Step</th><th>Detail</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Install <a href="https://nodejs.org/" target="_blank" rel="noopener">Node.js 18+</a></td></tr>
+            <tr><td>2</td><td>Open a terminal in <code>tools/steam-achievement-unlocker</code> and run <code>npm install</code> once</td></tr>
+            <tr><td>3</td><td>Double-click <code>unlock-expedition33.bat</code>, or paste the commands above</td></tr>
+            <tr><td>4</td><td>Check Steam → Clair Obscur: Expedition 33 → Achievements (may take a moment to sync)</td></tr>
+          </tbody>
         </table>
       </div>
     </section>

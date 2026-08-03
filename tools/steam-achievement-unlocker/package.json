@@ -10,7 +10,10 @@
   "scripts": {
     "list": "node unlock.js --list",
     "unlock-all": "node unlock.js --unlock-all",
-    "lock-all": "node unlock.js --lock-all"
+    "lock-all": "node unlock.js --lock-all",
+    "e33:list": "node unlock.js --app expedition33 --list",
+    "e33:unlock-all": "node unlock.js --app expedition33 --unlock-all",
+    "e33:lock-all": "node unlock.js --app expedition33 --lock-all"
   },
   "engines": {
     "node": ">=18"
