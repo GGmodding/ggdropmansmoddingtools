@@ -28,7 +28,12 @@ Join the Discord: [discord.gg/PTwyDTFyR](https://discord.gg/PTwyDTFyR)
 
 | Section | Features |
 |--------|----------|
-| Movement | Super speed, super jump, no-clip fly, soft fly, teleport to aim (F6), movement mode, collision |
+| Movement | Super speed, super jump, no-clip fly, soft fly, teleport to aim (F6), **bookmarks A/B/C + last-pos**, movement mode, collision |
+| Quick loadout | **GOD LOADOUT** — god vitals + speed ×5 + oneshot + free build + bugs ignore (one tick) |
+| Buggy (mount) | Re-probe CMC while mounted, buggy super speed, infinite stamina, god HP + pet invuln, buggy noclip, combo |
+| Time of day | Freeze rate=0, fast-forward rate=50, probe nearby day floats, snap dawn/noon/dusk |
+| Game speed | Probe dilation floats, slow-mo ×0.25, turbo ×2 / ×3 (CustomTimeDilation-style) |
+| Gather / combat helpers | One-hit harvest, pickup magnet, XP drip, instant craft, infinite held uses, kill aura (global scales), duplicate held stack, live unlock pack, soft freecam |
 | Vitals | Health / stamina / hunger / thirst / oxygen pointers + fill / god / infinite survival scripts |
 | Economy | Raw Science, milk molars, mega milk molars |
 | Gear | Held item durability / stack / enhancement pointers |
@@ -44,7 +49,7 @@ Join the Discord: [discord.gg/PTwyDTFyR](https://discord.gg/PTwyDTFyR)
 | Better in **save editor** | Better in **this .CT** |
 |---------------------------|-------------------------|
 | Buildings / quests / analyze / fog | Super speed / super jump / no-clip / teleport |
-| Hatchery finish, buggy tier, eggs | Live health / stamina / hunger freeze |
+| Hatchery finish, buggy tier, eggs | Live health / stamina / hunger freeze + **buggy mount speed/god** |
 | Inventory & resource dump presets | Free build & damage scales while playing |
 | Achievements, OP preset, Oodle rewrite | Raw Science / molars without saving |
 

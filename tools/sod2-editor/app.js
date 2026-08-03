@@ -1775,6 +1775,7 @@
       $("veh-fields").innerHTML = "";
       $("veh-trunk-table").querySelector("tbody").innerHTML = "";
       $("veh-detail-actions").hidden = true;
+      if ($("veh-extra-toolbar")) $("veh-extra-toolbar").hidden = true;
       return;
     }
 
@@ -1810,6 +1811,7 @@
       $("veh-fields").innerHTML = "";
       $("veh-trunk-table").querySelector("tbody").innerHTML = "";
       $("veh-detail-actions").hidden = true;
+      if ($("veh-extra-toolbar")) $("veh-extra-toolbar").hidden = true;
       return;
     }
     state.vehicleIndex = pickVisibleIndex(state.vehicleIndex, visibleVeh);
@@ -1894,6 +1896,22 @@
     });
     classWrap.appendChild(classSel);
     fields.appendChild(classWrap);
+
+    const extraBar = $("veh-extra-toolbar");
+    const extraSel = $("veh-extra-select");
+    if (extraBar && extraSel) {
+      extraBar.hidden = false;
+      const prev = extraSel.value;
+      extraSel.innerHTML = "";
+      for (const ex of S.EXTRA_VEHICLES || []) {
+        const opt = document.createElement("option");
+        opt.value = ex.id;
+        opt.textContent = ex.label;
+        opt.title = ex.hint || ex.path;
+        if (ex.id === prev || (!prev && ex.id === "plane")) opt.selected = true;
+        extraSel.appendChild(opt);
+      }
+    }
 
     const scoutWrap = document.createElement("label");
     scoutWrap.textContent = "Map scout";
@@ -2996,6 +3014,53 @@
       const n = S.clearTrunk(save, state.vehicleIndex);
       setDirty(true);
       setStatus("Cleared " + n + " trunk slots");
+      renderVehicles();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-veh-to-plane").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      pushCheckpoint("before plane convert");
+      const r = S.applyVehicleExtra(save, state.vehicleIndex, "plane");
+      setDirty(true);
+      setStatus("Vehicle → Plane (" + r.shortName + ", class #" + r.classIndex + ")");
+      renderVehicles();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-veh-apply-extra").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    const id = $("veh-extra-select").value;
+    try {
+      pushCheckpoint("before vehicle extra " + id);
+      const r = S.applyVehicleExtra(save, state.vehicleIndex, id);
+      setDirty(true);
+      setStatus("Vehicle → " + r.shortName + " (class #" + r.classIndex + ")");
+      renderVehicles();
+      renderDiff();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("btn-veh-spawn-plane").addEventListener("click", () => {
+    const save = current() && current().save;
+    if (!save) return;
+    try {
+      pushCheckpoint("before spawn plane");
+      const r = S.spawnVehicleExtraNearBase(save, "plane");
+      state.vehicleIndex = r.index;
+      setDirty(true);
+      setStatus("Spawned Plane near base → #" + (r.index + 1));
       renderVehicles();
       renderDiff();
     } catch (err) {

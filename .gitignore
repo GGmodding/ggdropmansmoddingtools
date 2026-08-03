@@ -5,3 +5,8 @@ tools/last-epoch-editor/_moditem.json
 tools/last-epoch-editor/_campaign_progress.json
 tools/schedule1-editor/_samples/
 tools/schedule1-editor/_test-*.js
+tools/sod2-editor/gg_sod2_last_save.txt
+tools/sod2-editor/gg_sod2_cli_out.txt
+tools/sod2-editor/_sample*/**/*.smokecopy
+tools/sod2-editor/_sample*/**/*.smokecopy.bak
+tools/sod2-editor/**/*.sav.bak

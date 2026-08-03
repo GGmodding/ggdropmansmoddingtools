@@ -10,7 +10,7 @@
       <CheatEntries>
         <CheatEntry>
           <ID>1</ID>
-          <Description>"README - how to use"</Description>
+          <Description>"README — how to use"</Description>
           <Color>00808080</Color>
           <VariableType>Auto Assembler Script</VariableType>
           <AssemblerScript>{
@@ -26,10 +26,10 @@
         3. Enable [ACTIVATE]
                 4. Use Movement scripts for super speed / super jump / no-clip fly / teleport to aim (F6)
                 5. Use Vitals / Economy / Settings for live cheats
-                6. Gear -> one-shot weapons / god armor scripts while items are equipped
+                6. Gear → one-shot weapons / god armor scripts while items are equipped
 
                 Offline unlocks (buildings, quests, analyze, fog, hatchery, buggy tier, OP preset, inventory dumps)
-                stay in the browser save editor - use this .CT for live movement / vitals / world toggles.
+                stay in the browser save editor — use this .CT for live movement / vitals / world toggles.
                 }
                 [ENABLE]
                 [DISABLE]
@@ -49,7 +49,7 @@
         end
 
         -- Resolve GNames/UObject statics via AOB (same Maine UE signatures as G1 lineage).
-        -- After a major Augusta patch, re-enable [ACTIVATE] or run DEBUG -> Fetch Base Addresses.
+        -- After a major Augusta patch, re-enable [ACTIVATE] or run DEBUG → Fetch Base Addresses.
         local aobList = {
           "4C 8B 05 ?? ?? ?? ?? 4D 85 C0 0F 84 ?? ?? ?? ?? 49 8B 80 40 01 00 00 48 89 9C 24 A0 00 00 00 48 85 C0",
           "4C 8B 35 ?? ?? ?? ?? 48 63 05 ?? ?? ?? ?? 4D 8D 24 C6 4D 3B F4",
@@ -61,7 +61,7 @@
         local xbase = getAddress(process)
         local defs = {}
         local miss = {}
-        print("GGdropman Grounded 2: scanning AOBs on "..tostring(process).."...")
+        print("GGdropman Grounded 2: scanning AOBs on "..tostring(process).."…")
         for i = 1, #aobList do
           local aob = AOBScan(aobList[i], "+X*C*W")
           if aob == nil or aob.Count == 0 then
@@ -81,7 +81,7 @@
           showMessage("AOB miss: "..table.concat(miss, ", ").."\nPointer groups for those symbols will be empty until the signature is updated.")
         end
         if not defs.Player then
-          showMessage("Player AOB failed - cannot activate. Game must be in-world (not main menu).")
+          showMessage("Player AOB failed — cannot activate. Game must be in-world (not main menu).")
           error("no Player AOB")
         end
 
@@ -233,7 +233,7 @@
               end
             end
             st.timer.Enabled = true
-            print("GOD LOADOUT ON - god HP/stam/hunger + speed x5 + damage x100 + free build + bugs ignore")
+            print("GOD LOADOUT ON � god HP/stam/hunger + speed x5 + damage x100 + free build + bugs ignore")
             showMessage("GOD LOADOUT enabled.\nGod vitals + Super Speed x5 + One-shot damage + Free build.\nDisable this script to restore damage scales / toggles.")
             [DISABLE]
             {$lua}
@@ -586,7 +586,7 @@
             local mode = resolve("Player", {0x178,0xDC8})
             if fly then writeByte(fly, 1) end
             if mode then writeByte(mode, 5) end -- MOVE_Flying
-            print("Fly mode on (MovementMode=5) - collision still on. Use No-clip fly to phase through geometry.")
+            print("Fly mode on (MovementMode=5) — collision still on. Use No-clip fly to phase through geometry.")
             [DISABLE]
             {$lua}
             if syntaxcheck then return end
@@ -620,7 +620,7 @@
 
             gg_grounded_tp = gg_grounded_tp or {}
             local st = gg_grounded_tp
-            -- Distance in Unreal units (~cm). 2500 ~ 25m. Raise for longer blinks.
+            -- Distance in Unreal units (~cm). 2500 ≈ 25m. Raise for longer blinks.
             st.dist = st.dist or 2500
 
             local function looksPos(x, y, z)
@@ -674,7 +674,7 @@
                 for _, lo in ipairs({0x2A0, 0x2B0, 0x2C0, 0x2D0, 0x300, 0x310, 0x320, 0x340, 0x360, 0x380, 0x3A0}) do
                   consider(cmc + lo, string.format("cmc+%X", lo))
                 end
-                -- UpdatedComponent -> RelativeLocation
+                -- UpdatedComponent → RelativeLocation
                 for _, uo in ipairs({0x160, 0x168, 0x170, 0x178, 0x188, 0x190}) do
                   local upd = readQword(cmc + uo)
                   if upd and upd &gt; 0x10000 then
@@ -693,7 +693,7 @@
               return st.locAddr
             end
 
-            -- ControlRotation / camera POV -> forward vector (UE degrees).
+            -- ControlRotation / camera POV → forward vector (UE degrees).
             local function findAim(p)
               local ctrlOffs = {0x260, 0x268, 0x270, 0x2A8, 0x2B0, 0x2B8, 0x2C0, 0x320}
               local rotOffs = {0x288, 0x290, 0x298, 0x3D0, 0x3D8, 0x408, 0x410}
@@ -710,7 +710,7 @@
                       end
                     end
                   end
-                  -- PlayerCameraManager -> CameraCache POV
+                  -- PlayerCameraManager → CameraCache POV
                   for _, cmo in ipairs({0x340, 0x348, 0x350, 0x2B8, 0x2C8, 0x438}) do
                     local cam = readQword(ctrl + cmo)
                     if cam and cam &gt; 0x10000 then
@@ -789,7 +789,7 @@
             end, VK_F6)
 
             print(string.format(
-              "Teleport to aim ON - press F6 to blink along crosshair (dist=%.0f uu). Edit gg_grounded_tp.dist in Lua Engine to change range.",
+              "Teleport to aim ON — press F6 to blink along crosshair (dist=%.0f uu). Edit gg_grounded_tp.dist in Lua Engine to change range.",
               st.dist
             ))
 
@@ -806,7 +806,7 @@
             </CheatEntry>
             <CheatEntry>
               <ID>8</ID>
-              <Description>"[Script] Set teleport distance..."</Description>
+              <Description>"[Script] Set teleport distance…"</Description>
               <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
@@ -1102,7 +1102,7 @@
           <CheatEntries>
             <CheatEntry>
               <ID>401</ID>
-              <Description>"README - mount while in-world"</Description>
+              <Description>"README — mount while in-world"</Description>
               <Color>00808080</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>{
@@ -1140,7 +1140,7 @@
             local pawns = {0xDC8, 0xE00, 0xE08, 0xD80, 0xD00, 0xC80, 0xF00, 0x1080, 0x1100, 0xB80, 0xC00, 0x1180, 0x1200}
             gg2_buggy_cmcs = {}
             local bestOff, bestScore = nil, -1
-            print(string.format("Buggy CMC probe on pawn %X ...", p))
+            print(string.format("Buggy CMC probe on pawn %X …", p))
             for _, off in ipairs(pawns) do
               local c = readQword(p + off)
               if c and c &gt; 0x10000 and c &lt; 0x7FFFFFFFFFFF then
@@ -1593,7 +1593,7 @@
             -- Kick the three sibling scripts by synthesizing their enable logic lightly:
             -- 1) widen CMC cache if empty
             if not gg2_buggy_cmcs or #gg2_buggy_cmcs == 0 then
-              print("Combo: run Re-probe CMC (mounted) first for best results - continuing with Player CMC")
+              print("Combo: run Re-probe CMC (mounted) first for best results � continuing with Player CMC")
             end
             -- 2) start speed if not already
             if not (gg2_buggy_speed and gg2_buggy_speed.timer) then
@@ -2291,7 +2291,7 @@
         
         <CheatEntry>
           <ID>320</ID>
-          <Description>"Stacks - giant stack size"</Description>
+          <Description>"Stacks — giant stack size"</Description>
           <Options moHideChildren="1" moManualExpandCollapse="1"/>
           <Color>0040C0A0</Color>
           <GroupHeader>1</GroupHeader>
@@ -2397,7 +2397,7 @@
             local wrote = 0
 
             local function tryWriteLevels(base, nameLen)
-              -- Save layout: FString then i32 level, i32 unk. Live may vary - probe a few spots.
+              -- Save layout: FString then i32 level, i32 unk. Live may vary — probe a few spots.
               local candidates = {
                 base + nameLen + 1,
                 base + nameLen,
@@ -2427,7 +2427,7 @@
                   if at then tryWriteLevels(at, n.len) end
                 end
               else
-                print(n.name..": MISS (upgrade may use FName only - use held-stack script / save editor)")
+                print(n.name..": MISS (upgrade may use FName only — use held-stack script / save editor)")
               end
               if aob then aob.destroy() end
             end
@@ -2522,7 +2522,7 @@
               if haul then writeInteger(haul, 99) end
             end
             st.timer.Enabled = true
-            print("Giant stacks combo: upgrades->20, haul->99, held stack freeze 9999")
+            print("Giant stacks combo: upgrades→20, haul→99, held stack freeze 9999")
 
             [DISABLE]
             {$lua}
@@ -2565,7 +2565,7 @@
 
         <CheatEntry>
           <ID>300</ID>
-          <Description>"Gear - one-shot / god armor"</Description>
+          <Description>"Gear — one-shot / god armor"</Description>
           <Options moHideChildren="1" moManualExpandCollapse="1"/>
           <Color>00FF6040</Color>
           <GroupHeader>1</GroupHeader>
@@ -2632,7 +2632,7 @@
               writeFloat(st.dmgAddr, 100)
               print(string.format("PlayerDamage scale -&gt; 100 (was %.2f)", st.dmgPrev or -1))
             else
-              print("GameState damage scale miss - still buffing held item stats")
+              print("GameState damage scale miss — still buffing held item stats")
             end
 
             st.timer = createTimer(nil, false)
@@ -3221,19 +3221,19 @@
           <CheatEntries>
             <CheatEntry>
               <ID>421</ID>
-              <Description>"README - rate + day float"</Description>
+              <Description>"README � rate + day float"</Description>
               <Color>00808080</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>{
         Time of day (live)
         ==================
-        Primary control: GameState ? - ? Time of Day Rate (+0x70)
+        Primary control: GameState ? � ? Time of Day Rate (+0x70)
           0 = freeze clock
           1 = normal
-          20-100 = fast-forward
+          20�100 = fast-forward
 
         Snap dawn/noon/dusk: probes nearby floats for a day-progress
-        value (0-1 fractional day or 0-24 hour) and writes presets.
+        value (0�1 fractional day or 0�24 hour) and writes presets.
         If snap fails, use save editor Calendar, or Probe TOD floats.
         }
         [ENABLE]
@@ -3346,7 +3346,7 @@
             local rate = resolve("GameState", {0x70, 0x138, 0x388, 0x170})
             if not rate then error("no rate ptr") end
             local base = rate - 0x70
-            print(string.format("Settings obj field base %X - dumping floats 0x00..0xC0", base))
+            print(string.format("Settings obj field base %X � dumping floats 0x00..0xC0", base))
             gg2_tod_candidates = {}
             for off = 0, 0xC0, 4 do
               local v = readFloat(base + off)
@@ -3368,7 +3368,7 @@
             </CheatEntry>
             <CheatEntry>
               <ID>425</ID>
-              <Description>"[Script] Snap - Dawn (~6:00)"</Description>
+              <Description>"[Script] Snap � Dawn (~6:00)"</Description>
               <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
@@ -3418,7 +3418,7 @@
             </CheatEntry>
             <CheatEntry>
               <ID>426</ID>
-              <Description>"[Script] Snap - Noon (~12:00)"</Description>
+              <Description>"[Script] Snap � Noon (~12:00)"</Description>
               <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
@@ -3457,7 +3457,7 @@
             </CheatEntry>
             <CheatEntry>
               <ID>427</ID>
-              <Description>"[Script] Snap - Dusk (~18:00)"</Description>
+              <Description>"[Script] Snap � Dusk (~18:00)"</Description>
               <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
@@ -3518,7 +3518,7 @@
           <CheatEntries>
             <CheatEntry>
               <ID>441</ID>
-              <Description>"README - CustomTimeDilation"</Description>
+              <Description>"README � CustomTimeDilation"</Description>
               <Color>00808080</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>{
@@ -3528,7 +3528,7 @@
         (UE often keeps this near other actor floats). Also probes for a
         global 1.0 dilation near EngineData / world settings.
 
-        0.25 = slow-mo - 1.0 = normal - 2-3 = turbo
+        0.25 = slow-mo � 1.0 = normal � 2�3 = turbo
         Disable scripts to restore previous values.
         }
         [ENABLE]
@@ -3547,7 +3547,7 @@
             local p = readQword(getAddress("Player"))
             if not p or p == 0 then error("null pawn") end
             gg2_dil_addrs = {}
-            print(string.format("Scanning Player pawn %X for ~1.0 floats (CustomTimeDilation candidates)-", p))
+            print(string.format("Scanning Player pawn %X for ~1.0 floats (CustomTimeDilation candidates)�", p))
             for off = 0x80, 0x600, 4 do
               local v = readFloat(p + off)
               if v and math.abs(v - 1.0) &lt; 0.001 then
@@ -3577,7 +3577,7 @@
               end
             end
             print("Cached "..#gg2_dil_addrs.." candidates in gg2_dil_addrs")
-            showMessage("Probe done - check CE Lua console. Then enable Slow-mo / Turbo.")
+            showMessage("Probe done � check CE Lua console. Then enable Slow-mo / Turbo.")
             [DISABLE]
             </AssemblerScript>
             </CheatEntry>
@@ -3854,7 +3854,7 @@
               end
               if hits &gt;= 6 then break end
             end
-            print("Pickup magnet ON - held stack freeze 9999 + bumped "..hits.." haul-ish capacities to 99")
+            print("Pickup magnet ON � held stack freeze 9999 + bumped "..hits.." haul-ish capacities to 99")
             showMessage("Magnet: held stack frozen at 9999 and a few haul capacity candidates set to 99.\nTrue vacuum radius needs a pickup-range float (run again after picking up loot if haul UI did not update).")
             [DISABLE]
             {$lua}
@@ -4102,7 +4102,7 @@
               if st.ch then writeFloat(st.ch, 0.01) end
             end
             st.timer.Enabled = true
-            print("Kill aura ON (global scales - not radius-based)")
+            print("Kill aura ON (global scales � not radius-based)")
             [DISABLE]
             {$lua}
             if syntaxcheck then return end
@@ -4231,7 +4231,7 @@
             end
             st.timer.Enabled = true
             print("Soft freecam ON (player fly/noclip/fast)")
-            showMessage("Soft freecam: noclip fly + high speed on the player pawn.\nTrue detached freecam is not wired - use this for scouting.")
+            showMessage("Soft freecam: noclip fly + high speed on the player pawn.\nTrue detached freecam is not wired � use this for scouting.")
             [DISABLE]
             {$lua}
             if syntaxcheck then return end
@@ -4280,7 +4280,7 @@
             end
             local p = readQword(getAddress("Player"))
             if not p or p == 0 then error("null Player") end
-            print(string.format("Player pawn %X - scanning component floats...", p))
+            print(string.format("Player pawn %X — scanning component floats…", p))
             -- Walk likely UObject* slots on the pawn and print health/survival-ish floats.
             local hits = 0
             for off = 0x100, 0x1400, 8 do
@@ -4322,7 +4322,7 @@
               end
               return a + offsets[1]
             end
-            -- Same chain as World settings -> Player Damage scale (G1 layout; may need retune on Augusta)
+            -- Same chain as World settings → Player Damage scale (G1 layout; may need retune on Augusta)
             local addr = resolve("GameState", {0x50, 0x138, 0x388, 0x170})
             if not addr then
               showMessage("Could not resolve Player Damage scale pointer")
@@ -4382,11 +4382,11 @@
             </CheatEntry>
             <CheatEntry>
               <ID>204</ID>
-              <Description>"Editor - CT feature map"</Description>
+              <Description>"Editor ↔ CT feature map"</Description>
               <Color>00808080</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>{
-        Save editor (tools/grounded2-editor) - offline .csav:
+        Save editor (tools/grounded2-editor) — offline .csav:
           header rename, vitals, molars/science, gear god/oneshot, mutations,
           quests, tech/analyze, buildings, achievements, calendar, fog,
           chests, omni tiers, buggy tier, hatchery finish, resource/egg presets,
@@ -4423,7 +4423,7 @@
               <AssemblerScript>{$lua}
             if syntaxcheck then return end
             [ENABLE]
-            print("Fetching Grounded 2 Base Addresses...")
+            print("Fetching Grounded 2 Base Addresses…")
             local aobList = {
             "4C 8B 05 ?? ?? ?? ?? 4D 85 C0 0F 84 ?? ?? ?? ?? 49 8B 80 40 01 00 00 48 89 9C 24 A0 00 00 00 48 85 C0",
             "4C 8B 35 ?? ?? ?? ?? 48 63 05 ?? ?? ?? ?? 4D 8D 24 C6 4D 3B F4",

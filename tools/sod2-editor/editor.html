@@ -47,6 +47,8 @@
       · <strong>Epic:</strong> <code>%LOCALAPPDATA%\StateOfDecay2\Saved\Epic\</code>
       · Xbox Game Pass: load the WGS folder’s GUID blobs + <code>container.*</code>, or a zip — the editor maps names and picks <code>DaytonSaveGame</code> files.
       Always backup first.
+      Live RAM + save-bridge: <a href="GGdropmanSoD2_v1.0.CT" download>GGdropmanSoD2_v1.0.CT</a>
+      (<a href="CHEAT_TABLE_README.md">readme</a>).
     </span>
   </section>
 
@@ -444,7 +446,7 @@
     <section id="panel-vehicles" class="panel" hidden>
       <div class="panel__head">
         <h2>Vehicles</h2>
-        <p>Repair, refuel, swap models, reveal on map, teleport near base, edit trunk slot indices, duplicate / delete. Trunk items live in the vehicle ItemLibrary (also listed under Inventory).</p>
+        <p>Repair, refuel, swap models (including unused Plane), reveal on map, teleport near base, edit trunk slots, duplicate / delete. The Plane is a cut asset — it drives on land and does not fly.</p>
       </div>
 
       <div class="quick-actions">
@@ -452,6 +454,7 @@
         <button type="button" class="btn" id="btn-veh-refuel-all">Refuel all</button>
         <button type="button" class="btn" id="btn-veh-reveal">Reveal all on map</button>
         <button type="button" class="btn" id="btn-veh-teleport">Teleport all near base</button>
+        <button type="button" class="btn btn--accent" id="btn-veh-spawn-plane" title="Clone a vehicle, set class to unused Plane, park near base">Spawn Plane near base</button>
       </div>
 
       <div id="veh-summary" class="name-banner"></div>
@@ -470,8 +473,15 @@
           <div class="quick-actions" id="veh-detail-actions" hidden>
             <button type="button" class="btn btn--accent" id="btn-veh-repair">Repair / refuel</button>
             <button type="button" class="btn" id="btn-veh-clear-trunk">Clear trunk</button>
+            <button type="button" class="btn" id="btn-veh-to-plane" title="Add Plane to VehicleClasses and assign this vehicle">Convert → Plane</button>
             <button type="button" class="btn" id="btn-veh-dup">Duplicate</button>
             <button type="button" class="btn" id="btn-veh-del">Delete</button>
+          </div>
+          <div class="toolbar trait-toolbar" id="veh-extra-toolbar" hidden>
+            <label>Unused extras
+              <select id="veh-extra-select"></select>
+            </label>
+            <button type="button" class="btn" id="btn-veh-apply-extra">Apply extra class</button>
           </div>
 
           <div class="form-grid" id="veh-fields"></div>
@@ -489,7 +499,7 @@
               <tbody></tbody>
             </table>
           </div>
-          <p class="panel-note">Trunk <code>Index</code> points into the vehicle ItemLibrary ItemOrder (−1 = empty). Duplicate clones the whole vehicle with a new Guid. Teleport parks cars in a grid around a guessed base cluster.</p>
+          <p class="panel-note">Trunk <code>Index</code> points into the vehicle ItemLibrary ItemOrder (−1 = empty). Duplicate clones the whole vehicle with a new Guid. Teleport parks cars in a grid around a guessed base cluster. <strong>Convert → Plane</strong> adds the unused Plane class to <code>VehicleClasses</code> and assigns it.</p>
         </div>
       </div>
     </section>

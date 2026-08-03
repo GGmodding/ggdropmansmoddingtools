@@ -24,6 +24,32 @@
     "EScoutedLevel::Advanced",
   ];
 
+  /**
+   * Unused / cut vehicles still in the game assets.
+   * Paths follow the same /Game/Art/Driveables/…Vehicle_*_C pattern as normal cars.
+   * The Plane drives on the ground — it does not fly.
+   */
+  const EXTRA_VEHICLES = [
+    {
+      id: "plane",
+      label: "Plane (unused)",
+      path: "/Game/Art/Driveables/Plane/Vehicle_Plane.Vehicle_Plane_C",
+      hint: "Secret unused vehicle. Drivable on land; does not fly.",
+    },
+    {
+      id: "golfcart",
+      label: "Golf cart (unused)",
+      path: "/Game/Art/Driveables/GolfCart/Vehicle_GolfCart.Vehicle_GolfCart_C",
+      hint: "Unused radio-call vehicle (large trunk in some builds).",
+    },
+    {
+      id: "rv",
+      label: "RV (unused)",
+      path: "/Game/Art/Driveables/RV/Vehicle_RV.Vehicle_RV_C",
+      hint: "Unused radio-call vehicle.",
+    },
+  ];
+
   function u32(buf, o) {
     return (buf[o] | (buf[o + 1] << 8) | (buf[o + 2] << 16) | (buf[o + 3] << 24)) >>> 0;
   }
@@ -737,6 +763,80 @@
     return true;
   }
 
+  function addVehicleClass(save, classPath) {
+    classPath = String(classPath || "").trim();
+    if (!classPath.includes("/Game/")) {
+      throw new Error("Class path should look like /Game/Art/Driveables/...");
+    }
+    discoverVehicles(save);
+    const info = save.vehicleClassArray;
+    if (!info || info.countOff == null) throw new Error("VehicleClasses array missing");
+
+    const existing = (info.classes || []).findIndex((c) => c.path === classPath);
+    if (existing >= 0) return existing;
+
+    const encoded = encodeUeString(classPath);
+    const insertAt = info.classes.length
+      ? info.classes[info.classes.length - 1].valueOff + info.classes[info.classes.length - 1].valueBytes
+      : info.countOff + 4;
+    let buf = spliceBuf(save.properties, insertAt, 0, encoded);
+    writeU32(buf, info.countOff, info.count + 1);
+    writeI64(buf, info.dataLenOff, info.dataLen + encoded.length);
+    buf = adjustAncestorSizes(buf, insertAt, encoded.length, [info.dataLenOff]);
+    save.properties = buf;
+    save.dirty = true;
+    discoverVehicles(save);
+    return save.vehicleClasses.length - 1;
+  }
+
+  function ensureVehicleClass(save, classPath) {
+    return addVehicleClass(save, classPath);
+  }
+
+  function applyVehicleExtra(save, vehicleIndex, extraIdOrPath) {
+    let path = String(extraIdOrPath || "").trim();
+    const preset = EXTRA_VEHICLES.find((e) => e.id === path || e.path === path);
+    if (preset) path = preset.path;
+    if (!path.includes("/Game/")) throw new Error("Unknown extra vehicle (use plane / golfcart / rv or a /Game/ path)");
+
+    const classIndex = ensureVehicleClass(save, path);
+    setVehicleClassIndex(save, vehicleIndex, classIndex);
+    try {
+      repairVehicle(save, vehicleIndex);
+    } catch (_) {}
+    try {
+      setVehicleScoutedLevel(save, vehicleIndex, "EScoutedLevel::Advanced");
+    } catch (_) {}
+    discoverVehicles(save);
+    return {
+      classIndex,
+      path,
+      shortName: shortClassName(path),
+      preset: preset || null,
+    };
+  }
+
+  function spawnVehicleExtraNearBase(save, extraIdOrPath) {
+    discoverVehicles(save);
+    if (!save.vehicles || !save.vehicles.length) throw new Error("Need at least one vehicle to clone");
+    const src = save.vehicles.length - 1;
+    const idx = duplicateVehicle(save, src);
+    const applied = applyVehicleExtra(save, idx, extraIdOrPath);
+    try {
+      const anchor = guessBaseAnchor(save);
+      const n = save.vehicles.length;
+      setVehicleTranslation(
+        save,
+        idx,
+        anchor.x + 400 + (n % 5) * 350,
+        anchor.y + 400 + Math.floor(n / 5) * 350,
+        anchor.z + 40
+      );
+    } catch (_) {}
+    discoverVehicles(save);
+    return { index: idx, ...applied };
+  }
+
   function setVehicleTranslation(save, index, x, y, z) {
     const v = resolveVehicle(save, index);
     if (!v.transform || !v.transform.xyz) throw new Error("No translation");
@@ -963,6 +1063,7 @@
   }
 
   S.VEHICLE_SCOUTED_LEVELS = SCOUTED_LEVELS;
+  S.EXTRA_VEHICLES = EXTRA_VEHICLES;
   S.discoverVehicles = discoverVehicles;
   S.repairVehicle = repairVehicle;
   S.repairAllVehicles = repairAllVehicles;
@@ -974,6 +1075,10 @@
   S.setVehicleGasTank = setVehicleGasTank;
   S.setVehicleClassIndex = setVehicleClassIndex;
   S.setVehicleClassPath = setVehicleClassPath;
+  S.addVehicleClass = addVehicleClass;
+  S.ensureVehicleClass = ensureVehicleClass;
+  S.applyVehicleExtra = applyVehicleExtra;
+  S.spawnVehicleExtraNearBase = spawnVehicleExtraNearBase;
   S.setVehicleTranslation = setVehicleTranslation;
   S.guessBaseAnchor = guessBaseAnchor;
   S.teleportVehiclesNearBase = teleportVehiclesNearBase;

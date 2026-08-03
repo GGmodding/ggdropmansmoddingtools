@@ -1,0 +1,2389 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="46">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>86</ID>
+      <Description>"=== GGdropmans State of Decay 2 v1.1 ==="</Description>
+      <Options moHideChildren="1"/>
+      <Color>00C45A2A</Color>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>1</ID>
+          <Description>"Donate — paypal.me/kd19902"</Description>
+          <Color>00F0C14A</Color>
+          <GroupHeader>1</GroupHeader>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>2</ID>
+          <Description>"Discord — discord.gg/PTwyDTFyR"</Description>
+          <Color>00F26558</Color>
+          <GroupHeader>1</GroupHeader>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>3</ID>
+          <Description>"README — how to use"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{
+GGdropmans State of Decay 2 Hybrid Cheat Table v1.1
+=====================================================
+Process (live): StateOfDecay2-Win64-Shipping.exe
+Save bridge: Node.js + ct-cli.js next to this .CT
+
+Donate: https://paypal.me/kd19902
+Discord: https://discord.gg/PTwyDTFyR
+
+TWO LAYERS
+1) SAVE BRIDGE (editor feature parity)
+   - Close SoD2 completely.
+   - Keep this .CT in tools/sod2-editor/ (same folder as ct-cli.js).
+   - Install Node.js and ensure "node" is on PATH.
+   - Tick ENABLE — Load save-bridge helpers
+   - Tick Set / remember save path → pick SaveGame_*.sav
+   - Tick any Preset, Action, or Spawn kit (auto-backs up to .bak)
+
+   Steam: %LOCALAPPDATA%\StateOfDecay2\Saved\Steam\
+   Epic:  %LOCALAPPDATA%\StateOfDecay2\Saved\Epic\
+
+2) LIVE SESSION
+   - Attach CE to StateOfDecay2-Win64-Shipping.exe in-game.
+   - Find Influence / Resource / Health / Stamina
+   - LIVE — Infinite ammo / Speed / Jump / Fly:
+       Find Ammo → Infinite Ammo timer
+       Find Speed → Super Speed
+       Find Jump → Super Jump
+       Find Gravity → Fly Gravity 0 (+ optional Z Velocity)
+
+Deep trait/skill/outfit/item pickers stay in the browser editor:
+  editor.html
+
+Plane is a cut asset — drives on land, does not fly.
+True collision noclip AOBs still deferred.
+}
+[ENABLE]
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>4</ID>
+          <Description>"ENABLE — Load save-bridge helpers"</Description>
+          <Color>0000FF00</Color>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+
+GG_SOD2 = GG_SOD2 or {}
+
+local function fail(msg)
+  showMessage('GGdropman SoD2: '..tostring(msg))
+  error(msg, 0)
+end
+
+function GG_SOD2.tableDir()
+  if GG_SOD2._dir and GG_SOD2._dir ~= '' then return GG_SOD2._dir end
+  local tp = nil
+  if type(getTableFilePath) == 'function' then
+    local ok, r = pcall(getTableFilePath)
+    if ok and r and r ~= '' then tp = r end
+  end
+  if (not tp or tp == '') and type(getTableFileName) == 'function' then
+    local ok, r = pcall(getTableFileName)
+    if ok and r and r ~= '' then tp = r end
+  end
+  if tp and tp ~= '' then
+    GG_SOD2._dir = string.gsub(tp, '[^\\/]+$', '')
+  else
+    local r = inputQuery('SoD2 CT folder', 'Full path to the folder that contains GGdropmanSoD2_v1.0.CT and ct-cli.js', '')
+    if not r or r == '' then fail('Need table folder path') end
+    if string.sub(r, -1) ~= '\\' and string.sub(r, -1) ~= '/' then r = r .. '\\' end
+    GG_SOD2._dir = r
+  end
+  return GG_SOD2._dir
+end
+
+function GG_SOD2.cliPath()
+  return GG_SOD2.tableDir() .. 'ct-cli.js'
+end
+
+function GG_SOD2.statePathFile()
+  return GG_SOD2.tableDir() .. 'gg_sod2_last_save.txt'
+end
+
+function GG_SOD2.loadSavePath()
+  local f = io.open(GG_SOD2.statePathFile(), 'r')
+  if not f then return nil end
+  local p = f:read('*l')
+  f:close()
+  if p and p ~= '' then return p end
+  return nil
+end
+
+function GG_SOD2.saveSavePath(p)
+  local f = io.open(GG_SOD2.statePathFile(), 'w')
+  if not f then fail('Cannot write '..GG_SOD2.statePathFile()) end
+  f:write(p or '')
+  f:close()
+  GG_SOD2.savePath = p
+end
+
+function GG_SOD2.defaultSteamHint()
+  local la = os.getenv('LOCALAPPDATA') or ''
+  if la == '' then return '' end
+  return la .. '\\StateOfDecay2\\Saved\\Steam\\'
+end
+
+function GG_SOD2.stripQuotes(r)
+  r = string.gsub(r or '', '^%s+', '')
+  r = string.gsub(r, '%s+$', '')
+  r = string.gsub(r, '^"', '')
+  r = string.gsub(r, '"$', '')
+  r = string.gsub(r, "^'", '')
+  r = string.gsub(r, "'$", '')
+  return r
+end
+
+function GG_SOD2.ensureSavePath()
+  local p = GG_SOD2.savePath or GG_SOD2.loadSavePath()
+  local hint = GG_SOD2.defaultSteamHint()
+  local def = p or hint
+  local r = inputQuery('SoD2 SaveGame path', 'Full path to SaveGame_*.sav — close State of Decay 2 first.\nSteam folder: '..hint, def or '')
+  if not r or r == '' then fail('Cancelled') end
+  r = GG_SOD2.stripQuotes(r)
+  GG_SOD2.saveSavePath(r)
+  return r
+end
+
+function GG_SOD2.gameRunning()
+  local pn = ''
+  if type(process) == 'string' then pn = process end
+  pn = string.lower(pn or '')
+  if string.find(pn, 'stateofdecay2', 1, true) then return true end
+  return false
+end
+
+function GG_SOD2.q(s)
+  return '"' .. string.gsub(tostring(s), '"', '\\"') .. '"'
+end
+
+function GG_SOD2.runCli(argList)
+  if not GG_SOD2 or not GG_SOD2.runCli then end
+  if GG_SOD2.gameRunning() then
+    local cont = messageDialog('SoD2 looks attached in CE. Close the game before save edits. Continue anyway?', mtWarning, mbYes, mbNo)
+    if cont ~= mrYes then fail('Aborted — close State of Decay 2 first') end
+  end
+  local cli = GG_SOD2.cliPath()
+  local f = io.open(cli, 'r')
+  if not f then fail('ct-cli.js not found next to the .CT:\n'..cli..'\nSave the table into tools/sod2-editor/') end
+  f:close()
+  local sav = GG_SOD2.ensureSavePath()
+  -- CLI shape: node ct-cli.js &lt;cmd> &lt;sav> [args...]
+  local cmd = 'node ' .. GG_SOD2.q(cli) .. ' ' .. tostring(argList[1]) .. ' ' .. GG_SOD2.q(sav)
+  for i = 2, #argList do
+    cmd = cmd .. ' ' .. GG_SOD2.q(argList[i])
+  end
+  local outf = GG_SOD2.tableDir() .. 'gg_sod2_cli_out.txt'
+  local full = 'cmd /c ' .. cmd .. ' > ' .. GG_SOD2.q(outf) .. ' 2>&amp;1'
+  local code = os.execute(full)
+  local of = io.open(outf, 'r')
+  local body = ''
+  if of then body = of:read('*a') or '' of:close() end
+  local ok = (code == 0 or code == true)
+  if not ok then
+    showMessage('CLI failed (code '..tostring(code)..'):\n'..body)
+    error('cli failed', 0)
+  end
+  showMessage(body)
+  return body
+end
+
+function GG_SOD2.oneShotUntick()
+  createThread(function()
+    sleep(200)
+    if memrec then memrec.Active = false end
+  end)
+end
+
+function GG_SOD2.requireHelpers()
+  if type(GG_SOD2.runCli) ~= 'function' then
+    fail('Tick ENABLE — Load save-bridge helpers first')
+  end
+end
+
+-- Live address store
+GG_SOD2.live = GG_SOD2.live or {}
+
+function GG_SOD2.liveEnsureRecord(desc, addr, vt, freezeValue)
+  local al = getAddressList()
+  local existing = nil
+  for i = 0, al.Count - 1 do
+    local mr = al[i]
+    if mr and mr.Description == desc then existing = mr break end
+  end
+  local mr = existing or al.createMemoryRecord()
+  mr.Description = desc
+  mr.Address = string.format('%X', addr)
+  mr.Type = vt or vtSingle
+  if freezeValue ~= nil then
+    mr.Value = tostring(freezeValue)
+  end
+  mr.Active = true
+  return mr
+end
+
+showMessage('GGdropman SoD2 save-bridge ready.\nct-cli: '..GG_SOD2.cliPath()..'\nNode.js must be on PATH.\nNext: Set / remember save path, then use Presets or Actions.')
+{$asm}
+[DISABLE]
+{$lua}
+-- helpers remain in memory until CE closes
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>5</ID>
+          <Description>"Set / remember save path"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+local p = GG_SOD2.ensureSavePath()
+showMessage('Save path remembered:\n'..p)
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>6</ID>
+          <Description>"List save summary"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'list'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>7</ID>
+          <Description>"Validate save (round-trip)"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'validate'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>8</ID>
+          <Description>"=== SAVE — Presets ==="</Description>
+          <Options moHideChildren="1"/>
+          <Color>00C08040</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>9</ID>
+              <Description>"God community"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'preset', 'god-community'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>10</ID>
+              <Description>"Heal all survivors"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'preset', 'heal-roster'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>11</ID>
+              <Description>"Promote all to Hero"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'preset', 'hero-roster'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>12</ID>
+              <Description>"Max all skills"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'preset', 'max-skills'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>13</ID>
+              <Description>"Garage day (repair+reveal vehicles)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'preset', 'garage-day'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>14</ID>
+              <Description>"Open the map"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'preset', 'open-map'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>15</ID>
+              <Description>"Base ready (repair facilities)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'preset', 'base-ready'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>16</ID>
+              <Description>"Polish lockers"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'preset', 'locker-polish'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>17</ID>
+              <Description>"Friendly enclaves"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'preset', 'friendly-enclaves'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>18</ID>
+              <Description>"Full comfort (kitchen sink)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'preset', 'full-comfort'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>19</ID>
+          <Description>"=== SAVE — Actions ==="</Description>
+          <Options moHideChildren="1"/>
+          <Color>00C08040</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>20</ID>
+              <Description>"Influence 9999"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'influence'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>21</ID>
+              <Description>"Stockpile 999"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'stockpile'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>22</ID>
+              <Description>"Fill resources 500"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'fill-resources'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>23</ID>
+              <Description>"Zero plague / infestations"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'zero-threats'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>24</ID>
+              <Description>"Time → midday"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'midday'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>25</ID>
+              <Description>"Heal all survivors"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'heal-all'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>26</ID>
+              <Description>"Clear all fatigue"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'clear-fatigue'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>27</ID>
+              <Description>"Promote all to Hero"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'promote-heroes'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>28</ID>
+              <Description>"Enclaves influence 9999"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'enclave-max-infl'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>29</ID>
+              <Description>"Friendly enclave flags"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'friendly-enclaves'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>30</ID>
+              <Description>"Max inventory stacks 999"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'max-stacks'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>31</ID>
+              <Description>"Repair weapons 9999"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'repair-weapons'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>32</ID>
+              <Description>"Reveal all map sites"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'reveal-map'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>33</ID>
+              <Description>"Clear infested outposts"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'clear-infest'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>34</ID>
+              <Description>"Mark all surveyed"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'survey-all'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>35</ID>
+              <Description>"Reset radio cooldowns"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'radio-reset'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>36</ID>
+              <Description>"Radio charges 99"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'radio-charges'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>37</ID>
+              <Description>"Clear active missions"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'clear-missions'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>38</ID>
+              <Description>"Clear completed mission log"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'clear-completed'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>39</ID>
+              <Description>"Abandon all outposts"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'abandon-outposts'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>40</ID>
+              <Description>"Repair + refuel all vehicles"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'repair-vehicles'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>41</ID>
+              <Description>"Refuel all vehicles"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'refuel-vehicles'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>42</ID>
+              <Description>"Reveal all vehicles"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'reveal-vehicles'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>43</ID>
+              <Description>"Teleport vehicles near base"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'teleport-vehicles'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>44</ID>
+              <Description>"Spawn Plane near base"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'spawn-plane'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>45</ID>
+              <Description>"Convert last vehicle → Plane"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'convert-plane'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>46</ID>
+              <Description>"Repair all facilities"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'repair-facilities'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>47</ID>
+              <Description>"Force facilities Completed"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'complete-facilities'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>48</ID>
+          <Description>"=== SAVE — Spawn items ==="</Description>
+          <Options moHideChildren="1"/>
+          <Color>0000A5FF</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>49</ID>
+              <Description>"Notes — spawn into locker (game closed)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+Close SoD2. Load save-bridge helpers + set save path.
+Kits add items to locker #0 (primary).
+Custom spawn asks for category + /Game/Items/... path.
+Use the browser editor catalog for more paths.
+}
+[ENABLE]
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>50</ID>
+              <Description>"Kit: All common ammo ×999"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'spawn-kit', 'ammo-all'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>51</ID>
+              <Description>"Kit: Meds / bandages / plague cure"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'spawn-kit', 'meds'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>52</ID>
+              <Description>"Kit: Stimulants + espresso"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'spawn-kit', 'stimulants'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>53</ID>
+              <Description>"Kit: Throwables (nades / molotov / pipe)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'spawn-kit', 'throwables'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>54</ID>
+              <Description>"Kit: Snacks"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'spawn-kit', 'snacks'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>55</ID>
+              <Description>"Kit: Resource packs"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'spawn-kit', 'resources'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>56</ID>
+              <Description>"Kit: Assault loadout (guns + ammo + meds)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+GG_SOD2.runCli({'action', 'spawn-kit', 'loadout-assault'})
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>57</ID>
+              <Description>"Custom spawn item (prompt)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if type(GG_SOD2) ~= 'table' or type(GG_SOD2.runCli) ~= 'function' then
+  showMessage('Tick ENABLE — Load save-bridge helpers first')
+  error('helpers', 0)
+end
+GG_SOD2.requireHelpers()
+local cat = inputQuery('Category', 'ammo | consumable | ranged | melee | resource | misc | backpack | closeCombat | rangedMod | facilityMod', 'ammo')
+if not cat or cat == '' then error('cancelled', 0) end
+local path = inputQuery('Class path', 'Full /Game/Items/..._C path (see browser editor catalog)', '/Game/Items/Ammo/Ammo_9mm.Ammo_9mm_C')
+if not path or path == '' then error('cancelled', 0) end
+local stack = inputQuery('Stack / count', 'For weapons use 1', '99')
+local locker = inputQuery('Locker index', '0 = primary supply locker', '0')
+GG_SOD2.runCli({'action', 'spawn-item', cat, path, stack or '99', locker or '0'})
+
+GG_SOD2.oneShotUntick()
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>58</ID>
+          <Description>"=== LIVE — Scan / Freeze ==="</Description>
+          <Options moHideChildren="1"/>
+          <Color>000080FF</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>59</ID>
+              <Description>"Notes — live usage"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+Attach CE to StateOfDecay2-Win64-Shipping.exe while in-game.
+
+Find wizards use exact scans:
+1) Tick Find X, enter current value
+2) Change the value in-game
+3) Tick Find X again, enter the new value
+4) Tick Freeze / Infinite / Super …
+
+Ammo: try Find Ammo (int) first; if empty, try Find Ammo (float).
+Speed/Jump/Fly: find while standing still then sprint / jump / note gravity.
+Addresses move; re-find after relaunch.
+}
+[ENABLE]
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>60</ID>
+              <Description>"Find Influence"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+
+local function fail(msg)
+  showMessage('GGdropman SoD2 Live: '..tostring(msg))
+  error(msg, 0)
+end
+
+if getOpenedProcessID() == 0 then
+  fail('Attach to StateOfDecay2-Win64-Shipping.exe first')
+end
+
+local key = 'Influence'
+local st = GG_SOD2.live[key] or { step = 0 }
+GG_SOD2.live[key] = st
+
+if st.step == 0 then
+  local v = inputQuery('Find Influence', 'Open Community — note Influence.\nEnter the CURRENT value, then OK.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if st.ms then pcall(function() st.ms.destroy() end) end
+  st.ms = createMemScan()
+  st.ms.firstScan(soExactValue, vtSingle, rtRoundedDefault, v, '', '0', '7fffffffffffffff', '+W-C', fsmNotAligned, '1', false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  fl.deinitialize()
+  st.step = 1
+  showMessage('First scan done ('..tostring(n)..' hits).\nChange Influence in-game, then tick this entry AGAIN.')
+elseif st.step == 1 then
+  local v = inputQuery('Find Influence (next)', 'Enter the NEW value after changing it in-game.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if not st.ms then fail('Restart Find (step 0 missing)') end
+  st.ms.nextScan(soExactValue, rtRoundedDefault, v, '', false, false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  if n == 0 then
+    fl.deinitialize()
+    st.step = 0
+    fail('0 results — untick and restart Find Influence')
+  end
+  local addr = fl.Address[0]
+  if n > 1 then
+    showMessage(tostring(n)..' results left. Using first: '..addr..'\nNarrow further with CE scan UI if needed.')
+  end
+  local num = tonumber(addr, 16) or getAddress(addr)
+  st.addr = num
+  st.addrStr = addr
+  fl.deinitialize()
+  st.step = 0
+  showMessage('Influence address: '..tostring(addr)..'\nEnable a Freeze entry below.')
+end
+
+createThread(function()
+  sleep(200)
+  if memrec then memrec.Active = false end
+end)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>61</ID>
+              <Description>"Freeze Influence 9999"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+local st = GG_SOD2.live['Influence']
+if not st or not st.addr then
+  showMessage('Run Find Influence first')
+  error('no addr', 0)
+end
+local al = getAddressList()
+local desc = 'SoD2 Influence (freeze)'
+local mr = nil
+for i = 0, al.Count - 1 do
+  if al[i].Description == desc then mr = al[i] break end
+end
+if not mr then mr = al.createMemoryRecord() end
+mr.Description = desc
+mr.Address = string.format('%X', st.addr)
+mr.Type = vtSingle
+mr.Value = '9999'
+mr.Active = true
+showMessage('Freezing '..desc..' @ '..mr.Address..' = 9999')
+{$asm}
+[DISABLE]
+{$lua}
+-- leave the dynamic memory record active; user can untick it in the address list
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>62</ID>
+              <Description>"Find Resource (food/meds/ammo/mat/fuel)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+
+local function fail(msg)
+  showMessage('GGdropman SoD2 Live: '..tostring(msg))
+  error(msg, 0)
+end
+
+if getOpenedProcessID() == 0 then
+  fail('Attach to StateOfDecay2-Win64-Shipping.exe first')
+end
+
+local key = 'Resource'
+local st = GG_SOD2.live[key] or { step = 0 }
+GG_SOD2.live[key] = st
+
+if st.step == 0 then
+  local v = inputQuery('Find Resource', 'Note one stockpile resource amount.\nEnter the CURRENT value, then OK.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if st.ms then pcall(function() st.ms.destroy() end) end
+  st.ms = createMemScan()
+  st.ms.firstScan(soExactValue, vtSingle, rtRoundedDefault, v, '', '0', '7fffffffffffffff', '+W-C', fsmNotAligned, '1', false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  fl.deinitialize()
+  st.step = 1
+  showMessage('First scan done ('..tostring(n)..' hits).\nChange Resource in-game, then tick this entry AGAIN.')
+elseif st.step == 1 then
+  local v = inputQuery('Find Resource (next)', 'Enter the NEW value after changing it in-game.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if not st.ms then fail('Restart Find (step 0 missing)') end
+  st.ms.nextScan(soExactValue, rtRoundedDefault, v, '', false, false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  if n == 0 then
+    fl.deinitialize()
+    st.step = 0
+    fail('0 results — untick and restart Find Resource')
+  end
+  local addr = fl.Address[0]
+  if n > 1 then
+    showMessage(tostring(n)..' results left. Using first: '..addr..'\nNarrow further with CE scan UI if needed.')
+  end
+  local num = tonumber(addr, 16) or getAddress(addr)
+  st.addr = num
+  st.addrStr = addr
+  fl.deinitialize()
+  st.step = 0
+  showMessage('Resource address: '..tostring(addr)..'\nEnable a Freeze entry below.')
+end
+
+createThread(function()
+  sleep(200)
+  if memrec then memrec.Active = false end
+end)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>63</ID>
+              <Description>"Freeze Resource 999"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+local st = GG_SOD2.live['Resource']
+if not st or not st.addr then
+  showMessage('Run Find Resource first')
+  error('no addr', 0)
+end
+local al = getAddressList()
+local desc = 'SoD2 Resource (freeze)'
+local mr = nil
+for i = 0, al.Count - 1 do
+  if al[i].Description == desc then mr = al[i] break end
+end
+if not mr then mr = al.createMemoryRecord() end
+mr.Description = desc
+mr.Address = string.format('%X', st.addr)
+mr.Type = vtSingle
+mr.Value = '999'
+mr.Active = true
+showMessage('Freezing '..desc..' @ '..mr.Address..' = 999')
+{$asm}
+[DISABLE]
+{$lua}
+-- leave the dynamic memory record active; user can untick it in the address list
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>64</ID>
+              <Description>"Find Health"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+
+local function fail(msg)
+  showMessage('GGdropman SoD2 Live: '..tostring(msg))
+  error(msg, 0)
+end
+
+if getOpenedProcessID() == 0 then
+  fail('Attach to StateOfDecay2-Win64-Shipping.exe first')
+end
+
+local key = 'Health'
+local st = GG_SOD2.live[key] or { step = 0 }
+GG_SOD2.live[key] = st
+
+if st.step == 0 then
+  local v = inputQuery('Find Health', 'Note current health (may be 0-1 or 0-100).\nEnter the CURRENT value, then OK.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if st.ms then pcall(function() st.ms.destroy() end) end
+  st.ms = createMemScan()
+  st.ms.firstScan(soExactValue, vtSingle, rtRoundedDefault, v, '', '0', '7fffffffffffffff', '+W-C', fsmNotAligned, '1', false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  fl.deinitialize()
+  st.step = 1
+  showMessage('First scan done ('..tostring(n)..' hits).\nChange Health in-game, then tick this entry AGAIN.')
+elseif st.step == 1 then
+  local v = inputQuery('Find Health (next)', 'Enter the NEW value after changing it in-game.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if not st.ms then fail('Restart Find (step 0 missing)') end
+  st.ms.nextScan(soExactValue, rtRoundedDefault, v, '', false, false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  if n == 0 then
+    fl.deinitialize()
+    st.step = 0
+    fail('0 results — untick and restart Find Health')
+  end
+  local addr = fl.Address[0]
+  if n > 1 then
+    showMessage(tostring(n)..' results left. Using first: '..addr..'\nNarrow further with CE scan UI if needed.')
+  end
+  local num = tonumber(addr, 16) or getAddress(addr)
+  st.addr = num
+  st.addrStr = addr
+  fl.deinitialize()
+  st.step = 0
+  showMessage('Health address: '..tostring(addr)..'\nEnable a Freeze entry below.')
+end
+
+createThread(function()
+  sleep(200)
+  if memrec then memrec.Active = false end
+end)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>65</ID>
+              <Description>"Freeze Health"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+local st = GG_SOD2.live['Health']
+if not st or not st.addr then
+  showMessage('Run Find Health first')
+  error('no addr', 0)
+end
+local al = getAddressList()
+local desc = 'SoD2 Health (freeze)'
+local mr = nil
+for i = 0, al.Count - 1 do
+  if al[i].Description == desc then mr = al[i] break end
+end
+if not mr then mr = al.createMemoryRecord() end
+mr.Description = desc
+mr.Address = string.format('%X', st.addr)
+mr.Type = vtSingle
+mr.Value = '1'
+mr.Active = true
+showMessage('Freezing '..desc..' @ '..mr.Address..' = 1')
+{$asm}
+[DISABLE]
+{$lua}
+-- leave the dynamic memory record active; user can untick it in the address list
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>66</ID>
+              <Description>"Find Stamina"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+
+local function fail(msg)
+  showMessage('GGdropman SoD2 Live: '..tostring(msg))
+  error(msg, 0)
+end
+
+if getOpenedProcessID() == 0 then
+  fail('Attach to StateOfDecay2-Win64-Shipping.exe first')
+end
+
+local key = 'Stamina'
+local st = GG_SOD2.live[key] or { step = 0 }
+GG_SOD2.live[key] = st
+
+if st.step == 0 then
+  local v = inputQuery('Find Stamina', 'Note current stamina, then sprint.\nEnter the CURRENT value, then OK.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if st.ms then pcall(function() st.ms.destroy() end) end
+  st.ms = createMemScan()
+  st.ms.firstScan(soExactValue, vtSingle, rtRoundedDefault, v, '', '0', '7fffffffffffffff', '+W-C', fsmNotAligned, '1', false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  fl.deinitialize()
+  st.step = 1
+  showMessage('First scan done ('..tostring(n)..' hits).\nChange Stamina in-game, then tick this entry AGAIN.')
+elseif st.step == 1 then
+  local v = inputQuery('Find Stamina (next)', 'Enter the NEW value after changing it in-game.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if not st.ms then fail('Restart Find (step 0 missing)') end
+  st.ms.nextScan(soExactValue, rtRoundedDefault, v, '', false, false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  if n == 0 then
+    fl.deinitialize()
+    st.step = 0
+    fail('0 results — untick and restart Find Stamina')
+  end
+  local addr = fl.Address[0]
+  if n > 1 then
+    showMessage(tostring(n)..' results left. Using first: '..addr..'\nNarrow further with CE scan UI if needed.')
+  end
+  local num = tonumber(addr, 16) or getAddress(addr)
+  st.addr = num
+  st.addrStr = addr
+  fl.deinitialize()
+  st.step = 0
+  showMessage('Stamina address: '..tostring(addr)..'\nEnable a Freeze entry below.')
+end
+
+createThread(function()
+  sleep(200)
+  if memrec then memrec.Active = false end
+end)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>67</ID>
+              <Description>"Freeze Stamina"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+local st = GG_SOD2.live['Stamina']
+if not st or not st.addr then
+  showMessage('Run Find Stamina first')
+  error('no addr', 0)
+end
+local al = getAddressList()
+local desc = 'SoD2 Stamina (freeze)'
+local mr = nil
+for i = 0, al.Count - 1 do
+  if al[i].Description == desc then mr = al[i] break end
+end
+if not mr then mr = al.createMemoryRecord() end
+mr.Description = desc
+mr.Address = string.format('%X', st.addr)
+mr.Type = vtSingle
+mr.Value = '1'
+mr.Active = true
+showMessage('Freezing '..desc..' @ '..mr.Address..' = 1')
+{$asm}
+[DISABLE]
+{$lua}
+-- leave the dynamic memory record active; user can untick it in the address list
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>68</ID>
+          <Description>"=== LIVE — Infinite ammo / Speed / Jump / Fly ==="</Description>
+          <Options moHideChildren="1"/>
+          <Color>0000FF80</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>69</ID>
+              <Description>"Notes — movement &amp; ammo"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+INFINITE AMMO
+1) Equip a gun, note magazine count
+2) Find Ammo (int) — fire once — Find again
+3) Tick Infinite Ammo (timer)
+If int finds nothing, use Find Ammo (float) + Infinite Ammo float.
+
+SUPER SPEED
+1) Find Speed — enter current MaxWalkSpeed-like value (often 400-600)
+2) Sprint or change movement to narrow, OR unknown initial scan via CE
+3) Tick Super Speed (writes 2500)
+
+Tip: unknown initial value — use CE first scan for Unknown, then Increased when you sprint, then Find Speed once you know the number.
+
+SUPER JUMP
+1) Find Jump — note JumpZVelocity-like float (often 400-700)
+2) Jump to confirm / next-scan
+3) Tick Super Jump (writes 2500)
+
+FLY / NOCLIP (soft)
+1) Find Gravity — note GravityScale (often 1.0)
+2) Tick Fly: Gravity 0
+3) Optional: Find Z Velocity and freeze while holding jump in-game
+True collision noclip needs an AOB (still deferred).
+}
+[ENABLE]
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>70</ID>
+              <Description>"Find Ammo (int magazine)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+
+local function fail(msg)
+  showMessage('GGdropman SoD2 Live: '..tostring(msg))
+  error(msg, 0)
+end
+
+if getOpenedProcessID() == 0 then
+  fail('Attach to StateOfDecay2-Win64-Shipping.exe first')
+end
+
+local key = 'AmmoInt'
+local st = GG_SOD2.live[key] or { step = 0 }
+GG_SOD2.live[key] = st
+
+if st.step == 0 then
+  local v = inputQuery('Find AmmoInt', 'Note rounds in magazine, then fire.\nEnter the CURRENT integer value, then OK.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if st.ms then pcall(function() st.ms.destroy() end) end
+  st.ms = createMemScan()
+  st.ms.firstScan(soExactValue, vtDword, rtRoundedDefault, v, '', '0', '7fffffffffffffff', '+W-C', fsmNotAligned, '1', false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  fl.deinitialize()
+  st.step = 1
+  st.vt = 'int'
+  showMessage('First scan done ('..tostring(n)..' hits).\nChange AmmoInt in-game, then tick this entry AGAIN.')
+elseif st.step == 1 then
+  local v = inputQuery('Find AmmoInt (next)', 'Enter the NEW integer value after changing it in-game.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if not st.ms then fail('Restart Find (step 0 missing)') end
+  st.ms.nextScan(soExactValue, rtRoundedDefault, v, '', false, false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  if n == 0 then
+    fl.deinitialize()
+    st.step = 0
+    fail('0 results — untick and restart Find AmmoInt')
+  end
+  local addr = fl.Address[0]
+  if n > 1 then
+    showMessage(tostring(n)..' results left. Using first: '..addr..'\nNarrow further with CE scan UI if needed.')
+  end
+  local num = tonumber(addr, 16) or getAddress(addr)
+  st.addr = num
+  st.addrStr = addr
+  fl.deinitialize()
+  st.step = 0
+  showMessage('AmmoInt address: '..tostring(addr)..'\nEnable Infinite / Freeze below.')
+end
+
+createThread(function()
+  sleep(200)
+  if memrec then memrec.Active = false end
+end)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>71</ID>
+              <Description>"Infinite Ammo (int timer)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+local st = GG_SOD2.live['AmmoInt']
+if not st or not st.addr then
+  showMessage('Run Find AmmoInt first')
+  error('no addr', 0)
+end
+local key = 'timer_AmmoInt'
+if GG_SOD2.live[key] then
+  pcall(function() GG_SOD2.live[key].destroy() end)
+  GG_SOD2.live[key] = nil
+end
+local t = createTimer(nil, false)
+t.Interval = 50
+t.OnTimer = function(timer)
+  if not st.addr then return end
+  writeInteger(st.addr, 999)
+end
+t.Enabled = true
+GG_SOD2.live[key] = t
+showMessage('Infinite Ammo (int) ON @ '..string.format('%X', st.addr)..' = 999 (every 50ms)\nUntick to stop.')
+{$asm}
+[DISABLE]
+{$lua}
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+local key = 'timer_AmmoInt'
+if GG_SOD2.live[key] then
+  pcall(function() GG_SOD2.live[key].destroy() end)
+  GG_SOD2.live[key] = nil
+end
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>72</ID>
+              <Description>"Find Ammo (float)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+
+local function fail(msg)
+  showMessage('GGdropman SoD2 Live: '..tostring(msg))
+  error(msg, 0)
+end
+
+if getOpenedProcessID() == 0 then
+  fail('Attach to StateOfDecay2-Win64-Shipping.exe first')
+end
+
+local key = 'Ammo'
+local st = GG_SOD2.live[key] or { step = 0 }
+GG_SOD2.live[key] = st
+
+if st.step == 0 then
+  local v = inputQuery('Find Ammo', 'Note magazine as float if int scan fails.\nEnter the CURRENT value, then OK.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if st.ms then pcall(function() st.ms.destroy() end) end
+  st.ms = createMemScan()
+  st.ms.firstScan(soExactValue, vtSingle, rtRoundedDefault, v, '', '0', '7fffffffffffffff', '+W-C', fsmNotAligned, '1', false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  fl.deinitialize()
+  st.step = 1
+  showMessage('First scan done ('..tostring(n)..' hits).\nChange Ammo in-game, then tick this entry AGAIN.')
+elseif st.step == 1 then
+  local v = inputQuery('Find Ammo (next)', 'Enter the NEW value after changing it in-game.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if not st.ms then fail('Restart Find (step 0 missing)') end
+  st.ms.nextScan(soExactValue, rtRoundedDefault, v, '', false, false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  if n == 0 then
+    fl.deinitialize()
+    st.step = 0
+    fail('0 results — untick and restart Find Ammo')
+  end
+  local addr = fl.Address[0]
+  if n > 1 then
+    showMessage(tostring(n)..' results left. Using first: '..addr..'\nNarrow further with CE scan UI if needed.')
+  end
+  local num = tonumber(addr, 16) or getAddress(addr)
+  st.addr = num
+  st.addrStr = addr
+  fl.deinitialize()
+  st.step = 0
+  showMessage('Ammo address: '..tostring(addr)..'\nEnable a Freeze entry below.')
+end
+
+createThread(function()
+  sleep(200)
+  if memrec then memrec.Active = false end
+end)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>73</ID>
+              <Description>"Infinite Ammo (float timer)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+local st = GG_SOD2.live['Ammo']
+if not st or not st.addr then
+  showMessage('Run Find Ammo first')
+  error('no addr', 0)
+end
+local key = 'timer_Ammo'
+if GG_SOD2.live[key] then
+  pcall(function() GG_SOD2.live[key].destroy() end)
+  GG_SOD2.live[key] = nil
+end
+local t = createTimer(nil, false)
+t.Interval = 50
+t.OnTimer = function(timer)
+  if not st.addr then return end
+  writeFloat(st.addr, 999)
+end
+t.Enabled = true
+GG_SOD2.live[key] = t
+showMessage('Infinite Ammo (float) ON @ '..string.format('%X', st.addr)..' = 999 (every 50ms)\nUntick to stop.')
+{$asm}
+[DISABLE]
+{$lua}
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+local key = 'timer_Ammo'
+if GG_SOD2.live[key] then
+  pcall(function() GG_SOD2.live[key].destroy() end)
+  GG_SOD2.live[key] = nil
+end
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>74</ID>
+              <Description>"Find Speed (walk/sprint float)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+
+local function fail(msg)
+  showMessage('GGdropman SoD2 Live: '..tostring(msg))
+  error(msg, 0)
+end
+
+if getOpenedProcessID() == 0 then
+  fail('Attach to StateOfDecay2-Win64-Shipping.exe first')
+end
+
+local key = 'Speed'
+local st = GG_SOD2.live[key] or { step = 0 }
+GG_SOD2.live[key] = st
+
+if st.step == 0 then
+  local v = inputQuery('Find Speed', 'Note walk speed float if known, or use CE Unknown→Increased while sprinting then enter value here.\nEnter the CURRENT value, then OK.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if st.ms then pcall(function() st.ms.destroy() end) end
+  st.ms = createMemScan()
+  st.ms.firstScan(soExactValue, vtSingle, rtRoundedDefault, v, '', '0', '7fffffffffffffff', '+W-C', fsmNotAligned, '1', false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  fl.deinitialize()
+  st.step = 1
+  showMessage('First scan done ('..tostring(n)..' hits).\nChange Speed in-game, then tick this entry AGAIN.')
+elseif st.step == 1 then
+  local v = inputQuery('Find Speed (next)', 'Enter the NEW value after changing it in-game.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if not st.ms then fail('Restart Find (step 0 missing)') end
+  st.ms.nextScan(soExactValue, rtRoundedDefault, v, '', false, false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  if n == 0 then
+    fl.deinitialize()
+    st.step = 0
+    fail('0 results — untick and restart Find Speed')
+  end
+  local addr = fl.Address[0]
+  if n > 1 then
+    showMessage(tostring(n)..' results left. Using first: '..addr..'\nNarrow further with CE scan UI if needed.')
+  end
+  local num = tonumber(addr, 16) or getAddress(addr)
+  st.addr = num
+  st.addrStr = addr
+  fl.deinitialize()
+  st.step = 0
+  showMessage('Speed address: '..tostring(addr)..'\nEnable a Freeze entry below.')
+end
+
+createThread(function()
+  sleep(200)
+  if memrec then memrec.Active = false end
+end)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>75</ID>
+              <Description>"Super Speed (freeze 2500)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+local st = GG_SOD2.live['Speed']
+if not st or not st.addr then
+  showMessage('Run Find Speed first')
+  error('no addr', 0)
+end
+local al = getAddressList()
+local desc = 'SoD2 Super Speed'
+local mr = nil
+for i = 0, al.Count - 1 do
+  if al[i].Description == desc then mr = al[i] break end
+end
+if not mr then mr = al.createMemoryRecord() end
+mr.Description = desc
+mr.Address = string.format('%X', st.addr)
+mr.Type = vtSingle
+mr.Value = '2500'
+mr.Active = true
+showMessage('Freezing '..desc..' @ '..mr.Address..' = 2500')
+{$asm}
+[DISABLE]
+{$lua}
+-- leave the dynamic memory record active; user can untick it in the address list
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>76</ID>
+              <Description>"Super Speed (timer 2500)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+local st = GG_SOD2.live['Speed']
+if not st or not st.addr then
+  showMessage('Run Find Speed first')
+  error('no addr', 0)
+end
+local key = 'timer_Speed'
+if GG_SOD2.live[key] then
+  pcall(function() GG_SOD2.live[key].destroy() end)
+  GG_SOD2.live[key] = nil
+end
+local t = createTimer(nil, false)
+t.Interval = 50
+t.OnTimer = function(timer)
+  if not st.addr then return end
+  writeFloat(st.addr, 2500)
+end
+t.Enabled = true
+GG_SOD2.live[key] = t
+showMessage('Super Speed timer ON @ '..string.format('%X', st.addr)..' = 2500 (every 50ms)\nUntick to stop.')
+{$asm}
+[DISABLE]
+{$lua}
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+local key = 'timer_Speed'
+if GG_SOD2.live[key] then
+  pcall(function() GG_SOD2.live[key].destroy() end)
+  GG_SOD2.live[key] = nil
+end
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>77</ID>
+              <Description>"Find Jump (JumpZ float)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+
+local function fail(msg)
+  showMessage('GGdropman SoD2 Live: '..tostring(msg))
+  error(msg, 0)
+end
+
+if getOpenedProcessID() == 0 then
+  fail('Attach to StateOfDecay2-Win64-Shipping.exe first')
+end
+
+local key = 'Jump'
+local st = GG_SOD2.live[key] or { step = 0 }
+GG_SOD2.live[key] = st
+
+if st.step == 0 then
+  local v = inputQuery('Find Jump', 'Note jump strength float, then jump to change / confirm.\nEnter the CURRENT value, then OK.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if st.ms then pcall(function() st.ms.destroy() end) end
+  st.ms = createMemScan()
+  st.ms.firstScan(soExactValue, vtSingle, rtRoundedDefault, v, '', '0', '7fffffffffffffff', '+W-C', fsmNotAligned, '1', false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  fl.deinitialize()
+  st.step = 1
+  showMessage('First scan done ('..tostring(n)..' hits).\nChange Jump in-game, then tick this entry AGAIN.')
+elseif st.step == 1 then
+  local v = inputQuery('Find Jump (next)', 'Enter the NEW value after changing it in-game.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if not st.ms then fail('Restart Find (step 0 missing)') end
+  st.ms.nextScan(soExactValue, rtRoundedDefault, v, '', false, false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  if n == 0 then
+    fl.deinitialize()
+    st.step = 0
+    fail('0 results — untick and restart Find Jump')
+  end
+  local addr = fl.Address[0]
+  if n > 1 then
+    showMessage(tostring(n)..' results left. Using first: '..addr..'\nNarrow further with CE scan UI if needed.')
+  end
+  local num = tonumber(addr, 16) or getAddress(addr)
+  st.addr = num
+  st.addrStr = addr
+  fl.deinitialize()
+  st.step = 0
+  showMessage('Jump address: '..tostring(addr)..'\nEnable a Freeze entry below.')
+end
+
+createThread(function()
+  sleep(200)
+  if memrec then memrec.Active = false end
+end)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>78</ID>
+              <Description>"Super Jump (freeze 2500)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+local st = GG_SOD2.live['Jump']
+if not st or not st.addr then
+  showMessage('Run Find Jump first')
+  error('no addr', 0)
+end
+local al = getAddressList()
+local desc = 'SoD2 Super Jump'
+local mr = nil
+for i = 0, al.Count - 1 do
+  if al[i].Description == desc then mr = al[i] break end
+end
+if not mr then mr = al.createMemoryRecord() end
+mr.Description = desc
+mr.Address = string.format('%X', st.addr)
+mr.Type = vtSingle
+mr.Value = '2500'
+mr.Active = true
+showMessage('Freezing '..desc..' @ '..mr.Address..' = 2500')
+{$asm}
+[DISABLE]
+{$lua}
+-- leave the dynamic memory record active; user can untick it in the address list
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>79</ID>
+              <Description>"Find Gravity (GravityScale)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+
+local function fail(msg)
+  showMessage('GGdropman SoD2 Live: '..tostring(msg))
+  error(msg, 0)
+end
+
+if getOpenedProcessID() == 0 then
+  fail('Attach to StateOfDecay2-Win64-Shipping.exe first')
+end
+
+local key = 'Gravity'
+local st = GG_SOD2.live[key] or { step = 0 }
+GG_SOD2.live[key] = st
+
+if st.step == 0 then
+  local v = inputQuery('Find Gravity', 'Usually 1.0 on the ground. Change by entering a vehicle / water if needed.\nEnter the CURRENT value, then OK.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if st.ms then pcall(function() st.ms.destroy() end) end
+  st.ms = createMemScan()
+  st.ms.firstScan(soExactValue, vtSingle, rtRoundedDefault, v, '', '0', '7fffffffffffffff', '+W-C', fsmNotAligned, '1', false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  fl.deinitialize()
+  st.step = 1
+  showMessage('First scan done ('..tostring(n)..' hits).\nChange Gravity in-game, then tick this entry AGAIN.')
+elseif st.step == 1 then
+  local v = inputQuery('Find Gravity (next)', 'Enter the NEW value after changing it in-game.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if not st.ms then fail('Restart Find (step 0 missing)') end
+  st.ms.nextScan(soExactValue, rtRoundedDefault, v, '', false, false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  if n == 0 then
+    fl.deinitialize()
+    st.step = 0
+    fail('0 results — untick and restart Find Gravity')
+  end
+  local addr = fl.Address[0]
+  if n > 1 then
+    showMessage(tostring(n)..' results left. Using first: '..addr..'\nNarrow further with CE scan UI if needed.')
+  end
+  local num = tonumber(addr, 16) or getAddress(addr)
+  st.addr = num
+  st.addrStr = addr
+  fl.deinitialize()
+  st.step = 0
+  showMessage('Gravity address: '..tostring(addr)..'\nEnable a Freeze entry below.')
+end
+
+createThread(function()
+  sleep(200)
+  if memrec then memrec.Active = false end
+end)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>80</ID>
+              <Description>"Fly — Gravity 0 (timer)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+local st = GG_SOD2.live['Gravity']
+if not st or not st.addr then
+  showMessage('Run Find Gravity first')
+  error('no addr', 0)
+end
+local key = 'timer_Gravity'
+if GG_SOD2.live[key] then
+  pcall(function() GG_SOD2.live[key].destroy() end)
+  GG_SOD2.live[key] = nil
+end
+local t = createTimer(nil, false)
+t.Interval = 50
+t.OnTimer = function(timer)
+  if not st.addr then return end
+  writeFloat(st.addr, 0)
+end
+t.Enabled = true
+GG_SOD2.live[key] = t
+showMessage('Fly GravityScale=0 ON @ '..string.format('%X', st.addr)..' = 0 (every 50ms)\nUntick to stop.')
+{$asm}
+[DISABLE]
+{$lua}
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+local key = 'timer_Gravity'
+if GG_SOD2.live[key] then
+  pcall(function() GG_SOD2.live[key].destroy() end)
+  GG_SOD2.live[key] = nil
+end
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>81</ID>
+              <Description>"Find Z Velocity"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+
+local function fail(msg)
+  showMessage('GGdropman SoD2 Live: '..tostring(msg))
+  error(msg, 0)
+end
+
+if getOpenedProcessID() == 0 then
+  fail('Attach to StateOfDecay2-Win64-Shipping.exe first')
+end
+
+local key = 'ZVel'
+local st = GG_SOD2.live[key] or { step = 0 }
+GG_SOD2.live[key] = st
+
+if st.step == 0 then
+  local v = inputQuery('Find ZVel', 'Jump and note vertical velocity, or scan while falling.\nEnter the CURRENT value, then OK.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if st.ms then pcall(function() st.ms.destroy() end) end
+  st.ms = createMemScan()
+  st.ms.firstScan(soExactValue, vtSingle, rtRoundedDefault, v, '', '0', '7fffffffffffffff', '+W-C', fsmNotAligned, '1', false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  fl.deinitialize()
+  st.step = 1
+  showMessage('First scan done ('..tostring(n)..' hits).\nChange ZVel in-game, then tick this entry AGAIN.')
+elseif st.step == 1 then
+  local v = inputQuery('Find ZVel (next)', 'Enter the NEW value after changing it in-game.', '')
+  if not v or v == '' then fail('Cancelled') end
+  if not st.ms then fail('Restart Find (step 0 missing)') end
+  st.ms.nextScan(soExactValue, rtRoundedDefault, v, '', false, false, false, false, false)
+  st.ms.waitTillDone()
+  local fl = createFoundList(st.ms)
+  fl.initialize()
+  local n = fl.Count
+  if n == 0 then
+    fl.deinitialize()
+    st.step = 0
+    fail('0 results — untick and restart Find ZVel')
+  end
+  local addr = fl.Address[0]
+  if n > 1 then
+    showMessage(tostring(n)..' results left. Using first: '..addr..'\nNarrow further with CE scan UI if needed.')
+  end
+  local num = tonumber(addr, 16) or getAddress(addr)
+  st.addr = num
+  st.addrStr = addr
+  fl.deinitialize()
+  st.step = 0
+  showMessage('ZVel address: '..tostring(addr)..'\nEnable a Freeze entry below.')
+end
+
+createThread(function()
+  sleep(200)
+  if memrec then memrec.Active = false end
+end)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>82</ID>
+              <Description>"Fly up — Z Velocity timer 800"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+local st = GG_SOD2.live['ZVel']
+if not st or not st.addr then
+  showMessage('Run Find ZVel first')
+  error('no addr', 0)
+end
+local key = 'timer_ZVel'
+if GG_SOD2.live[key] then
+  pcall(function() GG_SOD2.live[key].destroy() end)
+  GG_SOD2.live[key] = nil
+end
+local t = createTimer(nil, false)
+t.Interval = 50
+t.OnTimer = function(timer)
+  if not st.addr then return end
+  writeFloat(st.addr, 800)
+end
+t.Enabled = true
+GG_SOD2.live[key] = t
+showMessage('Fly up ZVel ON @ '..string.format('%X', st.addr)..' = 800 (every 50ms)\nUntick to stop.')
+{$asm}
+[DISABLE]
+{$lua}
+GG_SOD2 = GG_SOD2 or {}
+GG_SOD2.live = GG_SOD2.live or {}
+local key = 'timer_ZVel'
+if GG_SOD2.live[key] then
+  pcall(function() GG_SOD2.live[key].destroy() end)
+  GG_SOD2.live[key] = nil
+end
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>83</ID>
+          <Description>"=== LIVE — experimental AOBs (coming) ==="</Description>
+          <Options moHideChildren="1"/>
+          <Color>00808080</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>84</ID>
+              <Description>"Placeholder — true noclip / no reload AOB"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+Hard noclip and instruction-level infinite ammo need verified AOBs on a current build.
+Use Infinite Ammo timers + Gravity 0 / ZVel for soft fly until then.
+}
+[ENABLE]
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>85</ID>
+          <Description>"Browser editor for deep edits"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{
+Open tools/sod2-editor/editor.html for:
+- Per-survivor traits / skills / outfits / transfer
+- Per-item locker editing / catalog browser
+- WGS / Game Pass unpack
+- Diff / field scan / multi-slot UI
+}
+[ENABLE]
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+</CheatTable>
