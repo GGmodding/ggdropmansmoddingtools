@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GGdropmans Clair Obscur: Expedition 33 Save Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="drop-overlay" class="drop-overlay" hidden>
+    <div class="drop-overlay__panel">Drop EXPEDITION_N.sav / ZIP</div>
+  </div>
+
+  <header class="topbar">
+    <a class="brand" href="../../index.html" style="text-decoration:none;color:inherit">
+      <span class="brand__mark">33</span>
+      <div class="brand__text">
+        <h1>Expedition 33 Save Editor</h1>
+        <p>Clair Obscur · GVAS · Back to hub</p>
+      </div>
+    </a>
+    <div class="topbar__actions">
+      <label class="btn btn--primary">
+        Load Save
+        <input id="files-input" type="file" multiple accept=".sav,.zip,application/zip" hidden />
+      </label>
+      <label class="btn">
+        Load Folder
+        <input id="folder-input" type="file" webkitdirectory multiple hidden />
+      </label>
+      <button id="btn-find-save" class="btn" type="button">Find Save</button>
+      <button id="btn-open-save-folder" class="btn" type="button">Open Folder</button>
+      <label class="btn">
+        Load ZIP
+        <input id="zip-input" type="file" accept=".zip,application/zip" hidden />
+      </label>
+      <label class="slot-pick" id="slot-wrap" hidden>
+        Slot
+        <select id="slot-select"></select>
+      </label>
+      <button id="btn-backup" class="btn" type="button" disabled>Download Backup</button>
+      <button id="btn-save" class="btn btn--accent" type="button" disabled>Save .sav</button>
+      <button id="btn-install" class="btn" type="button" disabled>Install to Folder</button>
+      <span id="dirty-pill" class="pill" hidden>Unsaved</span>
+    </div>
+  </header>
+
+  <section class="path-banner">
+    <strong>E33 saves</strong>
+    <span>Steam: <code>%LOCALAPPDATA%\Sandfall\Saved\SaveGames\&lt;SteamID&gt;\EXPEDITION_0.sav</code>.
+      Close the game before overwriting. Always backup — Cloud sync can fight you.</span>
+  </section>
+
+  <nav class="tabs" id="tabs" aria-label="Editor sections" hidden>
+    <button class="tab is-active" data-tab="overview" type="button">Overview</button>
+    <button class="tab" data-tab="resources" type="button">Resources</button>
+    <button class="tab" data-tab="characters" type="button">Characters</button>
+    <button class="tab" data-tab="inventory" type="button">Inventory</button>
+    <button class="tab" data-tab="features" type="button">Feature map</button>
+    <button class="tab" data-tab="notes" type="button">Notes</button>
+  </nav>
+
+  <main class="main">
+    <div id="empty-state" class="empty">
+      <h2>Load an Expedition save</h2>
+      <p>Pick <code>EXPEDITION_N.sav</code> from your Sandfall SaveGames folder, or use Find Save / Load Folder / ZIP.</p>
+    </div>
+
+    <section id="panel-overview" class="panel is-active" hidden>
+      <div class="panel__head">
+        <h2>Save status</h2>
+        <p>Root GVAS fields for Clair Obscur: Expedition 33.</p>
+      </div>
+      <div id="overview-meta" class="meta-strip"></div>
+      <div class="callout" id="parity-callout">
+        In-place binary edits — no uesave round-trip. Items must already exist in the inventory map to change counts.
+      </div>
+      <div class="form-grid">
+        <label>Map / level<input id="f-map" type="text" readonly /></label>
+        <label>Time played<input id="f-time" type="text" readonly /></label>
+        <label>NG+ count<input id="f-ng" type="number" min="0" step="1" /></label>
+        <label>File size<input id="f-size" type="text" readonly /></label>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-overview-apply">Apply NG+</button>
+        <button type="button" class="btn" id="btn-overview-refresh">Reload from save</button>
+      </div>
+    </section>
+
+    <section id="panel-resources" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Chroma &amp; resources</h2>
+        <p>Gold (Chroma) is a root int. Everything else is an InventoryItems Name→Int entry.</p>
+      </div>
+      <div class="form-grid" id="resources-grid"></div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-resources-apply">Apply resources</button>
+        <button type="button" class="btn" id="btn-resources-max">Max common</button>
+        <button type="button" class="btn" id="btn-resources-refresh">Reload</button>
+      </div>
+      <p class="hint" id="resources-hint"></p>
+    </section>
+
+    <section id="panel-characters" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Expeditioners</h2>
+        <p>Level, unspent attribute points, and lumina from consumables. Hardcoded names come from the save.</p>
+      </div>
+      <div id="characters-missing" class="callout" hidden>No CharactersCollection entries found.</div>
+      <div id="characters-body"></div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-characters-apply">Apply characters</button>
+        <button type="button" class="btn" id="btn-characters-refresh">Reload</button>
+      </div>
+    </section>
+
+    <section id="panel-inventory" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Inventory map</h2>
+        <p>Every Name→Int pair under InventoryItems. Edit counts in place; new keys are not inserted.</p>
+      </div>
+      <p class="hint" id="inv-hint">Load a save to scan.</p>
+      <div class="toolbar" style="margin-bottom:0.75rem">
+        <label style="max-width:280px">Filter<input id="inv-filter" type="text" placeholder="e.g. Skin, Consumable, Tint" /></label>
+      </div>
+      <div class="table-wrap" style="max-height:480px">
+        <table class="data-table" id="inv-table">
+          <thead><tr><th>Item key</th><th>Count</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-features" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Feature map</h2>
+        <p>What this browser editor can do today vs what still needs array cloning.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="feature-table">
+          <thead><tr><th>Feature</th><th>Status</th><th>Notes</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-notes" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Notes &amp; paths</h2>
+        <p>Steam Cloud and Game Pass layouts differ — this tool targets Steam GVAS <code>EXPEDITION_N.sav</code>.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="notes-table">
+          <thead><tr><th>Tip</th><th>Detail</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="status-bar" id="status">Ready — load EXPEDITION_N.sav.</footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="../shared/save-folders.js"></script>
+  <script src="data.js"></script>
+  <script src="gvas.js"></script>
+  <script src="save.js"></script>
+  <script src="../shared/donate.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

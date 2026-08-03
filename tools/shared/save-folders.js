@@ -159,6 +159,26 @@
         </div>
       `,
     },
+    expedition33: {
+      id: "expedition33",
+      name: "Clair Obscur: Expedition 33",
+      pathTemplate: "%LOCALAPPDATA%\\Sandfall\\Saved\\SaveGames",
+      pathHint: "Paste that path, then open your SteamID folder. Target EXPEDITION_0.sav (etc).",
+      batName: "open-expedition33-saves.bat",
+      tryPaths: [
+        "%LOCALAPPDATA%\\Sandfall\\Saved\\SaveGames",
+      ],
+      directory: true,
+      maxDepth: 3,
+      fileLabel: "Expedition 33 save (.sav / .zip)",
+      matchFile: (name) => /^EXPEDITION_\d+\.sav$/i.test(name) || /\.zip$/i.test(name),
+      guideExtra: `
+        <div class="gg-sf-warn">
+          Close Clair Obscur: Expedition 33 before overwriting. Prefer <code>EXPEDITION_N.sav</code> (not Backup timestamp copies).
+          Disable Steam Cloud while testing installs if sync fights your edits.
+        </div>
+      `,
+    },
   };
 
   const IDB_NAME = "ggdropman-save-folders";

@@ -23,6 +23,7 @@
       --sod2: #c45a2a;
       --subnautica: #3de0c8;
       --grounded: #8fbf4a;
+      --expedition: #d4a84b;
       --steam: #66c0f4;
       --visitor: #e8a87c;
       --donate: #f0c14a;
@@ -830,6 +831,17 @@
         linear-gradient(125deg, rgba(60, 100, 50, 0.5), transparent 55%);
     }
 
+    .tile--expedition {
+      --accent: var(--expedition);
+      --art: url("https://cdn.cloudflare.steamstatic.com/steam/apps/1903340/header.jpg");
+    }
+
+    .tile--expedition::after {
+      background:
+        radial-gradient(circle at 30% 35%, rgba(212, 168, 75, 0.34), transparent 44%),
+        linear-gradient(125deg, rgba(80, 40, 20, 0.5), transparent 55%);
+    }
+
     .tile--soon {
       opacity: 0.92;
     }
@@ -1087,6 +1099,15 @@
               <span class="tile__meta">Augusta · Oodle .csav · + Cheat Engine table</span>
             </span>
           </a>
+
+          <a class="tile tile--expedition" href="tools/expedition33-editor/editor.html">
+            <span class="tile__badge tile__badge--live">Live</span>
+            <span class="tile__body">
+              <span class="tile__game">Clair Obscur</span>
+              <span class="tile__name">Expedition 33</span>
+              <span class="tile__meta">Chroma · party · inventory · GVAS</span>
+            </span>
+          </a>
         </nav>
       </div>
 
@@ -1279,6 +1300,7 @@
           <li><a href="tools/subnautica2-editor/editor.html">Subnautica 2 Save Editor</a> — GGdropman</li>
           <li><a href="tools/grounded-editor/editor.html">Grounded Save Editor</a> — GGdropman</li>
           <li><a href="tools/grounded2-editor/editor.html">Grounded 2 Save Editor</a> — GGdropman</li>
+          <li><a href="tools/expedition33-editor/editor.html">Clair Obscur: Expedition 33 Save Editor</a> — GGdropman</li>
         </ul>
         <p><strong>Cheat Tables:</strong></p>
         <ul>
