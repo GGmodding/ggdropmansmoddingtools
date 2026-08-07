@@ -100,12 +100,16 @@
         <label><input id="f-died" type="checkbox" /> Died</label>
       </div>
       <div class="quick-actions">
-        <button type="button" class="btn btn--accent" id="btn-max-level">Set level 100</button>
+        <button type="button" class="btn btn--accent" id="btn-preset-monolith-start">Monolith start preset (Lv 62)</button>
+        <button type="button" class="btn" id="btn-preset-swift-defense">Swift + armor gear (current level)</button>
+        <button type="button" class="btn" id="btn-max-level">Set level 100</button>
         <button type="button" class="btn" id="btn-unlock-masteries">Unlock all masteries</button>
         <button type="button" class="btn" id="btn-add-respecs">Add 50 respecs</button>
         <button type="button" class="btn" id="btn-clear-died">Clear died flag</button>
         <button type="button" class="btn" id="btn-max-gold-char">Set gold to 99999999</button>
       </div>
+      <p class="panel-note">Monolith start: level 62, full campaign quests + teleports, first Monolith timeline unlocked (not completed), clears passive spends so in-game unspent matches level, equips a basic rare defense set (helmet→relic). Weapons/off-hand are left alone. Old armor/jewelry moves to inventory.</p>
+      <p class="panel-note"><strong>Swift + armor</strong> only swaps armor/jewelry to level-scaled rares (Mercurial boots + defenses). Quests, level, weapons, and trees are not touched.</p>
     </section>
 
     <section id="panel-trees" class="panel" hidden>
@@ -120,7 +124,7 @@
         <button type="button" class="btn btn--accent" id="btn-add-skill">Add to character</button>
         <button type="button" class="btn" id="btn-fill-known-nodes">Fill known nodes to max (all trees)</button>
       </div>
-      <p class="panel-note">Unspent points still save separately. Visual trees use datamined layouts; icons come from Last Epoch Tools. List editor is under each tree if you need raw IDs.</p>
+      <p class="panel-note">Passive unspent is recalculated by the game from level + quests − spent — the save’s unspent field is ignored. Assign passives by clicking nodes or <strong>Fill known to max</strong>. Skill-tree <code>unspentPoints</code> can still be edited. List editor is under each tree for raw IDs.</p>
       <div id="trees-root" class="tree-list"></div>
 
       <h3 class="subhead">Ability bar</h3>
@@ -150,6 +154,7 @@
         <button type="button" class="btn btn--danger" id="btn-item-del">Delete selected</button>
         <button type="button" class="btn" id="btn-item-to-inv">Move selected → Inventory</button>
         <button type="button" class="btn" id="btn-item-max-rolls">Max rolls (selected)</button>
+        <button type="button" class="btn" id="btn-preset-swift-defense-items">Swift + armor gear (current level)</button>
       </div>
       <div id="add-item-panel" class="add-item-panel" hidden>
         <h3 class="subhead">Create item (classic pack → inventory)</h3>
@@ -196,7 +201,7 @@
           <button type="button" class="btn btn--accent" id="btn-item-create">Create in inventory</button>
         </div>
       </div>
-      <p class="panel-note">Names/icons are best-effort from public item data. Season 4 native items can be rewritten to the classic editable layout via <strong>Apply affixes</strong>.</p>
+      <p class="panel-note">Names/icons are best-effort from public item data. <strong>Season-packed gear</strong> (most current loot) must not use Apply affixes — that rewrites classic bytes and can make the character unloadable. Create a new rare from <em>Add item</em> if you need custom affixes.</p>
       <div class="le-inv-screen" id="equip-board" hidden>
         <div class="le-inv-screen__head">
           <h3 class="subhead">Character inventory</h3>
@@ -363,6 +368,7 @@
         <button type="button" class="btn" id="btn-unlock-hubs">Unlock hubs only</button>
         <button type="button" class="btn" id="btn-apply-campaign-quests">Apply campaign quest progress</button>
         <button type="button" class="btn" id="btn-apply-campaign-pack">Campaign pack (quests + teleports + flags)</button>
+        <button type="button" class="btn" id="btn-preset-monolith-start-progress">Monolith start preset (Lv 62)</button>
       </div>
       <p class="panel-note">Offline only. Waypoints write to <code>unlockedWaypointScenes</code>. Quest completion uses a campaign template from a fully progressed character (quests don’t store a simple “done” flag — they keep step/objective progress).</p>
       <div class="checks progress-flags">
@@ -417,7 +423,8 @@
         <p id="monolith-meta">Depth, corruption, echoes, and timeline unlocks</p>
       </div>
       <div class="quick-actions">
-        <button type="button" class="btn btn--accent" id="btn-mono-unlock-timelines">Unlock all timelines</button>
+        <button type="button" class="btn btn--accent" id="btn-preset-monolith-start-mono">Monolith start preset (Lv 62)</button>
+        <button type="button" class="btn" id="btn-mono-unlock-timelines">Unlock all timelines</button>
         <button type="button" class="btn" id="btn-mono-complete-timelines">Mark all timelines complete</button>
         <button type="button" class="btn" id="btn-mono-max-corruption">Set corruption 1000</button>
       </div>
@@ -547,6 +554,7 @@
   <script src="endgame-db.js"></script>
   <script src="item-codec.js"></script>
   <script src="save.js"></script>
+  <script src="presets.js"></script>
   <script src="../shared/donate.js"></script>
   <script src="app.js"></script>
   <script src="panels-extra.js"></script>

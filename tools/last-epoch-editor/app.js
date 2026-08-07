@@ -690,6 +690,7 @@
     const card = document.createElement("div");
     card.className = "tree-card";
     const dbSkill = treeId ? LESkills.getSkill(treeId) : null;
+    const isPassive = !!(treeId && LESkills.isPassiveTreeId(treeId));
 
     const head = document.createElement("div");
     head.className = "tree-card__head";
@@ -712,28 +713,56 @@
     const controls = document.createElement("div");
     controls.className = "tree-card__controls";
 
+    const spent = LESave.spentTreePoints(tree);
+    let levelEarned = 0;
+    if (isPassive && state.data) {
+      levelEarned = LESave.passivePointsFromLevel(state.data.level);
+    }
+
     const unspentLabel = document.createElement("label");
-    unspentLabel.textContent = "Unspent points";
     const unspentInput = document.createElement("input");
     unspentInput.type = "number";
     unspentInput.min = "0";
     unspentInput.step = "1";
-    unspentInput.value = String(Number(tree.unspentPoints) || 0);
-    unspentInput.addEventListener("change", () => {
-      tree.unspentPoints = Math.max(0, Number(unspentInput.value) || 0);
-      onChange();
-    });
+
+    if (isPassive) {
+      // Game ignores savedCharacterTree.unspentPoints and recomputes from level+quests − spent.
+      const expected = Math.max(0, levelEarned - spent);
+      unspentLabel.textContent = "In-game unspent (est.)";
+      unspentInput.value = String(expected);
+      unspentInput.readOnly = true;
+      unspentInput.title =
+        "Last Epoch recalculates passive unspent from level + quests − spent. Editing the save field has no effect.";
+      const hint = document.createElement("div");
+      hint.className = "tree-card__meta";
+      hint.textContent = `Lv ${state.data?.level ?? "?"} ≈ ${levelEarned} earned (level only) · ${spent} spent · quests may add more`;
+      left.appendChild(hint);
+    } else {
+      unspentLabel.textContent = "Unspent points";
+      unspentInput.value = String(Number(tree.unspentPoints) || 0);
+      unspentInput.addEventListener("change", () => {
+        tree.unspentPoints = Math.max(0, Number(unspentInput.value) || 0);
+        onChange();
+      });
+    }
     unspentLabel.appendChild(unspentInput);
 
     const addPtsBtn = document.createElement("button");
     addPtsBtn.type = "button";
     addPtsBtn.className = "btn";
-    addPtsBtn.textContent = "+50 unspent";
-    addPtsBtn.addEventListener("click", () => {
-      tree.unspentPoints = (Number(tree.unspentPoints) || 0) + 50;
-      unspentInput.value = String(tree.unspentPoints);
-      onChange();
-    });
+    if (isPassive) {
+      addPtsBtn.textContent = "+50 unspent (N/A)";
+      addPtsBtn.disabled = true;
+      addPtsBtn.title =
+        "Passive unspent is recalculated in-game. Click nodes or use Fill known to max to assign points directly.";
+    } else {
+      addPtsBtn.textContent = "+50 unspent";
+      addPtsBtn.addEventListener("click", () => {
+        tree.unspentPoints = (Number(tree.unspentPoints) || 0) + 50;
+        unspentInput.value = String(tree.unspentPoints);
+        onChange();
+      });
+    }
 
     const fillMaxBtn = document.createElement("button");
     fillMaxBtn.type = "button";
@@ -741,23 +770,42 @@
     fillMaxBtn.textContent = "Fill known to max";
     fillMaxBtn.disabled = !dbSkill;
     fillMaxBtn.title = dbSkill
-      ? "Allocate every known node to its max points"
+      ? isPassive
+        ? "Allocate every known passive node (works even above earned points)"
+        : "Allocate every known node to its max points"
       : "No skill database entry for this tree";
     fillMaxBtn.addEventListener("click", () => {
       const n = fillKnownNodesToMax(tree, treeId);
       refreshVisual();
       rebuildNodeTable();
       onChange();
-      setStatus(`Updated ${n} node(s) on ${title}.`, "is-ok");
+      setStatus(
+        isPassive
+          ? `Updated ${n} passive node(s). Extra allocated points persist; free unspent does not.`
+          : `Updated ${n} node(s) on ${title}.`,
+        "is-ok"
+      );
     });
 
     const dumpBtn = document.createElement("button");
     dumpBtn.type = "button";
     dumpBtn.className = "btn btn--danger";
-    dumpBtn.textContent = "Dump → unspent";
+    dumpBtn.textContent = isPassive ? "Respec (clear nodes)" : "Dump → unspent";
+    dumpBtn.title = isPassive
+      ? "Clear all allocated passive nodes. In-game unspent returns to level + quests total."
+      : "Move spent points into unspentPoints";
     dumpBtn.addEventListener("click", () => {
-      LESave.dumpTreePointsToUnspent(tree);
-      unspentInput.value = String(tree.unspentPoints);
+      const cleared = LESave.dumpTreePointsToUnspent(tree, { gameRecalc: isPassive });
+      if (isPassive) {
+        const earned = LESave.passivePointsFromLevel(state.data?.level);
+        unspentInput.value = String(earned);
+        setStatus(
+          `Cleared ${cleared} spent passive point(s). Game will restore ~${earned} unspent from level (plus quests).`,
+          "is-ok"
+        );
+      } else {
+        unspentInput.value = String(tree.unspentPoints);
+      }
       refreshVisual();
       rebuildNodeTable();
       onChange();
@@ -1557,9 +1605,26 @@
       const layout = packed ? packed.layout : "?";
       const affN = state.editAffixes.length;
       els.itemDecodeNote.textContent = `${decoded.label} · ${rarity} · layout=${layout} · ${affN} affix(es)` +
-        (layout !== "classic" ? " — Apply affixes rewrites to classic pack" : "");
+        (layout === "season"
+          ? " — Season pack: do not Apply affixes (corrupts save). Create a new classic rare instead."
+          : layout !== "classic"
+            ? " — Apply affixes only safe on classic layout"
+            : "");
+      const applyBtn = $("btn-item-apply-affixes");
+      if (applyBtn) {
+        applyBtn.disabled = layout === "season" || layout === "unknown";
+        applyBtn.title =
+          layout === "season" || layout === "unknown"
+            ? "Blocked for this item layout (would brick the save)"
+            : "Rebuild classic item bytes from the form";
+      }
     } else {
       els.itemDecodeNote.textContent = "";
+      const applyBtn = $("btn-item-apply-affixes");
+      if (applyBtn) {
+        applyBtn.disabled = false;
+        applyBtn.title = "";
+      }
     }
   }
 
@@ -1584,6 +1649,23 @@
     if (idx == null || !state.data || !window.LEItemCodec) return false;
     const item = LESave.ensureSavedItems(state.data)[idx];
     if (!item) return false;
+
+    const existing = LEItemCodec.unpackBestEffort(item.data);
+    if (existing && existing.layout === "season") {
+      setStatus(
+        "Blocked: Season-packed items cannot be rewritten to classic (that bricks the save / unloadable character). Edit quantity/container only, or replace the item with a newly created classic rare.",
+        "is-err"
+      );
+      return false;
+    }
+    if (existing && existing.layout === "unknown") {
+      setStatus(
+        "Blocked: unknown item layout — Apply affixes refused to avoid corrupting the save.",
+        "is-err"
+      );
+      return false;
+    }
+
     const quality = Number($("f-item-quality").value);
     const uniqueRaw = $("f-item-unique").value;
     const uniqueId = uniqueRaw === "" ? null : Number(uniqueRaw);
@@ -2340,6 +2422,73 @@
     setStatus("Level set to 100.", "is-ok");
   });
 
+  function runMonolithStartPreset() {
+    if (!state.data) {
+      setStatus("Load a character save first.", "is-err");
+      return;
+    }
+    if (!window.LEPresets || typeof LEPresets.applyMonolithStart !== "function") {
+      setStatus("Presets module not loaded.", "is-err");
+      return;
+    }
+    const ok = window.confirm(
+      "Apply Monolith start preset?\n\n• Level 62\n• Campaign quests + all teleports\n• First timeline unlocked (Fall of the Outcasts)\n• Rare defense set (weapons kept)\n• Passive tree cleared for respec\n\nSave/download afterward. Offline only."
+    );
+    if (!ok) return;
+    try {
+      const summary = LEPresets.applyMonolithStart(state.data);
+      setDirty(true);
+      renderAll();
+      setStatus(
+        `Monolith start applied: Lv ${summary.level}, ${summary.quests} quests, +${summary.waypoints} waypoints, ${summary.gearEquipped} armor pieces (${summary.gearMoved} old moved to bags), passives cleared (${summary.passivesCleared} pts). Download the save.`,
+        "is-ok"
+      );
+    } catch (err) {
+      setStatus(err.message || String(err), "is-err");
+    }
+  }
+
+  const monoPresetBtns = [
+    $("btn-preset-monolith-start"),
+    $("btn-preset-monolith-start-progress"),
+    $("btn-preset-monolith-start-mono"),
+  ];
+  for (const btn of monoPresetBtns) {
+    if (btn) btn.addEventListener("click", runMonolithStartPreset);
+  }
+
+  function runSwiftDefensePreset() {
+    if (!state.data) {
+      setStatus("Load a character save first.", "is-err");
+      return;
+    }
+    if (!window.LEPresets || typeof LEPresets.applySwiftDefenseGear !== "function") {
+      setStatus("Presets module not loaded.", "is-err");
+      return;
+    }
+    const lv = Number(state.data.level) || 1;
+    const ok = window.confirm(
+      `Apply Swift + armor gear for level ${lv}?\n\n• Replaces helmet→relic with classic rares scaled to your level\n• Boots include Mercurial movement speed\n• Other slots prioritize armor / life / resists\n• Does NOT change quests, level, weapons, or trees\n\nOld armor/jewelry moves to inventory.`
+    );
+    if (!ok) return;
+    try {
+      const summary = LEPresets.applySwiftDefenseGear(state.data);
+      setDirty(true);
+      renderAll();
+      setStatus(
+        `Swift + armor applied for Lv ${summary.level}: ${summary.gearEquipped} pieces equipped (${summary.gearMoved} old moved to bags). Quests untouched.`,
+        "is-ok"
+      );
+    } catch (err) {
+      setStatus(err.message || String(err), "is-err");
+    }
+  }
+
+  const swiftBtns = [$("btn-preset-swift-defense"), $("btn-preset-swift-defense-items")];
+  for (const btn of swiftBtns) {
+    if (btn) btn.addEventListener("click", runSwiftDefensePreset);
+  }
+
   $("btn-unlock-masteries").addEventListener("click", () => {
     if (!state.data) return;
     LESave.unlockMasteries(state.data);
@@ -2646,10 +2795,11 @@
   });
   $("btn-item-apply-affixes").addEventListener("click", () => {
     try {
-      if (!applyAffixesRebuild()) {
+      if (state.selectedItemIndex == null) {
         setStatus("Select an item first.", "is-err");
         return;
       }
+      if (!applyAffixesRebuild()) return;
       setDirty(true);
       renderItems();
       renderCurrency();

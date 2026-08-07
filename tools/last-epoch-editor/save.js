@@ -100,13 +100,39 @@
     }
   }
 
-  function dumpTreePointsToUnspent(tree) {
+  function spentTreePoints(tree) {
     syncTreeArrays(tree);
     let sum = 0;
     for (const p of tree.nodePoints) sum += Number(p) || 0;
-    tree.unspentPoints = (Number(tree.unspentPoints) || 0) + sum;
+    return sum;
+  }
+
+  /**
+   * Passive points granted by character level (first at 3 → 98 by 100).
+   * Campaign/side quests can add more (~15); those are not modeled here.
+   */
+  function passivePointsFromLevel(level) {
+    const lv = Math.max(1, Math.min(100, Number(level) || 1));
+    return Math.max(0, lv - 2);
+  }
+
+  /**
+   * Clear allocated nodes. For skill trees, adds freed points to unspentPoints.
+   * For passives (gameRecalc), leave unspent at 0 — the game recomputes
+   * unspent from level + quests − spent on load and ignores the save field.
+   */
+  function dumpTreePointsToUnspent(tree, opts) {
+    syncTreeArrays(tree);
+    let sum = 0;
+    for (const p of tree.nodePoints) sum += Number(p) || 0;
     tree.nodeIDs = [];
     tree.nodePoints = [];
+    if (opts && opts.gameRecalc) {
+      tree.unspentPoints = 0;
+    } else {
+      tree.unspentPoints = (Number(tree.unspentPoints) || 0) + sum;
+    }
+    return sum;
   }
 
   function setAllNodePoints(tree, value) {
@@ -306,6 +332,8 @@
     ensureSkillTrees,
     ensureSavedItems,
     syncTreeArrays,
+    spentTreePoints,
+    passivePointsFromLevel,
     dumpTreePointsToUnspent,
     setAllNodePoints,
     listCurrencyItems,
