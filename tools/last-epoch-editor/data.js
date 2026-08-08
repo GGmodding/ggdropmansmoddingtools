@@ -38,8 +38,12 @@
   function masteryName(classId, masteryId) {
     const cls = classById(classId);
     if (!cls) return `Mastery ${masteryId}`;
-    const idx = Number(masteryId);
-    if (idx < 0 || idx >= cls.masteries.length) return `Mastery ${masteryId}`;
+    // Save files use 1..3 for the three masteries; 0 / -1 = none.
+    const idx = Number(masteryId) - 1;
+    if (idx < 0 || idx >= cls.masteries.length) {
+      if (Number(masteryId) === 0 || Number(masteryId) === -1) return "(none)";
+      return `Mastery ${masteryId}`;
+    }
     return cls.masteries[idx];
   }
 

@@ -249,6 +249,7 @@
   /**
    * Unlock the Epoch mastery selection (all three mastery passive trees).
    * Does not force a chosenMastery — pick one in the Character panel if needed.
+   * Mastery IDs in saves are 1..3 (0 = none).
    */
   function unlockMasteries(data) {
     if (!data || typeof data !== "object") return { ok: false };
@@ -263,15 +264,39 @@
     data.oneTimeEvents = events;
 
     const waypointsAdded = unlockWaypoints(data, ["Mastery"]);
+    const restored = restoreMasteryChoice(data);
 
-    // Keep originalMastery in sync when a mastery is already chosen
-    if (data.chosenMastery != null && Number(data.chosenMastery) >= 0) {
-      if (data.originalMastery == null || Number(data.originalMastery) < 0) {
-        data.originalMastery = Number(data.chosenMastery);
-      }
+    return { ok: true, eventsAdded, waypointsAdded, restored };
+  }
+
+  /**
+   * Keep / restore ascended mastery so gear presets don't force Gaspar again.
+   * Saves use chosenMastery 1..3; 0 means unset. originalMastery remembers the last pick.
+   */
+  function restoreMasteryChoice(data) {
+    if (!data || typeof data !== "object") return false;
+    let chosen = Number(data.chosenMastery);
+    let original = Number(data.originalMastery);
+    if (!Number.isFinite(chosen) || chosen < 0) chosen = 0;
+    if (!Number.isFinite(original) || original < 0) original = 0;
+
+    let restored = false;
+    if (chosen < 1 && original >= 1 && original <= 3) {
+      data.chosenMastery = original;
+      chosen = original;
+      restored = true;
     }
-
-    return { ok: true, eventsAdded, waypointsAdded };
+    if (chosen >= 1 && chosen <= 3) {
+      data.originalMastery = chosen;
+      data.clickedUnlockMasteriesButton = true;
+    }
+    unlockWaypoints(data, ["Mastery"]);
+    const events = ensureOneTimeEvents(data);
+    if (!events.includes("EpochMasteryUnlock")) {
+      events.push("EpochMasteryUnlock");
+      data.oneTimeEvents = events;
+    }
+    return restored;
   }
 
   function applyCampaignQuests(data) {
@@ -348,6 +373,7 @@
     setWaypoints,
     unlockAllKnownWaypoints,
     unlockMasteries,
+    restoreMasteryChoice,
     applyCampaignQuests,
     mergeCampaignFlags,
     emptyPassiveTree,

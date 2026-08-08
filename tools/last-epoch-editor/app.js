@@ -27,9 +27,9 @@
     { id: 10, label: "Ring 1", area: "r1", glyph: "Ring" },
     { id: 11, label: "Ring 2", area: "r2", glyph: "Ring" },
     { id: 4, label: "Weapon", area: "wep", glyph: "Wep" },
-    { id: 7, label: "Belt", area: "belt", glyph: "Belt" },
+    { id: 6, label: "Belt", area: "belt", glyph: "Belt" },
     { id: 5, label: "Off-hand", area: "off", glyph: "Off" },
-    { id: 6, label: "Gloves", area: "glove", glyph: "Glove" },
+    { id: 7, label: "Gloves", area: "glove", glyph: "Glove" },
     { id: 8, label: "Boots", area: "boot", glyph: "Boot" },
   ];
   const EQUIP_CONTAINER_IDS = new Set(EQUIP_SLOTS.map((s) => s.id));
@@ -160,19 +160,26 @@
     const cls = LEData.classById(classId);
     els.fMastery.innerHTML = "";
     const none = document.createElement("option");
-    none.value = "-1";
+    none.value = "0";
     none.textContent = "(none / unset)";
     els.fMastery.appendChild(none);
     if (cls) {
+      // Game stores masteries as 1..3 (not 0..2)
       cls.masteries.forEach((name, i) => {
         const opt = document.createElement("option");
-        opt.value = String(i);
+        opt.value = String(i + 1);
         opt.textContent = name;
         els.fMastery.appendChild(opt);
       });
     }
-    const sel = selected === undefined || selected === null ? -1 : Number(selected);
-    els.fMastery.value = String(Number.isFinite(sel) ? sel : -1);
+    let sel = selected === undefined || selected === null ? 0 : Number(selected);
+    if (!Number.isFinite(sel) || sel < 0) sel = 0;
+    // Migrate stale 0-based values (editor bug): if save has 0 but we can't tell, leave 0.
+    els.fMastery.value = String(sel);
+    if (els.fMastery.value !== String(sel)) {
+      // Value not in list (e.g. old -1) → none
+      els.fMastery.value = "0";
+    }
   }
 
   function downloadText(filename, text) {
@@ -187,6 +194,7 @@
 
   function loadFromText(text, fileName) {
     const data = LESave.parseSaveText(text);
+    if (LESave.restoreMasteryChoice) LESave.restoreMasteryChoice(data);
     state.data = data;
     state.originalText = text;
     state.fileName = fileName || "CHARACTERSLOT";
@@ -2307,9 +2315,13 @@
     if (!d) return;
     d.characterName = els.fName.value || d.characterName;
     d.characterClass = Number(els.fClass.value);
-    const mastery = Number(els.fMastery.value);
+    let mastery = Number(els.fMastery.value);
+    if (!Number.isFinite(mastery) || mastery < 0) mastery = 0;
     d.chosenMastery = mastery;
-    if (mastery >= 0) d.clickedUnlockMasteriesButton = true;
+    if (mastery >= 1) {
+      d.originalMastery = mastery;
+      d.clickedUnlockMasteriesButton = true;
+    }
     d.level = Math.min(LEData.LEVEL_CAP, Math.max(1, Number(els.fLevel.value) || 1));
     d.currentExp = Math.max(0, Number(els.fExp.value) || 0);
     d.gold = Math.max(0, Number(els.fGold.value) || 0);
@@ -2463,15 +2475,19 @@
     }
     const lv = Number(state.data.level) || 1;
     const ok = window.confirm(
-      `Apply Swift + armor gear for level ${lv}?\n\n• Replaces helmet→relic with max-rolled Season rares scaled to your level\n• Boots include Mercurial movement speed\n• Other slots prioritize armor / life / resists\n• Keeps your existing bases/subtypes (class-safe relics)\n• Does NOT change quests, level, weapons, or trees\n\nOld armor/jewelry moves to inventory. Close the game before overwriting the save.`
+      `Apply Swift + armor gear for level ${lv}?\n\n• Equips the highest bases your level can wear (no over-level red X)\n• Max-rolled Season rares; boots include Mercurial movement speed\n• Relic stays on your class ladder from the save\n• Does NOT change quests, level, weapons, or trees\n\nOld armor/jewelry moves to inventory. Close the game before overwriting the save.`
     );
     if (!ok) return;
     try {
       const summary = LEPresets.applySwiftDefenseGear(state.data);
       setDirty(true);
       renderAll();
+      const masteryBit =
+        summary.chosenMastery >= 1
+          ? ` Mastery kept (${LEData.masteryName(state.data.characterClass, summary.chosenMastery)}${summary.masteryRestored ? ", restored" : ""}).`
+          : " Mastery unset — pick one on Character tab before saving.";
       setStatus(
-        `Swift + armor applied for Lv ${summary.level}: ${summary.gearEquipped} max-rolled pieces equipped (${summary.gearMoved} old moved to bags${summary.skipped ? ", " + summary.skipped + " slots skipped (no class-safe base on save)" : ""}). Quests untouched.`,
+        `Swift + armor v${summary.version || "?"} for Lv ${summary.level}: ${summary.gearEquipped} pieces (bases near your level; ${summary.gearMoved} old moved to bags${summary.skipped ? ", " + summary.skipped + " skipped" : ""}).${masteryBit}`,
         "is-ok"
       );
     } catch (err) {
