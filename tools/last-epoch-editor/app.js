@@ -1450,44 +1450,81 @@
     return "Affix #" + id;
   }
 
-  function fillBaseSelect(sel, selected) {
+  /** Stored season tier byte (0–6) → in-game T1–T7. Values ≥7 clamp to T7. */
+  function storedTierToGameT(stored) {
+    const t = Math.max(0, Math.min(6, Number(stored) || 0));
+    return t + 1;
+  }
+
+  function gameTToStoredTier(gameT) {
+    const t = Math.max(1, Math.min(7, Number(gameT) || 1));
+    return t - 1;
+  }
+
+  function fillBaseSelect(sel, selected, filterText) {
     if (!sel || !window.LEItems) return;
     const prev = selected != null ? String(selected) : sel.value;
+    const q = String(filterText || "")
+      .trim()
+      .toLowerCase();
     sel.innerHTML = "";
     Object.keys(LEItems.DB.bases)
       .map(Number)
       .sort((a, b) => a - b)
       .forEach((id) => {
+        const name = LEItems.baseName(id);
+        const label = `${name} (#${id})`;
+        if (q) {
+          const hay = (label + " " + id).toLowerCase();
+          if (!hay.includes(q) && String(prev) !== String(id)) return;
+        }
         const opt = document.createElement("option");
         opt.value = String(id);
-        opt.textContent = `${id} — ${LEItems.baseName(id)}`;
+        opt.textContent = label;
         sel.appendChild(opt);
       });
     if (prev && [...sel.options].some((o) => o.value === prev)) sel.value = prev;
+    else if (sel.options.length) sel.selectedIndex = 0;
   }
 
-  function fillSubSelect(sel, baseType, selected) {
+  function fillSubSelect(sel, baseType, selected, filterText) {
     if (!sel || !window.LEItems) return;
     const prev = selected != null ? String(selected) : sel.value;
+    const q = String(filterText || "")
+      .trim()
+      .toLowerCase();
     sel.innerHTML = "";
-    const base = LEItems.DB.bases[baseType];
+    const base = LEItems.DB.bases[baseType] || LEItems.DB.bases[String(baseType)];
     const subs = (base && base.subs) || {};
     Object.keys(subs)
       .map(Number)
-      .sort((a, b) => a - b)
+      .sort((a, b) => {
+        const la = Number(subs[a].lvl) || 0;
+        const lb = Number(subs[b].lvl) || 0;
+        if (la !== lb) return la - lb;
+        return a - b;
+      })
       .forEach((id) => {
+        const name = LEItems.subName ? LEItems.subName(baseType, id) : subs[id].n || `Subtype ${id}`;
+        const lvl = Number(subs[id].lvl) || 0;
+        const label = lvl ? `${name} · req ${lvl} (#${id})` : `${name} (#${id})`;
+        if (q) {
+          const hay = (label + " " + id).toLowerCase();
+          if (!hay.includes(q) && String(prev) !== String(id)) return;
+        }
         const opt = document.createElement("option");
         opt.value = String(id);
-        opt.textContent = `sub ${id}` + (subs[id].lvl ? ` (req ${subs[id].lvl})` : "");
+        opt.textContent = label;
         sel.appendChild(opt);
       });
     if (!sel.options.length) {
       const opt = document.createElement("option");
-      opt.value = "0";
-      opt.textContent = "0";
+      opt.value = prev || "0";
+      opt.textContent = prev ? `Subtype ${prev}` : "0";
       sel.appendChild(opt);
     }
     if (prev && [...sel.options].some((o) => o.value === prev)) sel.value = prev;
+    else if (sel.options.length) sel.selectedIndex = 0;
   }
 
   function fillAffixPick(sel, searchEl, baseType) {
@@ -1516,21 +1553,38 @@
       return;
     }
     affixes.forEach((aff, i) => {
+      // Normalize legacy T8 (7) → T7 (6)
+      if (aff.tier != null && Number(aff.tier) > 6) aff.tier = 6;
+
       const row = document.createElement("div");
       row.className = "affix-row";
 
-      const name = document.createElement("span");
-      name.textContent = affixLabel(aff.id);
-      if (Number(aff.id) > 255) name.title = "ID > 255: classic pack stores low byte only";
+      const nameWrap = document.createElement("div");
+      nameWrap.className = "affix-row__name";
+      const name = document.createElement("strong");
+      const meta = window.LEAffixes && LEAffixes.AFFIXES && (LEAffixes.AFFIXES[aff.id] || LEAffixes.AFFIXES[String(aff.id)]);
+      const kind = meta ? (meta.t === 1 ? "Suffix" : "Prefix") : "Affix";
+      name.textContent = (meta && meta.n) || ("#" + aff.id);
+      const range = document.createElement("span");
+      range.className = "affix-row__range";
+      range.textContent = meta && meta.d ? meta.d : kind + " #" + aff.id;
+      if (Number(aff.id) > 255) {
+        name.title = "ID > 255: classic pack stores low byte only";
+      }
+      nameWrap.appendChild(name);
+      nameWrap.appendChild(range);
 
-      const tier = document.createElement("input");
-      tier.type = "number";
-      tier.min = "0";
-      tier.max = "7";
-      tier.value = String(aff.tier != null ? aff.tier : 6);
-      tier.title = "Tier 0–7";
+      const tier = document.createElement("select");
+      tier.title = "Affix tier (T1–T7). Season packs store 0–6.";
+      for (let t = 1; t <= 7; t++) {
+        const opt = document.createElement("option");
+        opt.value = String(gameTToStoredTier(t));
+        opt.textContent = "T" + t;
+        tier.appendChild(opt);
+      }
+      tier.value = String(Math.max(0, Math.min(6, Number(aff.tier) || 0)));
       tier.addEventListener("change", () => {
-        aff.tier = Math.max(0, Math.min(7, Number(tier.value) || 0));
+        aff.tier = Math.max(0, Math.min(6, Number(tier.value) || 0));
         onChange && onChange();
       });
 
@@ -1539,11 +1593,24 @@
       roll.min = "0";
       roll.max = "255";
       roll.value = String(aff.roll != null ? aff.roll : 255);
-      roll.title = "Roll 0–255";
+      roll.title = "Roll within the tier (0–255). 255 = max of that tier.";
       roll.addEventListener("change", () => {
         aff.roll = Math.max(0, Math.min(255, Number(roll.value) || 0));
         onChange && onChange();
       });
+
+      const sealedLbl = document.createElement("label");
+      sealedLbl.className = "affix-row__sealed";
+      sealedLbl.title = "Sealed affix (Glyph of Insight)";
+      const sealed = document.createElement("input");
+      sealed.type = "checkbox";
+      sealed.checked = !!aff.sealed;
+      sealed.addEventListener("change", () => {
+        aff.sealed = !!sealed.checked;
+        onChange && onChange();
+      });
+      sealedLbl.appendChild(sealed);
+      sealedLbl.appendChild(document.createTextNode(" Sealed"));
 
       const del = document.createElement("button");
       del.type = "button";
@@ -1555,9 +1622,10 @@
         onChange && onChange();
       });
 
-      row.appendChild(name);
+      row.appendChild(nameWrap);
       row.appendChild(tier);
       row.appendChild(roll);
+      row.appendChild(sealedLbl);
       row.appendChild(del);
       container.appendChild(row);
     });
@@ -1605,23 +1673,82 @@
       state.editAffixes = [];
     }
 
+    const rollsPanel = $("unique-rolls-panel");
+    const implPanel = $("implicit-rolls-panel");
+    const isSeasonUnique = packed && packed.layout === "season-unique";
+    const isSeasonRare = packed && packed.layout === "season";
+    if (rollsPanel) {
+      rollsPanel.hidden = !isSeasonUnique;
+      if (isSeasonUnique) {
+        const rolls = packed.uniqueRolls || [];
+        for (let i = 0; i < 8; i++) {
+          const el = $("f-item-urole-" + i);
+          if (el) el.value = String(rolls[i] != null ? rolls[i] : 255);
+        }
+      }
+    }
+    if (implPanel) {
+      implPanel.hidden = !isSeasonRare;
+      if (isSeasonRare) {
+        const impls = packed.implicits || [];
+        for (let i = 0; i < 3; i++) {
+          const el = $("f-item-impl-" + i);
+          if (el) el.value = String(impls[i] != null ? impls[i] : 255);
+        }
+        const base = LEItems.DB.bases[packed.baseType];
+        const sub = base && base.subs[packed.subType];
+        const ic = sub && sub.ic != null ? Number(sub.ic) : 3;
+        const note = $("implicit-rolls-note");
+        if (note) {
+          note.textContent =
+            ic > 0
+              ? `Season rare · this base has ${ic} implicit(s). Rolls are 0–255.`
+              : "Season rare · no known implicits on this subtype (bytes still editable).";
+        }
+        for (let i = 0; i < 3; i++) {
+          const el = $("f-item-impl-" + i);
+          if (!el) continue;
+          el.disabled = ic > 0 && i >= ic;
+          el.parentElement && el.parentElement.classList.toggle("is-unused", ic > 0 && i >= ic);
+        }
+      }
+    }
+
     fillAffixPick($("f-item-affix-pick"), $("f-item-affix-search"), Number($("f-item-base").value));
     renderAffixList($("item-affix-list"), state.editAffixes);
+    const exaltNote = $("affix-exalt-note");
+    if (exaltNote) {
+      const q = packed ? Number(packed.quality) : Number($("f-item-quality").value);
+      exaltNote.hidden = q !== 3;
+      if (q === 3) {
+        const n = state.editAffixes.length;
+        exaltNote.textContent =
+          n >= 4
+            ? `Exalted · ${n} affixes. Prefer T5–T7 for exalt power. Sealed = Glyph of Insight (tier|0x10).`
+            : `Exalted · ${n}/4 affixes — add ${Math.max(0, 4 - n)} more for a proper exalt. Sealed = Glyph of Insight.`;
+      }
+    }
 
     if (decoded) {
       const rarity = LEItems.rarityName(decoded.rarity);
       const layout = packed ? packed.layout : "?";
       const affN = state.editAffixes.length;
-      els.itemDecodeNote.textContent = `${decoded.label} · ${rarity} · layout=${layout} · ${affN} affix(es)` +
-        (layout === "season"
-          ? " — Apply affixes rewrites Season rare/exalted pack"
-          : layout === "classic"
-            ? " — Apply affixes rewrites as Season pack (safer for S4)"
-            : " — Apply affixes may be unsafe on this layout");
+      els.itemDecodeNote.textContent =
+        `${decoded.label} · ${rarity} · layout=${layout}` +
+        (isSeasonUnique
+          ? ` · unique #${packed.uniqueId} · LP ${packed.legendaryPotential || 0} · ${affN} woven affix(es) — Apply rewrites Season unique/legendary`
+          : ` · ${affN} affix(es)` +
+            (layout === "season"
+              ? " — Apply rewrites Season rare/exalted (implicits + affixes)"
+              : layout === "classic"
+                ? " — Apply affixes rewrites as Season pack (safer for S4)"
+                : " — Apply affixes may be unsafe on this layout"));
       const applyBtn = $("btn-item-apply-affixes");
       if (applyBtn) {
         applyBtn.disabled = false;
-        applyBtn.title = "Rebuild Season rare/exalted bytes from the form";
+        applyBtn.title = isSeasonUnique
+          ? "Rebuild Season unique/legendary bytes from unique rolls, LP, and form"
+          : "Rebuild Season rare/exalted bytes from the form";
       }
     } else {
       els.itemDecodeNote.textContent = "";
@@ -1659,27 +1786,81 @@
     const uniqueRaw = $("f-item-unique").value;
     const uniqueId = uniqueRaw === "" ? null : Number(uniqueRaw);
     const isUnique =
-      uniqueId != null && Number.isFinite(uniqueId) && (quality >= 7 || quality === 4 || quality === 5 || quality === 6);
+      uniqueId != null && Number.isFinite(uniqueId) && (quality >= 7 || quality === 4 || quality === 5 || quality === 6 || quality === 9);
+
     if (isUnique) {
-      setStatus(
-        "Unique/set rewrite is not Season-safe yet. Edit rares/exalted only, or change quantity/container.",
-        "is-err"
-      );
-      return false;
+      if (typeof LEItemCodec.packSeasonUnique !== "function") {
+        setStatus("Season unique packer missing — reload the editor (Ctrl+F5).", "is-err");
+        return false;
+      }
+      const u = LEItemCodec.uniqueDbEntry(uniqueId);
+      const baseType = Number($("f-item-base").value);
+      if (u && Number(u.base) !== baseType) {
+        setStatus(
+          `Unique #${uniqueId} expects base type ${u.base}, form has ${baseType}. Fix base or unique ID.`,
+          "is-err"
+        );
+        return false;
+      }
+      const prev = LEItemCodec.unpackBestEffort(item.data);
+      const rolls = [];
+      for (let i = 0; i < 8; i++) {
+        const el = $("f-item-urole-" + i);
+        if (el && el.value !== "") rolls.push(Math.max(0, Math.min(255, Number(el.value) || 0)));
+        else if (prev && prev.uniqueRolls && prev.uniqueRolls[i] != null) rolls.push(prev.uniqueRolls[i]);
+        else rolls.push(255);
+      }
+      const lp = Math.max(0, Math.min(4, Number($("f-item-lp").value) || 0));
+      const packed = LEItemCodec.packSeasonUnique({
+        baseType,
+        subType: Number($("f-item-sub").value) || 0,
+        quality: quality >= 9 ? 9 : u && u.set ? 8 : 7,
+        uniqueId,
+        isSet: !!(u && u.set),
+        legendaryPotential: lp,
+        uniqueRolls: rolls,
+        affixes: quality >= 9 ? state.editAffixes : [],
+        noise1: prev && prev.noise1,
+        noise2: prev && prev.noise2,
+        mid1: prev && prev.mid1,
+        mid2: prev && prev.mid2,
+        mid3: prev && prev.mid3,
+      });
+      item.data = packed;
+      item.quantity = Math.max(0, Number(els.fItemQty.value) || 0);
+      item.containerID = Number(els.fItemContainer.value);
+      item.inventoryPosition = {
+        x: Number(els.fItemX.value) || 0,
+        y: Number(els.fItemY.value) || 0,
+      };
+      item.formatVersion = 2;
+      els.fItemData.value = packed.join(", ");
+      return true;
     }
+
     if (!LEItemCodec.packSeasonRare) {
       setStatus("Season packer missing — reload the editor.", "is-err");
       return false;
     }
 
+    const prevRare = LEItemCodec.unpackBestEffort(item.data);
     const packed = LEItemCodec.packSeasonRare({
       baseType: Number($("f-item-base").value) || 0,
       subType: Number($("f-item-sub").value) || 0,
       quality: Math.min(3, quality),
       forgingPotential: Number($("f-item-fp").value) || 40,
+      implicits: [0, 1, 2].map((i) => {
+        const el = $("f-item-impl-" + i);
+        if (el && el.value !== "") return Math.max(0, Math.min(255, Number(el.value) || 0));
+        if (prevRare && prevRare.implicits && prevRare.implicits[i] != null) return prevRare.implicits[i];
+        return 255;
+      }),
+      noise1: prevRare && prevRare.noise1,
+      noise2: prevRare && prevRare.noise2,
+      seasonFlag: prevRare && prevRare.seasonFlag,
       affixes: state.editAffixes.map((a) => ({
         id: a.id,
-        tier: 0,
+        tier: a.tier != null ? a.tier : 0,
         roll: a.roll != null ? a.roll : 255,
         sealed: !!a.sealed,
       })),
@@ -1696,13 +1877,36 @@
     return true;
   }
 
-  function maxRollsForIndices(indices) {
+  function maxRollsForIndices(indices, opts) {
+    opts = opts || {};
     if (!window.LEItems) return 0;
     const items = LESave.ensureSavedItems(state.data);
     let total = 0;
     for (const idx of indices) {
       const item = items[idx];
       if (!item || !Array.isArray(item.data)) continue;
+      if (window.LEItemCodec && typeof LEItemCodec.maxSeasonUniqueRolls === "function") {
+        const result = LEItemCodec.maxSeasonUniqueRolls(item.data, {
+          maxLp: !!opts.maxLp,
+          lpValue: opts.lpValue,
+        });
+        const isUnique = result && typeof result === "object" ? result.isUnique : result > 0;
+        const changed = result && typeof result === "object" ? result.changed : Number(result) || 0;
+        if (isUnique) {
+          total += changed;
+          continue;
+        }
+      }
+      if (window.LEItemCodec && typeof LEItemCodec.maxSeasonRareRolls === "function") {
+        const rare = LEItemCodec.maxSeasonRareRolls(item.data, {
+          maxImplicits: opts.maxImplicits !== false,
+          maxAffixes: opts.maxAffixes !== false,
+        });
+        if (rare && rare.isSeasonRare) {
+          total += rare.changed;
+          continue;
+        }
+      }
       total += LEItems.maxAffixRolls(item.data);
     }
     return total;
@@ -1734,6 +1938,7 @@
       legendaryPotential: Number($("f-add-lp").value) || 0,
       uniqueId: kind === "unique" ? uniqueId : null,
       isSet: quality === 8,
+      uniqueRolls: kind === "unique" ? Array(8).fill(255) : undefined,
       affixes: kind === "unique" ? [] : state.addAffixes.slice(0, 6),
       implicits: [255, 255, 255],
       containerID: 1,
@@ -2439,7 +2644,7 @@
       return;
     }
     const ok = window.confirm(
-      "Apply Monolith start preset?\n\n• Level 62\n• Campaign quests + all teleports\n• First timeline unlocked (Fall of the Outcasts)\n• Max-rolled defense gear at lv62 bases (same path as Swift + armor)\n• Class-safe relic; mastery preserved\n• Passive/skill points kept (not cleared)\n• Weapons kept\n\nSave/download afterward. Offline only."
+      "Apply Monolith start preset?\n\n• Level 62\n• Campaign quests + all teleports\n• First timeline unlocked (Fall of the Outcasts)\n• Max-rolled defense gear at lv62 bases (same path as Swift + armor)\n• Class 1H + off-hand (Sentinel: sword+shield, etc.)\n• Class-safe relic; mastery preserved\n• Passive/skill points kept (not cleared)\n\nSave/download afterward. Offline only."
     );
     if (!ok) return;
     try {
@@ -2479,7 +2684,7 @@
     }
     const lv = Number(state.data.level) || 1;
     const ok = window.confirm(
-      `Apply Swift + armor gear for level ${lv}?\n\n• Equips the highest bases your level can wear (no over-level red X)\n• Max-rolled Season rares; boots include Mercurial movement speed\n• Relic stays on your class ladder from the save\n• Does NOT change quests, level, weapons, or trees\n\nOld armor/jewelry moves to inventory. Close the game before overwriting the save.`
+      `Apply Swift + armor gear for level ${lv}?\n\n• Equips the highest bases your level can wear (no over-level red X)\n• Max-rolled Season rares; boots include Mercurial movement speed\n• Class 1H + off-hand for your character class\n• Relic stays on your class ladder from the save\n• Does NOT change quests, level, or trees\n\nOld armor/jewelry/weapons move to inventory. Close the game before overwriting the save.`
     );
     if (!ok) return;
     try {
@@ -2760,9 +2965,23 @@
   });
 
   $("f-add-base").addEventListener("change", () => {
-    fillSubSelect($("f-add-sub"), Number($("f-add-base").value));
+    fillSubSelect($("f-add-sub"), Number($("f-add-base").value), null, ($("f-add-sub-search") || {}).value);
     fillAffixPick($("f-add-affix-pick"), $("f-add-affix-search"), Number($("f-add-base").value));
   });
+  const addBaseSearch = $("f-add-base-search");
+  if (addBaseSearch) {
+    addBaseSearch.addEventListener("input", () => {
+      fillBaseSelect($("f-add-base"), $("f-add-base").value, addBaseSearch.value);
+      fillSubSelect($("f-add-sub"), Number($("f-add-base").value), null, ($("f-add-sub-search") || {}).value);
+      fillAffixPick($("f-add-affix-pick"), $("f-add-affix-search"), Number($("f-add-base").value));
+    });
+  }
+  const addSubSearch = $("f-add-sub-search");
+  if (addSubSearch) {
+    addSubSearch.addEventListener("input", () => {
+      fillSubSelect($("f-add-sub"), Number($("f-add-base").value), $("f-add-sub").value, addSubSearch.value);
+    });
+  }
   $("f-add-affix-search").addEventListener("input", () => {
     fillAffixPick($("f-add-affix-pick"), $("f-add-affix-search"), Number($("f-add-base").value));
   });
@@ -2785,9 +3004,39 @@
   });
 
   $("f-item-base").addEventListener("change", () => {
-    fillSubSelect($("f-item-sub"), Number($("f-item-base").value));
+    fillSubSelect($("f-item-sub"), Number($("f-item-base").value), null, ($("f-item-sub-search") || {}).value);
     fillAffixPick($("f-item-affix-pick"), $("f-item-affix-search"), Number($("f-item-base").value));
   });
+  const itemQuality = $("f-item-quality");
+  if (itemQuality) {
+    itemQuality.addEventListener("change", () => {
+      const exaltNote = $("affix-exalt-note");
+      if (!exaltNote) return;
+      const q = Number(itemQuality.value);
+      exaltNote.hidden = q !== 3;
+      if (q === 3) {
+        const n = state.editAffixes.length;
+        exaltNote.textContent =
+          n >= 4
+            ? `Exalted · ${n} affixes. Prefer T5–T7 for exalt power. Sealed = Glyph of Insight (tier|0x10).`
+            : `Exalted · ${n}/4 affixes — add ${Math.max(0, 4 - n)} more for a proper exalt. Sealed = Glyph of Insight.`;
+      }
+    });
+  }
+  const itemBaseSearch = $("f-item-base-search");
+  if (itemBaseSearch) {
+    itemBaseSearch.addEventListener("input", () => {
+      fillBaseSelect($("f-item-base"), $("f-item-base").value, itemBaseSearch.value);
+      fillSubSelect($("f-item-sub"), Number($("f-item-base").value), null, ($("f-item-sub-search") || {}).value);
+      fillAffixPick($("f-item-affix-pick"), $("f-item-affix-search"), Number($("f-item-base").value));
+    });
+  }
+  const itemSubSearch = $("f-item-sub-search");
+  if (itemSubSearch) {
+    itemSubSearch.addEventListener("input", () => {
+      fillSubSelect($("f-item-sub"), Number($("f-item-base").value), $("f-item-sub").value, itemSubSearch.value);
+    });
+  }
   $("f-item-affix-search").addEventListener("input", () => {
     fillAffixPick($("f-item-affix-pick"), $("f-item-affix-search"), Number($("f-item-base").value));
   });
@@ -2803,7 +3052,7 @@
   });
   $("btn-item-affix-max").addEventListener("click", () => {
     for (const a of state.editAffixes) {
-      a.tier = 7;
+      a.tier = 6; // T7
       a.roll = 255;
     }
     renderAffixList($("item-affix-list"), state.editAffixes);
@@ -2818,7 +3067,13 @@
       setDirty(true);
       renderItems();
       renderCurrency();
-      setStatus("Rebuilt item data (Season rare pack).", "is-ok");
+      const q = Number($("f-item-quality").value);
+      setStatus(
+        q >= 7
+          ? "Rebuilt Season unique/legendary (rolls + LP + unique id)."
+          : "Rebuilt item data (Season rare pack).",
+        "is-ok"
+      );
     } catch (err) {
       setStatus(err.message || String(err), "is-err");
     }
@@ -2851,6 +3106,73 @@
     setStatus(n ? `Maxed ${n} roll byte(s).` : "No roll-like bytes found to max.", n ? "is-ok" : "is-err");
   });
 
+  const btnUroleMax = $("btn-item-urole-max");
+  if (btnUroleMax) {
+    btnUroleMax.addEventListener("click", () => {
+      for (let i = 0; i < 8; i++) {
+        const el = $("f-item-urole-" + i);
+        if (el) el.value = "255";
+      }
+      if (state.selectedItemIndex == null) {
+        setStatus("Unique rolls set to 255 in the form — select an item and Apply to write.", "is-err");
+        return;
+      }
+      try {
+        if (!applyAffixesRebuild()) return;
+        setDirty(true);
+        showItemDetail(state.selectedItemIndex);
+        renderItems();
+        setStatus("Maxed unique rolls (255) and rebuilt Season unique.", "is-ok");
+      } catch (err) {
+        setStatus(err.message || String(err), "is-err");
+      }
+    });
+  }
+
+  const btnLpMax = $("btn-item-lp-max");
+  if (btnLpMax) {
+    btnLpMax.addEventListener("click", () => {
+      const lpEl = $("f-item-lp");
+      if (lpEl) lpEl.value = "4";
+      if (state.selectedItemIndex == null) {
+        setStatus("LP set to 4 in the form — select an item and Apply to write.", "is-err");
+        return;
+      }
+      try {
+        if (!applyAffixesRebuild()) return;
+        setDirty(true);
+        showItemDetail(state.selectedItemIndex);
+        renderItems();
+        setStatus("Set Legendary Potential to 4 and rebuilt Season unique.", "is-ok");
+      } catch (err) {
+        setStatus(err.message || String(err), "is-err");
+      }
+    });
+  }
+
+  const btnImplMax = $("btn-item-impl-max");
+  if (btnImplMax) {
+    btnImplMax.addEventListener("click", () => {
+      for (let i = 0; i < 3; i++) {
+        const el = $("f-item-impl-" + i);
+        if (el && !el.disabled) el.value = "255";
+      }
+      if (state.selectedItemIndex == null) {
+        setStatus("Implicits set to 255 in the form — select an item and Apply to write.", "is-err");
+        return;
+      }
+      try {
+        if (!applyAffixesRebuild()) return;
+        setDirty(true);
+        showItemDetail(state.selectedItemIndex);
+        renderItems();
+        setStatus("Maxed implicit rolls and rebuilt Season rare.", "is-ok");
+      } catch (err) {
+        setStatus(err.message || String(err), "is-err");
+      }
+    });
+  }
+
   $("btn-item-max-rolls").addEventListener("click", () => {
     const indices = getSelectedItemIndices();
     if (!indices.length) {
@@ -2860,6 +3182,7 @@
     const n = maxRollsForIndices(indices);
     setDirty(true);
     renderItems();
+    if (state.selectedItemIndex != null) showItemDetail(state.selectedItemIndex);
     setStatus(n ? `Maxed ${n} roll byte(s) across ${indices.length} item(s).` : "No roll-like bytes found.", n ? "is-ok" : "is-err");
   });
 

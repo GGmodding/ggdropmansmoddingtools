@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=JetBrains+Mono:wght@400;500&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://www.lastepochtools.com/data/version145/planner/res/01a7d73f4d0c94422564bdc8e9a068e6.css" />
   <link rel="stylesheet" href="https://www.lastepochtools.com/data/version145/db/res/ba4f40c4519b2f08eb97bf9067368a13.css" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=17" />
 </head>
 <body>
   <div id="drop-overlay" class="drop-overlay" hidden>
@@ -108,8 +108,8 @@
         <button type="button" class="btn" id="btn-clear-died">Clear died flag</button>
         <button type="button" class="btn" id="btn-max-gold-char">Set gold to 99999999</button>
       </div>
-      <p class="panel-note">Monolith start: level 62, full campaign quests + teleports, first Monolith timeline unlocked (not completed), equips the <em>same max-rolled Season defense gear path as Swift + armor</em> (highest bases for lv62, class-safe relic, mastery preserved). Does <strong>not</strong> clear passives or skill points. Weapons/off-hand left alone.</p>
-      <p class="panel-note"><strong>Swift + armor</strong> equips the <em>highest bases your current level can wear</em> (class-safe relic ladder from your save), with maxed affix rolls. Boots get Mercurial MS when allowed. Quests/level/weapons untouched.</p>
+      <p class="panel-note">Monolith start: level 62, full campaign quests + teleports, first Monolith timeline unlocked (not completed), equips the <em>same max-rolled Season defense gear path as Swift + armor</em> (highest <strong>class-family</strong> bases for lv62, class-safe relic, class 1H + off-hand, mastery preserved). Does <strong>not</strong> clear passives or skill points.</p>
+      <p class="panel-note"><strong>Swift + armor</strong> equips the <em>highest class-affinity bases your current level can wear</em> (e.g. Sentinel plate, Mage circlets) plus a class-appropriate 1H + off-hand, with maxed affix rolls. Boots get Mercurial MS when allowed. Quests/level untouched.</p>
     </section>
 
     <section id="panel-trees" class="panel" hidden>
@@ -166,8 +166,14 @@
               <option value="unique">Unique / Set</option>
             </select>
           </label>
-          <label>Base type<select id="f-add-base"></select></label>
-          <label>Subtype<select id="f-add-sub"></select></label>
+          <label>Base type
+            <input id="f-add-base-search" type="text" placeholder="Filter base…" />
+            <select id="f-add-base"></select>
+          </label>
+          <label>Subtype
+            <input id="f-add-sub-search" type="text" placeholder="Filter subtype…" />
+            <select id="f-add-sub"></select>
+          </label>
           <label>Quality / rarity
             <select id="f-add-quality">
               <option value="2">Rare</option>
@@ -201,7 +207,7 @@
           <button type="button" class="btn btn--accent" id="btn-item-create">Create in inventory</button>
         </div>
       </div>
-      <p class="panel-note">Names/icons are best-effort from public item data. <strong>Apply affixes</strong> rebuilds rares/exalted as Season packs. Unique/set rewrite is not supported yet.</p>
+      <p class="panel-note">Names/icons are best-effort from public item data. <strong>Apply affixes</strong> rebuilds rares/exalted and Season unique/legendary packs. Prefer unique IDs whose base type matches the item.</p>
       <div class="le-inv-screen" id="equip-board" hidden>
         <div class="le-inv-screen__head">
           <h3 class="subhead">Character inventory</h3>
@@ -263,8 +269,14 @@
               <label>formatVersion<input id="f-item-fmt" type="number" min="0" step="1" /></label>
             </div>
             <div class="grid form-grid">
-              <label>Base type<select id="f-item-base"></select></label>
-              <label>Subtype<select id="f-item-sub"></select></label>
+              <label>Base type
+                <input id="f-item-base-search" type="text" placeholder="Filter base…" />
+                <select id="f-item-base"></select>
+              </label>
+              <label>Subtype
+                <input id="f-item-sub-search" type="text" placeholder="Filter subtype…" />
+                <select id="f-item-sub"></select>
+              </label>
               <label>Quality
                 <select id="f-item-quality">
                   <option value="0">Normal</option>
@@ -278,9 +290,39 @@
               </label>
               <label>Unique ID<input id="f-item-unique" type="number" min="0" step="1" /></label>
               <label>Forging Potential<input id="f-item-fp" type="number" min="0" max="255" /></label>
-              <label>Legendary Potential<input id="f-item-lp" type="number" min="0" max="4" /></label>
+              <label>Legendary Potential<input id="f-item-lp" type="number" min="0" max="4" title="Unique/set LP (0–4)" /></label>
             </div>
-            <div class="affix-builder">
+            <div id="unique-rolls-panel" class="unique-rolls" hidden>
+              <div class="unique-rolls__head">
+                <strong>Unique rolls</strong>
+                <span class="panel-note">8 mod rolls (0–255). Apply rebuilds the Season unique pack.</span>
+                <button type="button" class="btn" id="btn-item-urole-max">Max unique rolls</button>
+                <button type="button" class="btn" id="btn-item-lp-max" title="Set Legendary Potential to 4">Max LP</button>
+              </div>
+              <div class="unique-rolls__grid" id="unique-rolls-grid">
+                <label>R1<input id="f-item-urole-0" type="number" min="0" max="255" /></label>
+                <label>R2<input id="f-item-urole-1" type="number" min="0" max="255" /></label>
+                <label>R3<input id="f-item-urole-2" type="number" min="0" max="255" /></label>
+                <label>R4<input id="f-item-urole-3" type="number" min="0" max="255" /></label>
+                <label>R5<input id="f-item-urole-4" type="number" min="0" max="255" /></label>
+                <label>R6<input id="f-item-urole-5" type="number" min="0" max="255" /></label>
+                <label>R7<input id="f-item-urole-6" type="number" min="0" max="255" /></label>
+                <label>R8<input id="f-item-urole-7" type="number" min="0" max="255" /></label>
+              </div>
+            </div>
+            <div id="implicit-rolls-panel" class="unique-rolls" hidden>
+              <div class="unique-rolls__head">
+                <strong>Implicit rolls</strong>
+                <span class="panel-note" id="implicit-rolls-note">Season rare implicits (0–255). Unused slots stay editable but may be ignored in-game.</span>
+                <button type="button" class="btn" id="btn-item-impl-max">Max implicits</button>
+              </div>
+              <div class="unique-rolls__grid unique-rolls__grid--3" id="implicit-rolls-grid">
+                <label>I1<input id="f-item-impl-0" type="number" min="0" max="255" /></label>
+                <label>I2<input id="f-item-impl-1" type="number" min="0" max="255" /></label>
+                <label>I3<input id="f-item-impl-2" type="number" min="0" max="255" /></label>
+              </div>
+            </div>
+              <div class="affix-builder">
               <div class="affix-builder__head">
                 <strong>Affixes</strong>
                 <input id="f-item-affix-search" type="text" placeholder="Filter affix #…" />
@@ -288,6 +330,7 @@
                 <button type="button" class="btn" id="btn-item-affix-add">Add</button>
                 <button type="button" class="btn" id="btn-item-affix-max">Max all rolls</button>
               </div>
+              <p class="panel-note" id="affix-exalt-note" hidden>Exalted: keep 4 affixes (ideally T5+). Sealed = glyph of insight (stored as tier|0x10).</p>
               <div id="item-affix-list" class="affix-list"></div>
             </div>
             <label class="block-label">Raw data bytes (comma-separated)
@@ -544,19 +587,19 @@
 
   <div class="status" id="status">No save loaded.</div>
 
-  <script src="../shared/save-folders.js?v=8"></script>
-  <script src="data.js?v=8"></script>
-  <script src="skills-db.js?v=8"></script>
-  <script src="passive-sections.js?v=8"></script>
-  <script src="items-db.js?v=8"></script>
-  <script src="affixes-db.js?v=8"></script>
-  <script src="progress-db.js?v=8"></script>
-  <script src="endgame-db.js?v=8"></script>
-  <script src="item-codec.js?v=8"></script>
-  <script src="save.js?v=8"></script>
-  <script src="presets.js?v=8"></script>
-  <script src="../shared/donate.js?v=8"></script>
-  <script src="app.js?v=8"></script>
-  <script src="panels-extra.js?v=8"></script>
+  <script src="../shared/save-folders.js?v=17"></script>
+  <script src="data.js?v=17"></script>
+  <script src="skills-db.js?v=17"></script>
+  <script src="passive-sections.js?v=17"></script>
+  <script src="items-db.js?v=17"></script>
+  <script src="affixes-db.js?v=17"></script>
+  <script src="progress-db.js?v=17"></script>
+  <script src="endgame-db.js?v=17"></script>
+  <script src="item-codec.js?v=17"></script>
+  <script src="save.js?v=17"></script>
+  <script src="presets.js?v=17"></script>
+  <script src="../shared/donate.js?v=17"></script>
+  <script src="app.js?v=17"></script>
+  <script src="panels-extra.js?v=17"></script>
 </body>
 </html>

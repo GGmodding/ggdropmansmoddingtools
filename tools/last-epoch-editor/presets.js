@@ -6,23 +6,81 @@
    * Gear uses Season rare packs; container IDs: 6=Belt, 7=Gloves.
    */
 
-  const PRESET_VERSION = 8;
+  const PRESET_VERSION = 10;
   const MONOLITH_LEVEL = 62;
 
-  /** Armor / jewelry slots only (weapons untouched).
-   * LE container IDs: 6=Belt, 7=Gloves (not swapped).
+  /** Armor / jewelry slots.
+   * LE container IDs: 6=Belt, 7=Gloves.
+   * Base types verified vs LETools/unique DB: 2=Belt, 4=Gloves.
    */
   const GEAR_SLOTS = [
     { containerID: 2, label: "Helmet", baseType: 0 },
     { containerID: 3, label: "Body Armor", baseType: 1 },
-    { containerID: 7, label: "Gloves", baseType: 2 },
+    { containerID: 7, label: "Gloves", baseType: 4 },
     { containerID: 8, label: "Boots", baseType: 3 },
-    { containerID: 6, label: "Belt", baseType: 4 },
-    { containerID: 9, label: "Amulet", baseType: 21 },
-    { containerID: 10, label: "Ring 1", baseType: 20 },
-    { containerID: 11, label: "Ring 2", baseType: 20 },
+    { containerID: 6, label: "Belt", baseType: 2 },
+    { containerID: 9, label: "Amulet", baseType: 20 },
+    { containerID: 10, label: "Ring 1", baseType: 21 },
+    { containerID: 11, label: "Ring 2", baseType: 21 },
     { containerID: 12, label: "Relic", baseType: 22 },
   ];
+
+  /**
+   * Save characterClass → LETools classRequirement bitflag.
+   * Mage/Primalist are swapped vs 1<<classId because LETools enum order differs.
+   */
+  const CLASS_REQ_FLAG = {
+    0: 2, // Mage
+    1: 1, // Primalist
+    2: 4, // Sentinel
+    3: 8, // Acolyte
+    4: 16, // Rogue
+  };
+
+  function classReqFlag(classId) {
+    const f = CLASS_REQ_FLAG[Number(classId)];
+    return f != null ? f : 0;
+  }
+
+  function subtypeClassScore(cr, flag) {
+    const c = Number(cr) || 0;
+    if (flag && (c & flag)) return 2; // class family match
+    if (c === 0) return 1; // universal
+    return 0; // other class
+  }
+
+  /**
+   * Class → 1H weapon + off-hand (base type IDs from items DB / unique evidence).
+   * 0 Mage, 1 Primalist, 2 Sentinel, 3 Acolyte, 4 Rogue
+   */
+  const CLASS_WEAPON_LOADOUTS = {
+    0: { weapon: 10, offhand: 19 }, // Wand + Catalyst
+    1: { weapon: 7, offhand: 18 }, // Mace + Shield
+    2: { weapon: 9, offhand: 18 }, // Sword + Shield
+    3: { weapon: 8, offhand: 19 }, // Sceptre + Catalyst
+    4: { weapon: 6, offhand: 6 }, // Dual daggers
+  };
+
+  /** Affix pools keyed by base type for weapons / off-hands. */
+  const WEAPON_AFFIX_BY_BASE = {
+    5: [2, 5, 6, 20], // 1H Axe
+    6: [2, 5, 6, 20], // Dagger
+    7: [2, 5, 6, 20], // 1H Mace
+    8: [2, 5, 12, 16], // Sceptre
+    9: [2, 5, 6, 20], // 1H Sword
+    10: [5, 12, 16, 6], // Wand
+    18: [1, 3, 25, 80], // Shield
+    19: [5, 12, 16, 6], // Catalyst
+  };
+
+  function weaponSlotsForClass(classId) {
+    const load =
+      CLASS_WEAPON_LOADOUTS[Number(classId)] || CLASS_WEAPON_LOADOUTS[2];
+    return [
+      { containerID: 4, label: "Weapon", baseType: load.weapon },
+      { containerID: 5, label: "Off-hand", baseType: load.offhand },
+    ];
+  }
 
   /** Preferred affix lists per slot (IDs must be < 256). Boots lead with Mercurial MS. */
   const DEFENSE_AFFIX_POOLS = {
@@ -137,20 +195,27 @@
     return Number(s && s.lvl) || 0;
   }
 
-  function bestSubtype(baseType, level, allowedSubs) {
+  function bestSubtype(baseType, level, allowedSubs, opts) {
+    opts = opts || {};
     const lv = Math.max(1, Math.min(100, Number(level) || 1));
     const bases = window.LEItems && window.LEItems.DB && window.LEItems.DB.bases;
     const b = bases && bases[baseType];
     if (!b || !b.subs) return 0;
     const allow = allowedSubs && allowedSubs.length ? new Set(allowedSubs.map(Number)) : null;
-    let best = { sid: 0, lvl: -1 };
+    const flag = opts.classId != null ? classReqFlag(opts.classId) : 0;
+    let best = { sid: 0, lvl: -1, score: -1 };
     for (const [sid, s] of Object.entries(b.subs)) {
       const id = Number(sid);
       if (allow && !allow.has(id)) continue;
       const req = Number(s && s.lvl) || 0;
       if (req > lv) continue;
-      if (req > best.lvl || (req === best.lvl && id > best.sid)) {
-        best = { sid: id, lvl: req };
+      const score = subtypeClassScore(s && s.cr, flag);
+      if (
+        score > best.score ||
+        (score === best.score && req > best.lvl) ||
+        (score === best.score && req === best.lvl && id > best.sid)
+      ) {
+        best = { sid: id, lvl: req, score };
       }
     }
     // Never return an over-level subtype (even if it was previously on the character)
@@ -208,14 +273,14 @@
       }
       if (seed == null) return null;
       const ladder = relicLadderSubs(seed);
-      const subType = bestSubtype(22, lv, ladder);
+      const subType = bestSubtype(22, lv, ladder, { classId: data.characterClass });
       if (subType == null) return null;
       return { baseType: 22, subType, source: "relic-ladder" };
     }
 
     // Always use the slot's base type + best usable subtype for this level.
-    // Do not reuse an equipped subtype (can be under-level junk or over-level illegal).
-    const subType = bestSubtype(slot.baseType, lv, null);
+    // Prefer class-affinity families when classRequirement data is present.
+    const subType = bestSubtype(slot.baseType, lv, null, { classId: data.characterClass });
     if (subType == null) return null;
     return {
       baseType: slot.baseType,
@@ -235,16 +300,16 @@
     return { x: 0, y: maxY + 1 };
   }
 
-  function buildGearItem(slot, affixIds, level, identity) {
+  function buildGearItem(slot, affixIds, level, identity, classId) {
     const codec = window.LEItemCodec;
     if (!codec) throw new Error("Item codec unavailable.");
     const baseType = slot.baseType;
-    // Relics: keep class ladder subtype from identity. Everything else: best for level.
+    // Relics: keep class ladder subtype from identity. Everything else: best for level+class.
     let subType;
     if (baseType === 22 && identity && identity.subType != null) {
       subType = identity.subType;
     } else {
-      subType = bestSubtype(baseType, level, null);
+      subType = bestSubtype(baseType, level, null, { classId });
     }
     if (subType == null) throw new Error("No usable subtype for " + (slot.label || baseType));
     const filtered = filterAffixesForLevel(affixIds, baseType, level);
@@ -264,9 +329,21 @@
     return item;
   }
 
-  function equipGearSet(data, pools, level) {
+  function equipGearSet(data, pools, level, opts) {
+    opts = opts || {};
     const items = window.LESave.ensureSavedItems(data);
-    const target = new Set(GEAR_SLOTS.map((s) => s.containerID));
+    const slots = GEAR_SLOTS.slice();
+    if (opts.includeWeapons !== false) {
+      slots.push(...weaponSlotsForClass(data.characterClass));
+    }
+    const mergedPools = Object.assign({}, pools);
+    for (const slot of slots) {
+      if (mergedPools[slot.containerID]) continue;
+      if (WEAPON_AFFIX_BY_BASE[slot.baseType]) {
+        mergedPools[slot.containerID] = WEAPON_AFFIX_BY_BASE[slot.baseType];
+      }
+    }
+    const target = new Set(slots.map((s) => s.containerID));
     let moved = 0;
     let equipped = 0;
     let skipped = 0;
@@ -274,7 +351,7 @@
 
     // Snapshot relic ladders BEFORE moving equipped gear
     const identities = new Map();
-    for (const slot of GEAR_SLOTS) {
+    for (const slot of slots) {
       const id = resolveSlotIdentity(data, slot, level);
       if (id) identities.set(slot.containerID, id);
     }
@@ -288,15 +365,15 @@
       moved += 1;
     }
 
-    for (const slot of GEAR_SLOTS) {
+    for (const slot of slots) {
       const identity = identities.get(slot.containerID);
       if (slot.baseType === 22 && !identity) {
         skipped += 1;
         continue;
       }
       try {
-        const pool = pools[slot.containerID] || [25, 13, 17, 24];
-        const item = buildGearItem(slot, pool, level, identity || null);
+        const pool = mergedPools[slot.containerID] || [25, 13, 17, 24];
+        const item = buildGearItem(slot, pool, level, identity || null, data.characterClass);
         items.push(item);
         equipped += 1;
         const packed = unpackItem(item);
@@ -316,6 +393,7 @@
       skipped,
       level: Number(level) || 1,
       classId: Number(data.characterClass),
+      weapons: opts.includeWeapons !== false,
       reqLevels,
       version: PRESET_VERSION,
     };
@@ -340,9 +418,8 @@
   }
 
   /**
-   * Level 62 · campaign done · Monolith of Fate entry · defensive rares.
-   * Keeps weapons / off-hand and all passive/skill allocations.
-   * Gear path matches Swift + armor (level-correct bases, class-safe relics, max rolls).
+   * Level 62 · campaign done · Monolith of Fate entry · defensive rares + class weapons.
+   * Keeps all passive/skill allocations. Gear path matches Swift + armor.
    */
   function applyMonolithStart(data) {
     if (!data || typeof data !== "object") throw new Error("No character data.");
@@ -389,7 +466,9 @@
     resetMonolithStart(data);
 
     // Same max-rolled, level-matched, class-safe gear path as Swift + armor
-    const gear = equipGearSet(data, SWIFT_DEFENSE_AFFIX_POOLS, MONOLITH_LEVEL);
+    const gear = equipGearSet(data, SWIFT_DEFENSE_AFFIX_POOLS, MONOLITH_LEVEL, {
+      includeWeapons: true,
+    });
     summary.gearMoved = gear.moved;
     summary.gearEquipped = gear.equipped;
     summary.skipped = gear.skipped || 0;
@@ -409,14 +488,14 @@
     summary.note =
       "v" +
       PRESET_VERSION +
-      ": Lv62 monolith start + max-rolled defense gear (class-safe relics, level-correct bases). Trees untouched.";
+      ": Lv62 monolith start + max-rolled defense gear + class 1H/off-hand (class-safe relics, level-correct bases). Trees untouched.";
 
     return summary;
   }
 
   /**
-   * Replace armor/jewelry with level-scaled Season rares (Mercurial boots + defenses).
-   * Does not change level, quests, waypoints, monolith, trees, or weapons.
+   * Replace armor/jewelry/weapons with level-scaled Season rares (Mercurial boots + defenses + class 1H/OH).
+   * Does not change level, quests, waypoints, monolith, or trees.
    */
   function applySwiftDefenseGear(data) {
     if (!data || typeof data !== "object") throw new Error("No character data.");
@@ -429,7 +508,7 @@
     const masteryRestored = window.LESave.restoreMasteryChoice(data);
 
     const level = Math.max(1, Math.min(100, Number(data.level) || 1));
-    const gear = equipGearSet(data, SWIFT_DEFENSE_AFFIX_POOLS, level);
+    const gear = equipGearSet(data, SWIFT_DEFENSE_AFFIX_POOLS, level, { includeWeapons: true });
     const minReq = (gear.reqLevels || []).reduce(
       (m, r) => Math.min(m, Number(r.req) || 0),
       999
@@ -439,6 +518,7 @@
       gearMoved: gear.moved,
       gearEquipped: gear.equipped,
       skipped: gear.skipped || 0,
+      weapons: !!gear.weapons,
       reqLevels: gear.reqLevels || [],
       masteryRestored,
       chosenMastery: Number(data.chosenMastery) || 0,
@@ -446,7 +526,7 @@
       note:
         "v" +
         PRESET_VERSION +
-        ": max-rolled Season rares (tier-scaled), highest wearable bases for your level (class-safe relics). Quests untouched." +
+        ": max-rolled Season rares (tier-scaled), highest wearable bases + class 1H/off-hand (class-safe relics). Quests untouched." +
         (minReq < 999 ? " Lowest base req among pieces: " + minReq + "." : ""),
     };
   }
@@ -456,6 +536,9 @@
     PRESET_VERSION,
     GEAR_SLOTS,
     DEFENSE_SLOTS: GEAR_SLOTS,
+    CLASS_WEAPON_LOADOUTS,
+    CLASS_REQ_FLAG,
+    weaponSlotsForClass,
     applyMonolithStart,
     applySwiftDefenseGear,
     bestSubtype,
