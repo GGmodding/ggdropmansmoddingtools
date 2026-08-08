@@ -6,7 +6,7 @@
    * Gear uses Season rare packs; container IDs: 6=Belt, 7=Gloves.
    */
 
-  const PRESET_VERSION = 6;
+  const PRESET_VERSION = 8;
   const MONOLITH_LEVEL = 62;
 
   /** Armor / jewelry slots only (weapons untouched).
@@ -341,7 +341,8 @@
 
   /**
    * Level 62 · campaign done · Monolith of Fate entry · defensive rares.
-   * Keeps weapons / off-hand. Clears passive allocations so level unspent applies in-game.
+   * Keeps weapons / off-hand and all passive/skill allocations.
+   * Gear path matches Swift + armor (level-correct bases, class-safe relics, max rolls).
    */
   function applyMonolithStart(data) {
     if (!data || typeof data !== "object") throw new Error("No character data.");
@@ -349,7 +350,9 @@
     const LEProgress = window.LEProgress;
     if (!LESave) throw new Error("Save helpers unavailable.");
     if (!LEProgress) throw new Error("Progress database unavailable.");
-    if (!window.LEItemCodec) throw new Error("Item codec unavailable.");
+    if (!window.LEItemCodec || typeof window.LEItemCodec.packSeasonRare !== "function") {
+      throw new Error("Season item codec unavailable.");
+    }
 
     const summary = {
       level: MONOLITH_LEVEL,
@@ -358,8 +361,15 @@
       flags: 0,
       gearMoved: 0,
       gearEquipped: 0,
-      passivesCleared: 0,
+      skipped: 0,
+      masteryRestored: false,
+      chosenMastery: 0,
+      version: PRESET_VERSION,
     };
+
+    // Preserve mastery before anything else (same as Swift)
+    summary.masteryRestored = !!LESave.restoreMasteryChoice(data);
+    summary.chosenMastery = Number(data.chosenMastery) || 0;
 
     data.level = MONOLITH_LEVEL;
     data.currentExp = 0;
@@ -373,16 +383,19 @@
     summary.flags = LESave.mergeCampaignFlags(data);
     LESave.unlockMasteries(data);
     LESave.unlockWaypoints(data, ["MonolithHub", "EoT", "Mastery"]);
+    summary.masteryRestored = summary.masteryRestored || !!LESave.restoreMasteryChoice(data);
+    summary.chosenMastery = Number(data.chosenMastery) || 0;
 
     resetMonolithStart(data);
 
-    const gear = equipDefenseSet(data, MONOLITH_LEVEL);
+    // Same max-rolled, level-matched, class-safe gear path as Swift + armor
+    const gear = equipGearSet(data, SWIFT_DEFENSE_AFFIX_POOLS, MONOLITH_LEVEL);
     summary.gearMoved = gear.moved;
     summary.gearEquipped = gear.equipped;
+    summary.skipped = gear.skipped || 0;
+    summary.reqLevels = gear.reqLevels || [];
 
-    const tree = LESave.ensurePassiveTree(data);
-    summary.passivesCleared = LESave.spentTreePoints(tree);
-    LESave.dumpTreePointsToUnspent(tree, { gameRecalc: true });
+    // Keep existing passive + skill point allocations (do not respec trees).
 
     if (typeof data.gold !== "number" || data.gold < 50000) {
       data.gold = 100000;
@@ -392,6 +405,11 @@
     if (typeof data.respecs !== "number" || data.respecs < 20) {
       data.respecs = 50;
     }
+
+    summary.note =
+      "v" +
+      PRESET_VERSION +
+      ": Lv62 monolith start + max-rolled defense gear (class-safe relics, level-correct bases). Trees untouched.";
 
     return summary;
   }

@@ -2439,15 +2439,19 @@
       return;
     }
     const ok = window.confirm(
-      "Apply Monolith start preset?\n\n• Level 62\n• Campaign quests + all teleports\n• First timeline unlocked (Fall of the Outcasts)\n• Max-rolled rare defense set (weapons kept)\n• Passive tree cleared for respec\n\nSave/download afterward. Offline only."
+      "Apply Monolith start preset?\n\n• Level 62\n• Campaign quests + all teleports\n• First timeline unlocked (Fall of the Outcasts)\n• Max-rolled defense gear at lv62 bases (same path as Swift + armor)\n• Class-safe relic; mastery preserved\n• Passive/skill points kept (not cleared)\n• Weapons kept\n\nSave/download afterward. Offline only."
     );
     if (!ok) return;
     try {
       const summary = LEPresets.applyMonolithStart(state.data);
       setDirty(true);
       renderAll();
+      const masteryBit =
+        summary.chosenMastery >= 1
+          ? ` Mastery kept (${LEData.masteryName(state.data.characterClass, summary.chosenMastery)}${summary.masteryRestored ? ", restored" : ""}).`
+          : "";
       setStatus(
-        `Monolith start applied: Lv ${summary.level}, ${summary.quests} quests, +${summary.waypoints} waypoints, ${summary.gearEquipped} armor pieces (${summary.gearMoved} old moved to bags), passives cleared (${summary.passivesCleared} pts). Download the save.`,
+        `Monolith start v${summary.version || "?"} Lv ${summary.level}: ${summary.quests} quests, +${summary.waypoints} waypoints, ${summary.gearEquipped} max-rolled pieces (${summary.gearMoved} old to bags). Trees untouched.${masteryBit}`,
         "is-ok"
       );
     } catch (err) {
