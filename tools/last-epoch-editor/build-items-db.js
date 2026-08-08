@@ -225,12 +225,42 @@ const file = `(() => {
   }
 
   function maxAffixRolls(data) {
-    if (!Array.isArray(data) || data.length < 5) return 0;
+    if (!Array.isArray(data) || data.length < 8) return 0;
     let n = 0;
-    for (let i = 4; i < data.length; i++) {
-      if (typeof data[i] === "number" && data[i] > 0 && data[i] < 255) {
-        data[i] = 255;
-        n += 1;
+    const set = (i) => {
+      if (i < 0 || i >= data.length) return;
+      if (typeof data[i] !== "number") return;
+      if (data[i] === 255) return;
+      data[i] = 255;
+      n += 1;
+    };
+
+    if (data[0] >= 2 && data[0] !== 255 && data.length >= 12 && data[5] <= 3) {
+      const count = Math.min(6, data[11] || 0);
+      for (let a = 0; a < count; a++) set(12 + a * 3 + 2);
+      return n;
+    }
+
+    if (data[0] === 0 || data[0] === 1) {
+      set(4);
+      set(5);
+      set(6);
+      const rarity = data[3];
+      if (rarity === 7 || rarity === 8 || rarity === 9 || rarity === 4 || rarity === 5 || rarity === 6) {
+        for (let i = 0; i < 8; i++) set(9 + i);
+        return n;
+      }
+      const count = Math.min(6, data[8] || 0);
+      for (let a = 0; a < count; a++) set(9 + a * 3 + 2);
+      return n;
+    }
+
+    for (let i = Math.max(4, data.length - 24); i + 2 < data.length; i++) {
+      const tier = data[i];
+      const id = data[i + 1];
+      if (tier >= 0 && tier <= 7 && id > 0 && id < 255) {
+        set(i + 2);
+        i += 2;
       }
     }
     return n;

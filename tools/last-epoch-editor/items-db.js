@@ -104,13 +104,54 @@
     return null;
   }
 
+  /**
+   * Max only real roll bytes (not base/sub/tier/id/count).
+   * Season rares: [5,r,r,base,sub,q,0,fp,m1,m2,m3,count,(tier,id,roll)*]
+   * Classic rares: [0/1,base,sub,q,impl,impl,impl,fp,count,(tier,id,roll)*]
+   * Classic uniques: uniqueRolls after uniqueId (8 bytes).
+   */
   function maxAffixRolls(data) {
-    if (!Array.isArray(data) || data.length < 5) return 0;
+    if (!Array.isArray(data) || data.length < 8) return 0;
     let n = 0;
-    for (let i = 4; i < data.length; i++) {
-      if (typeof data[i] === "number" && data[i] > 0 && data[i] < 255) {
-        data[i] = 255;
-        n += 1;
+    const set = (i) => {
+      if (i < 0 || i >= data.length) return;
+      if (typeof data[i] !== "number") return;
+      if (data[i] === 255) return;
+      data[i] = 255;
+      n += 1;
+    };
+
+    // Season layout (era flag >= 2, quality at [5] <= 3 for rare/magic)
+    if (data[0] >= 2 && data[0] !== 255 && data.length >= 12 && data[5] <= 3) {
+      const count = Math.min(6, data[11] || 0);
+      for (let a = 0; a < count; a++) set(12 + a * 3 + 2);
+      return n;
+    }
+
+    // Classic rare/magic (forging-potential era: data[0] 0/1)
+    if (data[0] === 0 || data[0] === 1) {
+      // Implicit rolls
+      set(4);
+      set(5);
+      set(6);
+      const rarity = data[3];
+      // Unique / set / legendary: uniqueId at 7|8, then 8 unique rolls
+      if (rarity === 7 || rarity === 8 || rarity === 9 || rarity === 4 || rarity === 5 || rarity === 6) {
+        for (let i = 0; i < 8; i++) set(9 + i);
+        return n;
+      }
+      const count = Math.min(6, data[8] || 0);
+      for (let a = 0; a < count; a++) set(9 + a * 3 + 2);
+      return n;
+    }
+
+    // Fallback: only touch trailing triples that look like (tier<=7, id, roll)
+    for (let i = Math.max(4, data.length - 24); i + 2 < data.length; i++) {
+      const tier = data[i];
+      const id = data[i + 1];
+      if (tier >= 0 && tier <= 7 && id > 0 && id < 255) {
+        set(i + 2);
+        i += 2;
       }
     }
     return n;

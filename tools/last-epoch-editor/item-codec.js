@@ -2,12 +2,12 @@
   "use strict";
 
   /**
-   * Classic offline save item packing (Ash06 / community formatVersion 2).
-   * data[0]=1 (forging-potential era), then baseType, subType, quality/rarity,
-   * 3 implicit rolls, FP, affixCount|uniqueId, then affix triples or unique rolls + LP.
+   * Offline save item packing for Last Epoch.
    *
-   * Affix IDs >= 256: low byte in the triple; sealed flag uses id+256 convention
-   * (stored as sealed=true with id = storedId - 256 when storedId >= 256).
+   * Season 4+ rares (data[0]=5):
+   *   [5, rng, rng, base, sub, quality0-3, 0, fp, m1, m2, m3, count, (tier,id,roll)*count, 0]
+   *
+   * Classic (data[0]=0/1) — legacy only. Writing classic rares unloads Season characters.
    */
 
   const RARITY = {
@@ -32,7 +32,6 @@
   }
 
   function isSeasonLayout(data) {
-    // Season 4+ offline items often start with era flag 5+, then noise, then classic-ish fields.
     return Array.isArray(data) && data.length >= 8 && data[0] >= 2 && data[0] !== 255;
   }
 
@@ -42,13 +41,52 @@
 
   function unpackSeason(data) {
     if (!isSeasonLayout(data) || isClassicLayout(data)) return null;
-    // Observed Season layout: [era, ?, ?, baseType, subType, quality, fp/uniqueHi, uniqueLo|affixCount, ...]
-    // Prefer offsets that land on known base types when possible.
+
+    // Rare / magic / exalted (quality 0–3)
+    if (data.length >= 12 && data[5] <= 3) {
+      const baseType = data[3];
+      const subType = data[4];
+      const quality = data[5];
+      const forgingPotential = data[7] || 0;
+      const count = Math.min(6, data[11] || 0);
+      const affixes = [];
+      let i = 12;
+      for (let n = 0; n < count && i + 2 < data.length; n++, i += 3) {
+        let tier = data[i];
+        let sealed = false;
+        if (tier >= 16) {
+          sealed = true;
+          tier = tier & 0x0f;
+        }
+        affixes.push({
+          tier,
+          id: data[i + 1],
+          roll: data[i + 2],
+          sealed,
+        });
+      }
+      return {
+        layout: "season",
+        versionFlag: data[0],
+        baseType,
+        subType,
+        quality,
+        implicits: [],
+        forgingPotential,
+        uniqueId: null,
+        affixes,
+        uniqueRolls: [],
+        legendaryPotential: 0,
+        weaversWill: 0,
+        baseOffset: 3,
+      };
+    }
+
+    // Unique / legendary / set — speculative
     let baseOff = 3;
     if (window.LEItems && window.LEItems.DB && window.LEItems.DB.bases) {
       const bases = window.LEItems.DB.bases;
-      const candidates = [3, 1, 2, 4];
-      for (const off of candidates) {
+      for (const off of [3, 1, 2, 4]) {
         if (data.length > off + 2 && bases[String(data[off])]) {
           baseOff = off;
           break;
@@ -85,40 +123,17 @@
       ) {
         uniqueId = cand;
       }
-      // Also scan later bytes for a known unique id (season noise varies)
-      if (uniqueId == null && window.LEItems && window.LEItems.DB && window.LEItems.DB.uniques) {
-        for (let i = payloadStart; i < Math.min(data.length, payloadStart + 8); i++) {
-          const v = data[i];
-          if (v > 0 && window.LEItems.DB.uniques[v]) {
-            uniqueId = v;
-            break;
-          }
-          if (i + 1 < data.length) {
-            const wide = data[i] * 256 + data[i + 1];
-            if (wide > 0 && window.LEItems.DB.uniques[wide]) {
-              uniqueId = wide;
-              break;
-            }
-          }
-        }
-      }
       uniqueRolls = data.slice(payloadStart, Math.min(data.length, payloadStart + 8));
       if (data.length > payloadStart + 8) legendaryPotential = data[data.length - 1] || 0;
     } else {
       const count = Math.min(6, uniqueOrCount);
       let i = payloadStart;
       for (let n = 0; n < count && i + 2 < data.length; n++, i += 3) {
-        let id = data[i + 1];
-        let sealed = false;
-        if (id >= 256) {
-          sealed = true;
-          id = id - 256;
-        }
         affixes.push({
           tier: data[i],
-          id,
+          id: data[i + 1],
           roll: data[i + 2],
-          sealed,
+          sealed: false,
           speculative: true,
         });
       }
@@ -161,9 +176,7 @@
 
     if (uniqueLike) {
       uniqueId = fpOrUniqueHi * 256 + uniqueOrCount;
-      // Prefer treating [7]=FP when uniqueId would be nonsense & [8] alone matches
       if (uniqueId > 2000 && uniqueOrCount > 0) {
-        // fallback: older style unique id only in [8], FP in [7]
         uniqueId = uniqueOrCount;
         forgingPotential = fpOrUniqueHi;
       } else if (fpOrUniqueHi === 0) {
@@ -181,7 +194,6 @@
       for (let n = 0; n < count && i + 2 < data.length; n++, i += 3) {
         let id = data[i + 1];
         let sealed = false;
-        // sealed convention: id byte may be low byte of id+256; detect via high values on tier
         if (id > 255) {
           sealed = true;
           id = id - 256;
@@ -212,6 +224,36 @@
     };
   }
 
+  /**
+   * Season 4+ rare/magic/exalted pack. Verified against live offline gear that loads.
+   */
+  function packSeasonRare(item) {
+    const baseType = clampByte(item.baseType);
+    const subType = clampByte(item.subType);
+    let quality = clampByte(
+      item.quality != null ? item.quality : item.rarity != null ? item.rarity : 2
+    );
+    if (quality > 3) quality = 3;
+    const fp = clampByte(item.forgingPotential != null ? item.forgingPotential : 40);
+    const r1 = item.noise1 != null ? clampByte(item.noise1) : Math.floor(Math.random() * 256);
+    const r2 = item.noise2 != null ? clampByte(item.noise2) : Math.floor(Math.random() * 256);
+    const m1 = item.mid1 != null ? clampByte(item.mid1) : Math.floor(Math.random() * 256);
+    const m2 = item.mid2 != null ? clampByte(item.mid2) : Math.floor(Math.random() * 256);
+    const m3 = item.mid3 != null ? clampByte(item.mid3) : 16 + Math.floor(Math.random() * 16);
+    const affixes = (item.affixes || []).slice(0, 6);
+    const data = [5, r1, r2, baseType, subType, quality, 0, fp, m1, m2, m3, affixes.length];
+    for (const a of affixes) {
+      // In-game Season rares use low tiers (often 0) + high rolls — not classic T7.
+      let tier = clampByte(a.tier != null ? a.tier : 0);
+      if (tier > 7) tier = 0;
+      if (a.sealed) tier = (tier & 0x0f) | 0x10;
+      const id = Number(a.id) || 0;
+      data.push(tier, clampByte(id & 255), clampByte(a.roll != null ? a.roll : 255));
+    }
+    data.push(0);
+    return data;
+  }
+
   function packClassic(item) {
     const baseType = clampByte(item.baseType);
     const subType = clampByte(item.subType);
@@ -227,7 +269,6 @@
       data[3] = quality;
       const hi = Math.floor(uniqueId / 256);
       const lo = uniqueId % 256;
-      // Match Ash06 UniqueData: high byte at [7], low at [8]
       data.push(hi, lo);
       const rolls = item.uniqueRolls || [];
       for (let i = 0; i < 8; i++) data.push(clampByte(rolls[i] != null ? rolls[i] : 255));
@@ -239,8 +280,11 @@
       for (const a of affixes) {
         let id = Number(a.id) || 0;
         if (a.sealed) id = id + 256;
-        // Classic triples only store one byte for id — keep low byte; warn via id&255
-        data.push(clampByte(a.tier != null ? a.tier : 6), clampByte(id & 255), clampByte(a.roll != null ? a.roll : 255));
+        data.push(
+          clampByte(a.tier != null ? a.tier : 6),
+          clampByte(id & 255),
+          clampByte(a.roll != null ? a.roll : 255)
+        );
       }
     }
     return data;
@@ -248,12 +292,11 @@
 
   function unpackBestEffort(data) {
     if (!Array.isArray(data) || !data.length) return null;
-    const classic = unpackClassic(data);
-    if (classic) return classic;
     const season = unpackSeason(data);
     if (season) return season;
+    const classic = unpackClassic(data);
+    if (classic) return classic;
 
-    // Unknown: expose header guesses + trailing triples as affixes
     const rarity = data[0];
     const baseType = data[1];
     const subType = data[2];
@@ -288,7 +331,9 @@
   }
 
   function createSavedItem(opts) {
-    const data = packClassic(opts);
+    const uniqueId = opts.uniqueId != null && opts.uniqueId !== "" ? Number(opts.uniqueId) : null;
+    const data =
+      uniqueId != null && Number.isFinite(uniqueId) ? packClassic(opts) : packSeasonRare(opts);
     return {
       itemData: null,
       data,
@@ -310,6 +355,7 @@
     unpackSeason,
     unpackBestEffort,
     packClassic,
+    packSeasonRare,
     createSavedItem,
     clampByte,
   };

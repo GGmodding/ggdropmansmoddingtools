@@ -1606,17 +1606,14 @@
       const affN = state.editAffixes.length;
       els.itemDecodeNote.textContent = `${decoded.label} · ${rarity} · layout=${layout} · ${affN} affix(es)` +
         (layout === "season"
-          ? " — Season pack: do not Apply affixes (corrupts save). Create a new classic rare instead."
-          : layout !== "classic"
-            ? " — Apply affixes only safe on classic layout"
-            : "");
+          ? " — Apply affixes rewrites Season rare/exalted pack"
+          : layout === "classic"
+            ? " — Apply affixes rewrites as Season pack (safer for S4)"
+            : " — Apply affixes may be unsafe on this layout");
       const applyBtn = $("btn-item-apply-affixes");
       if (applyBtn) {
-        applyBtn.disabled = layout === "season" || layout === "unknown";
-        applyBtn.title =
-          layout === "season" || layout === "unknown"
-            ? "Blocked for this item layout (would brick the save)"
-            : "Rebuild classic item bytes from the form";
+        applyBtn.disabled = false;
+        applyBtn.title = "Rebuild Season rare/exalted bytes from the form";
       }
     } else {
       els.itemDecodeNote.textContent = "";
@@ -1650,36 +1647,34 @@
     const item = LESave.ensureSavedItems(state.data)[idx];
     if (!item) return false;
 
-    const existing = LEItemCodec.unpackBestEffort(item.data);
-    if (existing && existing.layout === "season") {
-      setStatus(
-        "Blocked: Season-packed items cannot be rewritten to classic (that bricks the save / unloadable character). Edit quantity/container only, or replace the item with a newly created classic rare.",
-        "is-err"
-      );
-      return false;
-    }
-    if (existing && existing.layout === "unknown") {
-      setStatus(
-        "Blocked: unknown item layout — Apply affixes refused to avoid corrupting the save.",
-        "is-err"
-      );
-      return false;
-    }
-
     const quality = Number($("f-item-quality").value);
     const uniqueRaw = $("f-item-unique").value;
     const uniqueId = uniqueRaw === "" ? null : Number(uniqueRaw);
-    const isUnique = uniqueId != null && Number.isFinite(uniqueId) && (quality >= 7 || quality === 4 || quality === 5 || quality === 6);
-    const packed = LEItemCodec.packClassic({
+    const isUnique =
+      uniqueId != null && Number.isFinite(uniqueId) && (quality >= 7 || quality === 4 || quality === 5 || quality === 6);
+    if (isUnique) {
+      setStatus(
+        "Unique/set rewrite is not Season-safe yet. Edit rares/exalted only, or change quantity/container.",
+        "is-err"
+      );
+      return false;
+    }
+    if (!LEItemCodec.packSeasonRare) {
+      setStatus("Season packer missing — reload the editor.", "is-err");
+      return false;
+    }
+
+    const packed = LEItemCodec.packSeasonRare({
       baseType: Number($("f-item-base").value) || 0,
       subType: Number($("f-item-sub").value) || 0,
-      quality,
-      forgingPotential: Number($("f-item-fp").value) || 0,
-      legendaryPotential: Number($("f-item-lp").value) || 0,
-      uniqueId: isUnique ? uniqueId : null,
-      isSet: quality === 8 || quality === 5,
-      affixes: isUnique ? [] : state.editAffixes,
-      implicits: [255, 255, 255],
+      quality: Math.min(3, quality),
+      forgingPotential: Number($("f-item-fp").value) || 40,
+      affixes: state.editAffixes.map((a) => ({
+        id: a.id,
+        tier: 0,
+        roll: a.roll != null ? a.roll : 255,
+        sealed: !!a.sealed,
+      })),
     });
     item.data = packed;
     item.quantity = Math.max(0, Number(els.fItemQty.value) || 0);
@@ -2432,7 +2427,7 @@
       return;
     }
     const ok = window.confirm(
-      "Apply Monolith start preset?\n\n• Level 62\n• Campaign quests + all teleports\n• First timeline unlocked (Fall of the Outcasts)\n• Rare defense set (weapons kept)\n• Passive tree cleared for respec\n\nSave/download afterward. Offline only."
+      "Apply Monolith start preset?\n\n• Level 62\n• Campaign quests + all teleports\n• First timeline unlocked (Fall of the Outcasts)\n• Max-rolled rare defense set (weapons kept)\n• Passive tree cleared for respec\n\nSave/download afterward. Offline only."
     );
     if (!ok) return;
     try {
@@ -2468,7 +2463,7 @@
     }
     const lv = Number(state.data.level) || 1;
     const ok = window.confirm(
-      `Apply Swift + armor gear for level ${lv}?\n\n• Replaces helmet→relic with classic rares scaled to your level\n• Boots include Mercurial movement speed\n• Other slots prioritize armor / life / resists\n• Does NOT change quests, level, weapons, or trees\n\nOld armor/jewelry moves to inventory.`
+      `Apply Swift + armor gear for level ${lv}?\n\n• Replaces helmet→relic with max-rolled Season rares scaled to your level\n• Boots include Mercurial movement speed\n• Other slots prioritize armor / life / resists\n• Keeps your existing bases/subtypes (class-safe relics)\n• Does NOT change quests, level, weapons, or trees\n\nOld armor/jewelry moves to inventory. Close the game before overwriting the save.`
     );
     if (!ok) return;
     try {
@@ -2476,7 +2471,7 @@
       setDirty(true);
       renderAll();
       setStatus(
-        `Swift + armor applied for Lv ${summary.level}: ${summary.gearEquipped} pieces equipped (${summary.gearMoved} old moved to bags). Quests untouched.`,
+        `Swift + armor applied for Lv ${summary.level}: ${summary.gearEquipped} max-rolled pieces equipped (${summary.gearMoved} old moved to bags${summary.skipped ? ", " + summary.skipped + " slots skipped (no class-safe base on save)" : ""}). Quests untouched.`,
         "is-ok"
       );
     } catch (err) {
@@ -2803,7 +2798,7 @@
       setDirty(true);
       renderItems();
       renderCurrency();
-      setStatus("Rebuilt item data (classic pack).", "is-ok");
+      setStatus("Rebuilt item data (Season rare pack).", "is-ok");
     } catch (err) {
       setStatus(err.message || String(err), "is-err");
     }

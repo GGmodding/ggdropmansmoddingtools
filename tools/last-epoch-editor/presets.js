@@ -85,36 +85,102 @@
     return out.slice(0, 4);
   }
 
-  function tierForLevel(level) {
-    const lv = Math.max(1, Number(level) || 1);
-    return Math.min(7, Math.max(1, Math.ceil(lv / 12)));
-  }
-
-  function affixRows(ids, level) {
-    const tier = tierForLevel(level);
+  function affixRows(ids, _level) {
+    // Season rares in live saves use tier 0 + max rolls (255), not classic T7.
     return (ids || []).slice(0, 4).map((id) => ({
       id: Number(id),
-      tier,
+      tier: 0,
       roll: 255,
       sealed: false,
     }));
   }
 
-  function bestSubtype(baseType, level) {
+  function maxPackedRolls(item) {
+    if (!item || !Array.isArray(item.data)) return 0;
+    if (window.LEItems && typeof window.LEItems.maxAffixRolls === "function") {
+      return window.LEItems.maxAffixRolls(item.data);
+    }
+    // Fallback: season affix roll bytes only
+    const d = item.data;
+    if (!(d[0] >= 2 && d.length >= 12 && d[5] <= 3)) return 0;
+    let n = 0;
+    const count = Math.min(6, d[11] || 0);
+    for (let a = 0; a < count; a++) {
+      const i = 12 + a * 3 + 2;
+      if (i < d.length && d[i] !== 255) {
+        d[i] = 255;
+        n += 1;
+      }
+    }
+    return n;
+  }
+
+  function bestSubtype(baseType, level, allowedSubs) {
     const lv = Math.max(1, Math.min(100, Number(level) || 1));
     const bases = window.LEItems && window.LEItems.DB && window.LEItems.DB.bases;
     const b = bases && bases[baseType];
     if (!b || !b.subs) return 0;
+    const allow = allowedSubs && allowedSubs.length ? new Set(allowedSubs.map(Number)) : null;
     let best = { sid: 0, lvl: -1 };
     for (const [sid, s] of Object.entries(b.subs)) {
+      const id = Number(sid);
+      if (allow && !allow.has(id)) continue;
       const req = Number(s && s.lvl) || 0;
       if (req > lv) continue;
-      const id = Number(sid);
       if (req > best.lvl || (req === best.lvl && id > best.sid)) {
         best = { sid: id, lvl: req };
       }
     }
+    if (best.lvl < 0 && allow && allow.size) {
+      // Owned subtype above level — still prefer something from the character
+      return [...allow][0];
+    }
     return best.sid;
+  }
+
+  function unpackItem(it) {
+    if (!it || !window.LEItemCodec) return null;
+    return window.LEItemCodec.unpackBestEffort(it.data);
+  }
+
+  /**
+   * Prefer base/subtype already on this save.
+   * Relics are class-locked — only reuse the currently equipped relic, never invent/randomize.
+   */
+  function resolveSlotIdentity(data, slot, level) {
+    const items = window.LESave.ensureSavedItems(data);
+    const ownedSubs = [];
+
+    for (const it of items) {
+      const p = unpackItem(it);
+      if (!p || p.baseType == null) continue;
+      const bt = Number(p.baseType);
+      const st = Number(p.subType) || 0;
+      const cid = Number(it.containerID);
+
+      // Equipped in this slot wins (must already be legal for the character)
+      if (cid === slot.containerID) {
+        return { baseType: bt, subType: st, source: "equipped" };
+      }
+
+      // Relics: ignore other inventory/loot — those may be other classes
+      if (slot.baseType === 22) continue;
+
+      if (bt === slot.baseType) ownedSubs.push(st);
+    }
+
+    if (slot.baseType === 22) return null;
+
+    if (ownedSubs.length) {
+      const subType = bestSubtype(slot.baseType, level, ownedSubs);
+      return { baseType: slot.baseType, subType, source: "owned" };
+    }
+
+    return {
+      baseType: slot.baseType,
+      subType: bestSubtype(slot.baseType, level, null),
+      source: "level",
+    };
   }
 
   function nextInventoryPosition(items) {
@@ -127,16 +193,20 @@
     return { x: 0, y: maxY + 1 };
   }
 
-  function buildGearItem(slot, affixIds, level) {
+  function buildGearItem(slot, affixIds, level, identity) {
     const codec = window.LEItemCodec;
     if (!codec) throw new Error("Item codec unavailable.");
-    const subType = bestSubtype(slot.baseType, level);
-    const filtered = filterAffixesForLevel(affixIds, slot.baseType, level);
-    return codec.createSavedItem({
-      baseType: slot.baseType,
+    const baseType = identity && identity.baseType != null ? identity.baseType : slot.baseType;
+    const subType =
+      identity && identity.subType != null
+        ? identity.subType
+        : bestSubtype(baseType, level, null);
+    const filtered = filterAffixesForLevel(affixIds, baseType, level);
+    const item = codec.createSavedItem({
+      baseType,
       subType,
-      quality: 2,
-      forgingPotential: Math.min(255, 20 + Math.floor(Number(level) || 1)),
+      quality: 3,
+      forgingPotential: 255,
       affixes: affixRows(filtered, level),
       implicits: [255, 255, 255],
       containerID: slot.containerID,
@@ -144,6 +214,8 @@
       y: 0,
       quantity: 1,
     });
+    maxPackedRolls(item);
+    return item;
   }
 
   function equipGearSet(data, pools, level) {
@@ -151,6 +223,14 @@
     const target = new Set(GEAR_SLOTS.map((s) => s.containerID));
     let moved = 0;
     let equipped = 0;
+    let skipped = 0;
+
+    // Snapshot identities BEFORE moving equipped gear (keeps class-correct relics/armor)
+    const identities = new Map();
+    for (const slot of GEAR_SLOTS) {
+      const id = resolveSlotIdentity(data, slot, level);
+      if (id) identities.set(slot.containerID, id);
+    }
 
     for (const it of items) {
       const cid = Number(it.containerID);
@@ -162,11 +242,22 @@
     }
 
     for (const slot of GEAR_SLOTS) {
+      const identity = identities.get(slot.containerID);
+      if (!identity) {
+        skipped += 1;
+        continue;
+      }
       const pool = pools[slot.containerID] || [25, 13, 17, 24];
-      items.push(buildGearItem(slot, pool, level));
+      items.push(buildGearItem(slot, pool, level, identity));
       equipped += 1;
     }
-    return { moved, equipped, level: Number(level) || 1 };
+    return {
+      moved,
+      equipped,
+      skipped,
+      level: Number(level) || 1,
+      classId: Number(data.characterClass),
+    };
   }
 
   function equipDefenseSet(data, level) {
@@ -245,13 +336,15 @@
   }
 
   /**
-   * Replace armor/jewelry with level-scaled rares: Mercurial boots + armor/life/res elsewhere.
+   * Replace armor/jewelry with level-scaled Season rares (Mercurial boots + defenses).
    * Does not change level, quests, waypoints, monolith, trees, or weapons.
    */
   function applySwiftDefenseGear(data) {
     if (!data || typeof data !== "object") throw new Error("No character data.");
     if (!window.LESave) throw new Error("Save helpers unavailable.");
-    if (!window.LEItemCodec) throw new Error("Item codec unavailable.");
+    if (!window.LEItemCodec || typeof window.LEItemCodec.packSeasonRare !== "function") {
+      throw new Error("Season item codec unavailable.");
+    }
 
     const level = Math.max(1, Math.min(100, Number(data.level) || 1));
     const gear = equipGearSet(data, SWIFT_DEFENSE_AFFIX_POOLS, level);
@@ -259,7 +352,9 @@
       level,
       gearMoved: gear.moved,
       gearEquipped: gear.equipped,
-      note: "Boots include Mercurial movement speed; other slots prioritize armor/life/resists.",
+      skipped: gear.skipped || 0,
+      note:
+        "Season-packed max-rolled rares using your character's existing item bases/subtypes (class-safe relics). Quests untouched.",
     };
   }
 

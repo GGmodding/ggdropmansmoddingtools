@@ -108,8 +108,8 @@
         <button type="button" class="btn" id="btn-clear-died">Clear died flag</button>
         <button type="button" class="btn" id="btn-max-gold-char">Set gold to 99999999</button>
       </div>
-      <p class="panel-note">Monolith start: level 62, full campaign quests + teleports, first Monolith timeline unlocked (not completed), clears passive spends so in-game unspent matches level, equips a basic rare defense set (helmet→relic). Weapons/off-hand are left alone. Old armor/jewelry moves to inventory.</p>
-      <p class="panel-note"><strong>Swift + armor</strong> only swaps armor/jewelry to level-scaled rares (Mercurial boots + defenses). Quests, level, weapons, and trees are not touched.</p>
+      <p class="panel-note">Monolith start: level 62, full campaign quests + teleports, first Monolith timeline unlocked (not completed), clears passive spends so in-game unspent matches level, equips <em>max-rolled</em> Season exalted defense gear (helmet→relic). Weapons/off-hand are left alone. Old armor/jewelry moves to inventory.</p>
+      <p class="panel-note"><strong>Swift + armor</strong> swaps armor/jewelry using the <em>same item bases/subtypes already on your character</em> (so relics stay class-correct), with all affix rolls maxed (255) and full forging potential. Boots get Mercurial MS when that slot can be filled. Quests/level/weapons untouched.</p>
     </section>
 
     <section id="panel-trees" class="panel" hidden>
@@ -157,8 +157,8 @@
         <button type="button" class="btn" id="btn-preset-swift-defense-items">Swift + armor gear (current level)</button>
       </div>
       <div id="add-item-panel" class="add-item-panel" hidden>
-        <h3 class="subhead">Create item (classic pack → inventory)</h3>
-        <p class="panel-note">New items use the community classic byte layout the game still accepts offline. Affix IDs above 255 only store their low byte in this pack — prefer IDs 0–255, or edit in-game after adding a base.</p>
+        <h3 class="subhead">Create item (Season rare pack → inventory)</h3>
+        <p class="panel-note">New rares use the Season 4 byte layout the game loads offline. Affix IDs above 255 only store their low byte — prefer IDs 0–255.</p>
         <div class="grid form-grid">
           <label>Kind
             <select id="f-add-kind">
@@ -201,7 +201,7 @@
           <button type="button" class="btn btn--accent" id="btn-item-create">Create in inventory</button>
         </div>
       </div>
-      <p class="panel-note">Names/icons are best-effort from public item data. <strong>Season-packed gear</strong> (most current loot) must not use Apply affixes — that rewrites classic bytes and can make the character unloadable. Create a new rare from <em>Add item</em> if you need custom affixes.</p>
+      <p class="panel-note">Names/icons are best-effort from public item data. <strong>Apply affixes</strong> rebuilds rares/exalted as Season packs. Unique/set rewrite is not supported yet.</p>
       <div class="le-inv-screen" id="equip-board" hidden>
         <div class="le-inv-screen__head">
           <h3 class="subhead">Character inventory</h3>
