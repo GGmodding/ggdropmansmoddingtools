@@ -6,7 +6,7 @@
    * Gear uses Season rare packs; container IDs: 6=Belt, 7=Gloves.
    */
 
-  const PRESET_VERSION = 10;
+  const PRESET_VERSION = 15;
   const MONOLITH_LEVEL = 62;
 
   /** Armor / jewelry slots.
@@ -63,14 +63,14 @@
 
   /** Affix pools keyed by base type for weapons / off-hands. */
   const WEAPON_AFFIX_BY_BASE = {
-    5: [2, 5, 6, 20], // 1H Axe
-    6: [2, 5, 6, 20], // Dagger
-    7: [2, 5, 6, 20], // 1H Mace
-    8: [2, 5, 12, 16], // Sceptre
-    9: [2, 5, 6, 20], // 1H Sword
-    10: [5, 12, 16, 6], // Wand
+    5: [2, 5, 12, 55], // 1H Axe: attack speed / crit / fire / ignite
+    6: [2, 5, 12, 55], // Dagger
+    7: [2, 5, 12, 55], // 1H Mace
+    8: [4, 5, 12, 55], // Sceptre
+    9: [2, 5, 12, 55], // 1H Sword: Deft, Assassin's, Pyromancer's, of Conflagration
+    10: [4, 5, 12, 55], // Wand
     18: [1, 3, 25, 80], // Shield
-    19: [5, 12, 16, 6], // Catalyst
+    19: [4, 5, 12, 55], // Catalyst
   };
 
   function weaponSlotsForClass(classId) {
@@ -146,15 +146,113 @@
     return out.slice(0, 4);
   }
 
-  function affixTierForLevel(level) {
-    // In-game T1..T7 = stored tier 0..6. Roll 255 only maxes the chosen tier.
+  /** Preferred prefixes/suffixes for exalted 2P+2S packing (IDs must be ≤255). */
+  const EXALT_PREFIX_PREFS = {
+    // by base type
+    0: [34, 53, 70, 73], // Helmet: Manafused, ManaBeforeHP, Ursine, Reptilian
+    1: [34, 95, 96, 53], // Body: Manafused, Thorny, Reflective
+    2: [12, 16, 23, 30, 26, 4], // Belt: elem/phys hybrids that can roll belts
+    3: [28, 71], // Boots: Mercurial first
+    4: [2, 4, 5, 66, 69], // Gloves: Deft, Shade's, Assassin's, Alchemist, Leech
+    18: [3, 81, 95, 89], // Shield: Guardian's, Protective, Thorny
+    19: [4, 38, 34, 5], // Catalyst
+    20: [34, 38, 5, 9, 30], // Amulet
+    21: [5, 38, 9, 30, 12], // Ring
+    22: [34, 5, 30, 70, 4], // Relic
+    5: [2, 5, 12, 30],
+    6: [2, 5, 12, 30],
+    7: [2, 5, 12, 30],
+    8: [4, 12, 5, 30],
+    9: [2, 5, 12, 30],
+    10: [4, 12, 5, 30],
+  };
+
+  const EXALT_SUFFIX_PREFS = {
+    0: [25, 80, 1, 31, 45, 13],
+    1: [25, 52, 1, 80, 45, 31],
+    2: [25, 80, 45, 31, 17, 24],
+    3: [25, 1, 80, 8, 45],
+    4: [25, 45, 80, 8, 31],
+    18: [25, 1, 3, 80, 45, 74],
+    19: [25, 8, 13, 24, 7],
+    20: [25, 80, 45, 13, 22],
+    21: [25, 80, 17, 24, 13],
+    22: [25, 80, 45, 31, 10],
+    5: [55, 20, 44, 58, 91],
+    6: [55, 20, 44, 58, 91],
+    7: [55, 20, 44, 58, 91],
+    8: [55, 20, 11, 58],
+    9: [55, 20, 44, 58, 91],
+    10: [55, 11, 56, 58],
+  };
+
+  function listAffixesOfType(baseType, type, level) {
+    const db = window.LEAffixes && window.LEAffixes.AFFIXES;
+    if (!db) return [];
     const lv = Math.max(1, Number(level) || 1);
-    if (lv >= 60) return 6;
-    if (lv >= 50) return 5;
-    if (lv >= 40) return 4;
-    if (lv >= 30) return 3;
-    if (lv >= 20) return 2;
-    if (lv >= 10) return 1;
+    const out = [];
+    for (const [id, a] of Object.entries(db)) {
+      const n = Number(id);
+      if (!Number.isFinite(n) || n < 0 || n > 255) continue;
+      if (!a || Number(a.t) !== Number(type)) continue;
+      if ((Number(a.lvl) || 0) > lv) continue;
+      if (!affixAllowedOnBase(n, baseType)) continue;
+      out.push(n);
+    }
+    out.sort((a, b) => a - b);
+    return out;
+  }
+
+  /**
+   * Build a valid exalted line: 2 prefixes + 2 suffixes (packable IDs ≤255).
+   * Preferred lists first, then any allowed affix of that type.
+   */
+  function pickBalancedAffixes(baseType, level, preferredIds) {
+    const prefs = preferredIds || [];
+    const prefixPrefs = (EXALT_PREFIX_PREFS[baseType] || []).concat(prefs);
+    const suffixPrefs = (EXALT_SUFFIX_PREFS[baseType] || []).concat(prefs);
+
+    const pickType = (type, preferred, need) => {
+      const out = [];
+      const tryAdd = (id) => {
+        const n = Number(id);
+        if (!Number.isFinite(n) || n < 0 || n > 255) return;
+        if (out.includes(n)) return;
+        const a = affixMeta(n);
+        if (!a || Number(a.t) !== type) return;
+        if ((Number(a.lvl) || 0) > Number(level || 1)) return;
+        if (!affixAllowedOnBase(n, baseType)) return;
+        out.push(n);
+      };
+      for (const id of preferred) {
+        tryAdd(id);
+        if (out.length >= need) return out;
+      }
+      for (const id of listAffixesOfType(baseType, type, level)) {
+        tryAdd(id);
+        if (out.length >= need) return out;
+      }
+      return out;
+    };
+
+    const prefixes = pickType(0, prefixPrefs, 2);
+    const suffixes = pickType(1, suffixPrefs, 2);
+    // Prefer 2P+2S order. If a base cannot roll enough of one type, fill remaining.
+    let combined = prefixes.concat(suffixes);
+    if (combined.length < 4) {
+      const filler = filterAffixesForLevel(prefs.concat(combined), baseType, level);
+      for (const id of filler) {
+        if (combined.length >= 4) break;
+        if (!combined.includes(id)) combined.push(id);
+      }
+    }
+    return combined.slice(0, 4);
+  }
+
+  function affixTierForLevel(level) {
+    // Season rare packs only reliably apply low tier bytes (0–1) + roll.
+    // Roll 255 maxes the mod; UI T labels are cosmetic for Season rares.
+    void level;
     return 0;
   }
 
@@ -300,7 +398,8 @@
     return { x: 0, y: maxY + 1 };
   }
 
-  function buildGearItem(slot, affixIds, level, identity, classId) {
+  function buildGearItem(slot, affixIds, level, identity, classId, opts) {
+    opts = opts || {};
     const codec = window.LEItemCodec;
     if (!codec) throw new Error("Item codec unavailable.");
     const baseType = slot.baseType;
@@ -312,7 +411,9 @@
       subType = bestSubtype(baseType, level, null, { classId });
     }
     if (subType == null) throw new Error("No usable subtype for " + (slot.label || baseType));
-    const filtered = filterAffixesForLevel(affixIds, baseType, level);
+    const filtered = opts.balancedAffixes
+      ? pickBalancedAffixes(baseType, level, affixIds)
+      : filterAffixesForLevel(affixIds, baseType, level);
     const item = codec.createSavedItem({
       baseType,
       subType,
@@ -373,7 +474,9 @@
       }
       try {
         const pool = mergedPools[slot.containerID] || [25, 13, 17, 24];
-        const item = buildGearItem(slot, pool, level, identity || null, data.characterClass);
+        const item = buildGearItem(slot, pool, level, identity || null, data.characterClass, {
+          balancedAffixes: !!opts.balancedAffixes,
+        });
         items.push(item);
         equipped += 1;
         const packed = unpackItem(item);
@@ -531,6 +634,216 @@
     };
   }
 
+  /**
+   * Same class-safe bases / weapons as Swift, but each piece aims for 2 prefixes + 2 suffixes
+   * (exalted line) with max rolls at the tier unlocked by current level.
+   */
+  function applyExaltedDefenseGear(data) {
+    if (!data || typeof data !== "object") throw new Error("No character data.");
+    if (!window.LESave) throw new Error("Save helpers unavailable.");
+    if (!window.LEItemCodec || typeof window.LEItemCodec.packSeasonRare !== "function") {
+      throw new Error("Season item codec unavailable.");
+    }
+
+    const masteryRestored = window.LESave.restoreMasteryChoice(data);
+    const level = Math.max(1, Math.min(100, Number(data.level) || 1));
+    const gear = equipGearSet(data, SWIFT_DEFENSE_AFFIX_POOLS, level, {
+      includeWeapons: true,
+      balancedAffixes: true,
+    });
+    const minReq = (gear.reqLevels || []).reduce(
+      (m, r) => Math.min(m, Number(r.req) || 0),
+      999
+    );
+    return {
+      level,
+      gearMoved: gear.moved,
+      gearEquipped: gear.equipped,
+      skipped: gear.skipped || 0,
+      weapons: !!gear.weapons,
+      balancedAffixes: true,
+      reqLevels: gear.reqLevels || [],
+      masteryRestored,
+      chosenMastery: Number(data.chosenMastery) || 0,
+      version: PRESET_VERSION,
+      note:
+        "v" +
+        PRESET_VERSION +
+        ": exalted defenses — 2 prefixes + 2 suffixes, max rolls, class-safe bases + 1H/off-hand. Quests untouched." +
+        (minReq < 999 ? " Lowest base req among pieces: " + minReq + "." : ""),
+    };
+  }
+
+  /**
+   * Strongest legal defensive ring for Season rare packing (ids ≤255, 2P+2S).
+   * Note: true "+% to All Resistances" (of Defiance) only rolls on shields.
+   * Rings get elemental Insulation + Life as the best res/tank pair.
+   */
+  const MAXED_DEFENSE_RING_AFFIXES = [
+    { id: 83, tier: 0, roll: 255 }, // Philosopher's — potion→ward
+    { id: 9, tier: 0, roll: 255 }, // Shimmering — elemental damage
+    { id: 80, tier: 0, roll: 255 }, // of Insulation — up to +75% elemental res
+    { id: 25, tier: 0, roll: 255 }, // of Life — flat health
+  ];
+
+  function createMaxedDefenseRing(data) {
+    if (!data || typeof data !== "object") throw new Error("No character data.");
+    if (!window.LESave) throw new Error("Save helpers unavailable.");
+    const codec = window.LEItemCodec;
+    if (!codec || typeof codec.createSavedItem !== "function") {
+      throw new Error("Season item codec unavailable.");
+    }
+
+    const level = Math.max(1, Math.min(100, Number(data.level) || 1));
+    const subType = bestSubtype(21, level, null, { classId: data.characterClass });
+    if (subType == null) throw new Error("No wearable ring subtype for this level.");
+
+    const affixes = MAXED_DEFENSE_RING_AFFIXES.filter((a) => {
+      const meta = affixMeta(a.id);
+      if (!meta) return false;
+      if ((Number(meta.lvl) || 0) > level) return false;
+      return affixAllowedOnBase(a.id, 21);
+    }).slice(0, 4);
+
+    // Fallback if Philosopher's is over-level: swap in Assassin's / keep res pair
+    while (affixes.length < 4) {
+      for (const id of [5, 38, 45, 13, 17, 24, 7, 10]) {
+        if (affixes.some((a) => a.id === id)) continue;
+        if (!affixAllowedOnBase(id, 21)) continue;
+        const meta = affixMeta(id);
+        if (!meta || (Number(meta.lvl) || 0) > level) continue;
+        affixes.push({ id, tier: 0, roll: 255 });
+        if (affixes.length >= 4) break;
+      }
+      break;
+    }
+
+    const items = window.LESave.ensureSavedItems(data);
+    const pos = nextInventoryPosition(items);
+    const item = codec.createSavedItem({
+      baseType: 21,
+      subType,
+      quality: 3,
+      forgingPotential: 255,
+      affixes: affixRows(
+        affixes.map((a) => a.id),
+        level
+      ),
+      implicits: [255, 255, 255],
+      containerID: 1,
+      x: pos.x,
+      y: pos.y,
+      quantity: 1,
+    });
+    maxPackedRolls(item);
+    items.push(item);
+
+    const req = subtypeLevel(21, subType);
+    return {
+      level,
+      subType,
+      req,
+      affixes: affixes.map((a) => a.id),
+      position: pos,
+      version: PRESET_VERSION,
+      note:
+        "Max legal defensive ring (Season). Insulation ≈ +75% elemental res + Life. " +
+        "Cannot store arbitrary 999% — game maps roll 255 into each affix’s fixed range. " +
+        "True all-res (of Defiance) is shield-only.",
+    };
+  }
+
+  /**
+   * Inject/max classic craft stacks [1, baseType, subType] for the given base types.
+   */
+  function grantCraftStacks(data, baseTypes, opts) {
+    opts = opts || {};
+    const qty = Math.max(1, Math.min(99999999, Number(opts.quantity) || 9999));
+    const note = opts.note || "";
+    if (!window.LESave) throw new Error("Save helpers unavailable.");
+    const items = window.LESave.ensureSavedItems(data);
+    const bases = (window.LEItems && window.LEItems.DB && window.LEItems.DB.bases) || {};
+    const catalog = [];
+    for (const baseType of baseTypes) {
+      const b = bases[baseType] || bases[String(baseType)];
+      if (!b || !b.subs) continue;
+      for (const sid of Object.keys(b.subs)) {
+        catalog.push({ baseType: Number(baseType), subType: Number(sid) });
+      }
+    }
+    if (!catalog.length) {
+      throw new Error("No craft subtypes found for bases " + baseTypes.join(", "));
+    }
+
+    let updated = 0;
+    let created = 0;
+
+    function findStack(baseType, subType) {
+      for (const it of items) {
+        const d = it.data;
+        if (!Array.isArray(d) || d.length < 3) continue;
+        if ((d[0] === 0 || d[0] === 1) && Number(d[1]) === baseType && Number(d[2]) === subType) {
+          return it;
+        }
+      }
+      return null;
+    }
+
+    let cursor = nextInventoryPosition(items);
+    for (const { baseType, subType } of catalog) {
+      const existing = findStack(baseType, subType);
+      if (existing) {
+        existing.quantity = qty;
+        updated += 1;
+      } else {
+        items.push({
+          itemData: null,
+          data: [1, baseType, subType],
+          inventoryPosition: { x: cursor.x, y: cursor.y },
+          quantity: qty,
+          containerID: 1,
+          formatVersion: 2,
+        });
+        created += 1;
+        cursor.x += 1;
+        if (cursor.x >= 12) {
+          cursor.x = 0;
+          cursor.y += 1;
+        }
+      }
+    }
+
+    return {
+      quantity: qty,
+      updated,
+      created,
+      total: catalog.length,
+      version: PRESET_VERSION,
+      note: note || ("Granted " + catalog.length + " craft stacks at ×" + qty + "."),
+    };
+  }
+
+  /** All forge Runes + Glyphs. */
+  function grantForgeMaterials(data, opts) {
+    opts = opts || {};
+    return grantCraftStacks(data, [102, 103], {
+      quantity: opts.quantity,
+      note: "Granted all Runes + Glyphs at ×" + (opts.quantity || 9999) + " (classic craft stacks).",
+    });
+  }
+
+  /** All Affix Shard subtypes (~500). Packs into inventory (may extend below visible bag). */
+  function grantAffixShards(data, opts) {
+    opts = opts || {};
+    return grantCraftStacks(data, [101], {
+      quantity: opts.quantity,
+      note:
+        "Granted all Affix Shards at ×" +
+        (opts.quantity || 9999) +
+        " (~500 stacks; may sit below the visible inventory grid).",
+    });
+  }
+
   window.LEPresets = {
     MONOLITH_LEVEL,
     PRESET_VERSION,
@@ -541,6 +854,10 @@
     weaponSlotsForClass,
     applyMonolithStart,
     applySwiftDefenseGear,
+    applyExaltedDefenseGear,
+    createMaxedDefenseRing,
+    grantForgeMaterials,
+    grantAffixShards,
     bestSubtype,
   };
 })();

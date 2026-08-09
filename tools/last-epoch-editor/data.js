@@ -17,11 +17,15 @@
   /**
    * Known currency / material fingerprints matched against savedItems[].data.
    * Match is prefix-based so extra trailing bytes still count.
+   * Classic craft stacks use [1, baseType, subType] (Ash06 era flag).
    */
   const CURRENCY_FINGERPRINTS = [
-    { name: "Ascendancy Rune", data: [1, 102, 5] },
+    { name: "Rune of Ascendance", data: [1, 102, 5] },
     { name: "Rune of Ascendance (alt)", data: [1, 102] },
   ];
+
+  /** Craft base types that stack (forge materials). */
+  const FORGE_MATERIAL_BASES = [102, 103]; // Runes, Glyphs
 
   /** Short data arrays under this length are treated as possible stacks when qty is high. */
   const CURRENCY_HEURISTIC = {
@@ -52,8 +56,27 @@
     return prefix.every((v, i) => Number(itemData[i]) === Number(v));
   }
 
+  function classicCraftParts(data) {
+    if (!Array.isArray(data) || data.length < 3) return null;
+    if (data[0] !== 0 && data[0] !== 1) return null;
+    const baseType = Number(data[1]);
+    const subType = Number(data[2]);
+    if (![101, 102, 103, 104, 106].includes(baseType)) return null;
+    return { baseType, subType };
+  }
+
   function identifyCurrency(item) {
     if (!item || !Array.isArray(item.data)) return null;
+    for (const fp of CURRENCY_FINGERPRINTS) {
+      if (dataMatchesPrefix(item.data, fp.data) && fp.data.length >= 3) return fp.name;
+    }
+    const parts = classicCraftParts(item.data);
+    if (parts && window.LEItems && typeof LEItems.subName === "function") {
+      const name = LEItems.subName(parts.baseType, parts.subType);
+      if (name) return name;
+      const base = LEItems.DB && LEItems.DB.bases[parts.baseType];
+      if (base && base.n) return base.n + " #" + parts.subType;
+    }
     for (const fp of CURRENCY_FINGERPRINTS) {
       if (dataMatchesPrefix(item.data, fp.data)) return fp.name;
     }
@@ -62,6 +85,7 @@
 
   function isLikelyCurrency(item) {
     if (!item || !Array.isArray(item.data)) return false;
+    if (classicCraftParts(item.data)) return true;
     if (identifyCurrency(item)) return true;
     const qty = Number(item.quantity) || 0;
     return (
@@ -115,6 +139,11 @@
     33: [2, 3],
     34: [2, 4],
     35: [4, 4],
+    101: [1, 1], // Affix Shard
+    102: [1, 1], // Rune
+    103: [1, 1], // Glyph
+    104: [1, 1], // Key
+    106: [1, 1], // Resonance
   };
 
   const INV_COLS = 12;
@@ -129,6 +158,7 @@
   window.LEData = {
     CLASSES,
     CURRENCY_FINGERPRINTS,
+    FORGE_MATERIAL_BASES,
     CURRENCY_HEURISTIC,
     LEVEL_CAP,
     ITEM_SIZES,
@@ -138,6 +168,7 @@
     STASH_ROWS,
     classById,
     masteryName,
+    classicCraftParts,
     identifyCurrency,
     isLikelyCurrency,
     formatDataPreview,

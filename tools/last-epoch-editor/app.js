@@ -1724,8 +1724,8 @@
         const n = state.editAffixes.length;
         exaltNote.textContent =
           n >= 4
-            ? `Exalted · ${n} affixes. Prefer T5–T7 for exalt power. Sealed = Glyph of Insight (tier|0x10).`
-            : `Exalted · ${n}/4 affixes — add ${Math.max(0, 4 - n)} more for a proper exalt. Sealed = Glyph of Insight.`;
+            ? `Exalted · ${n} affixes. Season packs use low tier bytes + roll 255. Sealed = 0x20 flag. Affix must be legal for this base.`
+            : `Exalted · ${n}/4 affixes — add ${Math.max(0, 4 - n)} more. Illegal-for-base affixes are named in-game but show no mods.`;
       }
     }
 
@@ -1774,6 +1774,40 @@
     item.formatVersion = Math.max(0, Number(els.fItemFmt.value) || 0);
     item.data = parseDataBytes(els.fItemData.value);
     return true;
+  }
+
+  function affixCanRollOnBase(affixId, baseType) {
+    if (!window.LEAffixes || !LEAffixes.AFFIXES) return true;
+    const a = LEAffixes.AFFIXES[affixId] || LEAffixes.AFFIXES[String(affixId)];
+    if (!a) return true;
+    const on = a.on || [];
+    if (!on.length) return true;
+    return on.includes(Number(baseType));
+  }
+
+  function affixCompatibilityIssues(affixes, baseType) {
+    const issues = [];
+    let prefixes = 0;
+    let suffixes = 0;
+    for (const aff of affixes || []) {
+      const id = Number(aff.id);
+      const meta = window.LEAffixes && LEAffixes.AFFIXES && (LEAffixes.AFFIXES[id] || LEAffixes.AFFIXES[String(id)]);
+      const name = (meta && meta.n) || "#" + id;
+      if (!affixCanRollOnBase(id, baseType)) {
+        issues.push(`${name} cannot roll on this base (won't show in-game)`);
+      }
+      if (Number(id) > 255) {
+        issues.push(`${name} id ${id} > 255 (Season stores low byte only)`);
+      }
+      if (meta) {
+        if (Number(meta.t) === 1) suffixes += 1;
+        else prefixes += 1;
+      }
+    }
+    if (prefixes > 2) issues.push(`Too many prefixes (${prefixes}/2)`);
+    if (suffixes > 2) issues.push(`Too many suffixes (${suffixes}/2)`);
+    if ((affixes || []).length > 4) issues.push(`Exalted max is 4 affixes (have ${(affixes || []).length})`);
+    return issues;
   }
 
   function applyAffixesRebuild() {
@@ -1843,11 +1877,30 @@
       return false;
     }
 
+    const baseType = Number($("f-item-base").value) || 0;
+    const issues = affixCompatibilityIssues(state.editAffixes, baseType);
+    const hard = issues.filter((m) => /cannot roll|id \d+ > 255/i.test(m));
+    if (hard.length) {
+      setStatus("Not applied — " + hard[0] + (hard.length > 1 ? ` (+${hard.length - 1} more)` : ""), "is-err");
+      return false;
+    }
+    if (issues.length) {
+      const ok = window.confirm("Affix warnings:\n• " + issues.join("\n• ") + "\n\nApply anyway?");
+      if (!ok) return false;
+    }
+
     const prevRare = LEItemCodec.unpackBestEffort(item.data);
+    let q = Math.min(3, quality);
+    const nAff = state.editAffixes.length;
+    if (nAff >= 4 && q < 3) q = 3;
+    else if (nAff >= 2 && q < 2) q = 2;
+    else if (nAff >= 1 && q < 1) q = 1;
+    if ($("f-item-quality")) $("f-item-quality").value = String(q);
+
     const packed = LEItemCodec.packSeasonRare({
-      baseType: Number($("f-item-base").value) || 0,
+      baseType,
       subType: Number($("f-item-sub").value) || 0,
-      quality: Math.min(3, quality),
+      quality: q,
       forgingPotential: Number($("f-item-fp").value) || 40,
       implicits: [0, 1, 2].map((i) => {
         const el = $("f-item-impl-" + i);
@@ -1857,12 +1910,13 @@
       }),
       noise1: prevRare && prevRare.noise1,
       noise2: prevRare && prevRare.noise2,
-      seasonFlag: prevRare && prevRare.seasonFlag,
+      seasonFlag: 0,
       affixes: state.editAffixes.map((a) => ({
         id: a.id,
-        tier: a.tier != null ? a.tier : 0,
+        tier: 0,
         roll: a.roll != null ? a.roll : 255,
         sealed: !!a.sealed,
+        sealBits: a.sealBits,
       })),
     });
     item.data = packed;
@@ -2709,6 +2763,78 @@
     if (btn) btn.addEventListener("click", runSwiftDefensePreset);
   }
 
+  function runExaltedDefensePreset() {
+    if (!state.data) {
+      setStatus("Load a character save first.", "is-err");
+      return;
+    }
+    if (!window.LEPresets || typeof LEPresets.applyExaltedDefenseGear !== "function") {
+      setStatus("Presets module not loaded.", "is-err");
+      return;
+    }
+    const lv = Number(state.data.level) || 1;
+    const ok = window.confirm(
+      `Apply Exalted defenses for level ${lv}?\n\n• Same class-safe bases + 1H/off-hand as Swift + armor\n• Each piece aims for 2 prefixes + 2 suffixes (exalted line)\n• Max-rolled affixes at your level’s tier; boots prefer Mercurial\n• Does NOT change quests, level, or trees\n\nOld armor/jewelry/weapons move to inventory. Close the game before overwriting the save.`
+    );
+    if (!ok) return;
+    try {
+      const summary = LEPresets.applyExaltedDefenseGear(state.data);
+      setDirty(true);
+      renderAll();
+      const masteryBit =
+        summary.chosenMastery >= 1
+          ? ` Mastery kept (${LEData.masteryName(state.data.characterClass, summary.chosenMastery)}${summary.masteryRestored ? ", restored" : ""}).`
+          : " Mastery unset — pick one on Character tab before saving.";
+      setStatus(
+        `Exalted defenses v${summary.version || "?"} for Lv ${summary.level}: ${summary.gearEquipped} pieces with 2P+2S (${summary.gearMoved} old moved to bags${summary.skipped ? ", " + summary.skipped + " skipped" : ""}).${masteryBit}`,
+        "is-ok"
+      );
+    } catch (err) {
+      setStatus(err.message || String(err), "is-err");
+    }
+  }
+
+  const exaltBtns = [$("btn-preset-exalted-defense"), $("btn-preset-exalted-defense-items")];
+  for (const btn of exaltBtns) {
+    if (btn) btn.addEventListener("click", runExaltedDefensePreset);
+  }
+
+  function runCreateMaxedDefenseRing() {
+    if (!state.data) {
+      setStatus("Load a character save first.", "is-err");
+      return;
+    }
+    if (!window.LEPresets || typeof LEPresets.createMaxedDefenseRing !== "function") {
+      setStatus("Presets module not loaded — hard-refresh (Ctrl+F5).", "is-err");
+      return;
+    }
+    const ok = window.confirm(
+      "Create a maxed defensive exalted ring in inventory?\n\n" +
+        "• Highest ring base your level can wear\n" +
+        "• Max rolls: Insulation (elem res) + Life + ward/utility prefixes\n" +
+        "• Cannot invent 999% all res — save format only maps into each affix’s fixed range\n" +
+        "• of Defiance (+all res) is shield-only in-game\n\n" +
+        "Save/download afterward. Close the game before overwriting."
+    );
+    if (!ok) return;
+    try {
+      const summary = LEPresets.createMaxedDefenseRing(state.data);
+      setDirty(true);
+      renderAll();
+      setStatus(
+        `Created maxed defense ring (req ${summary.req}, subtypes #${summary.subType}) at inventory ${summary.position.x},${summary.position.y}.`,
+        "is-ok"
+      );
+    } catch (err) {
+      setStatus(err.message || String(err), "is-err");
+    }
+  }
+
+  const maxRingBtns = [$("btn-create-max-ring"), $("btn-create-max-ring-char")];
+  for (const btn of maxRingBtns) {
+    if (btn) btn.addEventListener("click", runCreateMaxedDefenseRing);
+  }
+
   $("btn-unlock-masteries").addEventListener("click", () => {
     if (!state.data) return;
     LESave.unlockMasteries(state.data);
@@ -2944,6 +3070,76 @@
   $("btn-set-qty-999").addEventListener("click", () => setAllListedQuantities(999));
   $("btn-set-qty-9999").addEventListener("click", () => setAllListedQuantities(9999));
 
+  const btnMaxForge = $("btn-max-forge-mats");
+  if (btnMaxForge) {
+    btnMaxForge.addEventListener("click", () => {
+      if (!state.data) {
+        setStatus("Load a character save first.", "is-err");
+        return;
+      }
+      if (!window.LEPresets || typeof LEPresets.grantForgeMaterials !== "function") {
+        setStatus("Presets module not loaded — hard-refresh (Ctrl+F5).", "is-err");
+        return;
+      }
+      const ok = window.confirm(
+        "Grant / max all forge Runes + Glyphs at ×9999 in inventory?\n\n" +
+          "• Every Rune of Shattering / Removal / Ascendance / …\n" +
+          "• Every Glyph of Hope / Chaos / Insight / …\n" +
+          "• Existing stacks are raised to 9999; missing ones are created\n" +
+          "• Affix shards are NOT included (use the Affix shards button)\n\n" +
+          "Save/download afterward. Close the game before overwriting."
+      );
+      if (!ok) return;
+      try {
+        const summary = LEPresets.grantForgeMaterials(state.data, { quantity: 9999 });
+        setDirty(true);
+        renderCurrency();
+        renderItems();
+        setStatus(
+          `Forge materials: ${summary.created} created, ${summary.updated} updated (${summary.total} kinds ×${summary.quantity}).`,
+          "is-ok"
+        );
+      } catch (err) {
+        setStatus(err.message || String(err), "is-err");
+      }
+    });
+  }
+
+  const btnMaxShards = $("btn-max-affix-shards");
+  if (btnMaxShards) {
+    btnMaxShards.addEventListener("click", () => {
+      if (!state.data) {
+        setStatus("Load a character save first.", "is-err");
+        return;
+      }
+      if (!window.LEPresets || typeof LEPresets.grantAffixShards !== "function") {
+        setStatus("Presets module not loaded — hard-refresh (Ctrl+F5).", "is-err");
+        return;
+      }
+      const ok = window.confirm(
+        "Grant / max ALL affix shards at ×9999?\n\n" +
+          "• ~500 different shard types (one stack each)\n" +
+          "• Existing matching stacks raised to 9999\n" +
+          "• New stacks pack into inventory (may extend below the visible bag)\n" +
+          "• Save file will get noticeably larger\n\n" +
+          "Save/download afterward. Close the game before overwriting."
+      );
+      if (!ok) return;
+      try {
+        const summary = LEPresets.grantAffixShards(state.data, { quantity: 9999 });
+        setDirty(true);
+        renderCurrency();
+        renderItems();
+        setStatus(
+          `Affix shards: ${summary.created} created, ${summary.updated} updated (${summary.total} kinds ×${summary.quantity}).`,
+          "is-ok"
+        );
+      } catch (err) {
+        setStatus(err.message || String(err), "is-err");
+      }
+    });
+  }
+
   $("btn-item-refresh").addEventListener("click", () => renderItems());
   els.itemContainerFilter.addEventListener("change", () => renderItems());
   els.itemSearch.addEventListener("input", () => renderItems());
@@ -2992,7 +3188,7 @@
       setStatus("Max 6 affixes in classic pack.", "is-err");
       return;
     }
-    state.addAffixes.push({ id, tier: 6, roll: 255 });
+    state.addAffixes.push({ id, tier: 0, roll: 255 });
     renderAffixList($("add-affix-list"), state.addAffixes);
   });
   $("btn-item-create").addEventListener("click", () => {
@@ -3018,8 +3214,8 @@
         const n = state.editAffixes.length;
         exaltNote.textContent =
           n >= 4
-            ? `Exalted · ${n} affixes. Prefer T5–T7 for exalt power. Sealed = Glyph of Insight (tier|0x10).`
-            : `Exalted · ${n}/4 affixes — add ${Math.max(0, 4 - n)} more for a proper exalt. Sealed = Glyph of Insight.`;
+            ? `Exalted · ${n} affixes. Season packs use low tier bytes + roll 255. Sealed = 0x20 flag. Affix must be legal for this base.`
+            : `Exalted · ${n}/4 affixes — add ${Math.max(0, 4 - n)} more. Illegal-for-base affixes are named in-game but show no mods.`;
       }
     });
   }
@@ -3043,16 +3239,49 @@
   $("btn-item-affix-add").addEventListener("click", () => {
     const id = Number($("f-item-affix-pick").value);
     if (!Number.isFinite(id)) return;
-    if (state.editAffixes.length >= 6) {
-      setStatus("Max 6 affixes.", "is-err");
+    if (state.editAffixes.length >= 4) {
+      setStatus("Exalted max is 4 affixes. Remove one first.", "is-err");
       return;
     }
-    state.editAffixes.push({ id, tier: 6, roll: 255 });
+    const baseType = Number($("f-item-base").value);
+    if (!affixCanRollOnBase(id, baseType)) {
+      const meta = LEAffixes.AFFIXES[id] || LEAffixes.AFFIXES[String(id)];
+      setStatus(
+        `${(meta && meta.n) || "#" + id} cannot roll on this base — the game will hide it.`,
+        "is-err"
+      );
+      return;
+    }
+    if (id > 255) {
+      setStatus("Affix id > 255 cannot pack correctly on Season rares.", "is-err");
+      return;
+    }
+    const meta = window.LEAffixes && LEAffixes.AFFIXES && (LEAffixes.AFFIXES[id] || LEAffixes.AFFIXES[String(id)]);
+    const isSuffix = meta && Number(meta.t) === 1;
+    const typed = state.editAffixes.filter((a) => {
+      const m = LEAffixes.AFFIXES[a.id] || LEAffixes.AFFIXES[String(a.id)];
+      return m && Number(m.t) === (isSuffix ? 1 : 0);
+    });
+    if (typed.length >= 2) {
+      setStatus(`Already have 2 ${isSuffix ? "suffixes" : "prefixes"}.`, "is-err");
+      return;
+    }
+    // Season packs: tier byte stays low; roll 255 = max.
+    state.editAffixes.push({ id, tier: 0, roll: 255, sealed: false });
     renderAffixList($("item-affix-list"), state.editAffixes);
+    try {
+      if (!applyAffixesRebuild()) return;
+      setDirty(true);
+      showItemDetail(state.selectedItemIndex);
+      renderItems();
+      setStatus("Added affix and rebuilt Season rare bytes.", "is-ok");
+    } catch (err) {
+      setStatus(err.message || String(err), "is-err");
+    }
   });
   $("btn-item-affix-max").addEventListener("click", () => {
     for (const a of state.editAffixes) {
-      a.tier = 6; // T7
+      a.tier = 0;
       a.roll = 255;
     }
     renderAffixList($("item-affix-list"), state.editAffixes);

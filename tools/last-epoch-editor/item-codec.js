@@ -136,17 +136,17 @@
       const affixes = [];
       let i = 12;
       for (let n = 0; n < count && i + 2 < data.length; n++, i += 3) {
-        let tier = data[i];
-        let sealed = false;
-        if (tier >= 16) {
-          sealed = true;
-          tier = tier & 0x0f;
-        }
+        const rawTier = data[i];
+        // Sealed flags observed in live S4 drops: 0x10, 0x20, 0x30 (regular/primordial/corrupt).
+        const sealBits = rawTier & 0x30;
+        const sealed = sealBits !== 0;
+        const tier = rawTier & 0x0f;
         affixes.push({
           tier,
           id: data[i + 1],
           roll: data[i + 2],
           sealed,
+          sealBits: sealed ? sealBits : 0,
         });
       }
       return {
@@ -248,9 +248,15 @@
     const data = [5, r1, r2, baseType, subType, quality, 0, 255, 255, 255, uidHi, uidLo, ...rolls];
     data.push(affixes.length);
     for (const a of affixes) {
-      let tier = clampByte(a.tier != null ? a.tier : 0);
+      let tier = clampByte(a.tier != null ? a.tier : 0) & 0x0f;
       if (tier > 7) tier = 0;
-      if (a.sealed) tier = (tier & 0x0f) | 0x10;
+      if (a.sealed) {
+        const sealBits =
+          a.sealBits != null && (Number(a.sealBits) & 0x30)
+            ? Number(a.sealBits) & 0x30
+            : 0x20;
+        tier = (tier & 0x0f) | sealBits;
+      }
       data.push(tier, clampByte((Number(a.id) || 0) & 255), clampByte(a.roll != null ? a.roll : 255));
     }
     data.push(lp);
@@ -372,7 +378,9 @@
     const fp = clampByte(item.forgingPotential != null ? item.forgingPotential : 40);
     const r1 = item.noise1 != null ? clampByte(item.noise1) : Math.floor(Math.random() * 256);
     const r2 = item.noise2 != null ? clampByte(item.noise2) : Math.floor(Math.random() * 256);
-    const flag = item.seasonFlag != null ? clampByte(item.seasonFlag) : 0;
+    // Non-zero seasonFlag often marks an extended layout (altars / specials).
+    // Force 0 for editable rares so the game reads (tier,id,roll) triples.
+    const flag = 0;
     const implSrc =
       item.implicits && item.implicits.length
         ? item.implicits
@@ -398,10 +406,17 @@
       affixes.length,
     ];
     for (const a of affixes) {
-      // In-game Season rares use low tiers (often 0) + high rolls — not classic T7.
-      let tier = clampByte(a.tier != null ? a.tier : 0);
-      if (tier > 7) tier = 0;
-      if (a.sealed) tier = (tier & 0x0f) | 0x10;
+      // Live S4 rares use low tier bytes (0–1) + roll 0–255. Classic T7 (stored 6)
+      // often names the item but applies no mod lines. Keep 0–1; roll 255 = max.
+      let tier = clampByte(a.tier != null ? a.tier : 0) & 0x0f;
+      if (tier > 1) tier = 0;
+      if (a.sealed) {
+        const sealBits =
+          a.sealBits != null && (Number(a.sealBits) & 0x30)
+            ? Number(a.sealBits) & 0x30
+            : 0x20;
+        tier = (tier & 0x0f) | sealBits;
+      }
       const id = Number(a.id) || 0;
       data.push(tier, clampByte(id & 255), clampByte(a.roll != null ? a.roll : 255));
     }
