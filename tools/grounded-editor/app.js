@@ -45,6 +45,10 @@ import { decompress as oozDecompress } from "./vendor/index.js";
     dirty: false,
     screenshotUrl: null,
     catalogItems: [],
+    /** @type {FileSystemDirectoryHandle|null} */
+    slotDirHandle: null,
+    /** @type {FileSystemDirectoryHandle|null} */
+    savesRootHandle: null,
   };
 
   function setStatus(msg) {
@@ -411,7 +415,16 @@ import { decompress as oozDecompress } from "./vendor/index.js";
     }
     const slotCount = [...slotMap.keys()].filter((k) => k !== "(loose)").length;
     if (slotCount > 1) {
+      state.savesRootHandle = handle;
+      state.slotDirHandle = null;
       setStatus("Found " + slotCount + " slots — loading best match…");
+    } else if (S.looksLikeSlotFolderName(handle.name)) {
+      state.slotDirHandle = handle;
+      state.savesRootHandle = null;
+    } else {
+      // Single slot nested under a parent handle
+      state.savesRootHandle = handle;
+      state.slotDirHandle = null;
     }
     await loadFromSlotMap(slotMap);
   }
@@ -664,25 +677,103 @@ import { decompress as oozDecompress } from "./vendor/index.js";
     setStatus((isBackup ? "Backup" : "Save") + " ZIP downloaded.");
   }
 
-  async function installToFolder() {
-    if (typeof window.showDirectoryPicker !== "function") {
-      alert("Install to Folder needs Chrome/Edge. Use Save ZIP instead.");
-      return;
-    }
-    let dir;
-    try {
-      dir = await window.showDirectoryPicker({ mode: "readwrite" });
-    } catch {
-      return;
+  async function resolveInstallDirectory() {
+    // Prefer the exact slot folder we loaded.
+    if (state.slotDirHandle) {
+      try {
+        const probe = await state.slotDirHandle.getFileHandle("World.csav");
+        if (probe) return state.slotDirHandle;
+      } catch (_) {}
     }
     if (
-      !confirm(
-        "Write " +
-          state.files.size +
-          " files into the folder you picked as slot contents?\n\nClose Grounded first."
-      )
+      state.savesRootHandle &&
+      state.slotName &&
+      state.slotName !== "(loose)" &&
+      state.slotName !== "GroundedSave"
     ) {
+      try {
+        const sub = await state.savesRootHandle.getDirectoryHandle(state.slotName);
+        const probe = await sub.getFileHandle("World.csav");
+        if (probe) {
+          state.slotDirHandle = sub;
+          return sub;
+        }
+      } catch (_) {}
+    }
+    if (typeof window.showDirectoryPicker !== "function") {
+      throw new Error("Install to Folder needs Chrome/Edge. Use Save ZIP instead.");
+    }
+    const dir = await window.showDirectoryPicker({ mode: "readwrite" });
+    // Refuse writing into the Grounded root (many slot folders, no World.csav).
+    let hasWorld = false;
+    let slotFolderCount = 0;
+    for await (const [name, ent] of dir.entries()) {
+      if (ent.kind === "file" && /^World\.csav$/i.test(name)) hasWorld = true;
+      if (ent.kind === "directory" && S.looksLikeSlotFolderName(name)) {
+        slotFolderCount++;
+      }
+    }
+    if (!hasWorld && slotFolderCount > 0) {
+      if (
+        state.slotName &&
+        state.slotName !== "(loose)" &&
+        state.slotName !== "GroundedSave"
+      ) {
+        try {
+          const sub = await dir.getDirectoryHandle(state.slotName);
+          await sub.getFileHandle("World.csav");
+          state.savesRootHandle = dir;
+          state.slotDirHandle = sub;
+          return sub;
+        } catch (_) {}
+      }
+      throw new Error(
+        "You picked the Grounded saves root, not a slot folder.\n\n" +
+          "Open the specific folder you are editing:\n" +
+          state.slotName +
+          "\n\nWriting HostPlayer/World into the root does nothing in-game."
+      );
+    }
+    if (!hasWorld) {
+      throw new Error(
+        "That folder has no World.csav.\n\nPick the slot folder that contains HostPlayer.csav + World.csav:\n" +
+          state.slotName
+      );
+    }
+    state.slotDirHandle = dir;
+    return dir;
+  }
+
+  async function installToFolder(opts) {
+    const o = opts || {};
+    let dir;
+    try {
+      dir = await resolveInstallDirectory();
+    } catch (err) {
+      if (err && (err.name === "AbortError" || err.message === "The user aborted a request.")) {
+        return;
+      }
+      alert(err.message || String(err));
       return;
+    }
+    if (!o.silentConfirm) {
+      const rows = changedFileSummary();
+      const lines = [
+        "Install into slot folder:",
+        state.slotName,
+        "",
+        "Close Grounded first.",
+        "",
+        "This writes " + state.files.size + " file(s).",
+      ];
+      if (rows.length) {
+        lines.push("", "Changed:");
+        for (const r of rows.slice(0, 8)) {
+          lines.push("- " + r.name);
+        }
+      }
+      lines.push("", "Continue?");
+      if (!confirm(lines.join("\n"))) return;
     }
     for (const [name, bytes] of state.files.entries()) {
       const handle = await dir.getFileHandle(name, { create: true });
@@ -691,7 +782,48 @@ import { decompress as oozDecompress } from "./vendor/index.js";
       await writable.close();
     }
     setDirty(false);
-    setStatus("Installed " + state.files.size + " files into selected folder.");
+    setStatus(
+      "Installed " +
+        state.files.size +
+        " files into “" +
+        (dir.name || state.slotName) +
+        "”. Load that same slot in-game."
+    );
+  }
+
+  function remindInstall(applied) {
+    const parts = Object.keys(applied || {});
+    const needsWorld = parts.some(
+      (k) =>
+        k === "goldenMolars" ||
+        k === "rawScience" ||
+        k.indexOf("stack.") === 0
+    );
+    const needsHost = parts.some(
+      (k) => k === "milkMolars" || k.indexOf("upgrade.") === 0
+    );
+    const msg =
+      "Applied in the editor: " +
+      JSON.stringify(applied) +
+      "\n\nThis is NOT in the game yet.\n" +
+      "Click Install to Folder and write into:\n" +
+      state.slotName +
+      "\n\nClose Grounded first" +
+      (needsWorld ? " (science / golden molars / stacks are in World.csav)" : "") +
+      (needsHost ? " (milk molars are in HostPlayer.csav)" : "") +
+      ".\n\nInstall now?";
+    if (confirm(msg)) {
+      installToFolder({ silentConfirm: true }).catch((err) =>
+        alert(err.message || String(err))
+      );
+    } else {
+      setStatus(
+        "Applied (not installed yet): " +
+          JSON.stringify(applied) +
+          " — use Install to Folder → " +
+          state.slotName
+      );
+    }
   }
 
   function applyHeader() {
@@ -736,6 +868,11 @@ import { decompress as oozDecompress } from "./vendor/index.js";
   function applyMolars() {
     if (!state.hostRaw && !state.worldRaw) {
       throw new Error("HostPlayer / World not decompressed.");
+    }
+    if (!state.worldRaw) {
+      throw new Error(
+        "World.csav did not decompress — science, golden molars, and stack sizes cannot be edited on this load."
+      );
     }
     const result = P.writeMolars(state.hostRaw, state.worldRaw, {
       milkMolars: $("v-milk").disabled ? "" : $("v-milk").value,
@@ -1585,7 +1722,7 @@ import { decompress as oozDecompress } from "./vendor/index.js";
     $("btn-molars-apply").addEventListener("click", () => {
       try {
         const values = applyMolars();
-        setStatus("Molars/upgrades applied: " + JSON.stringify(values));
+        remindInstall(values);
       } catch (err) {
         alert(err.message || String(err));
       }
@@ -1607,24 +1744,42 @@ import { decompress as oozDecompress } from "./vendor/index.js";
             : P.GIANT_STACK_TIER || 199;
         el.value = String(tier);
       });
+      // Also bank golden molars so the ASL screen has points if needed.
+      if (!$("v-golden").disabled) {
+        $("v-golden").value = Math.max(
+          50,
+          Number($("v-golden").value || 0)
+        );
+      }
       try {
         const values = applyMolars();
-        setStatus(
-          "Stack limit ~" + target + ": " + JSON.stringify(values)
-        );
+        remindInstall(values);
       } catch (err) {
         alert(err.message || String(err));
       }
     });
     $("btn-molars-add").addEventListener("click", () => {
+      let touched = false;
       if (!$("v-milk").disabled) {
         $("v-milk").value = Math.max(0, Number($("v-milk").value || 0) + 50);
+        touched = true;
       }
       if (!$("v-golden").disabled) {
         $("v-golden").value = Math.max(0, Number($("v-golden").value || 0) + 50);
+        touched = true;
       }
       if (!$("v-science").disabled) {
-        $("v-science").value = Math.max(0, Number($("v-science").value || 0) + 1000);
+        $("v-science").value = Math.max(
+          0,
+          Number($("v-science").value || 0) + 1000
+        );
+        touched = true;
+      }
+      if (!touched) {
+        alert(
+          "Milk / golden / science fields are unavailable on this save (parse missed them, or World.csav failed to load)."
+        );
+        return;
       }
       $("btn-molars-apply").click();
     });
@@ -2024,7 +2179,6 @@ import { decompress as oozDecompress } from "./vendor/index.js";
       downloadZip(true).catch((err) => alert(err.message || String(err)));
     });
     $("btn-install").addEventListener("click", () => {
-      if (!confirmWrite("Install to folder")) return;
       installToFolder().catch((err) => alert(err.message || String(err)));
     });
 

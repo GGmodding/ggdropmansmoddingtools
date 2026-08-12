@@ -1,0 +1,4784 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="45">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>1</ID>
+      <Description>"=== GGdropmans Grounded 2 V2.0 (vitals only / 0.5.0.2) ==="</Description>
+      <Options moHideChildren="1"/>
+      <Color>0000C080</Color>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>2</ID>
+          <Description>"README"</Description>
+          <Color>00808080</Color>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{
+GGdropmans Grounded 2 V2.0 - Vitals only (SDK 0.5.0.2 / build 3054196)
+Process: Grounded2Steam-Win64-Shipping.exe
+
+GitHub:  https://github.com/GGmodding/ggdropmansmoddingtools
+Discord: https://discord.gg/PTwyDTFyR
+Donate:  https://paypal.me/kd19902
+
+1. Load into a world (not main menu)
+2. Attach Cheat Engine to the shipping exe
+3. Enable [ACTIVATE] — popup must show possessed=true (local player)
+4. Health / Stamina / Food rows should show live floats
+5. If Fill does not move the HUD, enable FREEZE vitals (holds values every 50ms)
+6. Sanity check: take damage — CE "Health Damaged" must change. If not, wrong pawn.
+7. Movement: Super Speed / Jump / Swim / Fly / Noclip / Teleport to aim (F6 horizontal + lift)
+8. Currency: Raw Science / Brainpower / Gold molars / Milk molars (Party)
+9. Stacks: raise max to 999 + fill/freeze inventory stacks
+10. Survive: God Mode + No Fall Damage
+11. Combat: One-shot kill | Always perfect block | Unlock all mutations
+12. Crafting: Free craft | Free build (risky) | SCRUB unlock | Session (risky) | PERMANENT
+13. Use [DISABLE ALL scripts] to turn everything off (including ACTIVATE)
+
+Built from Dumper-7 CppSDK offsets (0.5.0.2). GObjects scan prefers possessed SurvivalPlayerCharacter.
+}
+[ENABLE]
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>5</ID>
+          <Description>"[Link] GitHub — GGmodding/ggdropmansmoddingtools"</Description>
+          <Color>00FF8000</Color>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+shellExecute("https://github.com/GGmodding/ggdropmansmoddingtools")
+print("Opened GitHub: https://github.com/GGmodding/ggdropmansmoddingtools")
+if memrec ~= nil then
+  createTimer(400, function(t)
+    t.destroy()
+    pcall(function() memrec.Active = false end)
+  end)
+end
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>6</ID>
+          <Description>"[Link] Discord — discord.gg/PTwyDTFyR"</Description>
+          <Color>00FF8000</Color>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+shellExecute("https://discord.gg/PTwyDTFyR")
+print("Opened Discord: https://discord.gg/PTwyDTFyR")
+if memrec ~= nil then
+  createTimer(400, function(t)
+    t.destroy()
+    pcall(function() memrec.Active = false end)
+  end)
+end
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>4</ID>
+          <Description>"[Script] DISABLE ALL scripts"</Description>
+          <Color>000000FF</Color>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+
+-- Stop known V2 runtime helpers first (timers / hotkeys)
+local function killTimerBag(bag, key)
+  if type(bag) ~= "table" then return end
+  local t = bag[key]
+  if t ~= nil then
+    pcall(function() t.Enabled = false end)
+    pcall(function() t.destroy() end)
+    bag[key] = nil
+  end
+end
+
+local bags = {
+  gg2_freeze_vitals, gg2_currency_freeze, gg2_stack_freeze, gg2_god,
+  gg2_nofall, gg2_tp, gg2_speed, gg2_jump, gg2_swim, gg2_fly, gg2_noclip,
+  gg2_session_unlock, gg_giant_held, gg2_oneshot, gg2_perfect_block,
+}
+for _, bag in ipairs(bags) do
+  if type(bag) == "table" then
+    killTimerBag(bag, "timer")
+    killTimerBag(bag, "holdTimer")
+    killTimerBag(bag, "nofallTimer")
+    if bag.hk ~= nil then
+      pcall(function() bag.hk.destroy() end)
+      bag.hk = nil
+    end
+  end
+end
+gg2_freeze_vitals = nil
+gg2_currency_freeze = nil
+gg2_stack_freeze = nil
+
+local skipDesc = {
+  ["[Script] DISABLE ALL scripts"] = true,
+  ["[Link] GitHub — GGmodding/ggdropmansmoddingtools"] = true,
+  ["[Link] Discord — discord.gg/PTwyDTFyR"] = true,
+  ["README"] = true,
+}
+
+local al = getAddressList()
+local n = 0
+if al ~= nil then
+  for i = 0, al.Count - 1 do
+    local e = al[i]
+    if e ~= nil and e.Active == true then
+      local d = tostring(e.Description or "")
+      if not skipDesc[d] then
+        local ok = pcall(function() e.Active = false end)
+        if ok then n = n + 1 end
+      end
+    end
+  end
+end
+
+print(string.format("DISABLE ALL: turned off %d active entry/entries", n))
+showMessage(string.format(
+  "Disabled %d active cheat(s).\n\nIncluding ACTIVATE / freezes / movement.\nRe-enable [ACTIVATE] before using cheats again.",
+  n))
+
+if memrec ~= nil then
+  createTimer(500, function(t)
+    t.destroy()
+    pcall(function() memrec.Active = false end)
+  end)
+end
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>3</ID>
+          <Description>"[ACTIVATE] SDK vitals"</Description>
+          <Color>0000FF00</Color>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+
+local function say(msg)
+  print(tostring(msg))
+  pcall(function() showMessage(tostring(msg)) end)
+end
+
+local function step(s)
+  print("[ACTIVATE] "..tostring(s))
+end
+
+local function fail(msg)
+  say("ACTIVATE FAILED\n"..tostring(msg))
+  error(tostring(msg), 0)
+end
+
+step("start process="..tostring(process))
+
+-- 0.5.0.2 (3054196) globals from Dumper-7 Basic.hpp + live GI probe
+local BAKED = {
+  GNames = 0xAB3D8F8,
+  GObjects = 0xAC5A0A8,
+}
+-- Prefer cand with live OwningGameInstance @ World+0x230
+local GWORLD_CANDS = {
+  0xAD70880,
+  0xAD5EE18,
+  0xAD594B8,
+  0xAD578A0,
+}
+
+local function findModule()
+  local prefer = {
+    "Grounded2Steam-Win64-Shipping.exe",
+    "Grounded2-Win64-Shipping.exe",
+    "MaineSteam-Win64-Shipping.exe",
+    "Maine-Win64-Shipping.exe",
+  }
+  for i=1,#prefer do
+    if getAddressSafe(prefer[i]) ~= nil then return prefer[i] end
+  end
+  if getAddressSafe(process) ~= nil then return process end
+  return nil
+end
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  -- Live UE objects on this build are ~0x000001xxxxxxxx, NOT 0x00007FFxxxxxxxx (modules/CDOs)
+  if ptr &gt;= 0x7F0000000000 then return false end
+  local base = getAddressSafe(process)
+  local size = getModuleSize(process)
+  if base ~= nil and size ~= nil and ptr &gt;= base and ptr &lt; (base + size) then
+    return false
+  end
+  return true
+end
+
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+
+local function clearSym(name)
+  pcall(function()
+    if getAddressSafe(name) ~= nil then
+      unregisterSymbol(name)
+    end
+  end)
+  pcall(function() autoAssemble("unregistersymbol("..name..")") end)
+end
+
+local function regAbs(name, addr)
+  if addr == nil then return false end
+  clearSym(name)
+  pcall(function() registerSymbol(name, addr, true) end)
+  return getAddressSafe(name) ~= nil
+end
+
+local function regModule(name, mod, rva)
+  clearSym(name)
+  local def = string.format("%s+%X", mod, rva)
+  assert(autoAssemble("define("..name..","..def..")\nregistersymbol("..name..")"), "define "..name.." failed")
+  local val = readQword(getAddress(name))
+  print(string.format("%s = %s (mem=%s)", name, def, val and string.format("%X", val) or "nil"))
+  return val
+end
+
+local mod = findModule()
+step("module="..tostring(mod))
+if mod == nil then fail("Attach to Grounded2Steam-Win64-Shipping.exe first") end
+
+regModule("GNames", mod, BAKED.GNames)
+regModule("GObjects", mod, BAKED.GObjects)
+
+local base = getAddressSafe(mod)
+local worldCands = {}
+for i=1,#GWORLD_CANDS do
+  local rva = GWORLD_CANDS[i]
+  local w = readQword(base + rva)
+  local gi = looksUObj(w) and readQword(w + 0x230) or nil
+  local okGi = looksUObj(gi)
+  print(string.format("GWorld cand +%X world=%s GI=%s", rva,
+    w and string.format("%X", w) or "nil",
+    okGi and string.format("%X", gi) or "no"))
+  if looksUObj(w) then
+    table.insert(worldCands, {rva=rva, world=w, gi=okGi and gi or nil})
+  end
+end
+-- Prefer worlds with live GI first
+table.sort(worldCands, function(a,b)
+  local ag = a.gi and 1 or 0
+  local bg = b.gi and 1 or 0
+  if ag ~= bg then return ag &gt; bg end
+  return a.rva &lt; b.rva
+end)
+
+if #worldCands == 0 then fail("No GWorld candidate held a UObject*. Re-dump globals for this build.") end
+
+local function isSaneFloat(v, lo, hi)
+  if v == nil or v ~= v then return false end -- nil or NaN
+  if v == math.huge or v == -math.huge then return false end
+  return v &gt;= lo and v &lt;= hi
+end
+
+local function pawnInfo(p)
+  if not looksUObj(p) then return nil end
+  local hc = readQword(p + 0x13A0)
+  if not looksUObj(hc) then return nil end
+  local mx = readFloat(hc + 0x318)
+  local dmg = readFloat(hc + 0x31C)
+  -- NaN must be rejected (Lua: NaN &lt; x is always false)
+  if not isSaneFloat(mx, 10, 50000) then return nil end
+  if not isSaneFloat(dmg, -1, 50000) then return nil end
+  local sc = readQword(p + 0x13B8)
+  local mst = looksUObj(sc) and readFloat(sc + 0xFC) or nil
+  local cst = looksUObj(sc) and readFloat(sc + 0xF8) or nil
+  local hasStam = isSaneFloat(mst, 5, 50000) and isSaneFloat(cst, 0, 50000)
+  local sv = readQword(p + 0x14C8)
+  local food = looksUObj(sv) and readFloat(sv + 0x288) or nil
+  local water = looksUObj(sv) and readFloat(sv + 0x290) or nil
+  local hasFood = isSaneFloat(food, 0.5, 100000) and isSaneFloat(water, 0, 100000)
+  -- Require stamina and/or food so random HC-shaped objects don't match
+  if not hasStam and not hasFood then return nil end
+  local cmc = readQword(p + 0x1400)
+  -- Local player heuristics (SDK): APawn::Controller @0x2E0, SurvivalPlayerCharacter::FPCOverlay @0x2020
+  local ctrl = readQword(p + 0x2E0)
+  local hasCtrl = looksUObj(ctrl)
+  local possessed = false
+  if hasCtrl then
+    for _, o in ipairs({0x370, 0x308, 0x318, 0x2F8, 0x300, 0x2A0, 0x360}) do
+      if readQword(ctrl + o) == p then possessed = true; break end
+    end
+  end
+  local fpc = readQword(p + 0x2020)
+  local isPlayerChar = looksUObj(fpc)
+  local ps = readQword(p + 0x2D0)
+  local hasPS = looksUObj(ps)
+  return {
+    pawn=p, hc=hc, max=mx, dmg=dmg,
+    food=food, water=water, hasFood=hasFood, hasStam=hasStam,
+    hasCmc=looksUObj(cmc),
+    hasCtrl=hasCtrl, possessed=possessed, isPlayerChar=isPlayerChar, hasPS=hasPS,
+  }
+end
+
+local function scorePawn(pi)
+  if pi == nil then return -1 end
+  local score = 0
+  if pi.hasStam then score = score + 50 end
+  if pi.hasFood then score = score + 50 end
+  if pi.hasCmc then score = score + 20 end
+  if isSaneFloat(pi.max, 50, 500) then score = score + 10 end
+  if isSaneFloat(pi.dmg, 0, 500) then score = score + 5 end
+  if pi.hasCtrl then score = score + 80 end
+  if pi.possessed then score = score + 500 end
+  if pi.isPlayerChar then score = score + 200 end
+  if pi.hasPS then score = score + 40 end
+  return score
+end
+
+local function findPawnOnPC(pc)
+  if not looksUObj(pc) then return nil, nil end
+  for _, o in ipairs({0x370, 0x308, 0x318, 0x2F8, 0x300, 0x310, 0x360, 0x368}) do
+    local info = pawnInfo(readQword(pc + o))
+    if info ~= nil then return info, string.format("PC+0x%X", o) end
+  end
+  return nil, nil
+end
+
+local function tryAsPawnOrOwner(obj, tag)
+  local info = pawnInfo(obj)
+  if info ~= nil then return info, tag.." asPawn" end
+  local inf, sub = findPawnOnPC(obj)
+  if inf ~= nil then return inf, tag.." "..tostring(sub) end
+  local psPawn = readQword(obj + 0x328)
+  info = pawnInfo(psPawn)
+  if info ~= nil then return info, tag.."+0x328" end
+  return nil, nil
+end
+
+-- Scan GI for real LocalPlayers TArray (num=1..4, element has usable PC/pawn)
+local function scanGIForLocalPlayer(giObj)
+  print("Scanning GI for LocalPlayers-like TArrays...")
+  local bestLp, bestPc, bestInfo, bestTag = nil, nil, nil, nil
+  local off = 0x28
+  while off &lt;= 0x120 do
+    local data = readQword(giObj + off)
+    local num = readInteger(giObj + off + 8)
+    if isHeapPtr(data) and num ~= nil and num &gt;= 1 and num &lt;= 4 then
+      local elem = readQword(data)
+      if looksUObj(elem) then
+        local vp = readQword(elem + 0x78)
+        print(string.format("  GI+0x%X TArray data=%X num=%d elem=%X vp78=%s",
+          off, data, num, elem, looksUObj(vp) and string.format("%X", vp) or "no"))
+        local eoff = 0x28
+        while eoff &lt;= 0x120 do
+          local v = readQword(elem + eoff)
+          if looksUObj(v) then
+            local info, sub = tryAsPawnOrOwner(v, string.format("GI+0x%X/LP+0x%X", off, eoff))
+            if info ~= nil then
+              print(string.format("    hit LP+0x%X -&gt; %s pawn=%X max=%.1f food=%s stam=%s",
+                eoff, tostring(sub), info.pawn, info.max, tostring(info.hasFood), tostring(info.hasStam)))
+              if bestInfo == nil or (info.hasFood and not bestInfo.hasFood) or (info.hasStam and not bestInfo.hasStam) then
+                bestLp, bestPc, bestInfo, bestTag = elem, v, info, sub
+              end
+            end
+          end
+          eoff = eoff + 8
+        end
+        local info2, sub2 = tryAsPawnOrOwner(elem, string.format("GI+0x%X/elem", off))
+        if info2 ~= nil and (bestInfo == nil or (info2.hasFood and not bestInfo.hasFood)) then
+          bestLp, bestPc, bestInfo, bestTag = elem, elem, info2, sub2
+        end
+      end
+    end
+    off = off + 8
+  end
+  return bestInfo, bestTag, bestPc, bestLp
+end
+
+local function scanLevel(level, tagLvl)
+  if not looksUObj(level) then
+    print(string.format("  %s = nil/bad", tagLvl))
+    return nil, nil
+  end
+  print(string.format("  %s = %X", tagLvl, level))
+  local best, bestTag = nil, nil
+  for _, aoff in ipairs({0xA0, 0x98, 0xA8, 0xB0}) do
+    local data = readQword(level + aoff)
+    local num = readInteger(level + aoff + 8)
+    print(string.format("    Arr+0x%X data=%s num=%s", aoff,
+      data and string.format("%X", data) or "nil", tostring(num)))
+    if isHeapPtr(data) and num ~= nil and num &gt;= 1 and num &lt;= 20000 then
+      local i = 0
+      local lim = math.min(num, 8000)
+      local survCount = 0
+      while i &lt; lim do
+        local actor = readQword(data + i * 8)
+        local pi = pawnInfo(actor)
+        if pi ~= nil then
+          survCount = survCount + 1
+          if pi.hasFood and pi.hasStam then
+            print(string.format("    LOCAL surv Actors[%d]=%X max=%.1f food=%.1f", i, actor, pi.max, pi.food))
+            return pi, tagLvl..string.format(" Actors[%d]", i)
+          end
+          if best == nil or (pi.hasFood and not best.hasFood) or (pi.hasStam and not best.hasStam) then
+            best, bestTag = pi, tagLvl..string.format(" Actors[%d]", i)
+          end
+        end
+        i = i + 1
+      end
+      print(string.format("    surv hits in this array: %d", survCount))
+      break
+    end
+  end
+  return best, bestTag
+end
+
+local function resolveOnWorld(world, gi, rva)
+  print(string.format("--- try GWorld +%X world=%X gi=%s ---", rva, world, gi and string.format("%X", gi) or "nil"))
+  -- Dump UWorld head (PersistentLevel should be near +0x30)
+  print("  World field dump:")
+  local plOff = nil
+  local off = 0x28
+  while off &lt;= 0x60 do
+    local v = readQword(world + off)
+    local ok = looksUObj(v)
+    print(string.format("    World+0x%X = %s%s", off, v and string.format("%X", v) or "nil", ok and " UObj" or ""))
+    if ok and plOff == nil then plOff = off end
+    off = off + 8
+  end
+
+  local pawn, pawnTag, pc = nil, nil, nil
+  if looksUObj(gi) then
+    local info, tag, pcFound = scanGIForLocalPlayer(gi)
+    if info ~= nil then
+      pawn, pawnTag, pc = info.pawn, tag, pcFound
+    end
+  end
+  if pawn == nil then
+    print("Scanning World levels for SurvivalCharacter...")
+    local pi, tg = scanLevel(readQword(world + 0x30), "PersistentLevel@30")
+    if pi ~= nil then pawn, pawnTag = pi.pawn, tg end
+    if pawn == nil and plOff ~= nil and plOff ~= 0x30 then
+      pi, tg = scanLevel(readQword(world + plOff), string.format("PersistentLevel@%X", plOff))
+      if pi ~= nil then pawn, pawnTag = pi.pawn, tg end
+    end
+    -- try every UObj in world head as a Level
+    if pawn == nil then
+      off = 0x28
+      while off &lt;= 0x60 and pawn == nil do
+        local v = readQword(world + off)
+        if looksUObj(v) then
+          pi, tg = scanLevel(v, string.format("World+0x%X", off))
+          if pi ~= nil then pawn, pawnTag = pi.pawn, tg end
+        end
+        off = off + 8
+      end
+    end
+  end
+  if pawn == nil then
+    local levels = readQword(world + 0x1D0)
+    local n = readInteger(world + 0x1D8)
+    print(string.format("World.Levels data=%s num=%s", levels and string.format("%X", levels) or "nil", tostring(n)))
+    if isHeapPtr(levels) and n ~= nil and n &gt;= 1 and n &lt;= 512 then
+      local i = 0
+      while i &lt; n do
+        local pi, tg = scanLevel(readQword(levels + i * 8), string.format("Levels[%d]", i))
+        if pi ~= nil and pi.hasFood and pi.hasStam then
+          pawn, pawnTag = pi.pawn, tg
+          break
+        elseif pi ~= nil and pawn == nil then
+          pawn, pawnTag = pi.pawn, tg
+        end
+        i = i + 1
+      end
+    end
+  end
+  if pawn == nil then
+    local sdata = readQword(world + 0x90)
+    local snum = readInteger(world + 0x98)
+    print(string.format("World.StreamingLevels data=%s num=%s", sdata and string.format("%X", sdata) or "nil", tostring(snum)))
+    if isHeapPtr(sdata) and snum ~= nil and snum &gt;= 1 and snum &lt;= 1024 then
+      local i = 0
+      while i &lt; math.min(snum, 256) and pawn == nil do
+        local streaming = readQword(sdata + i * 8)
+        if looksUObj(streaming) then
+          for _, lo in ipairs({0x148, 0x138, 0x150, 0x160, 0x128, 0x168}) do
+            local lvl = readQword(streaming + lo)
+            if looksUObj(lvl) then
+              local pi, tg = scanLevel(lvl, string.format("Stream[%d]+0x%X", i, lo))
+              if pi ~= nil and (pi.hasFood or pi.hasStam) then
+                pawn, pawnTag = pi.pawn, tg
+                break
+              elseif pi ~= nil and pawn == nil then
+                pawn, pawnTag = pi.pawn, tg
+              end
+            end
+          end
+        end
+        i = i + 1
+      end
+    end
+  end
+  if pawn == nil and looksUObj(gi) then
+    print("Deep-scanning GI pointers for SurvivalCharacter...")
+    off = 0x28
+    while off &lt;= 0x300 do
+      local v = readQword(gi + off)
+      if looksUObj(v) then
+        local pi = pawnInfo(v)
+        if pi ~= nil and (pi.hasFood or pi.hasStam) then
+          pawn, pawnTag = pi.pawn, string.format("GI+0x%X", off)
+          break
+        end
+        local so = 0x28
+        while so &lt;= 0x400 do
+          local s = readQword(v + so)
+          pi = pawnInfo(s)
+          if pi ~= nil and (pi.hasFood or pi.hasStam) then
+            pawn, pawnTag = pi.pawn, string.format("GI+0x%X/+0x%X", off, so)
+            break
+          end
+          local inf = findPawnOnPC(s)
+          if inf ~= nil and (inf.hasFood or inf.hasStam) then
+            pawn, pawnTag = inf.pawn, string.format("GI+0x%X/+0x%X asPC", off, so)
+            break
+          end
+          so = so + 8
+        end
+        if pawn ~= nil then break end
+      end
+      off = off + 8
+    end
+  end
+  return pawn, pawnTag, pc
+end
+
+local function findViaGObjects()
+  -- Flat TUObjectArray (this build): Objects* @0, Max @8, Num @0xC, FUObjectItem size 0x18
+  local go = getAddressSafe("GObjects")
+  if go == nil then return nil, nil end
+  local objects = readQword(go)
+  local maxE = readInteger(go + 0x8)
+  local numE = readInteger(go + 0xC)
+  print(string.format("GObjects scan Objects=%s Max=%s Num=%s", objects and string.format("%X", objects) or "nil", tostring(maxE), tostring(numE)))
+  if not isHeapPtr(objects) or numE == nil or numE &lt; 100 or numE &gt; 5000000 then
+    print("GObjects array unusable")
+    return nil, nil
+  end
+  local best, bestTag, bestScore = nil, nil, -1
+  local lim = math.min(numE, 800000)
+  local i = 0
+  local checked = 0
+  local hits = 0
+  while i &lt; lim do
+    local obj = readQword(objects + i * 0x18)
+    -- must be live heap actor (reject module CDOs like 7FF446...)
+    if isHeapPtr(obj) and looksUObj(obj) then
+      checked = checked + 1
+      local pi = pawnInfo(obj)
+      if pi ~= nil then
+        hits = hits + 1
+        local score = scorePawn(pi)
+        print(string.format("  GObj[%d]=%X max=%.1f food=%s stam=%s cmc=%s ctrl=%s possessed=%s playerChar=%s score=%d",
+          i, obj, pi.max, tostring(pi.food), tostring(pi.hasStam), tostring(pi.hasCmc),
+          tostring(pi.hasCtrl), tostring(pi.possessed), tostring(pi.isPlayerChar), score))
+        if score &gt; bestScore then
+          best, bestTag, bestScore = pi, string.format("GObjects[%d]", i), score
+        end
+        -- early exit only on strong local-player signal
+        if pi.possessed and pi.isPlayerChar and pi.hasFood and pi.hasStam then
+          return pi.pawn, string.format("GObjects[%d] (local)", i)
+        end
+      end
+    end
+    if i &gt; 0 and (i % 100000) == 0 then
+      print(string.format("  ... scanned %d / %d (heapHits=%d candidates=%d)", i, lim, checked, hits))
+    end
+    i = i + 1
+  end
+  print(string.format("GObjects done heapChecked=%d candidates=%d best=%s score=%d", checked, hits, best and string.format("%X", best.pawn) or "nil", bestScore))
+  if best ~= nil and bestScore &gt;= 50 then return best.pawn, bestTag end
+  return nil, nil
+end
+
+local pawn, pawnTag, pc, world, worldRva = nil, nil, nil, nil, nil
+
+-- GObjects first: GWorld cands are unreliable on this build; CDOs must be excluded via isHeapPtr
+print("Scanning GObjects for live heap SurvivalCharacter...")
+pawn, pawnTag = findViaGObjects()
+
+if pawn == nil then
+  for i=1,#worldCands do
+    local c = worldCands[i]
+    local gi = c.gi
+    if gi == nil then
+      local raw = readQword(c.world + 0x230)
+      if looksUObj(raw) then gi = raw end
+    end
+    local p, t, pcc = resolveOnWorld(c.world, gi, c.rva)
+    if p ~= nil and isHeapPtr(p) then
+      pawn, pawnTag, pc, world, worldRva = p, t, pcc, c.world, c.rva
+      break
+    end
+  end
+end
+
+if pawn == nil or not isHeapPtr(pawn) then
+  fail("No live heap SurvivalCharacter found.\n(GObjects CDOs in 7FFxxxxx are ignored — those don't affect gameplay.)")
+end
+if worldRva ~= nil then
+  regModule("GWorld", mod, worldRva)
+end
+print(string.format("Player=%X via %s%s", pawn, tostring(pawnTag), worldRva and string.format(" (GWorld +%X)", worldRva) or ""))
+if looksUObj(pc) then print(string.format("PC=%X", pc)) end
+if pawn &gt;= 0x7F0000000000 then
+  fail("Refusing module/CDO Player address "..string.format("%X", pawn))
+end
+
+clearSym("Player")
+registerSymbol("Player", pawn, true)
+print(string.format("Player=%X via %s", pawn, pawnTag))
+
+local hc = readQword(pawn + 0x13A0)
+local sc = readQword(pawn + 0x13B8)
+local sv = readQword(pawn + 0x14C8)
+
+local mx, dmg, cst, mst, food, water, breath = nil,nil,nil,nil,nil,nil,nil
+
+if looksUObj(hc) then
+  mx = readFloat(hc + 0x318)
+  dmg = readFloat(hc + 0x31C)
+  regAbs("GG2_HealthComp", hc)
+  regAbs("GG2_BaseHealth", hc + 0x318)
+  regAbs("GG2_HealthDamaged", hc + 0x31C)
+end
+if looksUObj(sc) then
+  cst = readFloat(sc + 0xF8)
+  mst = readFloat(sc + 0xFC)
+  regAbs("GG2_StaminaComp", sc)
+  regAbs("GG2_CurStamina", sc + 0xF8)
+  regAbs("GG2_BaseStamina", sc + 0xFC)
+end
+if looksUObj(sv) then
+  food = readFloat(sv + 0x288)
+  water = readFloat(sv + 0x290)
+  breath = readFloat(sv + 0x298)
+  regAbs("GG2_SurvivalComp", sv)
+  regAbs("GG2_Hunger", sv + 0x288)
+  regAbs("GG2_Thirst", sv + 0x290)
+  regAbs("GG2_Oxygen", sv + 0x298)
+  regAbs("GG2_MaxHunger", sv + 0x148)
+  regAbs("GG2_MaxThirst", sv + 0x190)
+  regAbs("GG2_MaxOxygen", sv + 0x1D8)
+end
+
+local cmc = readQword(pawn + 0x1400)
+local walk, jumpz, curGround, sprint = nil, nil, nil, nil
+if looksUObj(cmc) then
+  walk = readFloat(cmc + 0x288)
+  jumpz = readFloat(cmc + 0x1B8)
+  curGround = readFloat(cmc + 0x1018)
+  sprint = readFloat(cmc + 0x1114)
+  regAbs("GG2_CMC", cmc)
+  regAbs("GG2_MaxWalkSpeed", cmc + 0x288)
+  regAbs("GG2_MaxWalkCrouch", cmc + 0x28C)
+  regAbs("GG2_MaxFlySpeed", cmc + 0x294)
+  regAbs("GG2_JumpZ", cmc + 0x1B8)
+  regAbs("GG2_CurMaxGround", cmc + 0x1018)
+  regAbs("GG2_MaxSprint", cmc + 0x1114)
+  regAbs("GG2_MaxFlySprint", cmc + 0x1118)
+  regAbs("GG2_CustomGroundMult", cmc + 0x11D0)
+  regAbs("GG2_MaxSwimSpeed", cmc + 0x290)
+  regAbs("GG2_MaxSwimSprint", cmc + 0x118C)
+  regAbs("GG2_CustomSwimMult", cmc + 0x11D8)
+  regAbs("GG2_CustomFlyMult", cmc + 0x11D4)
+  regAbs("GG2_GravityScale", cmc + 0x1B0)
+  regAbs("GG2_MovementMode", cmc + 0x241)
+  regAbs("GG2_CurGravityOverride", cmc + 0x1030)
+  print(string.format("CMC=%X walk=%.1f jumpZ=%.1f curGround=%.1f sprint=%.1f swim=%.1f mode=%s",
+    cmc, walk or -1, jumpz or -1, curGround or -1, sprint or -1,
+    readFloat(cmc + 0x290) or -1,
+    tostring((function()
+      local b = readBytes(cmc + 0x241, 1, false)
+      if type(b) == "string" and #b &gt;= 1 then return string.byte(b, 1) end
+      return "?"
+    end)())))
+else
+  print("CMC missing at Player+0x1400")
+end
+
+-- Capsule collision (ACharacter::CapsuleComponent @0x340 -&gt; BodyInstance.CollisionEnabled @+0x39F)
+local cap = readQword(pawn + 0x340)
+if looksUObj(cap) then
+  regAbs("GG2_Capsule", cap)
+  regAbs("GG2_CapsuleCollision", cap + 0x39F)
+end
+
+-- ACharacter jump counters (Player itself, not CMC)
+regAbs("GG2_JumpMaxCount", pawn + 0x478)
+regAbs("GG2_JumpCurCount", pawn + 0x47C)
+print(string.format("JumpMaxCount=%s JumpCurrentCount=%s",
+  tostring(readInteger(pawn + 0x478)), tostring(readInteger(pawn + 0x47C))))
+
+-- SurvivalCharacter fall damage (Player+0x1601 / 0x1604 / 0x160C)
+regAbs("GG2_TakeFallDamage", pawn + 0x1601)
+regAbs("GG2_MinFallVel", pawn + 0x1604)
+regAbs("GG2_FallDamageRatio", pawn + 0x160C)
+print(string.format("bTakeFallDamage=%s MinFallVel=%s FallRatio=%s",
+  tostring((function()
+    local b = readBytes(pawn + 0x1601, 1, false)
+    if type(b) == "string" and #b &gt;= 1 then return string.byte(b, 1) end
+    return b
+  end)()),
+  tostring(readFloat(pawn + 0x1604)),
+  tostring(readFloat(pawn + 0x160C))))
+
+local function readByte(a)
+  -- CE variants: table / string / fallback via int
+  local ok, s = pcall(readBytes, a, 1, true)
+  if ok and type(s) == "table" and s[1] ~= nil then return s[1] end
+  ok, s = pcall(readBytes, a, 1, false)
+  if ok and type(s) == "string" and #s &gt;= 1 then return string.byte(s, 1) end
+  local i = readInteger(a)
+  if i ~= nil then return i &amp; 0xFF end
+  return nil
+end
+local function looksAnyUObj(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x10000 then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+
+local function looksLikeSettings(s)
+  if not looksAnyUObj(s) then return false end
+  local okBools = 0
+  for off = 0x3A, 0x51 do
+    local b = readByte(s + off)
+    if b == nil then return false end
+    if b &lt;= 1 then okBools = okBools + 1 end
+  end
+  if okBools &lt; 12 then return false end
+  if not isSaneFloat(readFloat(s + 0x54), 0.01, 100) then return false end
+  if not isSaneFloat(readFloat(s + 0x80), 0.0, 100) then return false end
+  return true
+end
+
+-- InGameGameState: Party @0x308, ModeManager @0x318; both Outer back to GS
+local function looksLikeGameState(gs)
+  if not looksUObj(gs) then return false end
+  local party = readQword(gs + 0x308)
+  local mm = readQword(gs + 0x318)
+  if not looksUObj(party) or not looksUObj(mm) then return false end
+  if readQword(party + 0x20) ~= gs then return false end
+  if readQword(mm + 0x20) ~= gs then return false end
+  return true
+end
+
+local function modeFromGameState(gs)
+  if not looksLikeGameState(gs) then return nil, nil end
+  local mm = readQword(gs + 0x318)
+  local s = readQword(mm + 0x138)
+  if not looksLikeSettings(s) then s = nil end
+  return s, mm
+end
+
+local function probePtr(label, p)
+  if p == nil then print("  "..label.."=nil"); return end
+  print(string.format("  %s=%X heap=%s uobj=%s", label, p, tostring(isHeapPtr(p)), tostring(looksUObj(p) or looksAnyUObj(p))))
+end
+
+local function findGameModeSettings()
+  -- A) PlayerController -&gt; CachedPartyComponent @0xEA8 -&gt; Outer = GameState
+  local pc = readQword(pawn + 0x2E0)
+  probePtr("PC", pc)
+  if looksUObj(pc) then
+    local party = readQword(pc + 0xEA8)
+    probePtr("PC.CachedParty", party)
+    if looksUObj(party) then
+      local gs = readQword(party + 0x20)
+      probePtr("Party.Outer(GS?)", gs)
+      local s, mm = modeFromGameState(gs)
+      if mm ~= nil then return s, mm, "PC.CachedParty.Outer" end
+      if looksUObj(gs) then
+        print(string.format("  GS+0x308=%s GS+0x318=%s",
+          tostring(readQword(gs + 0x308) and string.format("%X", readQword(gs + 0x308))),
+          tostring(readQword(gs + 0x318) and string.format("%X", readQword(gs + 0x318)))))
+      end
+    end
+  end
+
+  -- B) Outer walk + Level.OwningWorld + World.GameState
+  local cur = pawn
+  for i = 1, 16 do
+    if not looksUObj(cur) then break end
+    print(string.format("  Outer[%d]=%X", i, cur))
+    local s, mm = modeFromGameState(cur)
+    if mm ~= nil then return s, mm, "asGameState" end
+    local ownW = readQword(cur + 0xC0)
+    if looksUObj(ownW) then
+      probePtr("  Level.OwningWorld", ownW)
+      s, mm = modeFromGameState(readQword(ownW + 0x1B0))
+      if mm ~= nil then return s, mm, "Level.OwningWorld.GameState" end
+      probePtr("  World.GameState", readQword(ownW + 0x1B0))
+    end
+    local gs = readQword(cur + 0x1B0)
+    if looksUObj(gs) then
+      probePtr("  +0x1B0", gs)
+      s, mm = modeFromGameState(gs)
+      if mm ~= nil then return s, mm, "Outer+0x1B0" end
+    end
+    cur = readQword(cur + 0x20)
+  end
+
+  -- C) GWorld candidates
+  for i = 1, #worldCands do
+    local gs = readQword(worldCands[i].world + 0x1B0)
+    probePtr(string.format("GWorldCand+%X.GS", worldCands[i].rva), gs)
+    local s, mm = modeFromGameState(gs)
+    if mm ~= nil then return s, mm, string.format("GWorldCand+%X", worldCands[i].rva) end
+  end
+
+  -- D) GObjects: PartyComponent whose Outer looks like GameState
+  print("Scanning GObjects for Party/GameState...")
+  local go = getAddressSafe("GObjects")
+  if go ~= nil then
+    local objects = readQword(go)
+    local numE = readInteger(go + 0xC)
+    if isHeapPtr(objects) and numE ~= nil and numE &gt; 100 then
+      local lim = math.min(numE, 800000)
+      local i = 0
+      local hits = 0
+      while i &lt; lim do
+        local obj = readQword(objects + i * 0x18)
+        if looksUObj(obj) then
+          local outer = readQword(obj + 0x20)
+          -- Party: GameState+0x308 == this
+          if looksUObj(outer) and readQword(outer + 0x308) == obj then
+            hits = hits + 1
+            local s, mm = modeFromGameState(outer)
+            print(string.format("  Party-like GObj[%d]=%X Outer=%X mm=%s",
+              i, obj, outer, mm and string.format("%X", mm) or "no"))
+            if mm ~= nil then return s, mm, string.format("GObjects[%d] Party-&gt;GS", i) end
+          end
+        end
+        i = i + 1
+      end
+      print(string.format("  Party-like hits=%d", hits))
+    end
+  end
+  return nil, nil, nil
+end
+
+local settings, modeMgr, settingsTag = findGameModeSettings()
+if looksUObj(modeMgr) then
+  -- Dump + auto-calibrate ModeManager field offsets (SDK can drift)
+  print(string.format("ModeManager=%X via %s — probing layout...", modeMgr, tostring(settingsTag)))
+  local hex = {}
+  for off = 0x100, 0x14F do
+    local b = readByte(modeMgr + off)
+    table.insert(hex, string.format("%02X", b or 0xFF))
+    if ((off - 0x100 + 1) % 16) == 0 then
+      print(string.format("  MM+%03X: %s", off - 15, table.concat(hex, " ")))
+      hex = {}
+    end
+  end
+
+  -- SDK (verified by live dump): CurrentGameMode@0x110, CustomSettings@0x114
+  -- bits@0x116, GameModeSettings*@0x138. NewGamePlusSettings*@0x108 is NOT settings.
+  local modeOff, bitsOff, settingsOff = 0x110, 0x116, 0x138
+  local s138 = readQword(modeMgr + 0x138)
+  probePtr("  MM+0x138 Settings*", s138)
+  if looksAnyUObj(s138) then
+    settings = s138
+    settingsOff = 0x138
+    print(string.format("  using heap/module Settings* @ +0x138 -> %X", s138))
+  else
+    -- fallback scan; skip +0x108 (NewGamePlusSettings)
+    for off = 0xC0, 0x150, 8 do
+      if off ~= 0x108 then
+        local p = readQword(modeMgr + off)
+        if looksLikeSettings(p) then
+          settingsOff = off
+          settings = p
+          print(string.format("  calibrated Settings* @ ModeManager+0x%X -> %X", off, p))
+          break
+        end
+      end
+    end
+  end
+
+  local modeByte = readByte(modeMgr + 0x110)
+  print(string.format("  CurrentGameMode@0x110=%s CustomBits@0x116=%s",
+    tostring(modeByte), tostring(readByte(modeMgr + 0x116))))
+
+  regAbs("GG2_ModeManager", modeMgr)
+  regAbs("GG2_CurrentGameMode", modeMgr + modeOff)
+  regAbs("GG2_CustomSettingsBits", modeMgr + bitsOff)
+  gg2_mode_offs = { mode = modeOff, bits = bitsOff, settings = settingsOff }
+  print(string.format("  using modeOff=0x%X bitsOff=0x%X settingsOff=0x%X",
+    modeOff, bitsOff, settingsOff))
+  local gs = readQword(modeMgr + 0x20)
+  local party = looksUObj(gs) and readQword(gs + 0x308) or nil
+  if looksUObj(party) then
+    regAbs("GG2_Party", party)
+    regAbs("GG2_RawScience", party + 0x4D8)       -- ScienceFound
+    regAbs("GG2_Brainpower", party + 0x4DC)      -- ResearchPoints
+    regAbs("GG2_GoldMolars", party + 0x4E4)      -- PartyUpgradePoints
+    regAbs("GG2_MilkMolars", party + 0x4E8)      -- PersonalUpgradePoints
+    print(string.format("Party=%X Science=%s Brain=%s GoldMolars=%s MilkMolars=%s",
+      party,
+      tostring(readInteger(party + 0x4D8)),
+      tostring(readInteger(party + 0x4DC)),
+      tostring(readInteger(party + 0x4E4)),
+      tostring(readInteger(party + 0x4E8))))
+  end
+end
+if settings ~= nil and looksAnyUObj(settings) then
+  regAbs("GG2_GameModeSettings", settings)
+  regAbs("GG2_UnlockAllRecipes", settings + 0x3A)
+  regAbs("GG2_AutoCompleteBuild", settings + 0x3B)
+  regAbs("GG2_RecipesNeedItems", settings + 0x3D)
+  print(string.format("GameModeSettings=%X unlockAll=%s autoBuild=%s needItems=%s%s",
+    settings,
+    tostring(readByte(settings + 0x3A)),
+    tostring(readByte(settings + 0x3B)),
+    tostring(readByte(settings + 0x3D)),
+    (settings &gt;= 0x7F0000000000) and " (module CDO)" or " (heap)"))
+elseif looksUObj(modeMgr) then
+  print("GameModeSettings still missing after probe — craft will still force mode + bits")
+else
+  print("ModeManager/GameModeSettings NOT FOUND (crafting scripts will retry on enable)")
+end
+
+print(string.format("HC=%s SC=%s SV=%s", hc and string.format("%X", hc) or "nil", sc and string.format("%X", sc) or "nil", sv and string.format("%X", sv) or "nil"))
+if looksUObj(hc) then print(string.format("  Health Max/Dmg @ %X / %X", hc + 0x318, hc + 0x31C)) end
+if looksUObj(sc) then print(string.format("  Stamina Cur/Max @ %X / %X", sc + 0xF8, sc + 0xFC)) end
+if looksUObj(sv) then print(string.format("  Food/Water/Breath @ %X / %X / %X", sv + 0x288, sv + 0x290, sv + 0x298)) end
+
+local piCheck = pawnInfo(pawn)
+step("done")
+say(string.format(
+  "Grounded 2 V2.0 ACTIVATE OK\nPlayer: %X (%s)\nHC: %s  SC: %s  SV: %s\nCMC: %s  Walk: %s  JumpZ: %s\nMaxHP: %s  Dmg: %s\nStamina: %s / %s\nFood/Water/Breath: %s / %s / %s\nLocal: possessed=%s playerChar=%s\n\nMovement scripts use CMC. FREEZE vitals if Fill does not stick.",
+  pawn, pawnTag,
+  hc and string.format("%X", hc) or "?",
+  sc and string.format("%X", sc) or "?",
+  sv and string.format("%X", sv) or "?",
+  cmc and string.format("%X", cmc) or "?",
+  walk and string.format("%.0f", walk) or "?",
+  jumpz and string.format("%.0f", jumpz) or "?",
+  mx and string.format("%.1f", mx) or "?",
+  dmg and string.format("%.1f", dmg) or "?",
+  cst and string.format("%.1f", cst) or "?",
+  mst and string.format("%.1f", mst) or "?",
+  food and string.format("%.1f", food) or "?",
+  water and string.format("%.1f", water) or "?",
+  breath and string.format("%.1f", breath) or "?",
+  tostring(piCheck and piCheck.possessed),
+  tostring(piCheck and piCheck.isPlayerChar)))
+
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local names = {
+  "Player","GWorld","GNames","GObjects",
+  "GG2_HealthComp","GG2_StaminaComp","GG2_SurvivalComp","GG2_CMC",
+  "GG2_BaseHealth","GG2_HealthDamaged",
+  "GG2_CurStamina","GG2_BaseStamina",
+  "GG2_Hunger","GG2_Thirst","GG2_Oxygen",
+  "GG2_MaxHunger","GG2_MaxThirst","GG2_MaxOxygen",
+  "GG2_MaxWalkSpeed","GG2_MaxWalkCrouch","GG2_MaxFlySpeed","GG2_JumpZ",
+  "GG2_CurMaxGround","GG2_MaxSprint","GG2_MaxFlySprint","GG2_CustomGroundMult",
+  "GG2_MaxSwimSpeed","GG2_MaxSwimSprint","GG2_CustomSwimMult","GG2_CustomFlyMult",
+  "GG2_GravityScale","GG2_MovementMode","GG2_CurGravityOverride",
+  "GG2_Capsule","GG2_CapsuleCollision",
+  "GG2_JumpMaxCount","GG2_JumpCurCount",
+  "GG2_TakeFallDamage","GG2_MinFallVel","GG2_FallDamageRatio",
+  "GG2_GameModeSettings","GG2_ModeManager","GG2_CustomSettingsBits","GG2_CurrentGameMode",
+  "GG2_UnlockAllRecipes","GG2_AutoCompleteBuild","GG2_BuildingIntegrity","GG2_RecipesNeedItems",
+  "GG2_Party","GG2_RawScience","GG2_Brainpower","GG2_GoldMolars","GG2_MilkMolars",
+}
+for i=1,#names do
+  pcall(function()
+    if getAddressSafe(names[i]) ~= nil then unregisterSymbol(names[i]) end
+  end)
+  pcall(function() autoAssemble("unregistersymbol("..names[i]..")") end)
+end
+print("[ACTIVATE] disabled")
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>10</ID>
+          <Description>"Vitals"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <Color>004080FF</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>11</ID>
+              <Description>"[Script] Fill vitals once"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+-- Re-resolve from Player each time (symbols alone can lag / wrong pawn).
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function sane(v, lo, hi)
+  if v == nil or v ~= v then return false end
+  return v &gt;= lo and v &lt;= hi
+end
+
+local pawn = getAddressSafe("Player")
+if pawn == nil or not looksUObj(pawn) then
+  showMessage("Enable [ACTIVATE] first (need live Player symbol)")
+  error("no Player")
+end
+
+local hc = readQword(pawn + 0x13A0)
+local sc = readQword(pawn + 0x13B8)
+local sv = readQword(pawn + 0x14C8)
+local lines = { string.format("Fill on Player %X", pawn) }
+
+local function setF(label, addr, val)
+  if addr == nil then table.insert(lines, label..": miss"); return end
+  local before = readFloat(addr)
+  writeFloat(addr, val)
+  local after = readFloat(addr)
+  table.insert(lines, string.format("%s: %.1f -&gt; wrote %.1f (readback %.1f)", label, before or -1, val, after or -1))
+  print(lines[#lines])
+end
+
+if looksUObj(hc) then
+  -- CurrentDamage @0x31C (0 = full). HealthState @0x300 = Alive(0)
+  setF("Damage", hc + 0x31C, 0)
+  writeBytes(hc + 0x300, 0)
+else
+  table.insert(lines, "HealthComponent missing")
+end
+
+if looksUObj(sc) then
+  local mx = readFloat(sc + 0xFC)
+  if not sane(mx, 1, 100000) then mx = 100 end
+  setF("Stamina", sc + 0xF8, mx)
+else
+  table.insert(lines, "StaminaComponent missing")
+end
+
+if looksUObj(sv) then
+  local mh = readFloat(sv + 0x148)
+  local mt = readFloat(sv + 0x190)
+  local mo = readFloat(sv + 0x1D8)
+  if not sane(mh, 1, 100000) then mh = 100 end
+  if not sane(mt, 1, 100000) then mt = 100 end
+  if not sane(mo, 1, 100000) then mo = 100 end
+  setF("Hunger", sv + 0x288, mh)
+  setF("Thirst", sv + 0x290, mt)
+  setF("Breath", sv + 0x298, mo)
+else
+  table.insert(lines, "SurvivalComponent missing")
+end
+
+table.insert(lines, "")
+table.insert(lines, "If HUD unchanged but readbacks match: game overwrites — use FREEZE.")
+table.insert(lines, "If CE floats don't move when you take damage: wrong Player (re-ACTIVATE).")
+showMessage(table.concat(lines, "\n"))
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>12</ID>
+              <Description>"[Script] FREEZE vitals (hold full)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+if gg2_freeze_vitals ~= nil and gg2_freeze_vitals.timer ~= nil then
+  gg2_freeze_vitals.timer.Enabled = false
+  gg2_freeze_vitals.timer.destroy()
+  gg2_freeze_vitals.timer = nil
+end
+gg2_freeze_vitals = { ticks = 0 }
+local st = gg2_freeze_vitals
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function sane(v, lo, hi)
+  if v == nil or v ~= v then return false end
+  return v &gt;= lo and v &lt;= hi
+end
+st.timer = createTimer(nil, false)
+st.timer.Interval = 50
+st.timer.OnTimer = function()
+  local pawn = getAddressSafe("Player")
+  if pawn == nil or not looksUObj(pawn) then return end
+  local hc = readQword(pawn + 0x13A0)
+  local sc = readQword(pawn + 0x13B8)
+  local sv = readQword(pawn + 0x14C8)
+  if looksUObj(hc) then
+    writeFloat(hc + 0x31C, 0)
+    writeBytes(hc + 0x300, 0)
+  end
+  if looksUObj(sc) then
+    local mx = readFloat(sc + 0xFC)
+    if sane(mx, 1, 100000) then writeFloat(sc + 0xF8, mx) end
+  end
+  if looksUObj(sv) then
+    local mh = readFloat(sv + 0x148)
+    local mt = readFloat(sv + 0x190)
+    local mo = readFloat(sv + 0x1D8)
+    if sane(mh, 1, 100000) then writeFloat(sv + 0x288, mh) end
+    if sane(mt, 1, 100000) then writeFloat(sv + 0x290, mt) end
+    if sane(mo, 1, 100000) then writeFloat(sv + 0x298, mo) end
+  end
+  st.ticks = st.ticks + 1
+end
+st.timer.Enabled = true
+print("FREEZE vitals ON (50ms). Disable this script to stop.")
+showMessage("FREEZE vitals ON.\nRewrites HP/stam/food/water/breath every 50ms from Player.\nLeave enabled while testing HUD.\nDisable when done.")
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+if gg2_freeze_vitals ~= nil and gg2_freeze_vitals.timer ~= nil then
+  gg2_freeze_vitals.timer.Enabled = false
+  gg2_freeze_vitals.timer.destroy()
+  gg2_freeze_vitals.timer = nil
+end
+gg2_freeze_vitals = nil
+print("FREEZE vitals OFF")
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>20</ID>
+              <Description>"Health"</Description>
+              <Options moHideChildren="1" moManualExpandCollapse="1"/>
+              <Color>00FF8080</Color>
+              <GroupHeader>1</GroupHeader>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>21</ID>
+                  <Description>"Health Damaged (0=full)"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>GG2_HealthDamaged</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>22</ID>
+                  <Description>"Base Health (Max)"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>GG2_BaseHealth</Address>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>30</ID>
+              <Description>"Stamina"</Description>
+              <Options moHideChildren="1" moManualExpandCollapse="1"/>
+              <Color>00FF8080</Color>
+              <GroupHeader>1</GroupHeader>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>31</ID>
+                  <Description>"Current Stamina"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>GG2_CurStamina</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>32</ID>
+                  <Description>"Base Stamina"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>GG2_BaseStamina</Address>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>40</ID>
+              <Description>"Survival"</Description>
+              <Options moHideChildren="1" moManualExpandCollapse="1"/>
+              <Color>00FF8080</Color>
+              <GroupHeader>1</GroupHeader>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>41</ID>
+                  <Description>"Hunger"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>GG2_Hunger</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>42</ID>
+                  <Description>"Max Hunger"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>GG2_MaxHunger</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>43</ID>
+                  <Description>"Thirst"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>GG2_Thirst</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>44</ID>
+                  <Description>"Max Thirst"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>GG2_MaxThirst</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>45</ID>
+                  <Description>"Oxygen / Breath"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>GG2_Oxygen</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>46</ID>
+                  <Description>"Max Oxygen"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>GG2_MaxOxygen</Address>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>60</ID>
+          <Description>"Currency (Party)"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <Color>0000C0C0</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>61</ID>
+              <Description>"[Script] Fill Raw Science / Molars / Brainpower"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+
+local function resolveParty()
+  local p = getAddressSafe("GG2_Party")
+  if looksUObj(p) then return p end
+  local mm = getAddressSafe("GG2_ModeManager")
+  if looksUObj(mm) then
+    local gs = readQword(mm + 0x20)
+    local party = looksUObj(gs) and readQword(gs + 0x308) or nil
+    if looksUObj(party) then return party end
+  end
+  local pawn = getAddressSafe("Player")
+  local cur = pawn
+  for i = 1, 16 do
+    if not looksUObj(cur) then break end
+    local w = readQword(cur + 0xC0)
+    if looksUObj(w) then
+      local gs = readQword(w + 0x1B0)
+      if looksUObj(gs) then
+        local party = readQword(gs + 0x308)
+        local mm2 = readQword(gs + 0x318)
+        if looksUObj(party) and looksUObj(mm2) and readQword(party + 0x20) == gs then
+          return party
+        end
+      end
+    end
+    cur = readQword(cur + 0x20)
+  end
+  return nil
+end
+
+local party = resolveParty()
+if not looksUObj(party) then
+  showMessage("Could not find PartyComponent.\nRe-run ACTIVATE in a loaded world.")
+  error("no party")
+end
+
+registerSymbol("GG2_Party", party, true)
+registerSymbol("GG2_RawScience", party + 0x4D8, true)
+registerSymbol("GG2_Brainpower", party + 0x4DC, true)
+registerSymbol("GG2_GoldMolars", party + 0x4E4, true)
+registerSymbol("GG2_MilkMolars", party + 0x4E8, true)
+
+local sci = inputQuery("Raw Science", "Set Raw Science (ScienceFound) to:", "99999")
+local brain = inputQuery("Brainpower", "Set Brainpower (ResearchPoints) to:", "9999")
+local gold = inputQuery("Gold molars", "Set party upgrade points (gold molars) to:", "99")
+local milk = inputQuery("Milk molars", "Set personal milk molars to:", "99")
+if sci == nil or brain == nil or gold == nil or milk == nil then error("cancelled") end
+
+local function setInt(addr, label, raw)
+  local n = math.floor(tonumber(raw) or -1)
+  if n &lt; 0 or n &gt; 5000000 then
+    showMessage("Bad value for "..label)
+    error("bad")
+  end
+  local prev = readInteger(addr)
+  writeInteger(addr, n)
+  print(string.format("%s: %s -> wrote %d (readback %s)", label, tostring(prev), n, tostring(readInteger(addr))))
+end
+
+setInt(party + 0x4D8, "Raw Science", sci)
+setInt(party + 0x4DC, "Brainpower", brain)
+setInt(party + 0x4E4, "Gold molars", gold)
+setInt(party + 0x4E8, "Milk molars", milk)
+
+showMessage(
+  "Currency written on PartyComponent.\n\n"..
+  "Open / close upgrade menus if HUD does not refresh.\n"..
+  "Values are live RAM — save the game to keep them.")
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>62</ID>
+              <Description>"[Script] FREEZE currency (hold values)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("GG2_RawScience") == nil then
+  showMessage("Run Fill currency (or ACTIVATE) first so Party symbols exist.")
+  error("no symbols")
+end
+if gg2_currency_freeze ~= nil and gg2_currency_freeze.timer ~= nil then
+  gg2_currency_freeze.timer.Enabled = false
+  gg2_currency_freeze.timer.destroy()
+end
+gg2_currency_freeze = {
+  sci = readInteger(getAddressSafe("GG2_RawScience")),
+  brain = readInteger(getAddressSafe("GG2_Brainpower")),
+  gold = readInteger(getAddressSafe("GG2_GoldMolars")),
+  milk = readInteger(getAddressSafe("GG2_MilkMolars")),
+}
+local st = gg2_currency_freeze
+st.timer = createTimer(nil, false)
+st.timer.Interval = 200
+st.timer.OnTimer = function()
+  local a
+  a = getAddressSafe("GG2_RawScience"); if a and st.sci then writeInteger(a, st.sci) end
+  a = getAddressSafe("GG2_Brainpower"); if a and st.brain then writeInteger(a, st.brain) end
+  a = getAddressSafe("GG2_GoldMolars"); if a and st.gold then writeInteger(a, st.gold) end
+  a = getAddressSafe("GG2_MilkMolars"); if a and st.milk then writeInteger(a, st.milk) end
+end
+st.timer.Enabled = true
+print(string.format("Currency FREEZE ON sci=%s brain=%s gold=%s milk=%s",
+  tostring(st.sci), tostring(st.brain), tostring(st.gold), tostring(st.milk)))
+showMessage("Currency FREEZE ON — holds current Party values every 200ms.")
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local st = gg2_currency_freeze
+if st ~= nil and st.timer ~= nil then
+  st.timer.Enabled = false
+  st.timer.destroy()
+  st.timer = nil
+end
+gg2_currency_freeze = nil
+print("Currency FREEZE OFF")
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>63</ID>
+              <Description>"Raw Science"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>GG2_RawScience</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>64</ID>
+              <Description>"Brainpower"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>GG2_Brainpower</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>65</ID>
+              <Description>"Gold molars (party points)"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>GG2_GoldMolars</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>66</ID>
+              <Description>"Milk molars (personal)"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>GG2_MilkMolars</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>200</ID>
+          <Description>"Stacks (999)"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <Color>0040C0A0</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>201</ID>
+              <Description>"[Script] Raise max stack to 999 (GlobalItemData + Party)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local TARGET = 999
+local TIER = 20
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+
+local function resolveParty()
+  local p = getAddressSafe("GG2_Party")
+  if looksUObj(p) then return p end
+  local mm = getAddressSafe("GG2_ModeManager")
+  if looksUObj(mm) then
+    local gs = readQword(mm + 0x20)
+    local party = looksUObj(gs) and readQword(gs + 0x308) or nil
+    if looksUObj(party) then return party end
+  end
+  return nil
+end
+
+local function resolveWorld(pawn)
+  local cur = pawn
+  for _ = 1, 16 do
+    if not looksUObj(cur) then break end
+    local w = readQword(cur + 0xC0)
+    if looksUObj(w) then
+      local gs = readQword(w + 0x1B0)
+      if looksUObj(gs) then return w end
+    end
+    cur = readQword(cur + 0x20)
+  end
+  return nil
+end
+
+local function looksLikeGlobalItemData(gid)
+  if not looksUObj(gid) then return false end
+  local bonus = readInteger(gid + 0x100)
+  local maxT = readInteger(gid + 0x104)
+  local drop = readInteger(gid + 0x108)
+  if bonus == nil or maxT == nil or drop == nil then return false end
+  if bonus &lt; 0 or bonus &gt; 5000 then return false end
+  if maxT &lt; 1 or maxT &gt; 99 then return false end
+  if drop &lt; 1 or drop &gt; 100000 then return false end
+  return true
+end
+
+local function bumpStackSizesMap(gid)
+  -- UGlobalItemData::StackSizes TMap&lt;FGameplayTag,int32&gt; @ +0xA0
+  -- Best-effort: walk likely pair allocations and rewrite small stack caps.
+  local wrote = 0
+  local map = gid + 0xA0
+  for _, poff in ipairs({0x0, 0x8, 0x10}) do
+    local data = readQword(map + poff)
+    if isHeapPtr(data) then
+      for _, stride in ipairs({16, 12, 24}) do
+        local localWrote = 0
+        for i = 0, 96 do
+          local valAddr = data + i * stride + 8
+          local v = readInteger(valAddr)
+          if v ~= nil and v &gt;= 1 and v &lt;= 500 and v ~= TARGET then
+            writeInteger(valAddr, TARGET)
+            localWrote = localWrote + 1
+          end
+        end
+        if localWrote &gt;= 2 then
+          wrote = wrote + localWrote
+          print(string.format("  StackSizes map wrote=%d (ptr@+0x%X stride=%d)", localWrote, poff, stride))
+          return wrote
+        end
+      end
+    end
+  end
+  return wrote
+end
+
+local pawn = getAddressSafe("Player")
+local world = resolveWorld(pawn)
+local gid = nil
+if looksUObj(world) then
+  local gi = readQword(world + 0x230) -- UWorld::OwningGameInstance
+  if looksUObj(gi) then
+    gid = readQword(gi + 0x340) -- USurvivalGameInstance::GlobalItemData
+  end
+end
+
+local notes = {}
+if looksLikeGlobalItemData(gid) then
+  registerSymbol("GG2_GlobalItemData", gid, true)
+  local b0 = readInteger(gid + 0x100)
+  local t0 = readInteger(gid + 0x104)
+  local d0 = readInteger(gid + 0x108)
+  writeInteger(gid + 0x100, TARGET) -- ItemStackBonusPerTier
+  writeInteger(gid + 0x104, math.max(t0 or 1, TIER)) -- MaxItemStackTier
+  writeInteger(gid + 0x108, TARGET) -- MaxDropStackSize
+  print(string.format("GlobalItemData=%X bonus %s-&gt;%d maxTiers %s-&gt;%d maxDrop %s-&gt;%d",
+    gid, tostring(b0), TARGET, tostring(t0), math.max(t0 or 1, TIER), tostring(d0), TARGET))
+  table.insert(notes, "GlobalItemData OK")
+  bumpStackSizesMap(gid)
+else
+  print("GlobalItemData NOT FOUND — Party tiers + inventory fill may still help")
+  table.insert(notes, "GlobalItemData MISS")
+end
+
+local party = resolveParty()
+local tierWrites = 0
+if looksUObj(party) then
+  -- PartyComponent::ItemStackUpgrades TArray&lt;FItemStackUpgrade&gt; @ +0x6B8 (Tag+0, Tier+8, stride 0xC)
+  local data = readQword(party + 0x6B8)
+  local num = readInteger(party + 0x6B8 + 8)
+  if isHeapPtr(data) and num ~= nil and num &gt;= 1 and num &lt;= 32 then
+    for i = 0, num - 1 do
+      local tierAddr = data + i * 0xC + 0x8
+      local prev = readInteger(tierAddr)
+      if prev ~= nil and prev &gt;= 0 and prev &lt;= 99 then
+        writeInteger(tierAddr, TIER)
+        tierWrites = tierWrites + 1
+        print(string.format("  Party stack tier[%d] %s -&gt; %d", i, tostring(prev), TIER))
+      end
+    end
+  else
+    print(string.format("Party ItemStackUpgrades empty/odd data=%s num=%s",
+      tostring(data), tostring(num)))
+  end
+  table.insert(notes, string.format("Party tiers=%d", tierWrites))
+else
+  table.insert(notes, "Party MISS")
+end
+
+print("Raise max stack done: " .. table.concat(notes, ", "))
+showMessage(
+  "Max stack raised toward 999.\n\n"..
+  "• GlobalItemData bonus/drop capped\n"..
+  "• Party StackSize upgrade tiers -&gt; "..tostring(TIER).."\n\n"..
+  "Next: run [Fill ALL inventory stacks to 999].\n"..
+  "Re-open bag / pick up once if UI looks stale.")
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>202</ID>
+              <Description>"[Script] Fill ALL inventory stacks to 999"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local TARGET = 999
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+
+local function fillInv(inv, tag)
+  if not looksUObj(inv) then return 0 end
+  local data = readQword(inv + 0x1C8) -- Items TArray
+  local num = readInteger(inv + 0x1C8 + 8)
+  if not isHeapPtr(data) or num == nil or num &lt; 1 or num &gt; 512 then
+    print(string.format("  %s: no Items array (num=%s)", tag, tostring(num)))
+    return 0
+  end
+  local n = 0
+  for i = 0, num - 1 do
+    local item = readQword(data + i * 8)
+    if looksUObj(item) then
+      local stack = readInteger(item + 0x188) -- UItem::StackSize
+      if stack ~= nil and stack &gt;= 1 and stack &lt; 100000 then
+        writeInteger(item + 0x188, TARGET)
+        n = n + 1
+      end
+    end
+  end
+  print(string.format("  %s: filled %d / %d slots", tag, n, num))
+  return n
+end
+
+local pawn = getAddressSafe("Player")
+local inv = readQword(pawn + 0x1438)  -- InventoryComponent
+local mount = readQword(pawn + 0x1440) -- MountInventoryComponent
+local total = 0
+total = total + fillInv(inv, "Inventory")
+total = total + fillInv(mount, "MountInventory")
+
+if total == 0 then
+  showMessage("No inventory item stacks written.\nOpen your bag once, then re-run.")
+  error("no stacks")
+end
+
+print("Fill stacks done: "..tostring(total).." item(s) -&gt; "..tostring(TARGET))
+showMessage(string.format(
+  "Filled %d inventory item stack(s) to %d.\n\nIf amounts snap back, run Raise max stack first,\nthen enable FREEZE inventory stacks.",
+  total, TARGET))
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>203</ID>
+              <Description>"[Script] FREEZE inventory stacks @ 999"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+gg2_stack_freeze = gg2_stack_freeze or {}
+local st = gg2_stack_freeze
+st.qty = 999
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+
+local function fillInv(inv)
+  if not looksUObj(inv) then return 0 end
+  local data = readQword(inv + 0x1C8)
+  local num = readInteger(inv + 0x1C8 + 8)
+  if not isHeapPtr(data) or num == nil or num &lt; 1 or num &gt; 512 then return 0 end
+  local n = 0
+  for i = 0, num - 1 do
+    local item = readQword(data + i * 8)
+    if looksUObj(item) then
+      local stack = readInteger(item + 0x188)
+      if stack ~= nil and stack &gt;= 1 and stack &lt; 100000 and stack ~= st.qty then
+        writeInteger(item + 0x188, st.qty)
+        n = n + 1
+      end
+    end
+  end
+  return n
+end
+
+if st.timer ~= nil then
+  st.timer.Enabled = false
+  pcall(function() st.timer.destroy() end)
+  st.timer = nil
+end
+
+st.timer = createTimer(nil, false)
+st.timer.Interval = 200
+st.timer.OnTimer = function()
+  local pawn = getAddressSafe("Player")
+  if not looksUObj(pawn) then return end
+  fillInv(readQword(pawn + 0x1438))
+  fillInv(readQword(pawn + 0x1440))
+end
+st.timer.Enabled = true
+
+print("FREEZE inventory stacks ON @ "..tostring(st.qty))
+showMessage("FREEZE inventory stacks ON @ 999\n\nKeeps every bag/mount stack at 999 every 200ms.\nRun Raise max stack first so pickups can merge.")
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local st = gg2_stack_freeze
+if st ~= nil and st.timer ~= nil then
+  st.timer.Enabled = false
+  pcall(function() st.timer.destroy() end)
+  st.timer = nil
+end
+gg2_stack_freeze = nil
+print("FREEZE inventory stacks OFF")
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>204</ID>
+              <Description>"[Script] COMBO: max 999 + fill + freeze"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local TARGET = 999
+local TIER = 20
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+
+local function resolveParty()
+  local p = getAddressSafe("GG2_Party")
+  if looksUObj(p) then return p end
+  local mm = getAddressSafe("GG2_ModeManager")
+  if looksUObj(mm) then
+    local gs = readQword(mm + 0x20)
+    local party = looksUObj(gs) and readQword(gs + 0x308) or nil
+    if looksUObj(party) then return party end
+  end
+  return nil
+end
+
+local function resolveWorld(pawn)
+  local cur = pawn
+  for _ = 1, 16 do
+    if not looksUObj(cur) then break end
+    local w = readQword(cur + 0xC0)
+    if looksUObj(w) and looksUObj(readQword(w + 0x1B0)) then return w end
+    cur = readQword(cur + 0x20)
+  end
+  return nil
+end
+
+local function looksLikeGlobalItemData(gid)
+  if not looksUObj(gid) then return false end
+  local bonus = readInteger(gid + 0x100)
+  local maxT = readInteger(gid + 0x104)
+  local drop = readInteger(gid + 0x108)
+  return bonus ~= nil and maxT ~= nil and drop ~= nil
+    and bonus &gt;= 0 and bonus &lt;= 5000
+    and maxT &gt;= 1 and maxT &lt;= 99
+    and drop &gt;= 1 and drop &lt;= 100000
+end
+
+local function fillInv(inv)
+  if not looksUObj(inv) then return 0 end
+  local data = readQword(inv + 0x1C8)
+  local num = readInteger(inv + 0x1C8 + 8)
+  if not isHeapPtr(data) or num == nil or num &lt; 1 or num &gt; 512 then return 0 end
+  local n = 0
+  for i = 0, num - 1 do
+    local item = readQword(data + i * 8)
+    if looksUObj(item) then
+      local stack = readInteger(item + 0x188)
+      if stack ~= nil and stack &gt;= 1 and stack &lt; 100000 then
+        writeInteger(item + 0x188, TARGET)
+        n = n + 1
+      end
+    end
+  end
+  return n
+end
+
+local pawn = getAddressSafe("Player")
+local world = resolveWorld(pawn)
+local gid = nil
+if looksUObj(world) then
+  local gi = readQword(world + 0x230)
+  if looksUObj(gi) then gid = readQword(gi + 0x340) end
+end
+
+if looksLikeGlobalItemData(gid) then
+  writeInteger(gid + 0x100, TARGET)
+  writeInteger(gid + 0x104, TIER)
+  writeInteger(gid + 0x108, TARGET)
+  registerSymbol("GG2_GlobalItemData", gid, true)
+  print(string.format("GlobalItemData=%X patched for max stack %d", gid, TARGET))
+else
+  print("GlobalItemData MISS")
+end
+
+local party = resolveParty()
+if looksUObj(party) then
+  local data = readQword(party + 0x6B8)
+  local num = readInteger(party + 0x6B8 + 8)
+  if isHeapPtr(data) and num ~= nil and num &gt;= 1 and num &lt;= 32 then
+    for i = 0, num - 1 do
+      local prev = readInteger(data + i * 0xC + 0x8)
+      if prev ~= nil and prev &gt;= 0 and prev &lt;= 99 then
+        writeInteger(data + i * 0xC + 0x8, TIER)
+      end
+    end
+    print("Party stack tiers -&gt; "..tostring(TIER))
+  end
+end
+
+local filled = fillInv(readQword(pawn + 0x1438)) + fillInv(readQword(pawn + 0x1440))
+print("Filled "..tostring(filled).." stacks")
+
+gg2_stack_freeze = gg2_stack_freeze or {}
+local st = gg2_stack_freeze
+st.qty = TARGET
+if st.timer ~= nil then
+  st.timer.Enabled = false
+  pcall(function() st.timer.destroy() end)
+  st.timer = nil
+end
+st.timer = createTimer(nil, false)
+st.timer.Interval = 200
+st.timer.OnTimer = function()
+  local p = getAddressSafe("Player")
+  if not looksUObj(p) then return end
+  fillInv(readQword(p + 0x1438))
+  fillInv(readQword(p + 0x1440))
+end
+st.timer.Enabled = true
+
+showMessage(string.format(
+  "Stacks COMBO ON\n\nMax raised, filled %d item(s) to %d,\nFREEZE holding stacks every 200ms.\nDisable this script to stop freeze.",
+  filled, TARGET))
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local st = gg2_stack_freeze
+if st ~= nil and st.timer ~= nil then
+  st.timer.Enabled = false
+  pcall(function() st.timer.destroy() end)
+  st.timer = nil
+end
+gg2_stack_freeze = nil
+print("Stacks COMBO OFF (freeze stopped)")
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>70</ID>
+          <Description>"Survive"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <Color>000080FF</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>71</ID>
+              <Description>"[Script] God Mode (HP + stamina)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function sane(v, lo, hi)
+  if v == nil or v ~= v then return false end
+  return v &gt;= lo and v &lt;= hi
+end
+
+if gg2_god ~= nil and gg2_god.timer ~= nil then
+  gg2_god.timer.Enabled = false
+  gg2_god.timer.destroy()
+  gg2_god.timer = nil
+end
+
+gg2_god = {}
+local st = gg2_god
+st.timer = createTimer(nil, false)
+st.timer.Interval = 50
+st.timer.OnTimer = function()
+  local pawn = getAddressSafe("Player")
+  if pawn == nil or not looksUObj(pawn) then return end
+  local hc = readQword(pawn + 0x13A0)
+  local sc = readQword(pawn + 0x13B8)
+  if looksUObj(hc) then
+    writeFloat(hc + 0x31C, 0)      -- CurrentDamage
+    writeBytes(hc + 0x300, 0)      -- HealthState = Alive
+  end
+  if looksUObj(sc) then
+    local mx = readFloat(sc + 0xFC)
+    if sane(mx, 1, 100000) then writeFloat(sc + 0xF8, mx) end
+  end
+end
+st.timer.Enabled = true
+print("God Mode ON (CurrentDamage=0 + full stamina @ 50ms)")
+showMessage("God Mode ON\nKeeps Health Damaged at 0 and stamina full.\nPair with No Fall Damage for long drops.\nDisable to stop.")
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+if gg2_god ~= nil and gg2_god.timer ~= nil then
+  gg2_god.timer.Enabled = false
+  gg2_god.timer.destroy()
+  gg2_god.timer = nil
+end
+gg2_god = nil
+print("God Mode OFF")
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>72</ID>
+              <Description>"[Script] No Fall Damage"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+
+if gg2_nofall ~= nil and gg2_nofall.timer ~= nil then
+  gg2_nofall.timer.Enabled = false
+  gg2_nofall.timer.destroy()
+  gg2_nofall.timer = nil
+end
+
+local p = getAddressSafe("Player")
+if p == nil or not looksUObj(p) then
+  showMessage("Player not live. Re-run ACTIVATE.")
+  error("bad Player")
+end
+
+gg2_nofall = {
+  take = readBytes(p + 0x1601, 1, false),
+  minVel = readFloat(p + 0x1604),
+  ratio = readFloat(p + 0x160C),
+}
+local st = gg2_nofall
+-- readBytes(..., false) returns a 1-char string; keep numeric 0/1 for restore
+if type(st.take) == "string" and #st.take &gt;= 1 then
+  st.take = string.byte(st.take, 1)
+elseif type(st.take) ~= "number" then
+  st.take = 1
+end
+if st.minVel == nil or st.minVel ~= st.minVel then st.minVel = 1000 end
+if st.ratio == nil or st.ratio ~= st.ratio then st.ratio = 1 end
+
+writeBytes(p + 0x1601, 0)
+writeFloat(p + 0x1604, 999999)
+writeFloat(p + 0x160C, 0)
+
+print(string.format("No Fall Damage ON Player=%X take=%d minVel=%.1f ratio=%.3f",
+  p, st.take, st.minVel, st.ratio))
+
+st.timer = createTimer(nil, false)
+st.timer.Interval = 100
+st.timer.OnTimer = function()
+  local pawn = getAddressSafe("Player")
+  if pawn == nil or not looksUObj(pawn) then return end
+  writeBytes(pawn + 0x1601, 0)           -- bTakeFallDamage = false
+  writeFloat(pawn + 0x1604, 999999)      -- MinimumFallDamageVelocity
+  writeFloat(pawn + 0x160C, 0)           -- FallDamageRatio
+end
+st.timer.Enabled = true
+showMessage("No Fall Damage ON\nSets bTakeFallDamage=false, FallDamageRatio=0.\nWorks with God Mode / Infinite Jump.\nDisable to restore.")
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local st = gg2_nofall
+if st ~= nil and st.timer ~= nil then
+  st.timer.Enabled = false
+  st.timer.destroy()
+  st.timer = nil
+end
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local p = getAddressSafe("Player")
+if st ~= nil and p ~= nil and looksUObj(p) then
+  writeBytes(p + 0x1601, st.take or 1)
+  if st.minVel then writeFloat(p + 0x1604, st.minVel) end
+  if st.ratio then writeFloat(p + 0x160C, st.ratio) end
+end
+gg2_nofall = nil
+print("No Fall Damage OFF")
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>80</ID>
+              <Description>"Fall damage (debug)"</Description>
+              <Options moHideChildren="1" moManualExpandCollapse="1"/>
+              <Color>00FF8080</Color>
+              <GroupHeader>1</GroupHeader>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>81</ID>
+                  <Description>"bTakeFallDamage (0=off)"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Byte</VariableType>
+                  <Address>GG2_TakeFallDamage</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>82</ID>
+                  <Description>"MinimumFallDamageVelocity"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>GG2_MinFallVel</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>83</ID>
+                  <Description>"FallDamageRatio"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>GG2_FallDamageRatio</Address>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>210</ID>
+          <Description>"Combat"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <Color>000040FF</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>211</ID>
+              <Description>"[Script] One-shot kill (PlayerDamage x9999)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local MULT = 9999.0
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function looksAnyUObj(ptr)
+  if ptr == nil or ptr == 0 then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+
+local function resolveSettings()
+  local s = getAddressSafe("GG2_GameModeSettings")
+  if looksAnyUObj(s) then return s end
+  local mm = getAddressSafe("GG2_ModeManager")
+  if looksUObj(mm) then
+    local p = readQword(mm + 0x138)
+    if looksAnyUObj(p) then return p end
+  end
+  return nil
+end
+
+local settings = resolveSettings()
+if not looksAnyUObj(settings) then
+  showMessage("GameModeSettings not found.\nRe-run ACTIVATE in a loaded world.")
+  error("no settings")
+end
+
+registerSymbol("GG2_GameModeSettings", settings, true)
+registerSymbol("GG2_PlayerDamageMult", settings + 0x54, true)
+registerSymbol("GG2_EnemyDamageMult", settings + 0x58, true)
+
+if gg2_oneshot ~= nil and gg2_oneshot.timer ~= nil then
+  gg2_oneshot.timer.Enabled = false
+  pcall(function() gg2_oneshot.timer.destroy() end)
+end
+
+gg2_oneshot = {
+  settings = settings,
+  prevPlayer = readFloat(settings + 0x54),
+  prevCustom = nil,
+}
+local st = gg2_oneshot
+local pawn = getAddressSafe("Player")
+if looksUObj(pawn) then
+  st.prevCustom = readFloat(pawn + 0x1318) -- CustomDamageMultiplier
+end
+
+st.timer = createTimer(nil, false)
+st.timer.Interval = 100
+st.timer.OnTimer = function()
+  local s = st.settings
+  if not looksAnyUObj(s) then
+    s = resolveSettings()
+    st.settings = s
+  end
+  if looksAnyUObj(s) then
+    writeFloat(s + 0x54, MULT) -- PlayerDamageMultiplier
+  end
+  local p = getAddressSafe("Player")
+  if looksUObj(p) then
+    writeFloat(p + 0x1318, MULT) -- CustomDamageMultiplier
+  end
+end
+st.timer.Enabled = true
+
+print(string.format(
+  "One-shot ON: PlayerDamage %s -&gt; %.0f (settings=%X)",
+  tostring(st.prevPlayer), MULT, settings))
+showMessage("One-shot kill ON\n\nPlayerDamageMultiplier held at 9999.\nDisable to restore previous value.")
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local st = gg2_oneshot
+if st ~= nil then
+  if st.timer ~= nil then
+    st.timer.Enabled = false
+    pcall(function() st.timer.destroy() end)
+    st.timer = nil
+  end
+  if st.settings ~= nil and st.prevPlayer ~= nil then
+    pcall(function() writeFloat(st.settings + 0x54, st.prevPlayer) end)
+  end
+  local p = getAddressSafe("Player")
+  if p ~= nil and st.prevCustom ~= nil then
+    pcall(function() writeFloat(p + 0x1318, st.prevCustom) end)
+  end
+end
+gg2_oneshot = nil
+print("One-shot OFF")
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>212</ID>
+              <Description>"[Script] Always perfect block"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local WINDOW = 60.0 -- seconds of perfect-block timing while blocking
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+
+local function resolveBlock()
+  local p = getAddressSafe("Player")
+  if not looksUObj(p) then return nil, nil end
+  local bc = readQword(p + 0x13A8) -- BlockComponent
+  if looksUObj(bc) then return p, bc end
+  return p, nil
+end
+
+local _, bc = resolveBlock()
+if not looksUObj(bc) then
+  showMessage("BlockComponent not found on Player.\nRe-run ACTIVATE.")
+  error("no block")
+end
+
+registerSymbol("GG2_BlockComponent", bc, true)
+registerSymbol("GG2_PerfectBlockWindow", bc + 0x144, true)
+registerSymbol("GG2_PerfectBlockWindowMounted", bc + 0x148, true)
+
+if gg2_perfect_block ~= nil and gg2_perfect_block.timer ~= nil then
+  gg2_perfect_block.timer.Enabled = false
+  pcall(function() gg2_perfect_block.timer.destroy() end)
+end
+
+gg2_perfect_block = {
+  prevWin = readFloat(bc + 0x144),
+  prevWinM = readFloat(bc + 0x148),
+  prevAngle = readFloat(bc + 0x118),
+  prevDmg = readFloat(bc + 0x140),
+}
+local st = gg2_perfect_block
+
+st.timer = createTimer(nil, false)
+st.timer.Interval = 100
+st.timer.OnTimer = function()
+  local _, b = resolveBlock()
+  if not looksUObj(b) then return end
+  writeFloat(b + 0x144, WINDOW) -- PerfectBlockWindow
+  writeFloat(b + 0x148, WINDOW) -- PerfectBlockWindowMounted
+  writeFloat(b + 0x118, 360.0)  -- BlockAngle (full circle)
+  writeFloat(b + 0x140, 0.0)    -- PerfectBlockDamageMultiplier (take 0)
+end
+st.timer.Enabled = true
+
+print(string.format(
+  "Perfect block ON Block=%X window %s -&gt; %.0fs",
+  bc, tostring(st.prevWin), WINDOW))
+showMessage("Always perfect block ON\n\nPerfect-block window held at 60s while blocking.\nHold block as usual — timing is extremely forgiving.\nDisable to restore.")
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local st = gg2_perfect_block
+if st ~= nil then
+  if st.timer ~= nil then
+    st.timer.Enabled = false
+    pcall(function() st.timer.destroy() end)
+    st.timer = nil
+  end
+  local p = getAddressSafe("Player")
+  if p ~= nil then
+    local bc = readQword(p + 0x13A8)
+    if bc ~= nil and bc ~= 0 then
+      if st.prevWin ~= nil then pcall(function() writeFloat(bc + 0x144, st.prevWin) end) end
+      if st.prevWinM ~= nil then pcall(function() writeFloat(bc + 0x148, st.prevWinM) end) end
+      if st.prevAngle ~= nil then pcall(function() writeFloat(bc + 0x118, st.prevAngle) end) end
+      if st.prevDmg ~= nil then pcall(function() writeFloat(bc + 0x140, st.prevDmg) end) end
+    end
+  end
+end
+gg2_perfect_block = nil
+print("Perfect block OFF")
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>213</ID>
+              <Description>"[Script] Unlock ALL mutations (tier III)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local TIER = 2 -- phase III (0=I, 1=II, 2=III) matching save-editor MAX_PHASE
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function looksAnyUObj(ptr)
+  if ptr == nil or ptr == 0 then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+
+local function resolveSettings()
+  local s = getAddressSafe("GG2_GameModeSettings")
+  if looksAnyUObj(s) then return s end
+  local mm = getAddressSafe("GG2_ModeManager")
+  if looksUObj(mm) then
+    local p = readQword(mm + 0x138)
+    if looksAnyUObj(p) then return p end
+  end
+  return nil
+end
+
+local function resolvePerkComp()
+  local pawn = getAddressSafe("Player")
+  if not looksUObj(pawn) then return nil end
+  -- APawn::PlayerState @ 0x2D0
+  local ps = readQword(pawn + 0x2D0)
+  if not looksUObj(ps) then
+    local ctrl = readQword(pawn + 0x2E0)
+    if looksUObj(ctrl) then ps = readQword(ctrl + 0x2B8) end -- AController::PlayerState
+  end
+  if not looksUObj(ps) then return nil end
+  local perk = readQword(ps + 0x740) -- SurvivalPlayerState::PerkComponent
+  if looksUObj(perk) then return perk, ps end
+  return nil, ps
+end
+
+local yes = messageDialog(
+  "Unlock ALL mutations to tier III?\n\n"..
+  "Writes live PerkComponent tiers + bPerksUnlocked.\n"..
+  "This CAN persist into your save when you save the game.\n\n"..
+  "Continue?",
+  mtWarning, mbYes, mbNo)
+if yes ~= mrYes then error("cancelled") end
+
+local settings = resolveSettings()
+if looksAnyUObj(settings) then
+  writeBytes(settings + 0x4C, 1) -- bPerksUnlocked
+  registerSymbol("GG2_GameModeSettings", settings, true)
+  registerSymbol("GG2_PerksUnlocked", settings + 0x4C, true)
+  print("GameModeSettings.bPerksUnlocked = 1")
+end
+
+local mm = getAddressSafe("GG2_ModeManager")
+if looksUObj(mm) then
+  -- FCustomGameModeSettings @ ModeManager+0x114; bPerksUnlocked is bit6 of byte +0x3
+  local b = readBytes(mm + 0x117, 1, true)
+  local v = 0
+  if type(b) == "table" then v = b[1] or 0 elseif type(b) == "number" then v = b end
+  writeBytes(mm + 0x117, (v | 0x40) &amp; 0xFF)
+  print(string.format("CustomSettings bPerksUnlocked bit set (byte was %d)", v))
+end
+
+local perk, ps = resolvePerkComp()
+local wrote = 0
+local total = 0
+if looksUObj(perk) then
+  registerSymbol("GG2_PerkComponent", perk, true)
+  -- TArray&lt;FPerkStatus&gt; @ +0x110; stride 0x28; Tier @ +0xC
+  local data = readQword(perk + 0x110)
+  local num = readInteger(perk + 0x110 + 8)
+  if isHeapPtr(data) and num ~= nil and num &gt;= 1 and num &lt;= 200 then
+    total = num
+    for i = 0, num - 1 do
+      local tierAddr = data + i * 0x28 + 0xC
+      local prev = readInteger(tierAddr)
+      if prev ~= nil and prev &gt;= -1 and prev &lt;= 20 then
+        if prev &lt; TIER then
+          writeInteger(tierAddr, TIER)
+          wrote = wrote + 1
+        end
+      end
+    end
+    -- bump equip slots so you can slot more
+    local maxEq = readInteger(perk + 0x108)
+    if maxEq ~= nil and maxEq &gt;= 1 and maxEq &lt; 12 then
+      writeInteger(perk + 0x108, 12)
+      print(string.format("MaxEquippedPerks %s -&gt; 12", tostring(maxEq)))
+    end
+  else
+    print(string.format("Perk Perks[] odd data=%s num=%s", tostring(data), tostring(num)))
+  end
+  print(string.format("PerkComponent=%X PlayerState=%X unlocked %d / %d -&gt; tier %d",
+    perk, ps or 0, wrote, total, TIER))
+else
+  print("PerkComponent NOT FOUND — bPerksUnlocked flag still set if settings resolved")
+end
+
+showMessage(string.format(
+  "Mutations unlock done.\n\nPerk tiers raised: %d / %d -&gt; III\nbPerksUnlocked set on GameModeSettings.\n\nOpen the Mutations menu / re-equip to refresh UI.\nSave if you want it permanent.",
+  wrote, total))
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>214</ID>
+              <Description>"PlayerDamageMultiplier"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>GG2_PlayerDamageMult</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>215</ID>
+              <Description>"PerfectBlockWindow"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>GG2_PerfectBlockWindow</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>216</ID>
+              <Description>"bPerksUnlocked"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>GG2_PerksUnlocked</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>90</ID>
+          <Description>"Crafting"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <Color>0000C0C0</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>91</ID>
+              <Description>"[Script] Free craft (no recipe unlock)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function looksAnyUObj(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x10000 then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function readByte(a)
+  local ok, s = pcall(readBytes, a, 1, true)
+  if ok and type(s) == "table" and s[1] ~= nil then return s[1] end
+  ok, s = pcall(readBytes, a, 1, false)
+  if ok and type(s) == "string" and #s &gt;= 1 then return string.byte(s, 1) end
+  local i = readInteger(a)
+  if i ~= nil then return i &amp; 0xFF end
+  return nil
+end
+local function writeByte(a, v)
+  writeBytes(a, v &amp; 0xFF)
+end
+local function isSaneFloat(v, lo, hi)
+  if v == nil or v ~= v then return false end
+  return v &gt;= lo and v &lt;= hi
+end
+local function looksLikeSettings(s)
+  if not looksAnyUObj(s) then return false end
+  local okBools = 0
+  for off = 0x3A, 0x51 do
+    local b = readByte(s + off)
+    if b == nil then return false end
+    if b &lt;= 1 then okBools = okBools + 1 end
+  end
+  if okBools &lt; 12 then return false end
+  if not isSaneFloat(readFloat(s + 0x54), 0.01, 100) then return false end
+  if not isSaneFloat(readFloat(s + 0x80), 0.0, 100) then return false end
+  return true
+end
+local function looksLikeGameState(gs)
+  if not looksUObj(gs) then return false end
+  local party = readQword(gs + 0x308)
+  local mm = readQword(gs + 0x318)
+  if not looksUObj(party) or not looksUObj(mm) then return false end
+  if readQword(party + 0x20) ~= gs then return false end
+  if readQword(mm + 0x20) ~= gs then return false end
+  return true
+end
+local function modeFromGameState(gs)
+  if not looksLikeGameState(gs) then return nil, nil end
+  local mm = readQword(gs + 0x318)
+  local s = readQword(mm + ((gg2_mode_offs and gg2_mode_offs.settings) or 0x138))
+  if not looksLikeSettings(s) and not looksAnyUObj(s) then s = nil end
+  return s, mm
+end
+local function resolveMode()
+  local mmSym = getAddressSafe("GG2_ModeManager")
+  if looksUObj(mmSym) then
+    -- Always prefer live heap Settings* at +0x138 (never NewGamePlus @ +0x108 / stale CDO symbol)
+    local s = readQword(mmSym + 0x138)
+    if not looksAnyUObj(s) then
+      s = getAddressSafe("GG2_GameModeSettings")
+      if not looksAnyUObj(s) then s = nil end
+    end
+    return s, mmSym
+  end
+  local pawn = getAddressSafe("Player")
+  local pc = looksUObj(pawn) and readQword(pawn + 0x2E0) or nil
+  if looksUObj(pc) then
+    local party = readQword(pc + 0xEA8)
+    if looksUObj(party) then
+      local s, mm = modeFromGameState(readQword(party + 0x20))
+      if mm ~= nil then return s, mm end
+    end
+  end
+  local cur = pawn
+  for i = 1, 16 do
+    if not looksUObj(cur) then break end
+    local s, mm = modeFromGameState(cur)
+    if mm ~= nil then return s, mm end
+    local w = readQword(cur + 0xC0)
+    if looksUObj(w) then
+      s, mm = modeFromGameState(readQword(w + 0x1B0))
+      if mm ~= nil then return s, mm end
+    end
+    s, mm = modeFromGameState(readQword(cur + 0x1B0))
+    if mm ~= nil then return s, mm end
+    cur = readQword(cur + 0x20)
+  end
+  return nil, nil
+end
+
+local function applyCraft(s, mm)
+  local modeOff, bitsOff, settingsOff = 0x110, 0x116, 0x138
+  if looksUObj(mm) then
+    -- Custom (6) only. Creative (4) unlocks all recipes and bakes into World.csav.
+    writeByte(mm + modeOff, 6)
+    local b = readByte(mm + bitsOff) or 0
+    b = (b | 0x02) &amp; (0xFF - 0x10) -- free craft bit1, clear integrity bit4
+    if gg2_recipes == nil and gg2_recipes_perm == nil then
+      b = b &amp; 0xFE -- never leave unlock bit0 on
+    end
+    writeByte(mm + bitsOff, b)
+    if not looksAnyUObj(s) then s = readQword(mm + settingsOff) end
+  end
+  if looksAnyUObj(s) then
+    if gg2_recipes == nil and gg2_recipes_perm == nil then
+      writeByte(s + 0x3A, 0) -- scrub UnlockAllRecipes
+    end
+    writeByte(s + 0x3D, 0) -- free craft ingredients
+    writeByte(s + 0x4E, 1)
+    writeByte(s + 0x4F, 1)
+    writeByte(s + 0x50, 1)
+  end
+end
+
+if gg2_craft ~= nil and gg2_craft.timer ~= nil then
+  gg2_craft.timer.Enabled = false
+  gg2_craft.timer.destroy()
+  gg2_craft.timer = nil
+end
+
+gg2_mode_offs = { mode = 0x110, bits = 0x116, settings = 0x138 }
+
+local settings, modeMgr = resolveMode()
+if looksUObj(modeMgr) then
+  local s138 = readQword(modeMgr + 0x138)
+  if looksAnyUObj(s138) then settings = s138 end
+end
+if modeMgr == nil and settings == nil then
+  showMessage("Could not find SurvivalModeManager.\nRe-run ACTIVATE first.")
+  error("no mode manager")
+end
+
+local modeOff, bitsOff = 0x110, 0x116
+
+if looksUObj(modeMgr) then
+  registerSymbol("GG2_ModeManager", modeMgr, true)
+  registerSymbol("GG2_CustomSettingsBits", modeMgr + bitsOff, true)
+  registerSymbol("GG2_CurrentGameMode", modeMgr + modeOff, true)
+end
+if looksAnyUObj(settings) then
+  registerSymbol("GG2_GameModeSettings", settings, true)
+  registerSymbol("GG2_UnlockAllRecipes", settings + 0x3A, true)
+  registerSymbol("GG2_AutoCompleteBuild", settings + 0x3B, true)
+  registerSymbol("GG2_BuildingIntegrity", settings + 0x3C, true)
+  registerSymbol("GG2_RecipesNeedItems", settings + 0x3D, true)
+end
+
+gg2_craft = {
+  settings = settings,
+  modeMgr = modeMgr,
+  gameMode = looksUObj(modeMgr) and readByte(modeMgr + modeOff) or nil,
+  editMode = looksUObj(modeMgr) and readByte(modeMgr + 0x112) or nil,
+  bits2 = looksUObj(modeMgr) and readByte(modeMgr + 0x118) or nil,
+  autoBuild = looksAnyUObj(settings) and readByte(settings + 0x3B) or nil,
+  integrity = looksAnyUObj(settings) and readByte(settings + 0x3C) or nil,
+  needItems = looksAnyUObj(settings) and readByte(settings + 0x3D) or nil,
+  bit1 = looksUObj(modeMgr) and ((readByte(modeMgr + bitsOff) or 0) &amp; 0x02) or nil,
+  bit4 = looksUObj(modeMgr) and ((readByte(modeMgr + bitsOff) or 0) &amp; 0x10) or nil,
+  modeOff = modeOff,
+  bitsOff = bitsOff,
+}
+local st = gg2_craft
+
+print(string.format(
+  "Free craft/build ON ModeManager=%s Settings=%s prevMode=%s (Creative)",
+  modeMgr and string.format("%X", modeMgr) or "nil",
+  settings and string.format("%X", settings) or "nil",
+  tostring(st.gameMode)))
+if looksAnyUObj(settings) then
+  print(string.format("  before: autoBuild=%s integrity=%s needItems=%s",
+    tostring(readByte(settings + 0x3B)),
+    tostring(readByte(settings + 0x3C)),
+    tostring(readByte(settings + 0x3D))))
+end
+
+applyCraft(settings, modeMgr)
+print(string.format("  after: mode=%s bits=%s autoBuild=%s integrity=%s needItems=%s",
+  tostring(looksUObj(modeMgr) and readByte(modeMgr + modeOff)),
+  tostring(looksUObj(modeMgr) and readByte(modeMgr + bitsOff)),
+  tostring(looksAnyUObj(settings) and readByte(settings + 0x3B)),
+  tostring(looksAnyUObj(settings) and readByte(settings + 0x3C)),
+  tostring(looksAnyUObj(settings) and readByte(settings + 0x3D))))
+
+st.timer = createTimer(nil, false)
+st.timer.Interval = 100
+st.timer.OnTimer = function()
+  local s, mm = resolveMode()
+  if looksUObj(mm) then
+    local s138 = readQword(mm + 0x138)
+    if looksAnyUObj(s138) then s = s138 end
+  end
+  if mm == nil and s == nil then return end
+  applyCraft(s, mm)
+end
+st.timer.Enabled = true
+showMessage(
+  "Free craft ON (Custom mode)\n\n"..
+  "Does NOT unlock recipes and does NOT use Creative mode.\n"..
+  "For free build use the separate Free build script (warns).\n"..
+  "Reopen craft UI.")
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local st = gg2_craft
+if st ~= nil and st.timer ~= nil then
+  st.timer.Enabled = false
+  st.timer.destroy()
+  st.timer = nil
+end
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function looksAnyUObj(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x10000 then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function readByte(a)
+  local ok, s = pcall(readBytes, a, 1, true)
+  if ok and type(s) == "table" and s[1] ~= nil then return s[1] end
+  ok, s = pcall(readBytes, a, 1, false)
+  if ok and type(s) == "string" and #s &gt;= 1 then return string.byte(s, 1) end
+  local i = readInteger(a)
+  if i ~= nil then return i &amp; 0xFF end
+  return nil
+end
+local function writeByte(a, v)
+  writeBytes(a, v &amp; 0xFF)
+end
+if st ~= nil then
+  if looksUObj(st.modeMgr) then
+    if st.gameMode ~= nil and gg2_recipes == nil and gg2_recipes_perm == nil then
+      writeByte(st.modeMgr + (st.modeOff or 0x110), st.gameMode)
+    end
+    if st.editMode ~= nil then writeByte(st.modeMgr + 0x112, st.editMode) end
+    if st.bits2 ~= nil then writeByte(st.modeMgr + 0x118, st.bits2) end
+    if st.bit1 ~= nil or st.bit4 ~= nil then
+      local b = readByte(st.modeMgr + (st.bitsOff or 0x116)) or 0
+      b = (b &amp; 0xFD) | ((st.bit1 or 0) &amp; 0x02)
+      b = (b &amp; 0xEF) | ((st.bit4 or 0) &amp; 0x10)
+      writeByte(st.modeMgr + (st.bitsOff or 0x116), b)
+    end
+  end
+  if looksAnyUObj(st.settings) then
+    if st.autoBuild ~= nil then writeByte(st.settings + 0x3B, st.autoBuild) end
+    if st.integrity ~= nil then writeByte(st.settings + 0x3C, st.integrity) end
+    if st.needItems ~= nil then writeByte(st.settings + 0x3D, st.needItems) end
+  end
+end
+gg2_craft = nil
+print("Free craft OFF (restored previous settings)")
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>94</ID>
+              <Description>"[Script] Free build (Creative — can unlock recipes)"</Description>
+              <Color>000080FF</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+local warn = messageDialog(
+  "Free build uses Creative mode.\n\n"..
+  "Creative shows ALL recipes while this is ON.\n"..
+  "If you save/autosave/quit while this is ON, recipe unlock\n"..
+  "can stick in World.csav permanently.\n\n"..
+  "Disable this, then Save, before quitting.\n\nContinue?",
+  mtWarning, mbYes, mbNo)
+if warn ~= mrYes then error("cancelled", 0) end
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function looksAnyUObj(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x10000 then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function readByte(a)
+  local ok, s = pcall(readBytes, a, 1, true)
+  if ok and type(s) == "table" and s[1] ~= nil then return s[1] end
+  local i = readInteger(a)
+  if i ~= nil then return i &amp; 0xFF end
+  return nil
+end
+local function writeByte(a, v) writeBytes(a, v &amp; 0xFF) end
+
+local function resolveMM()
+  local mm = getAddressSafe("GG2_ModeManager")
+  if looksUObj(mm) then return mm, readQword(mm + 0x138) end
+  return nil, nil
+end
+
+if gg2_build ~= nil and gg2_build.timer ~= nil then
+  gg2_build.timer.Enabled = false
+  gg2_build.timer.destroy()
+  gg2_build.timer = nil
+end
+
+local mm, s = resolveMM()
+if not looksUObj(mm) then
+  showMessage("No ModeManager — run ACTIVATE first")
+  error("no mm")
+end
+if looksAnyUObj(s) then
+  registerSymbol("GG2_AutoCompleteBuild", s + 0x3B, true)
+  registerSymbol("GG2_BuildingIntegrity", s + 0x3C, true)
+end
+
+gg2_build = {
+  modeMgr = mm,
+  settings = s,
+  gameMode = readByte(mm + 0x110),
+  editMode = readByte(mm + 0x112),
+  autoBuild = looksAnyUObj(s) and readByte(s + 0x3B) or nil,
+  integrity = looksAnyUObj(s) and readByte(s + 0x3C) or nil,
+}
+local function applyBuild()
+  local m, set = resolveMM()
+  if not looksUObj(m) then return end
+  writeByte(m + 0x110, 4) -- Creative for auto-complete
+  writeByte(m + 0x112, 1)
+  set = readQword(m + 0x138)
+  if looksAnyUObj(set) then
+    writeByte(set + 0x3B, 1)
+    writeByte(set + 0x3C, 0)
+  end
+end
+applyBuild()
+gg2_build.timer = createTimer(nil, false)
+gg2_build.timer.Interval = 100
+gg2_build.timer.OnTimer = applyBuild
+gg2_build.timer.Enabled = true
+showMessage("Free build ON (Creative)\nDisable + Save before quit or recipes may stick.")
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local st = gg2_build
+if st ~= nil and st.timer ~= nil then
+  st.timer.Enabled = false
+  st.timer.destroy()
+  st.timer = nil
+end
+local function looksUObj(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function looksAnyUObj(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x10000 then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function writeByte(a, v) writeBytes(a, v &amp; 0xFF) end
+local function readByte(a)
+  local i = readInteger(a)
+  if i ~= nil then return i &amp; 0xFF end
+  return nil
+end
+if st ~= nil and looksUObj(st.modeMgr) then
+  if st.gameMode ~= nil then writeByte(st.modeMgr + 0x110, st.gameMode) end
+  if st.editMode ~= nil then writeByte(st.modeMgr + 0x112, st.editMode) end
+  -- scrub unlock left by Creative
+  local b = readByte(st.modeMgr + 0x116) or 0
+  writeByte(st.modeMgr + 0x116, b &amp; 0xFE)
+  local s = readQword(st.modeMgr + 0x138)
+  if looksAnyUObj(s) then
+    writeByte(s + 0x3A, 0)
+    if st.autoBuild ~= nil then writeByte(s + 0x3B, st.autoBuild) end
+    if st.integrity ~= nil then writeByte(s + 0x3C, st.integrity) end
+  end
+end
+gg2_build = nil
+print("Free build OFF — scrubbed Creative unlock flags; SAVE now")
+showMessage("Free build OFF\nUnlock flags scrubbed.\nDo an in-game SAVE now.")
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>95</ID>
+              <Description>"[Script] SCRUB recipe unlock (RAM + force Normal)"</Description>
+              <Color>000000FF</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function looksAnyUObj(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x10000 then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function readByte(a)
+  local ok, s = pcall(readBytes, a, 1, true)
+  if ok and type(s) == "table" and s[1] ~= nil then return s[1] end
+  local i = readInteger(a)
+  if i ~= nil then return i &amp; 0xFF end
+  return nil
+end
+local function writeByte(a, v) writeBytes(a, v &amp; 0xFF) end
+
+-- Disable conflicting scripts' timers so they stop re-applying unlock
+for _, name in ipairs({"gg2_recipes", "gg2_recipes_perm", "gg2_build"}) do
+  local st = _G[name]
+  if st ~= nil and st.timer ~= nil then
+    st.timer.Enabled = false
+    pcall(function() st.timer.destroy() end)
+    st.timer = nil
+  end
+  _G[name] = nil
+end
+
+local mm = getAddressSafe("GG2_ModeManager")
+if not looksUObj(mm) then
+  showMessage("No ModeManager — run ACTIVATE in-world first")
+  error("no mm")
+end
+
+local beforeMode = readByte(mm + 0x110)
+local beforeBits = readByte(mm + 0x116)
+local s = readQword(mm + 0x138)
+local beforeUnlock = looksAnyUObj(s) and readByte(s + 0x3A) or nil
+
+-- Force Normal survival mode + clear unlock bits/settings
+writeByte(mm + 0x110, 1) -- Normal
+local b = readByte(mm + 0x116) or 0
+writeByte(mm + 0x116, b &amp; 0xFE &amp; (0xFF - 0x02)) -- clear unlock + free-craft bits from unlock pack
+if looksAnyUObj(s) then
+  writeByte(s + 0x3A, 0)
+  writeByte(s + 0x3B, 0) -- auto-complete off
+end
+
+print(string.format(
+  "SCRUB: mode %s->1 bits %s->%s unlock %s->0",
+  tostring(beforeMode), tostring(beforeBits), tostring(readByte(mm + 0x116)),
+  tostring(beforeUnlock)))
+
+showMessage(
+  "Recipe unlock SCRUBBED in RAM\n\n"..
+  "Mode forced to Normal, UnlockAllRecipes=0.\n\n"..
+  "1) Do an in-game SAVE now\n"..
+  "2) Quit to menu and reload that save\n\n"..
+  "If recipes are still unlocked after reload,\n"..
+  "close the game completely and tell me —\n"..
+  "the World.csav still needs an offline patch.")
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>92</ID>
+              <Description>"[Script] Unlock all recipes (session — RISKY)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function looksAnyUObj(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x10000 then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function readByte(a)
+  local ok, s = pcall(readBytes, a, 1, true)
+  if ok and type(s) == "table" and s[1] ~= nil then return s[1] end
+  ok, s = pcall(readBytes, a, 1, false)
+  if ok and type(s) == "string" and #s &gt;= 1 then return string.byte(s, 1) end
+  local i = readInteger(a)
+  if i ~= nil then return i &amp; 0xFF end
+  return nil
+end
+local function writeByte(a, v)
+  writeBytes(a, v &amp; 0xFF)
+end
+local function looksLikeGameState(gs)
+  if not looksUObj(gs) then return false end
+  local party = readQword(gs + 0x308)
+  local mm = readQword(gs + 0x318)
+  if not looksUObj(party) or not looksUObj(mm) then return false end
+  if readQword(party + 0x20) ~= gs then return false end
+  if readQword(mm + 0x20) ~= gs then return false end
+  return true
+end
+local function modeFromGameState(gs)
+  if not looksLikeGameState(gs) then return nil, nil, nil end
+  local mm = readQword(gs + 0x318)
+  local party = readQword(gs + 0x308)
+  local s = readQword(mm + 0x138)
+  if not looksAnyUObj(s) then s = nil end
+  return s, mm, party
+end
+local function resolveMode()
+  local mmSym = getAddressSafe("GG2_ModeManager")
+  if looksUObj(mmSym) then
+    local s = readQword(mmSym + 0x138)
+    if not looksAnyUObj(s) then
+      s = getAddressSafe("GG2_GameModeSettings")
+      if not looksAnyUObj(s) then s = nil end
+    end
+    local party = nil
+    local gs = readQword(mmSym + 0x20)
+    if looksUObj(gs) then party = readQword(gs + 0x308) end
+    return s, mmSym, party
+  end
+  local pawn = getAddressSafe("Player")
+  local pc = looksUObj(pawn) and readQword(pawn + 0x2E0) or nil
+  if looksUObj(pc) then
+    local party = readQword(pc + 0xEA8)
+    if looksUObj(party) then
+      local s, mm, p = modeFromGameState(readQword(party + 0x20))
+      if mm ~= nil then return s, mm, p or party end
+    end
+  end
+  local cur = pawn
+  for i = 1, 16 do
+    if not looksUObj(cur) then break end
+    local s, mm, p = modeFromGameState(cur)
+    if mm ~= nil then return s, mm, p end
+    local w = readQword(cur + 0xC0)
+    if looksUObj(w) then
+      s, mm, p = modeFromGameState(readQword(w + 0x1B0))
+      if mm ~= nil then return s, mm, p end
+    end
+    s, mm, p = modeFromGameState(readQword(cur + 0x1B0))
+    if mm ~= nil then return s, mm, p end
+    cur = readQword(cur + 0x20)
+  end
+  return nil, nil, nil
+end
+
+-- FRecipeKnowledge = 0x14; TArray = Data*, Num, Max
+local function snapRecipeArray(party, off)
+  if not looksUObj(party) then return nil end
+  local arr = party + off
+  local data = readQword(arr)
+  local num = readInteger(arr + 8)
+  if data == nil or num == nil or num &lt; 0 or num &gt; 20000 then return nil end
+  local bytes = nil
+  if num &gt; 0 and isHeapPtr(data) then
+    local ok, raw = pcall(readBytes, data, num * 0x14, true)
+    if ok and type(raw) == "table" and #raw &gt;= num * 0x14 then bytes = raw end
+  end
+  return { arr = arr, data = data, num = num, max = readInteger(arr + 12), bytes = bytes }
+end
+
+local function clampRecipeArray(snap)
+  if snap == nil or snap.arr == nil then return end
+  local data = readQword(snap.arr)
+  local num = readInteger(snap.arr + 8)
+  if num ~= nil and snap.num ~= nil and num &gt; snap.num then
+    writeInteger(snap.arr + 8, snap.num) -- prevent KnownCraftingRecipes growth while unlocked
+  end
+  -- keep original entries intact if buffer still valid
+  if snap.bytes ~= nil and isHeapPtr(data) and data == snap.data and snap.num &gt; 0 then
+    pcall(writeBytes, data, snap.bytes)
+  end
+end
+
+local function restoreRecipeArray(snap)
+  if snap == nil or snap.arr == nil then return false end
+  local data = readQword(snap.arr)
+  if snap.bytes ~= nil and isHeapPtr(data) and snap.num &gt; 0 then
+    -- write into current buffer (may have been reallocated)
+    local ok = pcall(writeBytes, data, snap.bytes)
+    if not ok and isHeapPtr(snap.data) then
+      pcall(writeBytes, snap.data, snap.bytes)
+      writeQword(snap.arr, snap.data)
+    end
+  end
+  writeInteger(snap.arr + 8, snap.num or 0)
+  return true
+end
+
+local function scrubUnlock(s, mm, modeOff, bitsOff)
+  if looksUObj(mm) then
+    local b = readByte(mm + bitsOff) or 0
+    writeByte(mm + bitsOff, b &amp; 0xFE) -- clear unlock bit0 always
+  end
+  if looksAnyUObj(s) then
+    writeByte(s + 0x3A, 0) -- UnlockAllRecipes OFF always
+  end
+end
+
+local function applyRecipes(s, mm)
+  local modeOff, bitsOff, settingsOff = 0x110, 0x116, 0x138
+  if looksUObj(mm) then
+    if gg2_craft == nil then
+      writeByte(mm + modeOff, 6)
+    end
+    local b = readByte(mm + bitsOff) or 0
+    writeByte(mm + bitsOff, (b | 0x01) &amp; 0xEF)
+    if not looksAnyUObj(s) then s = readQword(mm + settingsOff) end
+  end
+  if looksAnyUObj(s) then
+    writeByte(s + 0x3A, 1)
+  end
+end
+
+if gg2_recipes ~= nil and gg2_recipes.timer ~= nil then
+  gg2_recipes.timer.Enabled = false
+  gg2_recipes.timer.destroy()
+  gg2_recipes.timer = nil
+end
+
+local settings, modeMgr, party = resolveMode()
+if looksUObj(modeMgr) then
+  local s138 = readQword(modeMgr + 0x138)
+  if looksAnyUObj(s138) then settings = s138 end
+  if not looksUObj(party) then
+    local gs = readQword(modeMgr + 0x20)
+    if looksUObj(gs) then party = readQword(gs + 0x308) end
+  end
+end
+if modeMgr == nil and settings == nil then
+  showMessage("Could not find SurvivalModeManager.\nRe-run ACTIVATE first.")
+  error("no mode manager")
+end
+
+local modeOff, bitsOff = 0x110, 0x116
+if looksUObj(modeMgr) then
+  registerSymbol("GG2_ModeManager", modeMgr, true)
+  registerSymbol("GG2_CustomSettingsBits", modeMgr + bitsOff, true)
+  registerSymbol("GG2_CurrentGameMode", modeMgr + modeOff, true)
+end
+if looksAnyUObj(settings) then
+  registerSymbol("GG2_GameModeSettings", settings, true)
+  registerSymbol("GG2_UnlockAllRecipes", settings + 0x3A, true)
+end
+if looksUObj(party) then
+  registerSymbol("GG2_Party", party, true)
+end
+
+local craftSnap = snapRecipeArray(party, 0x508)
+local buildSnap = snapRecipeArray(party, 0x518)
+
+gg2_recipes = {
+  settings = settings,
+  modeMgr = modeMgr,
+  party = party,
+  gameMode = looksUObj(modeMgr) and readByte(modeMgr + modeOff) or nil,
+  modeOff = modeOff,
+  bitsOff = bitsOff,
+  craftSnap = craftSnap,
+  buildSnap = buildSnap,
+}
+local st = gg2_recipes
+
+print(string.format(
+  "Recipe unlock ON (session) ModeManager=%s Settings=%s craftRecipes=%s buildRecipes=%s",
+  modeMgr and string.format("%X", modeMgr) or "nil",
+  settings and string.format("%X", settings) or "nil",
+  craftSnap and tostring(craftSnap.num) or "?",
+  buildSnap and tostring(buildSnap.num) or "?"))
+
+applyRecipes(settings, modeMgr)
+
+st.timer = createTimer(nil, false)
+st.timer.Interval = 50
+st.timer.OnTimer = function()
+  local s, mm, p = resolveMode()
+  if looksUObj(mm) then
+    local s138 = readQword(mm + 0x138)
+    if looksAnyUObj(s138) then s = s138 end
+  end
+  if mm == nil and s == nil then return end
+  applyRecipes(s, mm)
+  -- Stop the game from permanently adding recipes to Party while flag is on
+  clampRecipeArray(st.craftSnap)
+  clampRecipeArray(st.buildSnap)
+end
+st.timer.Enabled = true
+showMessage(
+  "Unlock all recipes ON (session only)\n\n"..
+  "IMPORTANT:\n"..
+  "1) Disable this script BEFORE autosave / quit\n"..
+  "2) After disable, use in-game Save to overwrite any polluted autosave\n\n"..
+  "Party known-recipe lists are frozen while this is on.\n"..
+  "Close/reopen craft UI.")
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local st = gg2_recipes
+if st ~= nil and st.timer ~= nil then
+  st.timer.Enabled = false
+  st.timer.destroy()
+  st.timer = nil
+end
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function looksAnyUObj(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x10000 then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function readByte(a)
+  local ok, s = pcall(readBytes, a, 1, true)
+  if ok and type(s) == "table" and s[1] ~= nil then return s[1] end
+  ok, s = pcall(readBytes, a, 1, false)
+  if ok and type(s) == "string" and #s &gt;= 1 then return string.byte(s, 1) end
+  local i = readInteger(a)
+  if i ~= nil then return i &amp; 0xFF end
+  return nil
+end
+local function writeByte(a, v)
+  writeBytes(a, v &amp; 0xFF)
+end
+local function restoreRecipeArray(snap)
+  if snap == nil or snap.arr == nil then return end
+  local data = readQword(snap.arr)
+  if snap.bytes ~= nil and isHeapPtr(data) and snap.num &gt; 0 then
+    pcall(writeBytes, data, snap.bytes)
+  elseif snap.bytes ~= nil and isHeapPtr(snap.data) then
+    pcall(writeBytes, snap.data, snap.bytes)
+    writeQword(snap.arr, snap.data)
+  end
+  writeInteger(snap.arr + 8, snap.num or 0)
+end
+
+if st ~= nil then
+  -- HARD scrub — Creative/Custom unlock must not survive disable
+  if looksUObj(st.modeMgr) then
+    writeByte(st.modeMgr + (st.modeOff or 0x110), 1) -- Normal (not Creative)
+    local b = readByte(st.modeMgr + (st.bitsOff or 0x116)) or 0
+    writeByte(st.modeMgr + (st.bitsOff or 0x116), b &amp; 0xFE)
+  end
+  if looksAnyUObj(st.settings) then
+    writeByte(st.settings + 0x3A, 0)
+  end
+  restoreRecipeArray(st.craftSnap)
+  restoreRecipeArray(st.buildSnap)
+  print(string.format(
+    "Recipe unlock OFF — forced Normal + scrubbed; craftRecipes=%s buildRecipes=%s",
+    st.craftSnap and tostring(st.craftSnap.num) or "?",
+    st.buildSnap and tostring(st.buildSnap.num) or "?"))
+end
+gg2_recipes = nil
+showMessage(
+  "Session recipe unlock OFF\n\n"..
+  "Forced Normal mode + cleared unlock flags.\n\n"..
+  "SAVE in-game NOW, then reload that save.\n"..
+  "If recipes stay unlocked after reload, close Grounded 2\n"..
+  "completely so the save file can be patched offline.")
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>93</ID>
+              <Description>"[Script] Unlock all recipes (PERMANENT)"</Description>
+              <Color>000000FF</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local warn = messageDialog(
+  "PERMANENT recipe unlock\n\n"..
+  "This writes UnlockAllRecipes into live GameMode settings.\n"..
+  "When the game autosaves / you quit, it sticks in World.csav.\n\n"..
+  "This CANNOT be undone from the CT.\n"..
+  "Only a save backup (or our revert tool) can restore recipes.\n\n"..
+  "Use session-only unlock if you want it temporary.\n\n"..
+  "Continue?",
+  mtWarning, mbYes, mbNo)
+if warn ~= mrYes then
+  print("Permanent recipe unlock cancelled")
+  error("cancelled", 0)
+end
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function looksAnyUObj(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x10000 then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function readByte(a)
+  local ok, s = pcall(readBytes, a, 1, true)
+  if ok and type(s) == "table" and s[1] ~= nil then return s[1] end
+  ok, s = pcall(readBytes, a, 1, false)
+  if ok and type(s) == "string" and #s &gt;= 1 then return string.byte(s, 1) end
+  local i = readInteger(a)
+  if i ~= nil then return i &amp; 0xFF end
+  return nil
+end
+local function writeByte(a, v)
+  writeBytes(a, v &amp; 0xFF)
+end
+local function looksLikeGameState(gs)
+  if not looksUObj(gs) then return false end
+  local party = readQword(gs + 0x308)
+  local mm = readQword(gs + 0x318)
+  if not looksUObj(party) or not looksUObj(mm) then return false end
+  if readQword(party + 0x20) ~= gs then return false end
+  if readQword(mm + 0x20) ~= gs then return false end
+  return true
+end
+local function modeFromGameState(gs)
+  if not looksLikeGameState(gs) then return nil, nil end
+  local mm = readQword(gs + 0x318)
+  local s = readQword(mm + 0x138)
+  if not looksAnyUObj(s) then s = nil end
+  return s, mm
+end
+local function resolveMode()
+  local mmSym = getAddressSafe("GG2_ModeManager")
+  if looksUObj(mmSym) then
+    local s = readQword(mmSym + 0x138)
+    if not looksAnyUObj(s) then
+      s = getAddressSafe("GG2_GameModeSettings")
+      if not looksAnyUObj(s) then s = nil end
+    end
+    return s, mmSym
+  end
+  local pawn = getAddressSafe("Player")
+  local pc = looksUObj(pawn) and readQword(pawn + 0x2E0) or nil
+  if looksUObj(pc) then
+    local party = readQword(pc + 0xEA8)
+    if looksUObj(party) then
+      local s, mm = modeFromGameState(readQword(party + 0x20))
+      if mm ~= nil then return s, mm end
+    end
+  end
+  local cur = pawn
+  for i = 1, 16 do
+    if not looksUObj(cur) then break end
+    local s, mm = modeFromGameState(cur)
+    if mm ~= nil then return s, mm end
+    local w = readQword(cur + 0xC0)
+    if looksUObj(w) then
+      s, mm = modeFromGameState(readQword(w + 0x1B0))
+      if mm ~= nil then return s, mm end
+    end
+    s, mm = modeFromGameState(readQword(cur + 0x1B0))
+    if mm ~= nil then return s, mm end
+    cur = readQword(cur + 0x20)
+  end
+  return nil, nil
+end
+
+local function applyPermanent(s, mm)
+  local modeOff, bitsOff, settingsOff = 0x110, 0x116, 0x138
+  if looksUObj(mm) then
+    if gg2_craft == nil then
+      writeByte(mm + modeOff, 6)
+    end
+    local b = readByte(mm + bitsOff) or 0
+    writeByte(mm + bitsOff, (b | 0x01) &amp; 0xEF)
+    if not looksAnyUObj(s) then s = readQword(mm + settingsOff) end
+  end
+  if looksAnyUObj(s) then
+    writeByte(s + 0x3A, 1)
+  end
+end
+
+if gg2_recipes_perm ~= nil and gg2_recipes_perm.timer ~= nil then
+  gg2_recipes_perm.timer.Enabled = false
+  gg2_recipes_perm.timer.destroy()
+  gg2_recipes_perm.timer = nil
+end
+
+local settings, modeMgr = resolveMode()
+if looksUObj(modeMgr) then
+  local s138 = readQword(modeMgr + 0x138)
+  if looksAnyUObj(s138) then settings = s138 end
+end
+if modeMgr == nil and settings == nil then
+  showMessage("Could not find SurvivalModeManager.\nRe-run ACTIVATE first.")
+  error("no mode manager")
+end
+
+local modeOff, bitsOff = 0x110, 0x116
+if looksUObj(modeMgr) then
+  registerSymbol("GG2_ModeManager", modeMgr, true)
+  registerSymbol("GG2_CustomSettingsBits", modeMgr + bitsOff, true)
+  registerSymbol("GG2_CurrentGameMode", modeMgr + modeOff, true)
+end
+if looksAnyUObj(settings) then
+  registerSymbol("GG2_GameModeSettings", settings, true)
+  registerSymbol("GG2_UnlockAllRecipes", settings + 0x3A, true)
+end
+
+gg2_recipes_perm = {
+  settings = settings,
+  modeMgr = modeMgr,
+  modeOff = modeOff,
+  bitsOff = bitsOff,
+}
+
+applyPermanent(settings, modeMgr)
+print(string.format(
+  "PERMANENT recipe unlock ON ModeManager=%s Settings=%s unlock=%s bits=%s",
+  modeMgr and string.format("%X", modeMgr) or "nil",
+  settings and string.format("%X", settings) or "nil",
+  tostring(looksAnyUObj(settings) and readByte(settings + 0x3A)),
+  tostring(looksUObj(modeMgr) and readByte(modeMgr + bitsOff))))
+
+gg2_recipes_perm.timer = createTimer(nil, false)
+gg2_recipes_perm.timer.Interval = 100
+gg2_recipes_perm.timer.OnTimer = function()
+  local s, mm = resolveMode()
+  if looksUObj(mm) then
+    local s138 = readQword(mm + 0x138)
+    if looksAnyUObj(s138) then s = s138 end
+  end
+  if mm == nil and s == nil then return end
+  applyPermanent(s, mm)
+end
+gg2_recipes_perm.timer.Enabled = true
+
+showMessage(
+  "PERMANENT recipe unlock is ON\n\n"..
+  "Unlock flags will NOT be restored when you disable this.\n"..
+  "Save / autosave / quit will bake it into World.csav.\n\n"..
+  "Close/reopen craft UI. Cannot undo from the CT.")
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+-- Intentionally do NOT restore unlock flags — permanent by design.
+local st = gg2_recipes_perm
+if st ~= nil and st.timer ~= nil then
+  st.timer.Enabled = false
+  st.timer.destroy()
+  st.timer = nil
+end
+gg2_recipes_perm = nil
+print("PERMANENT recipe unlock script disabled — unlock flags LEFT ON (not restored)")
+showMessage(
+  "Permanent unlock script disabled.\n\n"..
+  "Unlock flags were LEFT ON on purpose.\n"..
+  "If the game already saved, recipes stay unlocked in the save.\n"..
+  "This cannot be undone from the CT.")
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>100</ID>
+              <Description>"GameMode settings (debug)"</Description>
+              <Options moHideChildren="1" moManualExpandCollapse="1"/>
+              <Color>00FF8080</Color>
+              <GroupHeader>1</GroupHeader>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>101</ID>
+                  <Description>"Unlock All Recipes (1=on)"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Byte</VariableType>
+                  <Address>GG2_UnlockAllRecipes</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>102</ID>
+                  <Description>"Auto Complete Buildings (1=free build)"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Byte</VariableType>
+                  <Address>GG2_AutoCompleteBuild</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>105</ID>
+                  <Description>"Building Integrity (0=off)"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Byte</VariableType>
+                  <Address>GG2_BuildingIntegrity</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>103</ID>
+                  <Description>"Recipes Need Ingredients (0=free craft)"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Byte</VariableType>
+                  <Address>GG2_RecipesNeedItems</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>104</ID>
+                  <Description>"CustomSettings bits (bit0 unlock, bit1 free)"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Byte</VariableType>
+                  <Address>GG2_CustomSettingsBits</Address>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>50</ID>
+          <Description>"Movement"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <Color>0040C0FF</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>80</ID>
+              <Description>"[Script] Teleport to aim (F6)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+gg2_tp = gg2_tp or {}
+local st = gg2_tp
+st.dist = st.dist or 1500 -- Unreal units (~cm); horizontal blink + lift (safer)
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+
+local function looksPos(x, y, z)
+  if x == nil or y == nil or z == nil then return false end
+  if not (x == x and y == y and z == z) then return false end
+  local a = math.abs(x) + math.abs(y)
+  return a &gt; 500 and a &lt; 5e6 and math.abs(z) &lt; 5e5
+end
+
+local function readVec(addr, wide)
+  if wide then
+    return readDouble(addr), readDouble(addr + 8), readDouble(addr + 16)
+  end
+  return readFloat(addr), readFloat(addr + 4), readFloat(addr + 8)
+end
+
+local function writeVec(addr, x, y, z, wide)
+  if wide then
+    writeDouble(addr, x)
+    writeDouble(addr + 8, y)
+    writeDouble(addr + 16, z)
+  else
+    writeFloat(addr, x)
+    writeFloat(addr + 4, y)
+    writeFloat(addr + 8, z)
+  end
+end
+
+local function detectWide(addr)
+  local dx, dy, dz = readVec(addr, true)
+  if looksPos(dx, dy, dz) then return true end
+  local fx, fy, fz = readVec(addr, false)
+  if looksPos(fx, fy, fz) then return false end
+  return true -- SDK 0.5.0.2 FVector is 0x18 (doubles)
+end
+
+local function pawn()
+  local p = getAddressSafe("Player")
+  if p == nil or not looksUObj(p) then return nil end
+  return p
+end
+
+-- AActor::RootComponent @0x1B8, USceneComponent::RelativeLocation @0x148 (FVector 0x18)
+local function findLoc(p, quiet)
+  local root = readQword(p + 0x1B8)
+  if looksUObj(root) then
+    local addr = root + 0x148
+    local wide = detectWide(addr)
+    local x, y, z = readVec(addr, wide)
+    if looksPos(x, y, z) then
+      if not quiet and (st.locAddr ~= addr or st._lastLocPrint == nil) then
+        print(string.format("TP loc @ %X (Root+0x148 wide=%s) = %.1f %.1f %.1f",
+          addr, tostring(wide), x, y, z))
+        st._lastLocPrint = true
+      end
+      st.locAddr = addr
+      st.locWide = wide
+      st.locTag = "Root+0x148"
+      return addr, wide
+    end
+  end
+  local cap = readQword(p + 0x340)
+  if looksUObj(cap) then
+    local addr = cap + 0x148
+    local wide = detectWide(addr)
+    local x, y, z = readVec(addr, wide)
+    if looksPos(x, y, z) then
+      st.locAddr = addr
+      st.locWide = wide
+      st.locTag = "Capsule+0x148"
+      if not quiet then
+        print(string.format("TP loc @ %X (%s) = %.1f %.1f %.1f", addr, st.locTag, x, y, z))
+      end
+      return addr, wide
+    end
+  end
+  return nil
+end
+
+-- APawn::Controller @0x2E0, AController::ControlRotation @0x340
+-- APlayerController::PlayerCameraManager @0x380
+-- APlayerCameraManager::CameraCachePrivate @0x1550 + POV @+0x10 = 0x1560 (SDK)
+-- FMinimalViewInfo: Location@0 Rotator@0x18 (doubles)
+local function readRot(addr, wide)
+  if wide then
+    return readDouble(addr), readDouble(addr + 8)
+  end
+  return readFloat(addr), readFloat(addr + 4)
+end
+
+local function rotOk(pitch, yaw)
+  return pitch ~= nil and yaw ~= nil
+    and pitch == pitch and yaw == yaw
+    and math.abs(pitch) &lt;= 89.9 and math.abs(yaw) &lt;= 360.5
+end
+
+-- Horizontal blink from yaw only (pitch caused floor clips / void drops).
+local function destFromAim(x, y, z, pitch, yaw, dist)
+  local yr = math.rad(yaw)
+  local nx = x + math.cos(yr) * dist
+  local ny = y + math.sin(yr) * dist
+  local lift = 200
+  if pitch ~= nil and pitch &gt; 5 then
+    lift = lift + math.min(800, (pitch - 5) * 25)
+  end
+  return nx, ny, z + lift
+end
+
+local function tryCamPov(cam, po, tag)
+  -- Prefer doubles (UE5 FVector/FRotator are 0x18)
+  for _, wide in ipairs({true, false}) do
+    local lx, ly, lz = readVec(cam + po, wide)
+    local stride = wide and 24 or 12
+    local pitch, yaw = readRot(cam + po + stride, wide)
+    if looksPos(lx, ly, lz) and rotOk(pitch, yaw) then
+      -- FOV sanity when reading CameraCache (float at Loc+0x30)
+      local fov = readFloat(cam + po + 0x30)
+      if fov ~= nil and (fov &lt; 20 or fov &gt; 170) and tag == "CameraCache" then
+        -- still allow if yaw looks live
+      end
+      st.camLoc = {lx, ly, lz}
+      return pitch, yaw, tag
+    end
+  end
+  return nil
+end
+
+local function findAim(p)
+  st.camLoc = nil
+  local ctrl = readQword(p + 0x2E0)
+  if not looksUObj(ctrl) then
+    print("TP aim: no Controller @ Player+0x2E0")
+    return nil
+  end
+
+  local cam = readQword(ctrl + 0x380)
+  if looksUObj(cam) then
+    -- Exact SDK slots first (live look direction)
+    local pitch, yaw, tag = tryCamPov(cam, 0x1560, "CameraCache")
+    if pitch ~= nil then return pitch, yaw, tag end
+    pitch, yaw, tag = tryCamPov(cam, 0x350, "ViewTarget") -- ViewTarget.POV @ 0x340+0x10
+    if pitch ~= nil then return pitch, yaw, tag end
+    pitch, yaw, tag = tryCamPov(cam, 0x1E40, "LastFrameCache") -- LastFrameCameraCachePrivate+0x10
+    if pitch ~= nil then return pitch, yaw, tag end
+  else
+    print("TP aim: no PlayerCameraManager @ PC+0x380")
+  end
+
+  -- Root RelativeRotation yaw (body facing) — updates when you turn
+  local root = readQword(p + 0x1B8)
+  if looksUObj(root) then
+    for _, wide in ipairs({true, false}) do
+      local pitch, yaw = readRot(root + 0x160, wide) -- RelativeRotation after RelativeLocation(0x148)+0x18
+      if rotOk(pitch, yaw) and math.abs(yaw) &gt; 0.01 then
+        return pitch, yaw, "RootYaw"
+      end
+    end
+  end
+
+  for _, wide in ipairs({false, true}) do
+    local pitch, yaw = readRot(ctrl + 0x340, wide)
+    if rotOk(pitch, yaw) then
+      return pitch, yaw, "ControlRotation"
+    end
+  end
+  print("TP aim: no usable yaw (look around / turn character)")
+  return nil
+end
+
+local function briefNoFall(p)
+  local addr = p + 0x1601
+  pcall(function() writeBytes(addr, 0) end)
+  if st.nofallTimer ~= nil then
+    st.nofallTimer.Enabled = false
+    pcall(function() st.nofallTimer.destroy() end)
+    st.nofallTimer = nil
+  end
+  st.nofallTimer = createTimer(nil, false)
+  st.nofallTimer.Interval = 1500
+  st.nofallTimer.OnTimer = function(t)
+    pcall(function() writeBytes(addr, 1) end)
+    t.Enabled = false
+    pcall(function() t.destroy() end)
+    if st.nofallTimer == t then st.nofallTimer = nil end
+  end
+  st.nofallTimer.Enabled = true
+end
+
+local function applyPos(p, loc, wide, px, py, pz, ox, oy, oz)
+  writeVec(loc, px, py, pz, wide)
+  local root = readQword(p + 0x1B8)
+  if looksUObj(root) then
+    writeVec(root + 0x148, px, py, pz, detectWide(root + 0x148))
+    writeVec(root + 0x190, 0, 0, 0, true) -- ComponentVelocity
+    for off = 0x1B0, 0x250, 8 do
+      local tx, ty, tz = readVec(root + off, true)
+      if looksPos(tx, ty, tz) then
+        local dx = math.abs(tx - ox) + math.abs(ty - oy) + math.abs(tz - oz)
+        if dx &lt; 120 then
+          writeVec(root + off, px, py, pz, true)
+          st.ctwOff = off
+        end
+      end
+    end
+    if st.ctwOff then writeVec(root + st.ctwOff, px, py, pz, true) end
+  end
+  local cap = readQword(p + 0x340)
+  if looksUObj(cap) then
+    local cLoc = cap + 0x148
+    local w2 = detectWide(cLoc)
+    local cx, cy, cz = readVec(cLoc, w2)
+    if looksPos(cx, cy, cz) then writeVec(cLoc, px, py, pz, w2) end
+  end
+  local cmc = readQword(p + 0x1400)
+  if looksUObj(cmc) then
+    for _, lo in ipairs({0x2A0, 0x2B0, 0x2C0, 0x300, 0x310, 0x320}) do
+      for _, w2 in ipairs({true, false}) do
+        local tx, ty, tz = readVec(cmc + lo, w2)
+        if looksPos(tx, ty, tz) then
+          writeVec(cmc + lo, px, py, pz, w2)
+          break
+        end
+      end
+    end
+    for _, lo in ipairs({0xD0, 0xE0, 0xF0, 0x100, 0x110, 0x120}) do
+      local vx = readFloat(cmc + lo)
+      local vy = readFloat(cmc + lo + 4)
+      local vz = readFloat(cmc + lo + 8)
+      if vx and vy and vz and math.abs(vx) + math.abs(vy) + math.abs(vz) &lt; 5000 then
+        writeFloat(cmc + lo, 0)
+        writeFloat(cmc + lo + 4, 0)
+        writeFloat(cmc + lo + 8, 0)
+      end
+    end
+  end
+end
+
+local function teleportToAim()
+  if st._busy then return end
+  st._busy = true
+  local ok, err = pcall(function()
+    st.ctwOff = nil
+    st.camLoc = nil
+
+    local p = pawn()
+    if not p then
+      print("TP: no Player — re-run [ACTIVATE] after death/reload")
+      return
+    end
+    local loc, wide = findLoc(p, false)
+    if not loc then
+      print("TP: no XYZ (Root RelativeLocation)")
+      return
+    end
+    local pitch, yaw, src = findAim(p)
+    if pitch == nil or yaw == nil then
+      print("TP: no aim yaw")
+      return
+    end
+    local x, y, z = readVec(loc, wide)
+    local nx, ny, nz = destFromAim(x, y, z, pitch, yaw, st.dist)
+
+    briefNoFall(p)
+    applyPos(p, loc, wide, nx, ny, nz, x, y, z)
+
+    st.hold = { x = nx, y = ny, z = nz, left = 16, loc = loc, wide = wide }
+    if st.holdTimer == nil then
+      st.holdTimer = createTimer(nil, false)
+      st.holdTimer.Interval = 20
+      st.holdTimer.OnTimer = function()
+        if st.hold == nil or st.hold.left &lt;= 0 then
+          if st.holdTimer ~= nil then st.holdTimer.Enabled = false end
+          return
+        end
+        local pp = pawn()
+        if not pp then return end
+        local l2 = st.hold.loc
+        local w2 = st.hold.wide or true
+        if l2 then writeVec(l2, st.hold.x, st.hold.y, st.hold.z, w2) end
+        local root = readQword(pp + 0x1B8)
+        if looksUObj(root) then
+          writeVec(root + 0x148, st.hold.x, st.hold.y, st.hold.z, true)
+          if st.ctwOff then writeVec(root + st.ctwOff, st.hold.x, st.hold.y, st.hold.z, true) end
+        end
+        st.hold.left = st.hold.left - 1
+      end
+    end
+    st.holdTimer.Enabled = true
+
+    local rx, ry, rz = readVec(loc, wide)
+    print(string.format(
+      "TP (%s) yaw=%.1f pitch=%.1f dist=%.0f  %.1f,%.1f,%.1f -> %.1f,%.1f,%.1f (rb %.1f,%.1f,%.1f)",
+      src or "?", yaw, pitch, st.dist, x, y, z, nx, ny, nz, rx, ry, rz))
+  end)
+  st._busy = false
+  if not ok then
+    print("TP error: " .. tostring(err))
+  end
+end
+
+do
+  local p = pawn()
+  if p then
+    findLoc(p, false)
+    local pitch, yaw, src = findAim(p)
+    if pitch then
+      print(string.format("TP aim ready (%s) yaw=%.1f pitch=%.1f", src, yaw, pitch))
+    else
+      print("TP aim not ready yet — look around once after enabling")
+    end
+  end
+end
+
+if st.hk ~= nil then
+  pcall(function() st.hk.destroy() end)
+  st.hk = nil
+end
+st.hk = createHotkey(function()
+  teleportToAim()
+end, VK_F6)
+
+print(string.format(
+  "Teleport to aim ON — F6 uses CameraCache yaw (dist=%.0f). Expect TP (CameraCache) each press.",
+  st.dist))
+showMessage(string.format(
+  "Teleport to aim ON\n\nF6 = horizontal blink where you LOOK (camera yaw).\nZ always lifts — no floor drops.\nDistance: %.0f uu (~%.0f m)\n\nEach press should log: TP (CameraCache) yaw=...\nIf it says ControlRotation yaw=3.8, camera aim failed — tell me.",
+  st.dist, st.dist / 100))
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local st = gg2_tp
+if st ~= nil and st.hk ~= nil then
+  pcall(function() st.hk.destroy() end)
+  st.hk = nil
+end
+if st ~= nil and st.holdTimer ~= nil then
+  st.holdTimer.Enabled = false
+  pcall(function() st.holdTimer.destroy() end)
+  st.holdTimer = nil
+end
+if st ~= nil and st.nofallTimer ~= nil then
+  st.nofallTimer.Enabled = false
+  pcall(function() st.nofallTimer.destroy() end)
+  st.nofallTimer = nil
+end
+st.hold = nil
+st.locAddr = nil
+st.ctwOff = nil
+print("Teleport to aim OFF")
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>81</ID>
+              <Description>"[Script] Set teleport distance..."</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+gg2_tp = gg2_tp or {}
+local cur = gg2_tp.dist or 2500
+local n = inputQuery("Teleport distance (Unreal units, ~cm)", "How far along aim to blink?", tostring(cur))
+if n == nil or n == "" then error("cancelled") end
+local v = tonumber(n)
+if not v or v &lt; 100 or v &gt; 200000 then
+  showMessage("Use a number between 100 and 200000")
+  error("bad dist")
+end
+gg2_tp.dist = v
+print("Teleport distance set to "..tostring(v))
+showMessage(string.format("Teleport distance = %.0f uu (~%.0f m)\nEnable Teleport to aim (F6) if it is off.", v, v / 100))
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>51</ID>
+              <Description>"[Script] Super Speed x5"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function getCmc()
+  local p = getAddressSafe("Player")
+  if p == nil or not looksUObj(p) then return nil end
+  local c = readQword(p + 0x1400)
+  if looksUObj(c) then return c end
+  return nil
+end
+
+if gg2_speed ~= nil and gg2_speed.timer ~= nil then
+  gg2_speed.timer.Enabled = false
+  gg2_speed.timer.destroy()
+  gg2_speed.timer = nil
+end
+
+local c = getCmc()
+if c == nil then
+  showMessage("No CharMovementComponent at Player+0x1400.\nRe-run ACTIVATE in-world.")
+  error("no CMC")
+end
+
+gg2_speed = {
+  mult = 5.0,
+  walk = readFloat(c + 0x288),
+  crouch = readFloat(c + 0x28C),
+  fly = readFloat(c + 0x294),
+  curGround = readFloat(c + 0x1018),
+  sprint = readFloat(c + 0x1114),
+  flySprint = readFloat(c + 0x1118),
+  customMult = readFloat(c + 0x11D0),
+}
+local st = gg2_speed
+-- sane fallbacks if values look empty/garbage
+if st.walk == nil or st.walk &lt; 50 or st.walk &gt; 5000 then st.walk = 600 end
+if st.crouch == nil or st.crouch &lt; 20 or st.crouch &gt; 5000 then st.crouch = st.walk * 0.5 end
+if st.fly == nil or st.fly &lt; 50 or st.fly &gt; 5000 then st.fly = st.walk end
+if st.curGround == nil or st.curGround &lt; 50 or st.curGround &gt; 5000 then st.curGround = st.walk end
+if st.sprint == nil or st.sprint &lt; 50 or st.sprint &gt; 5000 then st.sprint = st.walk * 1.5 end
+if st.flySprint == nil or st.flySprint &lt; 50 or st.flySprint &gt; 5000 then st.flySprint = st.sprint end
+if st.customMult == nil or st.customMult ~= st.customMult then st.customMult = 1 end
+
+print(string.format("Super Speed x%.0f CMC=%X walk=%.0f curGround=%.0f sprint=%.0f",
+  st.mult, c, st.walk, st.curGround, st.sprint))
+
+st.timer = createTimer(nil, false)
+st.timer.Interval = 50
+st.timer.OnTimer = function()
+  local cm = getCmc()
+  if cm == nil then return end
+  local m = st.mult
+  writeFloat(cm + 0x288, st.walk * m)
+  writeFloat(cm + 0x28C, st.crouch * m)
+  writeFloat(cm + 0x294, st.fly * m)
+  -- Maine live net speed (often what actually drives movement)
+  writeFloat(cm + 0x1018, st.curGround * m)
+  writeFloat(cm + 0x1114, st.sprint * m)
+  writeFloat(cm + 0x1118, st.flySprint * m)
+  writeFloat(cm + 0x11D0, m)
+end
+st.timer.Enabled = true
+showMessage(string.format(
+  "Super Speed x%.0f ON\nWalk base %.0f -&gt; %.0f\nAlso boosts CurrentMaxGroundSpeed + MaxSprintSpeed.\nDisable script to restore.",
+  st.mult, st.walk, st.walk * st.mult))
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local st = gg2_speed
+if st ~= nil and st.timer ~= nil then
+  st.timer.Enabled = false
+  st.timer.destroy()
+  st.timer = nil
+end
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+if st ~= nil then
+  local p = getAddressSafe("Player")
+  if p ~= nil and looksUObj(p) then
+    local cm = readQword(p + 0x1400)
+    if looksUObj(cm) then
+      if st.walk then writeFloat(cm + 0x288, st.walk) end
+      if st.crouch then writeFloat(cm + 0x28C, st.crouch) end
+      if st.fly then writeFloat(cm + 0x294, st.fly) end
+      if st.curGround then writeFloat(cm + 0x1018, st.curGround) end
+      if st.sprint then writeFloat(cm + 0x1114, st.sprint) end
+      if st.flySprint then writeFloat(cm + 0x1118, st.flySprint) end
+      if st.customMult then writeFloat(cm + 0x11D0, st.customMult) end
+    end
+  end
+end
+gg2_speed = nil
+print("Super Speed OFF")
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>52</ID>
+              <Description>"[Script] Super Jump x4"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function getCmc()
+  local p = getAddressSafe("Player")
+  if p == nil or not looksUObj(p) then return nil end
+  local c = readQword(p + 0x1400)
+  if looksUObj(c) then return c end
+  return nil
+end
+
+if gg2_jump ~= nil and gg2_jump.timer ~= nil then
+  gg2_jump.timer.Enabled = false
+  gg2_jump.timer.destroy()
+  gg2_jump.timer = nil
+end
+
+local c = getCmc()
+if c == nil then
+  showMessage("No CharMovementComponent at Player+0x1400.\nRe-run ACTIVATE in-world.")
+  error("no CMC")
+end
+
+gg2_jump = {
+  mult = 4.0,
+  jumpZ = readFloat(c + 0x1B8),
+}
+local st = gg2_jump
+if st.jumpZ == nil or st.jumpZ &lt; 100 or st.jumpZ &gt; 5000 then st.jumpZ = 420 end
+
+print(string.format("Super Jump x%.0f CMC=%X JumpZ=%.0f -&gt; %.0f",
+  st.mult, c, st.jumpZ, st.jumpZ * st.mult))
+
+st.timer = createTimer(nil, false)
+st.timer.Interval = 50
+st.timer.OnTimer = function()
+  local cm = getCmc()
+  if cm == nil then return end
+  writeFloat(cm + 0x1B8, st.jumpZ * st.mult)
+end
+st.timer.Enabled = true
+showMessage(string.format(
+  "Super Jump x%.0f ON\nJumpZ %.0f -&gt; %.0f\nDisable script to restore.",
+  st.mult, st.jumpZ, st.jumpZ * st.mult))
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local st = gg2_jump
+if st ~= nil and st.timer ~= nil then
+  st.timer.Enabled = false
+  st.timer.destroy()
+  st.timer = nil
+end
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+if st ~= nil and st.jumpZ then
+  local p = getAddressSafe("Player")
+  if p ~= nil and looksUObj(p) then
+    local cm = readQword(p + 0x1400)
+    if looksUObj(cm) then writeFloat(cm + 0x1B8, st.jumpZ) end
+  end
+end
+gg2_jump = nil
+print("Super Jump OFF")
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>53</ID>
+              <Description>"[Script] Infinite Jump"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+
+if gg2_infjump ~= nil and gg2_infjump.timer ~= nil then
+  gg2_infjump.timer.Enabled = false
+  gg2_infjump.timer.destroy()
+  gg2_infjump.timer = nil
+end
+
+local p = getAddressSafe("Player")
+if p == nil or not looksUObj(p) then
+  showMessage("Player not live. Re-run ACTIVATE.")
+  error("bad Player")
+end
+
+gg2_infjump = {
+  maxCount = readInteger(p + 0x478),
+  curCount = readInteger(p + 0x47C),
+}
+local st = gg2_infjump
+if st.maxCount == nil or st.maxCount &lt; 1 or st.maxCount &gt; 100 then st.maxCount = 1 end
+
+-- Raise allowed jumps + keep current count at 0 so every press counts as grounded jump
+writeInteger(p + 0x478, 999)
+writeInteger(p + 0x47C, 0)
+writeInteger(p + 0x480, 0)
+
+print(string.format("Infinite Jump ON Player=%X JumpMaxCount %d -&gt; 999", p, st.maxCount))
+
+st.timer = createTimer(nil, false)
+st.timer.Interval = 25
+st.timer.OnTimer = function()
+  local pawn = getAddressSafe("Player")
+  if pawn == nil or not looksUObj(pawn) then return end
+  writeInteger(pawn + 0x478, 999)
+  writeInteger(pawn + 0x47C, 0)
+  writeInteger(pawn + 0x480, 0)
+end
+st.timer.Enabled = true
+showMessage("Infinite Jump ON\nResets JumpCurrentCount every tick + JumpMaxCount=999.\nDisable to restore.")
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local st = gg2_infjump
+if st ~= nil and st.timer ~= nil then
+  st.timer.Enabled = false
+  st.timer.destroy()
+  st.timer = nil
+end
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local p = getAddressSafe("Player")
+if st ~= nil and p ~= nil and looksUObj(p) then
+  writeInteger(p + 0x478, st.maxCount or 1)
+  writeInteger(p + 0x47C, 0)
+  writeInteger(p + 0x480, 0)
+end
+gg2_infjump = nil
+print("Infinite Jump OFF")
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>54</ID>
+              <Description>"[Script] Super Swim x5"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function getCmc()
+  local p = getAddressSafe("Player")
+  if p == nil or not looksUObj(p) then return nil end
+  local c = readQword(p + 0x1400)
+  if looksUObj(c) then return c end
+  return nil
+end
+
+if gg2_swim ~= nil and gg2_swim.timer ~= nil then
+  gg2_swim.timer.Enabled = false
+  gg2_swim.timer.destroy()
+  gg2_swim.timer = nil
+end
+
+local c = getCmc()
+if c == nil then
+  showMessage("No CMC at Player+0x1400. Re-run ACTIVATE.")
+  error("no CMC")
+end
+
+gg2_swim = {
+  mult = 5.0,
+  swim = readFloat(c + 0x290),
+  swimSprint = readFloat(c + 0x118C),
+  customSwim = readFloat(c + 0x11D8),
+}
+local st = gg2_swim
+if st.swim == nil or st.swim &lt; 20 or st.swim &gt; 5000 then st.swim = 300 end
+if st.swimSprint == nil or st.swimSprint &lt; 20 or st.swimSprint &gt; 5000 then st.swimSprint = st.swim * 1.5 end
+if st.customSwim == nil or st.customSwim ~= st.customSwim then st.customSwim = 1 end
+
+print(string.format("Super Swim x%.0f CMC=%X swim=%.0f swimSprint=%.0f",
+  st.mult, c, st.swim, st.swimSprint))
+
+st.timer = createTimer(nil, false)
+st.timer.Interval = 50
+st.timer.OnTimer = function()
+  local cm = getCmc()
+  if cm == nil then return end
+  local m = st.mult
+  writeFloat(cm + 0x290, st.swim * m)           -- MaxSwimSpeed
+  writeFloat(cm + 0x118C, st.swimSprint * m)     -- MaxSwimSprintSpeed (Maine)
+  writeFloat(cm + 0x11D8, m)                     -- CustomSwimSpeedMultiplier
+end
+st.timer.Enabled = true
+showMessage(string.format(
+  "Super Swim x%.0f ON\nMaxSwimSpeed %.0f -&gt; %.0f\nAlso MaxSwimSprintSpeed + CustomSwimMult.\nDisable to restore.",
+  st.mult, st.swim, st.swim * st.mult))
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local st = gg2_swim
+if st ~= nil and st.timer ~= nil then
+  st.timer.Enabled = false
+  st.timer.destroy()
+  st.timer = nil
+end
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+if st ~= nil then
+  local p = getAddressSafe("Player")
+  if p ~= nil and looksUObj(p) then
+    local cm = readQword(p + 0x1400)
+    if looksUObj(cm) then
+      if st.swim then writeFloat(cm + 0x290, st.swim) end
+      if st.swimSprint then writeFloat(cm + 0x118C, st.swimSprint) end
+      if st.customSwim then writeFloat(cm + 0x11D8, st.customSwim) end
+    end
+  end
+end
+gg2_swim = nil
+print("Super Swim OFF")
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>55</ID>
+              <Description>"[Script] Fly mode (collision on)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function readByte(a)
+  local s = readBytes(a, 1, false)
+  if type(s) == "string" and #s &gt;= 1 then return string.byte(s, 1) end
+  return nil
+end
+local function writeByte(a, v)
+  writeBytes(a, v &amp; 0xFF)
+end
+local function getCmc()
+  local p = getAddressSafe("Player")
+  if p == nil or not looksUObj(p) then return nil end
+  local c = readQword(p + 0x1400)
+  if looksUObj(c) then return c end
+  return nil
+end
+
+if gg2_fly ~= nil and gg2_fly.timer ~= nil then
+  gg2_fly.timer.Enabled = false
+  gg2_fly.timer.destroy()
+  gg2_fly.timer = nil
+end
+
+local c = getCmc()
+if c == nil then
+  showMessage("No CMC at Player+0x1400. Re-run ACTIVATE.")
+  error("no CMC")
+end
+
+gg2_fly = {
+  mult = 5.0,
+  mode = readByte(c + 0x241),
+  gravity = readFloat(c + 0x1B0),
+  gravOverride = readFloat(c + 0x1030),
+  fly = readFloat(c + 0x294),
+  flySprint = readFloat(c + 0x1118),
+  customFly = readFloat(c + 0x11D4),
+  air = readFloat(c + 0x2C0),
+  flags575 = readByte(c + 0x575),
+  defaultLand = readByte(c + 0x568),
+}
+local st = gg2_fly
+if st.mode == nil then st.mode = 1 end
+if st.gravity == nil or st.gravity ~= st.gravity then st.gravity = 1 end
+if st.gravOverride == nil or st.gravOverride ~= st.gravOverride then st.gravOverride = 1 end
+if st.fly == nil or st.fly &lt; 50 or st.fly &gt; 5000 then st.fly = 600 end
+if st.flySprint == nil or st.flySprint &lt; 50 or st.flySprint &gt; 5000 then st.flySprint = st.fly end
+if st.customFly == nil or st.customFly ~= st.customFly then st.customFly = 1 end
+if st.air == nil or st.air ~= st.air then st.air = 0.05 end
+if st.flags575 == nil then st.flags575 = 0 end
+if st.defaultLand == nil then st.defaultLand = 1 end
+
+print(string.format("Fly ON CMC=%X mode %d-&gt;5 gravity %.2f-&gt;0 fly=%.0f",
+  c, st.mode, st.gravity, st.fly))
+
+st.timer = createTimer(nil, false)
+st.timer.Interval = 50
+st.timer.OnTimer = function()
+  local cm = getCmc()
+  if cm == nil then return end
+  writeByte(cm + 0x241, 5)                         -- MovementMode = Flying
+  writeByte(cm + 0x568, 5)                         -- DefaultLandMovementMode = Flying
+  writeFloat(cm + 0x1B0, 0)                        -- GravityScale
+  writeFloat(cm + 0x1030, 0)                       -- CurrentGravityScaleOverride (Maine)
+  writeFloat(cm + 0x294, st.fly * st.mult)         -- MaxFlySpeed
+  writeFloat(cm + 0x1118, st.flySprint * st.mult)  -- MaxFlySprintSpeed
+  writeFloat(cm + 0x11D4, st.mult)                 -- CustomFlySpeedMultiplier
+  writeFloat(cm + 0x2C0, 1.0)                      -- AirControl
+  -- set bCheatFlying (bit 4) on CMC+0x575
+  local f = readByte(cm + 0x575) or 0
+  writeByte(cm + 0x575, f | 0x10)
+  local p = getAddressSafe("Player")
+  if p ~= nil and looksUObj(p) then
+    writeByte(p + 0x466, 5)                        -- ReplicatedMovementMode
+  end
+end
+st.timer.Enabled = true
+showMessage("Fly mode ON (collision still on)\nMovementMode=Flying, gravity 0, fly speed x5.\nUse WASD + jump/crouch style controls.\nFor walls: enable Noclip fly.\nDisable to restore.")
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local st = gg2_fly
+if st ~= nil and st.timer ~= nil then
+  st.timer.Enabled = false
+  st.timer.destroy()
+  st.timer = nil
+end
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function writeByte(a, v)
+  writeBytes(a, v &amp; 0xFF)
+end
+if st ~= nil then
+  local p = getAddressSafe("Player")
+  if p ~= nil and looksUObj(p) then
+    local cm = readQword(p + 0x1400)
+    if looksUObj(cm) then
+      writeByte(cm + 0x241, st.mode or 1)
+      writeByte(cm + 0x568, st.defaultLand or 1)
+      if st.gravity then writeFloat(cm + 0x1B0, st.gravity) end
+      if st.gravOverride then writeFloat(cm + 0x1030, st.gravOverride) end
+      if st.fly then writeFloat(cm + 0x294, st.fly) end
+      if st.flySprint then writeFloat(cm + 0x1118, st.flySprint) end
+      if st.customFly then writeFloat(cm + 0x11D4, st.customFly) end
+      if st.air then writeFloat(cm + 0x2C0, st.air) end
+      if st.flags575 ~= nil then writeByte(cm + 0x575, st.flags575) end
+    end
+    writeByte(p + 0x466, st.mode or 1)
+  end
+end
+gg2_fly = nil
+print("Fly mode OFF")
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>56</ID>
+              <Description>"[Script] Noclip fly (no collision)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function readByte(a)
+  local s = readBytes(a, 1, false)
+  if type(s) == "string" and #s &gt;= 1 then return string.byte(s, 1) end
+  return nil
+end
+local function writeByte(a, v)
+  writeBytes(a, v &amp; 0xFF)
+end
+local function getCmc()
+  local p = getAddressSafe("Player")
+  if p == nil or not looksUObj(p) then return nil end
+  local c = readQword(p + 0x1400)
+  if looksUObj(c) then return c end
+  return nil
+end
+local function getCapsule()
+  local p = getAddressSafe("Player")
+  if p == nil or not looksUObj(p) then return nil end
+  local cap = readQword(p + 0x340)
+  if looksUObj(cap) then return cap end
+  return nil
+end
+
+if gg2_noclip ~= nil and gg2_noclip.timer ~= nil then
+  gg2_noclip.timer.Enabled = false
+  gg2_noclip.timer.destroy()
+  gg2_noclip.timer = nil
+end
+
+local c = getCmc()
+if c == nil then
+  showMessage("No CMC at Player+0x1400. Re-run ACTIVATE.")
+  error("no CMC")
+end
+local cap = getCapsule()
+
+gg2_noclip = {
+  mult = 5.0,
+  mode = readByte(c + 0x241),
+  gravity = readFloat(c + 0x1B0),
+  gravOverride = readFloat(c + 0x1030),
+  fly = readFloat(c + 0x294),
+  flySprint = readFloat(c + 0x1118),
+  customFly = readFloat(c + 0x11D4),
+  air = readFloat(c + 0x2C0),
+  flags575 = readByte(c + 0x575),
+  defaultLand = readByte(c + 0x568),
+  actorFlags = nil,
+  capsuleCol = nil,
+}
+local st = gg2_noclip
+local p0 = getAddressSafe("Player")
+if p0 ~= nil then st.actorFlags = readByte(p0 + 0x5D) end
+if cap ~= nil then st.capsuleCol = readByte(cap + 0x39F) end
+
+if st.mode == nil then st.mode = 1 end
+if st.gravity == nil or st.gravity ~= st.gravity then st.gravity = 1 end
+if st.gravOverride == nil or st.gravOverride ~= st.gravOverride then st.gravOverride = 1 end
+if st.fly == nil or st.fly &lt; 50 or st.fly &gt; 5000 then st.fly = 600 end
+if st.flySprint == nil or st.flySprint &lt; 50 or st.flySprint &gt; 5000 then st.flySprint = st.fly end
+if st.customFly == nil or st.customFly ~= st.customFly then st.customFly = 1 end
+if st.air == nil or st.air ~= st.air then st.air = 0.05 end
+if st.flags575 == nil then st.flags575 = 0 end
+if st.defaultLand == nil then st.defaultLand = 1 end
+if st.capsuleCol == nil then st.capsuleCol = 3 end
+if st.actorFlags == nil then st.actorFlags = 1 end
+
+print(string.format("Noclip ON CMC=%X capsule=%s col=%s",
+  c, cap and string.format("%X", cap) or "nil", tostring(st.capsuleCol)))
+
+st.timer = createTimer(nil, false)
+st.timer.Interval = 50
+st.timer.OnTimer = function()
+  local cm = getCmc()
+  if cm == nil then return end
+  writeByte(cm + 0x241, 5)
+  writeByte(cm + 0x568, 5)
+  writeFloat(cm + 0x1B0, 0)
+  writeFloat(cm + 0x1030, 0)
+  writeFloat(cm + 0x294, st.fly * st.mult)
+  writeFloat(cm + 0x1118, st.flySprint * st.mult)
+  writeFloat(cm + 0x11D4, st.mult)
+  writeFloat(cm + 0x2C0, 1.0)
+  local f = readByte(cm + 0x575) or 0
+  writeByte(cm + 0x575, f | 0x10)
+  local p = getAddressSafe("Player")
+  if p ~= nil and looksUObj(p) then
+    writeByte(p + 0x466, 5)
+    -- clear bActorEnableCollision (bit 0 @ Actor+0x5D)
+    local af = readByte(p + 0x5D) or 0
+    writeByte(p + 0x5D, af &amp; 0xFE)
+    local capsule = readQword(p + 0x340)
+    if looksUObj(capsule) then
+      writeByte(capsule + 0x39F, 0)  -- ECollisionEnabled::NoCollision
+    end
+  end
+end
+st.timer.Enabled = true
+showMessage("Noclip fly ON\nFlying + capsule collision off.\nYou can pass through terrain/buildings.\nDisable to restore walking + collision.\nTip: also enable No Fall Damage.")
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local st = gg2_noclip
+if st ~= nil and st.timer ~= nil then
+  st.timer.Enabled = false
+  st.timer.destroy()
+  st.timer = nil
+end
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function writeByte(a, v)
+  writeBytes(a, v &amp; 0xFF)
+end
+if st ~= nil then
+  local p = getAddressSafe("Player")
+  if p ~= nil and looksUObj(p) then
+    local cm = readQword(p + 0x1400)
+    if looksUObj(cm) then
+      writeByte(cm + 0x241, st.mode or 1)
+      writeByte(cm + 0x568, st.defaultLand or 1)
+      if st.gravity then writeFloat(cm + 0x1B0, st.gravity) end
+      if st.gravOverride then writeFloat(cm + 0x1030, st.gravOverride) end
+      if st.fly then writeFloat(cm + 0x294, st.fly) end
+      if st.flySprint then writeFloat(cm + 0x1118, st.flySprint) end
+      if st.customFly then writeFloat(cm + 0x11D4, st.customFly) end
+      if st.air then writeFloat(cm + 0x2C0, st.air) end
+      if st.flags575 ~= nil then writeByte(cm + 0x575, st.flags575) end
+    end
+    writeByte(p + 0x466, st.mode or 1)
+    if st.actorFlags ~= nil then writeByte(p + 0x5D, st.actorFlags) end
+    local capsule = readQword(p + 0x340)
+    if looksUObj(capsule) and st.capsuleCol ~= nil then
+      writeByte(capsule + 0x39F, st.capsuleCol)
+    end
+  end
+end
+gg2_noclip = nil
+print("Noclip fly OFF")
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>60</ID>
+              <Description>"CMC floats (debug)"</Description>
+              <Options moHideChildren="1" moManualExpandCollapse="1"/>
+              <Color>00FF8080</Color>
+              <GroupHeader>1</GroupHeader>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>61</ID>
+                  <Description>"MaxWalkSpeed"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>GG2_MaxWalkSpeed</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>62</ID>
+                  <Description>"CurrentMaxGroundSpeed (Maine)"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>GG2_CurMaxGround</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>63</ID>
+                  <Description>"MaxSprintSpeed"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>GG2_MaxSprint</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>64</ID>
+                  <Description>"JumpZVelocity"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>GG2_JumpZ</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>65</ID>
+                  <Description>"CustomGroundSpeedMultiplier"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>GG2_CustomGroundMult</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>68</ID>
+                  <Description>"MaxSwimSpeed"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>GG2_MaxSwimSpeed</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>69</ID>
+                  <Description>"GravityScale"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>GG2_GravityScale</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>170</ID>
+                  <Description>"MovementMode (5=Fly)"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Byte</VariableType>
+                  <Address>GG2_MovementMode</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>171</ID>
+                  <Description>"Capsule CollisionEnabled (0=off)"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Byte</VariableType>
+                  <Address>GG2_CapsuleCollision</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>66</ID>
+                  <Description>"JumpMaxCount"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>GG2_JumpMaxCount</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>67</ID>
+                  <Description>"JumpCurrentCount"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>GG2_JumpCurCount</Address>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+</CheatTable>
