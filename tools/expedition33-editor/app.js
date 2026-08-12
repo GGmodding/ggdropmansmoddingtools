@@ -187,7 +187,7 @@
             ? '<p class="hint" style="margin-top:0.85rem">Assigned attributes</p><div class="form-grid">' +
               attrHtml +
               "</div>"
-            : "") +
+            : '<p class="hint" style="margin-top:0.85rem">No AssignedAttributePoints map for this character yet.</p>') +
           '<p class="hint">Unlocked skills: ' +
           escapeHtml(skillsU) +
           "</p>" +
@@ -226,15 +226,20 @@
   }
 
   function buildPictos(parsed) {
+    const labels = (window.E33PictoIds && window.E33PictoIds.labels) || {};
     $("pictos-hint").textContent = parsed.pictos.length
-      ? parsed.pictos.length + " picto progression(s)."
-      : "No pictos in this save yet — unlock some in-game first.";
+      ? parsed.pictos.length + " picto progression(s) in save."
+      : "No pictos in this save yet — use Unlock all, or unlock some in-game first.";
     $("pictos-table").querySelector("tbody").innerHTML = parsed.pictos
       .map(
         (p, i) =>
           "<tr><td><code>" +
           escapeHtml(p.name) +
-          "</code></td><td><input data-pic-learnt=\"" +
+          "</code>" +
+          (labels[p.name]
+            ? ' <span style="color:var(--muted)">' + escapeHtml(labels[p.name]) + "</span>"
+            : "") +
+          "</td><td><input data-pic-learnt=\"" +
           i +
           "\" type=\"checkbox\" " +
           (p.learnt ? "checked" : "") +
@@ -726,6 +731,42 @@
         alert(err.message || String(err));
       }
     });
+
+    $("btn-pictos-unlock-all").addEventListener("click", () => {
+      try {
+        if (!state.bytes) throw new Error("Load a save first.");
+        const ids = (window.E33PictoIds && window.E33PictoIds.safe) || [];
+        if (!ids.length) throw new Error("Picto catalog missing (pictos-data.js).");
+        if (
+          !confirm(
+            "Unlock and master " +
+              ids.length +
+              " pictos?\n\nAdds inventory + progression entries (safe catalog only). Backup first."
+          )
+        ) {
+          return;
+        }
+        setStatus("Unlocking pictos…");
+        const result = G.unlockAllPictos(state.bytes, ids, { master: true, level: 1, steps: 4 });
+        state.bytes = result.bytes;
+        setDirty(true);
+        refreshAll();
+        setStatus(
+          "Unlocked pictos: +" +
+            result.insertedInventory +
+            " inventory, +" +
+            result.insertedPassives +
+            " mastery, +" +
+            result.insertedWeapons +
+            " levels (" +
+            result.requested +
+            " total)."
+        );
+      } catch (err) {
+        alert(err.message || String(err));
+      }
+    });
+    $("btn-pictos-refresh").addEventListener("click", () => refreshAll());
 
     $("btn-spawn-refresh").addEventListener("click", () => refreshAll());
     $("btn-spawn-apply").addEventListener("click", () => {

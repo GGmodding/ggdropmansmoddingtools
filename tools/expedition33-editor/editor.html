@@ -150,9 +150,13 @@
     <section id="panel-pictos" class="panel" hidden>
       <div class="panel__head">
         <h2>Pictos</h2>
-        <p>Passive effect progressions when present (learnt + steps). Early saves may be empty.</p>
+        <p>Inventory + mastery + level. Unlock all inserts the safe catalog (skips debug / unused * entries).</p>
       </div>
       <p class="hint" id="pictos-hint"></p>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-pictos-unlock-all">Unlock all pictos</button>
+        <button type="button" class="btn" id="btn-pictos-refresh">Reload</button>
+      </div>
       <div class="table-wrap" style="max-height:420px">
         <table class="data-table" id="pictos-table">
           <thead><tr><th>Picto</th><th>Mastered</th><th>Steps</th><th></th></tr></thead>
@@ -291,6 +295,7 @@ node unlock.js --app expedition33 --unlock-all</pre>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="../shared/save-folders.js"></script>
   <script src="data.js"></script>
+  <script src="pictos-data.js"></script>
   <script src="gvas.js"></script>
   <script src="save.js"></script>
   <script src="../shared/donate.js"></script>

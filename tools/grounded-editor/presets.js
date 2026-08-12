@@ -30,9 +30,9 @@
           goldenMolars: 999,
           rawScience: 999999,
           stackUpgrades: {
-            "StackSize.Food": 20,
-            "StackSize.Resource": 20,
-            "StackSize.Ammo": 20,
+            "StackSize.Food": 199,
+            "StackSize.Resource": 198,
+            "StackSize.Ammo": 196,
           },
         });
         host = m.hostBytes || host;

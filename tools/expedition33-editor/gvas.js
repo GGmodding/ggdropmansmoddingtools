@@ -177,7 +177,7 @@
       // Tolerate small header (zeros / N / count)
       for (let skip = 0; skip < 24; skip++) {
         const [k, end] = readFString(buf, p + skip);
-        if (k && /^[A-Za-z][A-Za-z0-9_]{2,60}$/.test(k)) {
+        if (k && /^[A-Za-z][A-Za-z0-9_+]{2,60}$/.test(k)) {
           start = p + skip;
           break;
         }
@@ -190,7 +190,7 @@
     let oCur = start;
     while (oCur + 8 < limit) {
       const [k, end] = readFString(buf, oCur);
-      if (!k || !/^[A-Za-z0-9_]+$/.test(k) || k.length > 80) break;
+      if (!k || !/^[A-Za-z0-9_+]+$/.test(k) || k.length > 80) break;
       if (k === "Gold" && goldProp && oCur === goldProp.nameAt - 4) break;
       const valAt = end;
       const value = readI32(buf, valAt);
@@ -271,7 +271,7 @@
   }
 
   function insertInventoryItem(buf, key, value) {
-    if (!/^[A-Za-z][A-Za-z0-9_]{1,80}$/.test(key)) {
+    if (!/^[A-Za-z][A-Za-z0-9_+]{1,80}$/.test(key)) {
       throw new Error("Invalid inventory key.");
     }
     const existing = findInventoryItem(buf, key);
@@ -349,6 +349,7 @@
       const [full, end] = readFString(buf, i - 4);
       if (!full || full.indexOf("ECharacterAttribute::NewEnumerator") !== 0) continue;
       const value = readI32(buf, end);
+      if (value == null) continue;
       const m = /NewEnumerator(\d+)/.exec(full);
       hits.push({
         id: full,
@@ -357,12 +358,13 @@
         valAt: end,
       });
     }
-    // Prefer ones near AssignedAttributePoints
-    const ap = findNamedProperty(buf, ATTR_MAP, "MapProperty");
-    if (ap) {
-      return hits.filter((h) => h.valAt > ap.nameAt && h.valAt < ap.nameAt + 4000);
-    }
-    return hits;
+    // Keep only attribute entries that sit inside an AssignedAttributePoints map.
+    // There is one map per character — do not clip to the first map only.
+    const apHits = findNamedProperties(buf, ATTR_MAP).filter((h) => h.type === "MapProperty");
+    if (!apHits.length) return hits;
+    return hits.filter((h) =>
+      apHits.some((ap) => h.valAt > ap.nameAt && h.valAt < ap.nameAt + 4000)
+    );
   }
 
   function writeAttribute(buf, valAt, value) {
@@ -371,33 +373,9 @@
     return { bytes: out, value: Math.max(0, value | 0) };
   }
 
-  function parseNameArrayNear(buf, propName) {
-    const h = findNamedProperty(buf, propName, "ArrayProperty");
-    if (!h) return [];
-    const names = [];
-    // Scan a window after the property for FString-looking names
-    const start = h.afterType;
-    const end = Math.min(buf.length, start + 8000);
-    let o = start;
-    while (o + 8 < end && names.length < 500) {
-      const [s, next] = readFString(buf, o);
-      if (s && /^[A-Za-z][A-Za-z0-9_]{1,64}$/.test(s) && s !== "NameProperty" && s !== "ArrayProperty" && s !== "None") {
-        // Heuristic: skill-like tokens
-        if (
-          propName.indexOf("Skill") >= 0 ||
-          /^(Combo|Magic_|Skill|Gradient|Attack|Unleash|Paint)/.test(s) ||
-          s.indexOf("_") >= 0
-        ) {
-          names.push({ name: s, at: o });
-        }
-        o = next;
-        continue;
-      }
-      o++;
-    }
-    // Tighter: after NameProperty marker, read count then names
+  function parseNameArrayAt(buf, h) {
     const marker = new TextEncoder().encode("NameProperty\0");
-    for (let i = h.afterType; i < h.afterType + 60; i++) {
+    for (let i = h.afterType; i < Math.min(buf.length, h.afterType + 60); i++) {
       let ok = true;
       for (let j = 0; j < marker.length; j++) {
         if (buf[i + j] !== marker[j]) {
@@ -407,29 +385,44 @@
       }
       if (!ok) continue;
       let p = i + marker.length;
-      // skip zeros / size until a small count
       for (let skip = 0; skip < 20; skip++) {
         const count = readU32(buf, p + skip);
-        if (count > 0 && count < 200) {
-          const out = [];
-          let q = p + skip + 4;
-          for (let n = 0; n < count; n++) {
-            const [nm, nend] = readFString(buf, q);
-            if (!nm) break;
-            out.push({ name: nm, at: q });
-            q = nend;
+        if (count == null || count <= 0 || count >= 200) continue;
+        const out = [];
+        let q = p + skip + 4;
+        let good = true;
+        for (let n = 0; n < count; n++) {
+          if (q + 4 > buf.length) {
+            good = false;
+            break;
           }
-          if (out.length === count) return out;
+          const [nm, nend] = readFString(buf, q);
+          if (!nm || nend <= q) {
+            good = false;
+            break;
+          }
+          out.push({ name: nm, at: q, propAt: h.nameAt });
+          q = nend;
         }
+        if (good && out.length === count) return out;
       }
     }
-    return names;
+    return [];
+  }
+
+  function parseAllNameArrays(buf, propName) {
+    const hits = findNamedProperties(buf, propName).filter((h) => h.type === "ArrayProperty");
+    const out = [];
+    for (const h of hits) {
+      out.push(...parseNameArrayAt(buf, h));
+    }
+    return out;
   }
 
   function parseSkills(buf) {
     return {
-      unlocked: parseNameArrayNear(buf, SKILL_UNLOCKED),
-      equipped: parseNameArrayNear(buf, SKILL_EQUIPPED),
+      unlocked: parseAllNameArrays(buf, SKILL_UNLOCKED),
+      equipped: parseAllNameArrays(buf, SKILL_EQUIPPED),
     };
   }
 
@@ -563,9 +556,271 @@
 
   function writePictoFlags(buf, learntAt, stepsAt, learnt, steps) {
     const out = new Uint8Array(buf);
-    if (learntAt != null) out[learntAt] = learnt ? 1 : 0;
+    if (learntAt != null) out[learntAt] = learnt ? 0x10 : 0;
     if (stepsAt != null) writeI32(out, stepsAt, Math.max(0, steps | 0));
     return { bytes: out };
+  }
+
+  function encodeFStringBytes(str) {
+    const enc = new TextEncoder().encode(str);
+    const out = new Uint8Array(4 + enc.length + 1);
+    writeI32(out, 0, enc.length + 1);
+    out.set(enc, 4);
+    out[4 + enc.length] = 0;
+    return out;
+  }
+
+  function encodeNamePropBytes(propName, value) {
+    const name = encodeFStringBytes(propName);
+    const type = encodeFStringBytes("NameProperty");
+    const val = encodeFStringBytes(value);
+    const hdr = new Uint8Array(9);
+    writeI32(hdr, 0, 0);
+    writeI32(hdr, 4, val.length);
+    hdr[8] = 0;
+    const out = new Uint8Array(name.length + type.length + hdr.length + val.length);
+    let o = 0;
+    out.set(name, o); o += name.length;
+    out.set(type, o); o += type.length;
+    out.set(hdr, o); o += hdr.length;
+    out.set(val, o);
+    return out;
+  }
+
+  function encodeIntPropBytes(propName, value) {
+    const name = encodeFStringBytes(propName);
+    const type = encodeFStringBytes("IntProperty");
+    const hdr = new Uint8Array(9);
+    writeI32(hdr, 0, 0);
+    writeI32(hdr, 4, 4);
+    hdr[8] = 0;
+    const val = new Uint8Array(4);
+    writeI32(val, 0, value | 0);
+    const out = new Uint8Array(name.length + type.length + hdr.length + val.length);
+    let o = 0;
+    out.set(name, o); o += name.length;
+    out.set(type, o); o += type.length;
+    out.set(hdr, o); o += hdr.length;
+    out.set(val, o);
+    return out;
+  }
+
+  function encodeBoolPropBytes(propName, value) {
+    const name = encodeFStringBytes(propName);
+    const type = encodeFStringBytes("BoolProperty");
+    const hdr = new Uint8Array(9);
+    writeI32(hdr, 0, 0);
+    writeI32(hdr, 4, 0);
+    // Game stores true as 0x10 in the tag byte.
+    hdr[8] = value ? 0x10 : 0;
+    const out = new Uint8Array(name.length + type.length + hdr.length);
+    let o = 0;
+    out.set(name, o); o += name.length;
+    out.set(type, o); o += type.length;
+    out.set(hdr, o);
+    return out;
+  }
+
+  function encodeWeaponProgressionEntry(id, level) {
+    const a = encodeNamePropBytes(WEAPON_DEF, id);
+    const b = encodeIntPropBytes(WEAPON_LEVEL, Math.max(1, Math.min(33, level | 0)));
+    const none = encodeFStringBytes("None");
+    const out = new Uint8Array(a.length + b.length + none.length);
+    out.set(a, 0);
+    out.set(b, a.length);
+    out.set(none, a.length + b.length);
+    return out;
+  }
+
+  function encodePassiveProgressionEntry(id, learnt, steps) {
+    const a = encodeNamePropBytes(PASSIVE_NAME, id);
+    const b = encodeBoolPropBytes(PASSIVE_LEARNT, !!learnt);
+    const c = encodeIntPropBytes(PASSIVE_STEPS, Math.max(0, steps | 0));
+    const none = encodeFStringBytes("None");
+    const out = new Uint8Array(a.length + b.length + c.length + none.length);
+    let o = 0;
+    out.set(a, o); o += a.length;
+    out.set(b, o); o += b.length;
+    out.set(c, o); o += c.length;
+    out.set(none, o);
+    return out;
+  }
+
+  /** Locate ArrayProperty-of-struct meta: payload size + count just before first entry. */
+  function locateStructArrayMeta(buf, arrayName, entryPropName) {
+    const arr = findNamedProperty(buf, arrayName, "ArrayProperty");
+    if (!arr) return null;
+    const entryHits = findNamedProperties(buf, entryPropName).filter(
+      (h) => h.nameAt > arr.nameAt
+    );
+    // Stop before the next root-ish property after this array when possible.
+    const nextRoot = findNamedProperties(buf, "PassiveEffectsProgressions")
+      .concat(findNamedProperties(buf, "InteractedDialogues"))
+      .concat(findNamedProperties(buf, "GameDifficultyData"))
+      .map((h) => h.nameAt)
+      .filter((at) => at > arr.nameAt)
+      .sort((a, b) => a - b)[0];
+    const inArray = entryHits.filter((h) => nextRoot == null || h.nameAt < nextRoot);
+    if (!inArray.length) {
+      // Empty array: find size/count after GUID block by scanning for zeros+size+count pattern near end of header.
+      return null;
+    }
+    const firstAt = inArray[0].nameAt - 4;
+    const countAt = firstAt - 4;
+    const sizeAt = firstAt - 8;
+    const count = readU32(buf, countAt);
+    const size = readU32(buf, sizeAt);
+    // End of last entry: find its terminating None
+    const lastHit = inArray[inArray.length - 1];
+    const noneEnc = new TextEncoder().encode("None\0");
+    let insertAt = null;
+    const scanEnd = nextRoot != null ? nextRoot : Math.min(buf.length, lastHit.nameAt + 500);
+    for (let i = lastHit.nameAt; i < scanEnd - noneEnc.length; i++) {
+      let ok = true;
+      for (let j = 0; j < noneEnc.length; j++) {
+        if (buf[i + j] !== noneEnc[j]) {
+          ok = false;
+          break;
+        }
+      }
+      if (!ok) continue;
+      if (readU32(buf, i - 4) !== noneEnc.length) continue;
+      insertAt = i - 4 + 4 + noneEnc.length;
+      break;
+    }
+    if (insertAt == null) return null;
+    return {
+      arr,
+      firstAt,
+      countAt,
+      sizeAt,
+      count,
+      size,
+      entryCount: inArray.length,
+      insertAt,
+      names: inArray.map((h) => {
+        const [n] = readFString(buf, h.valueAt);
+        return n;
+      }),
+    };
+  }
+
+  function insertStructArrayEntries(buf, arrayName, entryPropName, encodedEntries) {
+    if (!encodedEntries.length) return { bytes: new Uint8Array(buf), inserted: 0 };
+    const meta = locateStructArrayMeta(buf, arrayName, entryPropName);
+    if (!meta) throw new Error("Could not locate " + arrayName + " array for insert.");
+    let total = 0;
+    for (const e of encodedEntries) total += e.length;
+    const blob = new Uint8Array(total);
+    let o = 0;
+    for (const e of encodedEntries) {
+      blob.set(e, o);
+      o += e.length;
+    }
+    let out = spliceBytes(buf, meta.insertAt, blob);
+    writeI32(out, meta.countAt, (meta.count | 0) + encodedEntries.length);
+    writeI32(out, meta.sizeAt, (meta.size | 0) + blob.length);
+    return { bytes: out, inserted: encodedEntries.length, bytesAdded: blob.length };
+  }
+
+  function insertInventoryItemsBatch(buf, pairs) {
+    const missing = [];
+    for (const [key, value] of pairs) {
+      if (!/^[A-Za-z][A-Za-z0-9_+]{1,80}$/.test(key)) continue;
+      if (!findInventoryItem(buf, key)) missing.push([key, value]);
+    }
+    if (!missing.length) return { bytes: new Uint8Array(buf), inserted: 0 };
+    const meta = locateInventoryMeta(buf);
+    if (!meta) throw new Error("Could not locate InventoryItems map for insert.");
+    const parts = missing.map(([k, v]) => encodeInventoryEntry(k, v));
+    let total = 0;
+    for (const p of parts) total += p.length;
+    const blob = new Uint8Array(total);
+    let o = 0;
+    for (const p of parts) {
+      blob.set(p, o);
+      o += p.length;
+    }
+    let out = spliceBytes(buf, meta.regionEnd, blob);
+    writeI32(out, meta.countAt, (meta.count | 0) + missing.length);
+    if (meta.size > 32 && meta.size < 5e6) {
+      writeI32(out, meta.sizeAt, (meta.size | 0) + blob.length);
+    }
+    return { bytes: out, inserted: missing.length };
+  }
+
+  /**
+   * Unlock pictos: inventory + WeaponProgressions + PassiveEffectsProgressions (mastered).
+   * ids: string[] of picto definition names.
+   */
+  function unlockAllPictos(buf, ids, opts) {
+    const options = opts || {};
+    const master = options.master !== false;
+    const level = options.level != null ? options.level | 0 : 1;
+    const steps = options.steps != null ? options.steps | 0 : 4;
+    const list = (ids || []).filter((id) => typeof id === "string" && id.length > 0);
+    if (!list.length) throw new Error("No picto ids provided.");
+
+    const want = new Set(list);
+    let bytes = new Uint8Array(buf);
+
+    const existingPep = new Set(parsePictos(bytes).map((p) => p.name));
+    const existingWp = new Set(parseWeapons(bytes).map((w) => w.name));
+    const existingInv = new Set(parseInventory(bytes).items.map((i) => i.key));
+
+    const missingPep = list.filter((id) => !existingPep.has(id));
+    const missingWp = list.filter((id) => !existingWp.has(id));
+    const missingInv = list.filter((id) => !existingInv.has(id));
+
+    // Insert high-offset arrays first, then inventory (lower offset) so splices stay valid.
+    if (missingPep.length) {
+      const entries = missingPep.map((id) =>
+        encodePassiveProgressionEntry(id, master, master ? steps : 0)
+      );
+      bytes = insertStructArrayEntries(
+        bytes,
+        "PassiveEffectsProgressions",
+        PASSIVE_NAME,
+        entries
+      ).bytes;
+    }
+    if (missingWp.length) {
+      const entries = missingWp.map((id) => encodeWeaponProgressionEntry(id, level));
+      bytes = insertStructArrayEntries(bytes, "WeaponProgressions", WEAPON_DEF, entries).bytes;
+    }
+    if (missingInv.length) {
+      bytes = insertInventoryItemsBatch(
+        bytes,
+        missingInv.map((id) => [id, 1])
+      ).bytes;
+    }
+
+    // Update existing entries in place.
+    for (const p of parsePictos(bytes)) {
+      if (!want.has(p.name)) continue;
+      if (master && p.learntAt != null) {
+        bytes = writePictoFlags(bytes, p.learntAt, p.stepsAt, true, steps).bytes;
+      }
+    }
+    for (const w of parseWeapons(bytes)) {
+      if (!want.has(w.name) || w.levelAt == null) continue;
+      const next = Math.max(level, w.level != null ? w.level : 1);
+      bytes = writeWeaponLevel(bytes, w.levelAt, next).bytes;
+    }
+    for (const id of list) {
+      const it = findInventoryItem(bytes, id);
+      if (it && it.value < 1) {
+        bytes = writeInventoryItem(bytes, id, 1).bytes;
+      }
+    }
+
+    return {
+      bytes,
+      requested: list.length,
+      insertedInventory: missingInv.length,
+      insertedWeapons: missingWp.length,
+      insertedPassives: missingPep.length,
+    };
   }
 
   function parseTintLevels(buf) {
@@ -608,29 +863,30 @@
     const chars = [];
     for (let i = 0; i < nameHits.length; i++) {
       const nh = nameHits[i];
+      const rangeEnd = i + 1 < nameHits.length ? nameHits[i + 1].nameAt : buf.length;
       const [name] = readFString(buf, nh.valueAt);
-      const pickNear = (hits, fallbackIndex) => {
-        if (!hits.length) return null;
-        const after = nh.nameAt;
+      const pickInRange = (hits) => {
         let best = null;
         let bestDist = Infinity;
         for (const h of hits) {
-          const d = h.nameAt - after;
-          if (d >= 0 && d < bestDist && d < 8000) {
+          if (h.nameAt <= nh.nameAt || h.nameAt >= rangeEnd) continue;
+          const d = h.nameAt - nh.nameAt;
+          if (d < bestDist) {
             best = h;
             bestDist = d;
           }
         }
-        return best || hits[fallbackIndex] || hits[0];
+        return best;
       };
-      const levelH = pickNear(levelHits, i);
-      const xpH = pickNear(xpHits, i);
-      const apH = pickNear(apHits, i);
-      const lumH = pickNear(lumHits, i);
-      const exclH = pickNear(exclHits, i);
+      const levelH = pickInRange(levelHits);
+      const xpH = pickInRange(xpHits);
+      const apH = pickInRange(apHits);
+      const lumH = pickInRange(lumHits);
+      const exclH = pickInRange(exclHits);
       chars.push({
         name: name || "?",
         nameAt: nh.nameAt,
+        rangeEnd,
         level: levelH ? readI32(buf, levelH.valueAt) : null,
         levelAt: levelH ? levelH.valueAt : null,
         xp: xpH ? readI32(buf, xpH.valueAt) : null,
@@ -646,20 +902,31 @@
         skillsEquipped: [],
       });
     }
-    // Attach attributes/skills once (shared maps live inside character structs)
+
     const attrs = parseAttributes(buf);
     const skills = parseSkills(buf);
-    if (chars.length === 1) {
-      chars[0].attributes = attrs;
-      chars[0].skillsUnlocked = skills.unlocked;
-      chars[0].skillsEquipped = skills.equipped;
-    } else if (chars.length) {
-      // Split attributes by proximity to each character block
-      for (const c of chars) {
-        c.attributes = attrs.filter((a) => a.valAt > c.nameAt && a.valAt < c.nameAt + 5000);
-        c.skillsUnlocked = skills.unlocked.filter((s) => s.at > c.nameAt && s.at < c.nameAt + 8000);
-        c.skillsEquipped = skills.equipped.filter((s) => s.at > c.nameAt && s.at < c.nameAt + 8000);
+
+    // Own each attr/skill by nearest preceding character name (handles maps that
+    // sit between names, and trailing maps past the next name marker).
+    function ownerFor(offset) {
+      let owner = null;
+      for (let i = 0; i < chars.length; i++) {
+        if (chars[i].nameAt < offset) owner = chars[i];
+        else break;
       }
+      return owner;
+    }
+    for (const a of attrs) {
+      const owner = ownerFor(a.valAt);
+      if (owner) owner.attributes.push(a);
+    }
+    for (const s of skills.unlocked) {
+      const owner = ownerFor(s.propAt != null ? s.propAt : s.at);
+      if (owner) owner.skillsUnlocked.push(s);
+    }
+    for (const s of skills.equipped) {
+      const owner = ownerFor(s.propAt != null ? s.propAt : s.at);
+      if (owner) owner.skillsEquipped.push(s);
     }
     return chars;
   }
@@ -773,6 +1040,7 @@
     writeMapToLoad,
     writeSpawnTag,
     writePictoFlags,
+    unlockAllPictos,
     setTintLevel,
     locateInventoryMeta,
     CHAR_LEVEL,

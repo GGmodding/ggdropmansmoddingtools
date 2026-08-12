@@ -234,13 +234,28 @@
     return { nameAt, pointsAt, points };
   }
 
-  /** Vanilla BURG.L stack tiers top out around 5; editor "giant" pushes higher. */
-  const GIANT_STACK_TIER = 20;
-  const STACK_UPGRADE_NAMES = [
-    "StackSize.Food",
-    "StackSize.Resource",
-    "StackSize.Ammo",
-  ];
+  /**
+   * Mega Milk Molar stack upgrades (ASL terminal). Vanilla tops out at level 5:
+   * Food 30 / Resource 35 / Ammo 45 — roughly base + 5×level.
+   * Giant button targets ~999 max stacks via extrapolated levels.
+   */
+  const STACK_LIMIT_TARGET = 999;
+  const STACK_BASE_BY_NAME = {
+    "StackSize.Food": 5,
+    "StackSize.Resource": 10,
+    "StackSize.Ammo": 20,
+  };
+  const STACK_UPGRADE_NAMES = Object.keys(STACK_BASE_BY_NAME);
+  const STACK_LEVEL_MAX = 9999;
+
+  function tierForStackLimit(name, limit) {
+    const target = Math.max(1, Math.floor(Number(limit) || STACK_LIMIT_TARGET));
+    const base = STACK_BASE_BY_NAME[name] != null ? STACK_BASE_BY_NAME[name] : 5;
+    return Math.max(0, Math.ceil((target - base) / 5));
+  }
+
+  /** @deprecated use tierForStackLimit — kept as a typical Food-tier for ~999 */
+  const GIANT_STACK_TIER = tierForStackLimit("StackSize.Food", STACK_LIMIT_TARGET);
 
   /**
    * Party item-stack upgrades in World.csav:
@@ -268,7 +283,7 @@
       const levelAt = fs.next;
       const level = readI32(buf, levelAt);
       const unk2 = readI32(buf, levelAt + 4);
-      if (level < 0 || level > 99) return null;
+      if (level < 0 || level > STACK_LEVEL_MAX) return null;
       entries.push({ name: fs.s, level, levelAt, unk2 });
       off = levelAt + 8;
     }
@@ -421,7 +436,7 @@
       for (const e of parsed._stacks.entries) {
         const raw = values.stackUpgrades[e.name];
         if (raw == null || raw === "") continue;
-        const n = Math.max(0, Math.min(99, Math.floor(Number(raw))));
+        const n = Math.max(0, Math.min(STACK_LEVEL_MAX, Math.floor(Number(raw))));
         if (!Number.isFinite(n)) {
           throw new Error("Invalid stack upgrade level for " + e.name);
         }
@@ -483,6 +498,10 @@
     findUpgrades,
     findStackUpgrades,
     GIANT_STACK_TIER,
+    STACK_LIMIT_TARGET,
+    STACK_BASE_BY_NAME,
     STACK_UPGRADE_NAMES,
+    STACK_LEVEL_MAX,
+    tierForStackLimit,
   };
 })();

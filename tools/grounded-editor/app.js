@@ -583,7 +583,9 @@ import { decompress as oozDecompress } from "./vendor/index.js";
               escapeHtml(label) +
               ' <input data-stack-upgrade="' +
               escapeHtml(name) +
-              '" type="number" min="0" max="99" step="1" value="' +
+              '" type="number" min="0" max="' +
+              (P.STACK_LEVEL_MAX || 9999) +
+              '" step="1" value="' +
               (stackByName.get(name) ?? 0) +
               '" /></label>'
             );
@@ -1589,7 +1591,7 @@ import { decompress as oozDecompress } from "./vendor/index.js";
       }
     });
     $("btn-giant-stacks").addEventListener("click", () => {
-      const tier = P.GIANT_STACK_TIER || 20;
+      const target = P.STACK_LIMIT_TARGET || 999;
       const inputs = document.querySelectorAll(
         "#stack-upgrade-grid input[data-stack-upgrade]"
       );
@@ -1598,11 +1600,18 @@ import { decompress as oozDecompress } from "./vendor/index.js";
         return;
       }
       inputs.forEach((el) => {
+        const name = el.getAttribute("data-stack-upgrade");
+        const tier =
+          typeof P.tierForStackLimit === "function"
+            ? P.tierForStackLimit(name, target)
+            : P.GIANT_STACK_TIER || 199;
         el.value = String(tier);
       });
       try {
         const values = applyMolars();
-        setStatus("Giant stacks (tier " + tier + "): " + JSON.stringify(values));
+        setStatus(
+          "Stack limit ~" + target + ": " + JSON.stringify(values)
+        );
       } catch (err) {
         alert(err.message || String(err));
       }
