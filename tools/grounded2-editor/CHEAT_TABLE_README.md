@@ -48,7 +48,8 @@ For Into the Abyss offset recovery, prefer a UE5 SDK dump (**Dumper-7** / [G2Dum
 | Game speed | Probe dilation floats, slow-mo Ã—0.25, turbo Ã—2 / Ã—3 (CustomTimeDilation-style) |
 | Gather / combat helpers | One-hit harvest, pickup magnet, XP drip, instant craft, infinite held uses, kill aura (global scales), duplicate held stack, live unlock pack, soft freecam |
 | Vitals | Health / stamina / hunger / thirst / oxygen pointers + fill / god / infinite survival scripts |
-| Economy | Raw Science, milk molars, mega milk molars |
+| Economy | Raw Science, milk molars, **moldy milk molars** (buggy), mega/gold molars |
+| Inventory slots | Custom bag `DefaultMaxSize` + max milk-molar upgrade tiers; buggy/mount slots via moldy path. **If you use Nexus BackpackSlots (SLOTS=80), raise that mod’s `SLOTS` too or CT looks like a no-op.** |
 | Gear | Held item durability / stack / enhancement pointers |
 | Gear â€” one-shot / god armor | **One-shot weapons**, **god armor**, combo script |
 | Stacks â€” giant stack size | Held stack freeze 9999, StackSize upgrades, haul capacity, combo |
@@ -63,7 +64,7 @@ For Into the Abyss offset recovery, prefer a UE5 SDK dump (**Dumper-7** / [G2Dum
 |---------------------------|-------------------------|
 | Buildings / quests / analyze / fog | Super speed / super jump / no-clip / teleport |
 | Hatchery finish, buggy tier, eggs | Live health / stamina / hunger / **oxygen** freeze + **buggy mount** |
-| Inventory & resource dump presets | Free build & damage scales while playing |
+| Inventory & resource dump presets | Free build & damage scales while playing; **V2 live Inventory spawn** (duplicate held / spawn by row name) |
 | Achievements, OP preset, Oodle rewrite | Raw Science / molars without saving |
 
 ## If addresses are wrong

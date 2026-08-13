@@ -1,0 +1,236 @@
+﻿        <CheatEntry>
+          <ID>226</ID>
+          <Description>"Inventory slots (custom)"</Description>
+          <Options moHideChildren="1" moManualExpandCollapse="1"/>
+          <Color>0040A0C0</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>227</ID>
+              <Description>"[Script] Set bag slots (DefaultMaxSize + max milk-molar upgrade tiers)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+
+local slotsRaw = inputQuery("Bag slots", "Set inventory DefaultMaxSize (bag slots) to:", "80")
+if slotsRaw == nil then error("cancelled") end
+local slots = math.floor(tonumber(slotsRaw) or -1)
+if slots &lt; 1 or slots &gt; 500 then
+  showMessage("Use a slot count between 1 and 500")
+  error("bad slots")
+end
+
+local pawn = getAddressSafe("Player")
+local inv = readQword(pawn + 0x1438)
+if not looksUObj(inv) then
+  showMessage("No InventoryComponent on Player.\nOpen bag once / re-ACTIVATE in-world.")
+  error("no inv")
+end
+
+local prev = readInteger(inv + 0x1E0)
+writeInteger(inv + 0x1E0, slots)
+registerSymbol("GG2_InvComp", inv, true)
+registerSymbol("GG2_InvDefaultMaxSize", inv + 0x1E0, true)
+print(string.format("Bag DefaultMaxSize %s -&gt; %d (readback %s)", tostring(prev), slots, tostring(readInteger(inv + 0x1E0))))
+
+local upgraded = 0
+local ps = readQword(pawn + 0x2D0)
+if looksUObj(ps) then
+  local puc = readQword(ps + 0x748)
+  if looksUObj(puc) then
+    registerSymbol("GG2_PlayerUpgradeComp", puc, true)
+    local data = readQword(puc + 0xE8)
+    local num = readInteger(puc + 0xF0)
+    if isHeapPtr(data) and num ~= nil and num &gt; 0 and num &lt; 64 then
+      for i = 0, num - 1 do
+        local tierAddr = data + i * 0x20 + 0xC
+        local t = readInteger(tierAddr)
+        if t ~= nil and t &gt;= 0 and t &lt; 50 then
+          writeInteger(tierAddr, 20)
+          upgraded = upgraded + 1
+        end
+      end
+      print(string.format("Milk-molar PlayerUpgrade tiers maxed: %d", upgraded))
+    else
+      print(string.format("PlayerUpgrades empty/odd data=%s num=%s", tostring(data), tostring(num)))
+    end
+  else
+    print("PlayerUpgradeComponent missing on PlayerState")
+  end
+else
+  print("PlayerState missing on pawn")
+end
+
+showMessage(string.format(
+  "Bag slots set to %d (DefaultMaxSize).\n\nAlso pushed %d milk-molar upgrade tier(s) toward max.\nRe-open the bag if UI does not refresh.\nEnable FREEZE bag slots if it snaps back.",
+  slots, upgraded))
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>228</ID>
+              <Description>"[Script] FREEZE bag slots (hold DefaultMaxSize)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+local pawn = getAddressSafe("Player")
+local inv = readQword(pawn + 0x1438)
+if inv == nil or inv == 0 then
+  showMessage("No InventoryComponent")
+  error("no inv")
+end
+local addr = getAddressSafe("GG2_InvDefaultMaxSize")
+if addr == nil then
+  registerSymbol("GG2_InvComp", inv, true)
+  registerSymbol("GG2_InvDefaultMaxSize", inv + 0x1E0, true)
+  addr = inv + 0x1E0
+end
+if gg2_inv_freeze ~= nil and gg2_inv_freeze.timer ~= nil then
+  gg2_inv_freeze.timer.Enabled = false
+  gg2_inv_freeze.timer.destroy()
+end
+gg2_inv_freeze = { qty = readInteger(addr) or 80 }
+local st = gg2_inv_freeze
+st.timer = createTimer(nil, false)
+st.timer.Interval = 250
+st.timer.OnTimer = function()
+  local p = getAddressSafe("Player")
+  if p == nil then return end
+  local c = readQword(p + 0x1438)
+  if c == nil or c == 0 then return end
+  writeInteger(c + 0x1E0, st.qty)
+end
+st.timer.Enabled = true
+print("FREEZE bag slots ON @ "..tostring(st.qty))
+showMessage("FREEZE bag slots ON @ "..tostring(st.qty).."\n\nHolds DefaultMaxSize every 250ms.")
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local st = gg2_inv_freeze
+if st ~= nil and st.timer ~= nil then
+  st.timer.Enabled = false
+  st.timer.destroy()
+  st.timer = nil
+end
+gg2_inv_freeze = nil
+print("FREEZE bag slots OFF")
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>229</ID>
+              <Description>"[Script] Set buggy/mount slots (moldy upgrade path)"</Description>
+              <Color>0000FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+
+local slotsRaw = inputQuery("Buggy slots", "Set mount/buggy inventory DefaultMaxSize to:", "40")
+if slotsRaw == nil then error("cancelled") end
+local slots = math.floor(tonumber(slotsRaw) or -1)
+if slots &lt; 1 or slots &gt; 500 then
+  showMessage("Use a slot count between 1 and 500")
+  error("bad slots")
+end
+
+local pawn = getAddressSafe("Player")
+local minv = readQword(pawn + 0x1440)
+if not looksUObj(minv) then
+  showMessage("No MountInventoryComponent.\nMount a buggy first, then re-run.")
+  error("no mount inv")
+end
+
+local prev = readInteger(minv + 0x1E0)
+writeInteger(minv + 0x1E0, slots)
+registerSymbol("GG2_MountInvComp", minv, true)
+registerSymbol("GG2_MountInvDefaultMaxSize", minv + 0x1E0, true)
+print(string.format("Mount DefaultMaxSize %s -&gt; %d", tostring(prev), slots))
+
+local party = getAddressSafe("GG2_Party")
+if looksUObj(party) then
+  local cur = readInteger(party + 0x4EC) or 0
+  if cur &lt; 99 then writeInteger(party + 0x4EC, 99) end
+  registerSymbol("GG2_MoldyMolars", party + 0x4EC, true)
+end
+
+local upgraded = 0
+local ps = readQword(pawn + 0x2D0)
+if looksUObj(ps) then
+  local buc = readQword(ps + 0x750)
+  if looksUObj(buc) then
+    registerSymbol("GG2_BuggyUpgradeComp", buc, true)
+    local data = readQword(buc + 0xE8)
+    local num = readInteger(buc + 0xF0)
+    if isHeapPtr(data) and num ~= nil and num &gt; 0 and num &lt; 64 then
+      for i = 0, num - 1 do
+        local tierAddr = data + i * 0x20 + 0xC
+        local t = readInteger(tierAddr)
+        if t ~= nil and t &gt;= 0 and t &lt; 50 then
+          writeInteger(tierAddr, 20)
+          upgraded = upgraded + 1
+        end
+      end
+    end
+  end
+end
+
+showMessage(string.format(
+  "Buggy/mount slots set to %d.\n\nMoldy molar points topped if Party known.\nMaxed %d buggy upgrade tier(s).\nRemount / reopen buggy inventory if UI is stale.",
+  slots, upgraded))
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>230</ID>
+              <Description>"Bag DefaultMaxSize"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>GG2_InvDefaultMaxSize</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>231</ID>
+              <Description>"Mount DefaultMaxSize"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>GG2_MountInvDefaultMaxSize</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>

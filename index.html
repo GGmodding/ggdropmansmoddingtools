@@ -23,6 +23,7 @@
       --sod2: #c45a2a;
       --subnautica: #3de0c8;
       --grounded: #8fbf4a;
+      --abyss: #3ec8c8;
       --expedition: #d4a84b;
       --steam: #66c0f4;
       --visitor: #e8a87c;
@@ -595,6 +596,8 @@
       padding: 0 2px;
     }
 
+    .tools-panel__sub a { color: var(--gold); }
+
     .hud-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -819,14 +822,14 @@
     }
 
     .tile--grounded2 {
-      --accent: var(--grounded);
-      --art: url("https://cdn.cloudflare.steamstatic.com/steam/apps/2661300/header.jpg");
+      --accent: var(--abyss);
+      --art: url("assets/grounded2-into-the-abyss.jpg");
     }
 
     .tile--grounded2::after {
       background:
-        radial-gradient(circle at 32% 40%, rgba(180, 210, 90, 0.34), transparent 46%),
-        linear-gradient(125deg, rgba(60, 100, 50, 0.5), transparent 55%);
+        radial-gradient(circle at 28% 70%, rgba(62, 200, 200, 0.32), transparent 48%),
+        linear-gradient(125deg, rgba(18, 50, 90, 0.55), transparent 55%);
     }
 
     .tile--expedition {
@@ -959,7 +962,7 @@
       .hud-grid { grid-template-columns: 1fr; }
       .tile--banner { grid-column: auto; }
       .hero { min-height: auto; padding-top: 88px; }
-      .tools-tab { min-width: 0; flex: 1 1 calc(33.333% - 6px); font-size: 0.85rem; padding: 0.65rem 0.5rem; }
+      .tools-tab { min-width: 0; flex: 1 1 calc(50% - 6px); font-size: 0.85rem; padding: 0.65rem 0.5rem; }
       .visitors { grid-template-columns: 1fr; }
       .visitors-form__row { grid-template-columns: 1fr; }
       .visitor-count {
@@ -1010,6 +1013,7 @@
       <div class="tools-tabs" role="tablist" aria-label="Tool categories">
         <button type="button" class="tools-tab" role="tab" id="tab-editors" data-tab="editors" aria-controls="panel-editors" aria-selected="true">Editors</button>
         <button type="button" class="tools-tab" role="tab" id="tab-tables" data-tab="tables" aria-controls="panel-tables" aria-selected="false" tabindex="-1">Tables</button>
+        <button type="button" class="tools-tab" role="tab" id="tab-modmenus" data-tab="modmenus" aria-controls="panel-modmenus" aria-selected="false" tabindex="-1">Mod Menus</button>
         <button type="button" class="tools-tab" role="tab" id="tab-unlockers" data-tab="unlockers" aria-controls="panel-unlockers" aria-selected="false" tabindex="-1">Unlockers</button>
       </div>
 
@@ -1100,9 +1104,9 @@
           <a class="tile tile--grounded2" href="tools/grounded2-editor/editor.html">
             <span class="tile__badge tile__badge--live">Live</span>
             <span class="tile__body">
-              <span class="tile__game">Brookhollow Park</span>
+              <span class="tile__game">Into the Abyss</span>
               <span class="tile__name">Grounded 2</span>
-              <span class="tile__meta">Augusta · Oodle .csav · + Cheat Engine table</span>
+              <span class="tile__meta">Pond · Oodle .csav · + Cheat Engine table</span>
             </span>
           </a>
         </nav>
@@ -1147,12 +1151,12 @@
             </span>
           </a>
 
-          <a class="tile tile--grounded2" href="tools/grounded2-editor/GGdropmanGrounded2V1.0.CT" download>
+          <a class="tile tile--grounded2" href="tools/grounded2-editor/GGdropmanGrounded2V2.0.CT" download>
             <span class="tile__badge tile__badge--live">.CT</span>
             <span class="tile__body">
-              <span class="tile__game">Brookhollow Park</span>
-              <span class="tile__name">Grounded 2 Table v1.1</span>
-              <span class="tile__meta">Into the Abyss · Grounded2Steam · speed / fly</span>
+              <span class="tile__game">Into the Abyss</span>
+              <span class="tile__name">Grounded 2 Table v2.0</span>
+              <span class="tile__meta">Grounded2Steam · speed / fly / vitals</span>
             </span>
           </a>
 
@@ -1162,6 +1166,20 @@
               <span class="tile__meta">Request one in Visitors ↓</span>
             </span>
           </button>
+        </nav>
+      </div>
+
+      <div class="tools-panel" role="tabpanel" id="panel-modmenus" data-panel="modmenus" aria-labelledby="tab-modmenus" hidden>
+        <p class="tools-panel__sub">In-game UE4SS menus. Download the zip, then follow the <a href="tools/grounded2-cheatmenu/index.html">install guide</a>.</p>
+        <nav class="hud-grid" aria-label="Mod menus">
+          <a class="tile tile--grounded2" href="tools/grounded2-cheatmenu/GGdropmanGrounded2ModMenu.zip" download>
+            <span class="tile__badge tile__badge--live">ZIP</span>
+            <span class="tile__body">
+              <span class="tile__game">Into the Abyss</span>
+              <span class="tile__name">Grounded 2 Mod Menu</span>
+              <span class="tile__meta">UE4SS · F8 in-game cheats · download zip</span>
+            </span>
+          </a>
         </nav>
       </div>
 
@@ -1315,13 +1333,17 @@
           <li><a href="tools/tcg-editor/GGdropmanTCG_v1.0.CT" download>TCG Card Shop Simulator Mono (.CT) v1.0</a> — GGdropman</li>
           <li><a href="tools/schedule1-editor/GGdropmanScedule1V1.7.CT" download>Schedule I (.CT) v1.7</a> — GGdropman</li>
           <li><a href="tools/grounded-editor/GGdropmanGroundedV1.0.CT" download>Grounded (.CT) v1.0</a> — GGdropman (speed / jump / vitals)</li>
-          <li><a href="tools/grounded2-editor/GGdropmanGrounded2V1.0.CT" download>Grounded 2 (.CT) v1.1</a> — GGdropman (Into the Abyss · Grounded2Steam activate)</li>
+          <li><a href="tools/grounded2-editor/GGdropmanGrounded2V2.0.CT" download>Grounded 2 (.CT) v2.0</a> — GGdropman (Into the Abyss · Grounded2Steam activate)</li>
+        </ul>
+        <p><strong>Mod Menus:</strong></p>
+        <ul>
+          <li><a href="tools/grounded2-cheatmenu/GGdropmanGrounded2ModMenu.zip" download>Grounded 2 UE4SS Mod Menu</a> — GGdropman (F8 in-game cheats · Into the Abyss)</li>
         </ul>
         <p><strong>Achievement Unlockers:</strong></p>
         <ul>
           <li><a href="tools/steam-achievement-unlocker/guide.html">Steam Achievement Unlocker</a> — GGdropman (local Node CLI · SoD2 · Expedition 33 · any AppID)</li>
         </ul>
-        <p><strong>Art:</strong> Steam header images used as tile atmosphere only.</p>
+        <p><strong>Art:</strong> Steam header images used as tile atmosphere only. Grounded 2 tiles use the Into the Abyss key art.</p>
       </div>
     </div>
   </div>
@@ -1373,6 +1395,11 @@
         table: "tables",
         cheats: "tables",
         cheat: "tables",
+        modmenus: "modmenus",
+        mods: "modmenus",
+        mod: "modmenus",
+        menus: "modmenus",
+        cheatmenu: "modmenus",
         unlockers: "unlockers",
         unlocker: "unlockers",
         achievements: "unlockers",

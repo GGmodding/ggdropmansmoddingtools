@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<CheatTable CheatEngineTableVersion="52">
+<CheatTable CheatEngineTableVersion="45">
   <CheatEntries>
     <CheatEntry>
       <ID>1</ID>
       <Description>"=== GGdropmans Grounded 2 V2.0 (vitals only / 0.5.0.2) ==="</Description>
       <Options moHideChildren="1"/>
-      <Color>00C080</Color>
+      <Color>0000C080</Color>
       <GroupHeader>1</GroupHeader>
       <CheatEntries>
         <CheatEntry>
           <ID>2</ID>
           <Description>"README"</Description>
-          <Color>808080</Color>
+          <Color>00808080</Color>
           <VariableType>Auto Assembler Script</VariableType>
           <AssemblerScript>{
 GGdropmans Grounded 2 V2.0 - Vitals only (SDK 0.5.0.2 / build 3054196)
@@ -23,13 +23,12 @@ Donate:  https://paypal.me/kd19902
 
 1. Load into a world (not main menu)
 2. Attach Cheat Engine to the shipping exe
-3. Enable [ACTIVATE] - popup must show possessed=true (local player)
+3. Enable [ACTIVATE] — popup must show possessed=true (local player)
 4. Health / Stamina / Food rows should show live floats
 5. If Fill does not move the HUD, enable FREEZE vitals (holds values every 50ms)
-6. Sanity check: take damage - CE "Health Damaged" must change. If not, wrong pawn.
+6. Sanity check: take damage — CE "Health Damaged" must change. If not, wrong pawn.
 7. Movement: Super Speed / Jump / Swim / Fly / Noclip / Teleport to aim (F6 horizontal + lift)
-8. Currency: Raw Science / Brainpower / Gold molars / Milk molars / Moldy milk molars (Party)
-9c. Inventory slots: custom bag/mount size (DefaultMaxSize + milk-molar upgrade tiers)
+8. Currency: Raw Science / Brainpower / Gold molars / Milk molars (Party)
 9. Stacks: raise max to 999 + fill/freeze inventory stacks
 9b. Inventory spawn: Init helpers then Duplicate held / Spawn by name / Build staples
 10. Survive: God Mode + No Fall Damage
@@ -45,8 +44,8 @@ Built from Dumper-7 CppSDK offsets (0.5.0.2). GObjects scan prefers possessed Su
         </CheatEntry>
         <CheatEntry>
           <ID>5</ID>
-          <Description>"[Link] GitHub - GGmodding/ggdropmansmoddingtools"</Description>
-          <Color>FF8000</Color>
+          <Description>"[Link] GitHub — GGmodding/ggdropmansmoddingtools"</Description>
+          <Color>00FF8000</Color>
           <VariableType>Auto Assembler Script</VariableType>
           <AssemblerScript>[ENABLE]
 {$lua}
@@ -70,8 +69,8 @@ gg2_deferOff()
         </CheatEntry>
         <CheatEntry>
           <ID>6</ID>
-          <Description>"[Link] Discord - discord.gg/PTwyDTFyR"</Description>
-          <Color>FF8000</Color>
+          <Description>"[Link] Discord — discord.gg/PTwyDTFyR"</Description>
+          <Color>00FF8000</Color>
           <VariableType>Auto Assembler Script</VariableType>
           <AssemblerScript>[ENABLE]
 {$lua}
@@ -96,7 +95,7 @@ gg2_deferOff()
         <CheatEntry>
           <ID>4</ID>
           <Description>"[Script] DISABLE ALL scripts"</Description>
-          <Color>0000FF</Color>
+          <Color>000000FF</Color>
           <VariableType>Auto Assembler Script</VariableType>
           <AssemblerScript>[ENABLE]
 {$lua}
@@ -114,7 +113,7 @@ local function killTimerBag(bag, key)
 end
 
 local bags = {
-  gg2_freeze_vitals, gg2_currency_freeze, gg2_stack_freeze, gg2_inv_freeze, gg2_god,
+  gg2_freeze_vitals, gg2_currency_freeze, gg2_stack_freeze, gg2_god,
   gg2_nofall, gg2_tp, gg2_speed, gg2_jump, gg2_swim, gg2_fly, gg2_noclip,
   gg2_session_unlock, gg_giant_held, gg2_oneshot, gg2_perfect_block, gg2_analyzer, gg2_spawn,
 }
@@ -131,13 +130,12 @@ for _, bag in ipairs(bags) do
 end
 gg2_freeze_vitals = nil
 gg2_currency_freeze = nil
-gg2_inv_freeze = nil
 gg2_stack_freeze = nil
 
 local skipDesc = {
   ["[Script] DISABLE ALL scripts"] = true,
-  ["[Link] GitHub - GGmodding/ggdropmansmoddingtools"] = true,
-  ["[Link] Discord - discord.gg/PTwyDTFyR"] = true,
+  ["[Link] GitHub — GGmodding/ggdropmansmoddingtools"] = true,
+  ["[Link] Discord — discord.gg/PTwyDTFyR"] = true,
   ["README"] = true,
 }
 
@@ -177,7 +175,7 @@ end
         <CheatEntry>
           <ID>3</ID>
           <Description>"[ACTIVATE] SDK vitals"</Description>
-          <Color>00FF00</Color>
+          <Color>0000FF00</Color>
           <VariableType>Auto Assembler Script</VariableType>
           <AssemblerScript>[ENABLE]
 {$lua}
@@ -651,7 +649,7 @@ if pawn == nil then
 end
 
 if pawn == nil or not isHeapPtr(pawn) then
-  fail("No live heap SurvivalCharacter found.\n(GObjects CDOs in 7FFxxxxx are ignored - those don't affect gameplay.)")
+  fail("No live heap SurvivalCharacter found.\n(GObjects CDOs in 7FFxxxxx are ignored — those don't affect gameplay.)")
 end
 if worldRva ~= nil then
   regModule("GWorld", mod, worldRva)
@@ -899,7 +897,7 @@ end
 local settings, modeMgr, settingsTag = findGameModeSettings()
 if looksUObj(modeMgr) then
   -- Dump + auto-calibrate ModeManager field offsets (SDK can drift)
-  print(string.format("ModeManager=%X via %s - probing layout...", modeMgr, tostring(settingsTag)))
+  print(string.format("ModeManager=%X via %s — probing layout...", modeMgr, tostring(settingsTag)))
   local hex = {}
   for off = 0x100, 0x14F do
     local b = readByte(modeMgr + off)
@@ -918,7 +916,7 @@ if looksUObj(modeMgr) then
   if looksAnyUObj(s138) then
     settings = s138
     settingsOff = 0x138
-    print(string.format("  using heap/module Settings* @ +0x138 -&gt; %X", s138))
+    print(string.format("  using heap/module Settings* @ +0x138 -> %X", s138))
   else
     -- fallback scan; skip +0x108 (NewGamePlusSettings)
     for off = 0xC0, 0x150, 8 do
@@ -927,7 +925,7 @@ if looksUObj(modeMgr) then
         if looksLikeSettings(p) then
           settingsOff = off
           settings = p
-          print(string.format("  calibrated Settings* @ ModeManager+0x%X -&gt; %X", off, p))
+          print(string.format("  calibrated Settings* @ ModeManager+0x%X -> %X", off, p))
           break
         end
       end
@@ -951,16 +949,13 @@ if looksUObj(modeMgr) then
     regAbs("GG2_RawScience", party + 0x4D8)       -- ScienceFound
     regAbs("GG2_Brainpower", party + 0x4DC)      -- ResearchPoints
     regAbs("GG2_GoldMolars", party + 0x4E4)      -- PartyUpgradePoints
-        regAbs("GG2_MilkMolars", party + 0x4E8)      -- PersonalUpgradePoints
-    regAbs("GG2_MoldyMolars", party + 0x4EC)     -- BuggyUpgradePoints (moldy milk molars)
-    print(string.format("Party=%X Science=%s Brain=%s GoldMolars=%s MilkMolars=%s Moldy=%s",
+    regAbs("GG2_MilkMolars", party + 0x4E8)      -- PersonalUpgradePoints
+    print(string.format("Party=%X Science=%s Brain=%s GoldMolars=%s MilkMolars=%s",
       party,
       tostring(readInteger(party + 0x4D8)),
       tostring(readInteger(party + 0x4DC)),
       tostring(readInteger(party + 0x4E4)),
-      tostring(readInteger(party + 0x4E8)),
-      tostring(readInteger(party + 0x4EC))))
-
+      tostring(readInteger(party + 0x4E8))))
   end
 end
 if settings ~= nil and looksAnyUObj(settings) then
@@ -975,7 +970,7 @@ if settings ~= nil and looksAnyUObj(settings) then
     tostring(readByte(settings + 0x3D)),
     (settings &gt;= 0x7F0000000000) and " (module CDO)" or " (heap)"))
 elseif looksUObj(modeMgr) then
-  print("GameModeSettings still missing after probe - craft will still force mode + bits")
+  print("GameModeSettings still missing after probe — craft will still force mode + bits")
 else
   print("ModeManager/GameModeSettings NOT FOUND (crafting scripts will retry on enable)")
 end
@@ -1025,9 +1020,7 @@ local names = {
   "GG2_TakeFallDamage","GG2_MinFallVel","GG2_FallDamageRatio",
   "GG2_GameModeSettings","GG2_ModeManager","GG2_CustomSettingsBits","GG2_CurrentGameMode",
   "GG2_UnlockAllRecipes","GG2_AutoCompleteBuild","GG2_BuildingIntegrity","GG2_RecipesNeedItems",
-  "GG2_Party","GG2_RawScience","GG2_Brainpower","GG2_GoldMolars","GG2_MilkMolars","GG2_MoldyMolars",
-  "GG2_InvComp","GG2_InvDefaultMaxSize","GG2_MountInvComp","GG2_MountInvDefaultMaxSize",
-  "GG2_PlayerUpgradeComp","GG2_BuggyUpgradeComp",
+  "GG2_Party","GG2_RawScience","GG2_Brainpower","GG2_GoldMolars","GG2_MilkMolars",
 }
 for i=1,#names do
   pcall(function()
@@ -1042,13 +1035,13 @@ print("[ACTIVATE] disabled")
           <ID>10</ID>
           <Description>"Vitals"</Description>
           <Options moHideChildren="1" moManualExpandCollapse="1"/>
-          <Color>4080FF</Color>
+          <Color>004080FF</Color>
           <GroupHeader>1</GroupHeader>
           <CheatEntries>
             <CheatEntry>
               <ID>11</ID>
               <Description>"[Script] Fill vitals once"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -1120,7 +1113,7 @@ else
 end
 
 table.insert(lines, "")
-table.insert(lines, "If HUD unchanged but readbacks match: game overwrites - use FREEZE.")
+table.insert(lines, "If HUD unchanged but readbacks match: game overwrites — use FREEZE.")
 table.insert(lines, "If CE floats don't move when you take damage: wrong Player (re-ACTIVATE).")
 showMessage(table.concat(lines, "\n"))
 [DISABLE]
@@ -1129,7 +1122,7 @@ showMessage(table.concat(lines, "\n"))
             <CheatEntry>
               <ID>12</ID>
               <Description>"[Script] FREEZE vitals (hold full)"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -1204,7 +1197,7 @@ print("FREEZE vitals OFF")
               <ID>20</ID>
               <Description>"Health"</Description>
               <Options moHideChildren="1" moManualExpandCollapse="1"/>
-              <Color>FF8080</Color>
+              <Color>00FF8080</Color>
               <GroupHeader>1</GroupHeader>
               <CheatEntries>
                 <CheatEntry>
@@ -1227,7 +1220,7 @@ print("FREEZE vitals OFF")
               <ID>30</ID>
               <Description>"Stamina"</Description>
               <Options moHideChildren="1" moManualExpandCollapse="1"/>
-              <Color>FF8080</Color>
+              <Color>00FF8080</Color>
               <GroupHeader>1</GroupHeader>
               <CheatEntries>
                 <CheatEntry>
@@ -1250,7 +1243,7 @@ print("FREEZE vitals OFF")
               <ID>40</ID>
               <Description>"Survival"</Description>
               <Options moHideChildren="1" moManualExpandCollapse="1"/>
-              <Color>FF8080</Color>
+              <Color>00FF8080</Color>
               <GroupHeader>1</GroupHeader>
               <CheatEntries>
                 <CheatEntry>
@@ -1303,13 +1296,13 @@ print("FREEZE vitals OFF")
           <ID>60</ID>
           <Description>"Currency (Party)"</Description>
           <Options moHideChildren="1" moManualExpandCollapse="1"/>
-          <Color>00C0C0</Color>
+          <Color>0000C0C0</Color>
           <GroupHeader>1</GroupHeader>
           <CheatEntries>
             <CheatEntry>
               <ID>61</ID>
-              <Description>"[Script] Fill Raw Science / Molars / Moldy / Brainpower"</Description>
-              <Color>00FF00</Color>
+              <Description>"[Script] Fill Raw Science / Molars / Brainpower"</Description>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -1370,14 +1363,12 @@ registerSymbol("GG2_RawScience", party + 0x4D8, true)
 registerSymbol("GG2_Brainpower", party + 0x4DC, true)
 registerSymbol("GG2_GoldMolars", party + 0x4E4, true)
 registerSymbol("GG2_MilkMolars", party + 0x4E8, true)
-registerSymbol("GG2_MoldyMolars", party + 0x4EC, true)
 
 local sci = inputQuery("Raw Science", "Set Raw Science (ScienceFound) to:", "99999")
 local brain = inputQuery("Brainpower", "Set Brainpower (ResearchPoints) to:", "9999")
 local gold = inputQuery("Gold molars", "Set party upgrade points (gold molars) to:", "99")
 local milk = inputQuery("Milk molars", "Set personal milk molars to:", "99")
-local moldy = inputQuery("Moldy milk molars", "Set buggy upgrade points (moldy milk molars) to:", "99")
-if sci == nil or brain == nil or gold == nil or milk == nil or moldy == nil then error("cancelled") end
+if sci == nil or brain == nil or gold == nil or milk == nil then error("cancelled") end
 
 local function setInt(addr, label, raw)
   local n = math.floor(tonumber(raw) or -1)
@@ -1387,26 +1378,25 @@ local function setInt(addr, label, raw)
   end
   local prev = readInteger(addr)
   writeInteger(addr, n)
-  print(string.format("%s: %s -&gt; wrote %d (readback %s)", label, tostring(prev), n, tostring(readInteger(addr))))
+  print(string.format("%s: %s -> wrote %d (readback %s)", label, tostring(prev), n, tostring(readInteger(addr))))
 end
 
 setInt(party + 0x4D8, "Raw Science", sci)
 setInt(party + 0x4DC, "Brainpower", brain)
 setInt(party + 0x4E4, "Gold molars", gold)
 setInt(party + 0x4E8, "Milk molars", milk)
-setInt(party + 0x4EC, "Moldy milk molars", moldy)
 
 showMessage(
   "Currency written on PartyComponent.\n\n"..
   "Open / close upgrade menus if HUD does not refresh.\n"..
-  "Values are live RAM - save the game to keep them.")
+  "Values are live RAM — save the game to keep them.")
 [DISABLE]
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
               <ID>62</ID>
               <Description>"[Script] FREEZE currency (hold values)"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -1424,7 +1414,6 @@ gg2_currency_freeze = {
   brain = readInteger(getAddressSafe("GG2_Brainpower")),
   gold = readInteger(getAddressSafe("GG2_GoldMolars")),
   milk = readInteger(getAddressSafe("GG2_MilkMolars")),
-  moldy = readInteger(getAddressSafe("GG2_MoldyMolars")),
 }
 local st = gg2_currency_freeze
 st.timer = createTimer(nil, false)
@@ -1435,12 +1424,11 @@ st.timer.OnTimer = function()
   a = getAddressSafe("GG2_Brainpower"); if a and st.brain then writeInteger(a, st.brain) end
   a = getAddressSafe("GG2_GoldMolars"); if a and st.gold then writeInteger(a, st.gold) end
   a = getAddressSafe("GG2_MilkMolars"); if a and st.milk then writeInteger(a, st.milk) end
-  a = getAddressSafe("GG2_MoldyMolars"); if a and st.moldy then writeInteger(a, st.moldy) end
 end
 st.timer.Enabled = true
-print(string.format("Currency FREEZE ON sci=%s brain=%s gold=%s milk=%s moldy=%s",
-  tostring(st.sci), tostring(st.brain), tostring(st.gold), tostring(st.milk), tostring(st.moldy)))
-showMessage("Currency FREEZE ON - holds current Party values every 200ms.")
+print(string.format("Currency FREEZE ON sci=%s brain=%s gold=%s milk=%s",
+  tostring(st.sci), tostring(st.brain), tostring(st.gold), tostring(st.milk)))
+showMessage("Currency FREEZE ON — holds current Party values every 200ms.")
 [DISABLE]
 {$lua}
 if syntaxcheck then return end
@@ -1482,296 +1470,19 @@ print("Currency FREEZE OFF")
               <VariableType>4 Bytes</VariableType>
               <Address>GG2_MilkMolars</Address>
             </CheatEntry>
-            <CheatEntry>
-              <ID>225</ID>
-              <Description>"Moldy milk molars (buggy points)"</Description>
-              <ShowAsSigned>0</ShowAsSigned>
-              <VariableType>4 Bytes</VariableType>
-              <Address>GG2_MoldyMolars</Address>
-            </CheatEntry>
-          </CheatEntries>
-        </CheatEntry>
-        <CheatEntry>
-          <ID>226</ID>
-          <Description>"Inventory slots (custom)"</Description>
-          <Options moHideChildren="1" moManualExpandCollapse="1"/>
-          <Color>40A0C0</Color>
-          <GroupHeader>1</GroupHeader>
-          <CheatEntries>
-            <CheatEntry>
-              <ID>227</ID>
-              <Description>"[Script] Set bag slots (DefaultMaxSize + max milk-molar upgrade tiers)"</Description>
-              <Color>00FF00</Color>
-              <VariableType>Auto Assembler Script</VariableType>
-              <AssemblerScript>[ENABLE]
-{$lua}
-if syntaxcheck then return end
-if getAddressSafe("Player") == nil then
-  showMessage("Enable [ACTIVATE] first")
-  error("no Player")
-end
-
-local function isHeapPtr(ptr)
-  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
-  if ptr &gt;= 0x7F0000000000 then return false end
-  return true
-end
-local function looksUObj(ptr)
-  if not isHeapPtr(ptr) then return false end
-  local vf = readQword(ptr)
-  return vf ~= nil and vf &gt; 0x10000
-end
-
--- Default 120: BackpackSlots UE4SS already forces 80, so prompting 80 looks like a no-op.
-local slotsRaw = inputQuery("Bag slots", "Set bag capacity (MUST be higher than current, e.g. 120/160):", "120")
-if slotsRaw == nil then error("cancelled") end
-local slots = math.floor(tonumber(slotsRaw) or -1)
-if slots &lt; 1 or slots &gt; 500 then
-  showMessage("Use a slot count between 1 and 500")
-  error("bad slots")
-end
-
-local pawn = getAddressSafe("Player")
-local inv = readQword(pawn + 0x1438)
-if not looksUObj(inv) then
-  showMessage("No InventoryComponent on Player.\nOpen bag once / re-ACTIVATE in-world.")
-  error("no inv")
-end
-
-local prev = readInteger(inv + 0x1E0)
-if prev ~= nil and slots &lt;= prev then
-  showMessage(string.format(
-    "You entered %d but DefaultMaxSize is already %d.\n\nEnter a HIGHER number (e.g. 120 or 160).\n\nAlso: UE4SS BackpackSlots hardcodes SLOTS=80 on pawn spawn - edit that mod or keep FREEZE on.",
-    slots, prev))
-  error("slots not higher")
-end
-writeInteger(inv + 0x1E0, slots)
-registerSymbol("GG2_InvComp", inv, true)
-registerSymbol("GG2_InvDefaultMaxSize", inv + 0x1E0, true)
-print(string.format("Bag DefaultMaxSize %s -&gt; %d (readback %s)", tostring(prev), slots, tostring(readInteger(inv + 0x1E0))))
-
-local upgraded = 0
-local ps = readQword(pawn + 0x2D0)
-if looksUObj(ps) then
-  local puc = readQword(ps + 0x748)
-  if looksUObj(puc) then
-    registerSymbol("GG2_PlayerUpgradeComp", puc, true)
-    local data = readQword(puc + 0xE8)
-    local num = readInteger(puc + 0xF0)
-    if isHeapPtr(data) and num ~= nil and num &gt; 0 and num &lt; 64 then
-      for i = 0, num - 1 do
-        local tierAddr = data + i * 0x20 + 0xC
-        local t = readInteger(tierAddr)
-        if t ~= nil and t &gt;= 0 and t &lt; 50 then
-          writeInteger(tierAddr, 20)
-          upgraded = upgraded + 1
-        end
-      end
-      print(string.format("Milk-molar PlayerUpgrade tiers maxed: %d", upgraded))
-    else
-      print(string.format("PlayerUpgrades empty/odd data=%s num=%s", tostring(data), tostring(num)))
-    end
-  else
-    print("PlayerUpgradeComponent missing on PlayerState")
-  end
-else
-  print("PlayerState missing on pawn")
-end
-
--- Auto-FREEZE so BackpackSlots / regen cannot snap back to 80.
-if gg2_inv_freeze ~= nil and gg2_inv_freeze.timer ~= nil then
-  gg2_inv_freeze.timer.Enabled = false
-  gg2_inv_freeze.timer.destroy()
-end
-gg2_inv_freeze = { qty = slots }
-local st = gg2_inv_freeze
-st.timer = createTimer(nil, false)
-st.timer.Interval = 200
-st.timer.OnTimer = function()
-  local p = getAddressSafe("Player")
-  if p == nil then return end
-  local c = readQword(p + 0x1438)
-  if c ~= nil and c ~= 0 then writeInteger(c + 0x1E0, st.qty) end
-end
-st.timer.Enabled = true
-
-showMessage(string.format(
-  "Bag slots: %s -&gt; %d (FREEZE ON).\nMilk-molar upgrade tiers touched: %d.\n\nClose/reopen the bag.\n\nIf UI still shows 80: edit UE4SS BackpackSlots Scripts/main.lua\n  local SLOTS = 80  -&gt;  local SLOTS = %d\nthen restart the game. The inventory WBP was built around that mod's slot count.",
-  tostring(prev), slots, upgraded, slots))
-[DISABLE]
-{$lua}
-if syntaxcheck then return end
-local st = gg2_inv_freeze
-if st ~= nil and st.timer ~= nil then
-  st.timer.Enabled = false
-  st.timer.destroy()
-  st.timer = nil
-end
-gg2_inv_freeze = nil
-print("Set bag slots disabled (freeze stopped)")
-</AssemblerScript>
-            </CheatEntry>
-            <CheatEntry>
-              <ID>228</ID>
-              <Description>"[Script] FREEZE bag slots (hold DefaultMaxSize)"</Description>
-              <Color>00FF00</Color>
-              <VariableType>Auto Assembler Script</VariableType>
-              <AssemblerScript>[ENABLE]
-{$lua}
-if syntaxcheck then return end
-if getAddressSafe("Player") == nil then
-  showMessage("Enable [ACTIVATE] first")
-  error("no Player")
-end
-local pawn = getAddressSafe("Player")
-local inv = readQword(pawn + 0x1438)
-if inv == nil or inv == 0 then
-  showMessage("No InventoryComponent")
-  error("no inv")
-end
-local addr = getAddressSafe("GG2_InvDefaultMaxSize")
-if addr == nil then
-  registerSymbol("GG2_InvComp", inv, true)
-  registerSymbol("GG2_InvDefaultMaxSize", inv + 0x1E0, true)
-  addr = inv + 0x1E0
-end
-if gg2_inv_freeze ~= nil and gg2_inv_freeze.timer ~= nil then
-  gg2_inv_freeze.timer.Enabled = false
-  gg2_inv_freeze.timer.destroy()
-end
-gg2_inv_freeze = { qty = readInteger(addr) or 80 }
-local st = gg2_inv_freeze
-st.timer = createTimer(nil, false)
-st.timer.Interval = 250
-st.timer.OnTimer = function()
-  local p = getAddressSafe("Player")
-  if p == nil then return end
-  local c = readQword(p + 0x1438)
-  if c == nil or c == 0 then return end
-  writeInteger(c + 0x1E0, st.qty)
-end
-st.timer.Enabled = true
-print("FREEZE bag slots ON @ "..tostring(st.qty))
-showMessage("FREEZE bag slots ON @ "..tostring(st.qty).."\n\nHolds DefaultMaxSize every 250ms.")
-[DISABLE]
-{$lua}
-if syntaxcheck then return end
-local st = gg2_inv_freeze
-if st ~= nil and st.timer ~= nil then
-  st.timer.Enabled = false
-  st.timer.destroy()
-  st.timer = nil
-end
-gg2_inv_freeze = nil
-print("FREEZE bag slots OFF")
-</AssemblerScript>
-            </CheatEntry>
-            <CheatEntry>
-              <ID>229</ID>
-              <Description>"[Script] Set buggy/mount slots (moldy upgrade path)"</Description>
-              <Color>00FF00</Color>
-              <VariableType>Auto Assembler Script</VariableType>
-              <AssemblerScript>[ENABLE]
-{$lua}
-if syntaxcheck then return end
-if getAddressSafe("Player") == nil then
-  showMessage("Enable [ACTIVATE] first")
-  error("no Player")
-end
-
-local function isHeapPtr(ptr)
-  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
-  if ptr &gt;= 0x7F0000000000 then return false end
-  return true
-end
-local function looksUObj(ptr)
-  if not isHeapPtr(ptr) then return false end
-  local vf = readQword(ptr)
-  return vf ~= nil and vf &gt; 0x10000
-end
-
-local slotsRaw = inputQuery("Buggy slots", "Set mount/buggy inventory DefaultMaxSize to:", "40")
-if slotsRaw == nil then error("cancelled") end
-local slots = math.floor(tonumber(slotsRaw) or -1)
-if slots &lt; 1 or slots &gt; 500 then
-  showMessage("Use a slot count between 1 and 500")
-  error("bad slots")
-end
-
-local pawn = getAddressSafe("Player")
-local minv = readQword(pawn + 0x1440)
-if not looksUObj(minv) then
-  showMessage("No MountInventoryComponent.\nMount a buggy first, then re-run.")
-  error("no mount inv")
-end
-
-local prev = readInteger(minv + 0x1E0)
-writeInteger(minv + 0x1E0, slots)
-registerSymbol("GG2_MountInvComp", minv, true)
-registerSymbol("GG2_MountInvDefaultMaxSize", minv + 0x1E0, true)
-print(string.format("Mount DefaultMaxSize %s -&gt; %d", tostring(prev), slots))
-
-local party = getAddressSafe("GG2_Party")
-if looksUObj(party) then
-  local cur = readInteger(party + 0x4EC) or 0
-  if cur &lt; 99 then writeInteger(party + 0x4EC, 99) end
-  registerSymbol("GG2_MoldyMolars", party + 0x4EC, true)
-end
-
-local upgraded = 0
-local ps = readQword(pawn + 0x2D0)
-if looksUObj(ps) then
-  local buc = readQword(ps + 0x750)
-  if looksUObj(buc) then
-    registerSymbol("GG2_BuggyUpgradeComp", buc, true)
-    local data = readQword(buc + 0xE8)
-    local num = readInteger(buc + 0xF0)
-    if isHeapPtr(data) and num ~= nil and num &gt; 0 and num &lt; 64 then
-      for i = 0, num - 1 do
-        local tierAddr = data + i * 0x20 + 0xC
-        local t = readInteger(tierAddr)
-        if t ~= nil and t &gt;= 0 and t &lt; 50 then
-          writeInteger(tierAddr, 20)
-          upgraded = upgraded + 1
-        end
-      end
-    end
-  end
-end
-
-showMessage(string.format(
-  "Buggy/mount slots set to %d.\n\nMoldy molar points topped if Party known.\nMaxed %d buggy upgrade tier(s).\nRemount / reopen buggy inventory if UI is stale.",
-  slots, upgraded))
-[DISABLE]
-</AssemblerScript>
-            </CheatEntry>
-            <CheatEntry>
-              <ID>230</ID>
-              <Description>"Bag DefaultMaxSize"</Description>
-              <ShowAsSigned>0</ShowAsSigned>
-              <VariableType>4 Bytes</VariableType>
-              <Address>GG2_InvDefaultMaxSize</Address>
-            </CheatEntry>
-            <CheatEntry>
-              <ID>231</ID>
-              <Description>"Mount DefaultMaxSize"</Description>
-              <ShowAsSigned>0</ShowAsSigned>
-              <VariableType>4 Bytes</VariableType>
-              <Address>GG2_MountInvDefaultMaxSize</Address>
-            </CheatEntry>
           </CheatEntries>
         </CheatEntry>
         <CheatEntry>
           <ID>200</ID>
           <Description>"Stacks (999)"</Description>
           <Options moHideChildren="1" moManualExpandCollapse="1"/>
-          <Color>40C0A0</Color>
+          <Color>0040C0A0</Color>
           <GroupHeader>1</GroupHeader>
           <CheatEntries>
             <CheatEntry>
               <ID>201</ID>
               <Description>"[Script] Raise max stack to 999 (GlobalItemData + Party)"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -1886,7 +1597,7 @@ if looksLikeGlobalItemData(gid) then
   table.insert(notes, "GlobalItemData OK")
   bumpStackSizesMap(gid)
 else
-  print("GlobalItemData NOT FOUND - Party tiers + inventory fill may still help")
+  print("GlobalItemData NOT FOUND — Party tiers + inventory fill may still help")
   table.insert(notes, "GlobalItemData MISS")
 end
 
@@ -1928,7 +1639,7 @@ showMessage(
             <CheatEntry>
               <ID>202</ID>
               <Description>"[Script] Fill ALL inventory stacks to 999"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -1996,7 +1707,7 @@ showMessage(string.format(
             <CheatEntry>
               <ID>203</ID>
               <Description>"[Script] FREEZE inventory stacks @ 999"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -2074,7 +1785,7 @@ print("FREEZE inventory stacks OFF")
             <CheatEntry>
               <ID>204</ID>
               <Description>"[Script] COMBO: max 999 + fill + freeze"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -2225,15 +1936,15 @@ print("Stacks COMBO OFF (freeze stopped)")
         </CheatEntry>
         <CheatEntry>
           <ID>220</ID>
-          <Description>"Inventory spawn (out of service)"</Description>
+          <Description>"Inventory spawn"</Description>
           <Options moHideChildren="1" moManualExpandCollapse="1"/>
-          <Color>C08040</Color>
+          <Color>00C08040</Color>
           <GroupHeader>1</GroupHeader>
           <CheatEntries>
             <CheatEntry>
               <ID>221</ID>
               <Description>"[Script] Init spawn helpers"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -2553,7 +2264,7 @@ showMessage("Spawn helpers ready.\n\n" .. probeMsg .. "\n\nDuplicate now uses LO
             <CheatEntry>
               <ID>222</ID>
               <Description>"[Script] Duplicate held item"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -2595,7 +2306,7 @@ else showMessage("Duplicate failed:\n" .. tostring(msg)); error("dup fail") end
             <CheatEntry>
               <ID>223</ID>
               <Description>"[Script] Duplicate ALL bag stacks"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -2630,7 +2341,7 @@ if okN == 0 then error("all failed") end
             <CheatEntry>
               <ID>224</ID>
               <Description>"[Script] List bag item keys"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -2664,17 +2375,18 @@ showMessage(string.format("Found %d unique item key(s):\n\n%s", #uniq, txt ~= ""
             </CheatEntry>
           </CheatEntries>
         </CheatEntry>
+
         <CheatEntry>
           <ID>70</ID>
           <Description>"Survive"</Description>
           <Options moHideChildren="1" moManualExpandCollapse="1"/>
-          <Color>0080FF</Color>
+          <Color>000080FF</Color>
           <GroupHeader>1</GroupHeader>
           <CheatEntries>
             <CheatEntry>
               <ID>71</ID>
               <Description>"[Script] God Mode (HP + stamina)"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -2741,7 +2453,7 @@ print("God Mode OFF")
             <CheatEntry>
               <ID>72</ID>
               <Description>"[Script] No Fall Damage"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -2840,7 +2552,7 @@ print("No Fall Damage OFF")
               <ID>80</ID>
               <Description>"Fall damage (debug)"</Description>
               <Options moHideChildren="1" moManualExpandCollapse="1"/>
-              <Color>FF8080</Color>
+              <Color>00FF8080</Color>
               <GroupHeader>1</GroupHeader>
               <CheatEntries>
                 <CheatEntry>
@@ -2872,13 +2584,13 @@ print("No Fall Damage OFF")
           <ID>210</ID>
           <Description>"Combat"</Description>
           <Options moHideChildren="1" moManualExpandCollapse="1"/>
-          <Color>0040FF</Color>
+          <Color>000040FF</Color>
           <GroupHeader>1</GroupHeader>
           <CheatEntries>
             <CheatEntry>
               <ID>211</ID>
               <Description>"[Script] One-shot kill (PlayerDamage x9999)"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -2990,7 +2702,7 @@ print("One-shot OFF")
             <CheatEntry>
               <ID>212</ID>
               <Description>"[Script] Always perfect block"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -3059,7 +2771,7 @@ st.timer.Enabled = true
 print(string.format(
   "Perfect block ON Block=%X window %s -&gt; %.0fs",
   bc, tostring(st.prevWin), WINDOW))
-showMessage("Always perfect block ON\n\nPerfect-block window held at 60s while blocking.\nHold block as usual - timing is extremely forgiving.\nDisable to restore.")
+showMessage("Always perfect block ON\n\nPerfect-block window held at 60s while blocking.\nHold block as usual — timing is extremely forgiving.\nDisable to restore.")
 [DISABLE]
 {$lua}
 if syntaxcheck then return end
@@ -3088,7 +2800,7 @@ print("Perfect block OFF")
             <CheatEntry>
               <ID>213</ID>
               <Description>"[Script] Unlock ALL mutations (tier III)"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -3200,7 +2912,7 @@ if looksUObj(perk) then
   print(string.format("PerkComponent=%X PlayerState=%X unlocked %d / %d -&gt; tier %d",
     perk, ps or 0, wrote, total, TIER))
 else
-  print("PerkComponent NOT FOUND - bPerksUnlocked flag still set if settings resolved")
+  print("PerkComponent NOT FOUND — bPerksUnlocked flag still set if settings resolved")
 end
 
 showMessage(string.format(
@@ -3236,13 +2948,13 @@ showMessage(string.format(
           <ID>90</ID>
           <Description>"Crafting"</Description>
           <Options moHideChildren="1" moManualExpandCollapse="1"/>
-          <Color>00C0C0</Color>
+          <Color>0000C0C0</Color>
           <GroupHeader>1</GroupHeader>
           <CheatEntries>
             <CheatEntry>
               <ID>217</ID>
               <Description>"[Script] Infinite analyzer charges"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -3391,7 +3103,7 @@ print("Infinite analyzer charges OFF")
             <CheatEntry>
               <ID>91</ID>
               <Description>"[Script] Free craft (no recipe unlock)"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -3670,8 +3382,8 @@ print("Free craft OFF (restored previous settings)")
             </CheatEntry>
             <CheatEntry>
               <ID>94</ID>
-              <Description>"[Script] Free build (Creative - can unlock recipes)"</Description>
-              <Color>0080FF</Color>
+              <Description>"[Script] Free build (Creative — can unlock recipes)"</Description>
+              <Color>000080FF</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -3727,7 +3439,7 @@ end
 
 local mm, s = resolveMM()
 if not looksUObj(mm) then
-  showMessage("No ModeManager - run ACTIVATE first")
+  showMessage("No ModeManager — run ACTIVATE first")
   error("no mm")
 end
 if looksAnyUObj(s) then
@@ -3800,14 +3512,14 @@ if st ~= nil and looksUObj(st.modeMgr) then
   end
 end
 gg2_build = nil
-print("Free build OFF - scrubbed Creative unlock flags; SAVE now")
+print("Free build OFF — scrubbed Creative unlock flags; SAVE now")
 showMessage("Free build OFF\nUnlock flags scrubbed.\nDo an in-game SAVE now.")
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
               <ID>95</ID>
               <Description>"[Script] SCRUB recipe unlock (RAM + force Normal)"</Description>
-              <Color>0000FF</Color>
+              <Color>000000FF</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -3854,7 +3566,7 @@ end
 
 local mm = getAddressSafe("GG2_ModeManager")
 if not looksUObj(mm) then
-  showMessage("No ModeManager - run ACTIVATE in-world first")
+  showMessage("No ModeManager — run ACTIVATE in-world first")
   error("no mm")
 end
 
@@ -3873,7 +3585,7 @@ if looksAnyUObj(s) then
 end
 
 print(string.format(
-  "SCRUB: mode %s-&gt;1 bits %s-&gt;%s unlock %s-&gt;0",
+  "SCRUB: mode %s->1 bits %s->%s unlock %s->0",
   tostring(beforeMode), tostring(beforeBits), tostring(readByte(mm + 0x116)),
   tostring(beforeUnlock)))
 
@@ -3883,15 +3595,15 @@ showMessage(
   "1) Do an in-game SAVE now\n"..
   "2) Quit to menu and reload that save\n\n"..
   "If recipes are still unlocked after reload,\n"..
-  "close the game completely and tell me -\n"..
+  "close the game completely and tell me —\n"..
   "the World.csav still needs an offline patch.")
 [DISABLE]
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
               <ID>92</ID>
-              <Description>"[Script] Unlock all recipes (session - RISKY)"</Description>
-              <Color>00FF00</Color>
+              <Description>"[Script] Unlock all recipes (session — RISKY)"</Description>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -4181,7 +3893,7 @@ local function restoreRecipeArray(snap)
 end
 
 if st ~= nil then
-  -- HARD scrub - Creative/Custom unlock must not survive disable
+  -- HARD scrub — Creative/Custom unlock must not survive disable
   if looksUObj(st.modeMgr) then
     writeByte(st.modeMgr + (st.modeOff or 0x110), 1) -- Normal (not Creative)
     local b = readByte(st.modeMgr + (st.bitsOff or 0x116)) or 0
@@ -4193,7 +3905,7 @@ if st ~= nil then
   restoreRecipeArray(st.craftSnap)
   restoreRecipeArray(st.buildSnap)
   print(string.format(
-    "Recipe unlock OFF - forced Normal + scrubbed; craftRecipes=%s buildRecipes=%s",
+    "Recipe unlock OFF — forced Normal + scrubbed; craftRecipes=%s buildRecipes=%s",
     st.craftSnap and tostring(st.craftSnap.num) or "?",
     st.buildSnap and tostring(st.buildSnap.num) or "?"))
 end
@@ -4209,7 +3921,7 @@ showMessage(
             <CheatEntry>
               <ID>93</ID>
               <Description>"[Script] Unlock all recipes (PERMANENT)"</Description>
-              <Color>0000FF</Color>
+              <Color>000000FF</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -4390,7 +4102,7 @@ showMessage(
 [DISABLE]
 {$lua}
 if syntaxcheck then return end
--- Intentionally do NOT restore unlock flags - permanent by design.
+-- Intentionally do NOT restore unlock flags — permanent by design.
 local st = gg2_recipes_perm
 if st ~= nil and st.timer ~= nil then
   st.timer.Enabled = false
@@ -4398,7 +4110,7 @@ if st ~= nil and st.timer ~= nil then
   st.timer = nil
 end
 gg2_recipes_perm = nil
-print("PERMANENT recipe unlock script disabled - unlock flags LEFT ON (not restored)")
+print("PERMANENT recipe unlock script disabled — unlock flags LEFT ON (not restored)")
 showMessage(
   "Permanent unlock script disabled.\n\n"..
   "Unlock flags were LEFT ON on purpose.\n"..
@@ -4410,7 +4122,7 @@ showMessage(
               <ID>100</ID>
               <Description>"GameMode settings (debug)"</Description>
               <Options moHideChildren="1" moManualExpandCollapse="1"/>
-              <Color>FF8080</Color>
+              <Color>00FF8080</Color>
               <GroupHeader>1</GroupHeader>
               <CheatEntries>
                 <CheatEntry>
@@ -4456,13 +4168,13 @@ showMessage(
           <ID>50</ID>
           <Description>"Movement"</Description>
           <Options moHideChildren="1" moManualExpandCollapse="1"/>
-          <Color>40C0FF</Color>
+          <Color>0040C0FF</Color>
           <GroupHeader>1</GroupHeader>
           <CheatEntries>
             <CheatEntry>
-              <ID>232</ID>
+              <ID>80</ID>
               <Description>"[Script] Teleport to aim (F6)"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -4633,7 +4345,7 @@ local function findAim(p)
     print("TP aim: no PlayerCameraManager @ PC+0x380")
   end
 
-  -- Root RelativeRotation yaw (body facing) - updates when you turn
+  -- Root RelativeRotation yaw (body facing) — updates when you turn
   local root = readQword(p + 0x1B8)
   if looksUObj(root) then
     for _, wide in ipairs({true, false}) do
@@ -4731,7 +4443,7 @@ local function teleportToAim()
 
     local p = pawn()
     if not p then
-      print("TP: no Player - re-run [ACTIVATE] after death/reload")
+      print("TP: no Player — re-run [ACTIVATE] after death/reload")
       return
     end
     local loc, wide = findLoc(p, false)
@@ -4776,7 +4488,7 @@ local function teleportToAim()
 
     local rx, ry, rz = readVec(loc, wide)
     print(string.format(
-      "TP (%s) yaw=%.1f pitch=%.1f dist=%.0f  %.1f,%.1f,%.1f -&gt; %.1f,%.1f,%.1f (rb %.1f,%.1f,%.1f)",
+      "TP (%s) yaw=%.1f pitch=%.1f dist=%.0f  %.1f,%.1f,%.1f -> %.1f,%.1f,%.1f (rb %.1f,%.1f,%.1f)",
       src or "?", yaw, pitch, st.dist, x, y, z, nx, ny, nz, rx, ry, rz))
   end)
   st._busy = false
@@ -4793,7 +4505,7 @@ do
     if pitch then
       print(string.format("TP aim ready (%s) yaw=%.1f pitch=%.1f", src, yaw, pitch))
     else
-      print("TP aim not ready yet - look around once after enabling")
+      print("TP aim not ready yet — look around once after enabling")
     end
   end
 end
@@ -4807,10 +4519,10 @@ st.hk = createHotkey(function()
 end, VK_F6)
 
 print(string.format(
-  "Teleport to aim ON - F6 uses CameraCache yaw (dist=%.0f). Expect TP (CameraCache) each press.",
+  "Teleport to aim ON — F6 uses CameraCache yaw (dist=%.0f). Expect TP (CameraCache) each press.",
   st.dist))
 showMessage(string.format(
-  "Teleport to aim ON\n\nF6 = horizontal blink where you LOOK (camera yaw).\nZ always lifts - no floor drops.\nDistance: %.0f uu (~%.0f m)\n\nEach press should log: TP (CameraCache) yaw=...\nIf it says ControlRotation yaw=3.8, camera aim failed - tell me.",
+  "Teleport to aim ON\n\nF6 = horizontal blink where you LOOK (camera yaw).\nZ always lifts — no floor drops.\nDistance: %.0f uu (~%.0f m)\n\nEach press should log: TP (CameraCache) yaw=...\nIf it says ControlRotation yaw=3.8, camera aim failed — tell me.",
   st.dist, st.dist / 100))
 [DISABLE]
 {$lua}
@@ -4837,9 +4549,9 @@ print("Teleport to aim OFF")
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>233</ID>
+              <ID>81</ID>
               <Description>"[Script] Set teleport distance..."</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -4862,7 +4574,7 @@ showMessage(string.format("Teleport distance = %.0f uu (~%.0f m)\nEnable Telepor
             <CheatEntry>
               <ID>51</ID>
               <Description>"[Script] Super Speed x5"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -4985,7 +4697,7 @@ print("Super Speed OFF")
             <CheatEntry>
               <ID>52</ID>
               <Description>"[Script] Super Jump x4"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -5079,7 +4791,7 @@ print("Super Jump OFF")
             <CheatEntry>
               <ID>53</ID>
               <Description>"[Script] Infinite Jump"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -5169,7 +4881,7 @@ print("Infinite Jump OFF")
             <CheatEntry>
               <ID>54</ID>
               <Description>"[Script] Super Swim x5"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -5274,7 +4986,7 @@ print("Super Swim OFF")
             <CheatEntry>
               <ID>55</ID>
               <Description>"[Script] Fly mode (collision on)"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -5418,7 +5130,7 @@ print("Fly mode OFF")
             <CheatEntry>
               <ID>56</ID>
               <Description>"[Script] Noclip fly (no collision)"</Description>
-              <Color>00FF00</Color>
+              <Color>0000FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -5587,42 +5299,42 @@ print("Noclip fly OFF")
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
-              <ID>234</ID>
+              <ID>60</ID>
               <Description>"CMC floats (debug)"</Description>
               <Options moHideChildren="1" moManualExpandCollapse="1"/>
-              <Color>FF8080</Color>
+              <Color>00FF8080</Color>
               <GroupHeader>1</GroupHeader>
               <CheatEntries>
                 <CheatEntry>
-                  <ID>235</ID>
+                  <ID>61</ID>
                   <Description>"MaxWalkSpeed"</Description>
                   <ShowAsSigned>0</ShowAsSigned>
                   <VariableType>Float</VariableType>
                   <Address>GG2_MaxWalkSpeed</Address>
                 </CheatEntry>
                 <CheatEntry>
-                  <ID>236</ID>
+                  <ID>62</ID>
                   <Description>"CurrentMaxGroundSpeed (Maine)"</Description>
                   <ShowAsSigned>0</ShowAsSigned>
                   <VariableType>Float</VariableType>
                   <Address>GG2_CurMaxGround</Address>
                 </CheatEntry>
                 <CheatEntry>
-                  <ID>237</ID>
+                  <ID>63</ID>
                   <Description>"MaxSprintSpeed"</Description>
                   <ShowAsSigned>0</ShowAsSigned>
                   <VariableType>Float</VariableType>
                   <Address>GG2_MaxSprint</Address>
                 </CheatEntry>
                 <CheatEntry>
-                  <ID>238</ID>
+                  <ID>64</ID>
                   <Description>"JumpZVelocity"</Description>
                   <ShowAsSigned>0</ShowAsSigned>
                   <VariableType>Float</VariableType>
                   <Address>GG2_JumpZ</Address>
                 </CheatEntry>
                 <CheatEntry>
-                  <ID>239</ID>
+                  <ID>65</ID>
                   <Description>"CustomGroundSpeedMultiplier"</Description>
                   <ShowAsSigned>0</ShowAsSigned>
                   <VariableType>Float</VariableType>
@@ -5657,7 +5369,7 @@ print("Noclip fly OFF")
                   <Address>GG2_CapsuleCollision</Address>
                 </CheatEntry>
                 <CheatEntry>
-                  <ID>240</ID>
+                  <ID>66</ID>
                   <Description>"JumpMaxCount"</Description>
                   <ShowAsSigned>0</ShowAsSigned>
                   <VariableType>4 Bytes</VariableType>
@@ -5677,5 +5389,4 @@ print("Noclip fly OFF")
       </CheatEntries>
     </CheatEntry>
   </CheatEntries>
-  <UserdefinedSymbols/>
 </CheatTable>
