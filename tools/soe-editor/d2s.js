@@ -34,40 +34,42 @@
   const DIFF_OFF = 0xa8;
   const PROG_OFF = 0x25;
   const QUEST_DONE = 0x1001;
-  const WP_ALL = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
+  // 39 vanilla waypoints (bits 0-38). Extra bytes after this must stay 0.
+  const WP_ALL = [0xff, 0xff, 0xff, 0xff, 0x7f, 0x00, 0x00, 0x00];
   const NPC_OFF = 0x2c9;
   const DIFF_NAMES = ["Normal", "Nightmare", "Hell"];
 
   const QUEST_DEFS = [
-    { act: 1, off: 2, name: "Den of Evil", skill: 1 },
-    { act: 1, off: 4, name: "Sisters' Burial Grounds" },
-    { act: 1, off: 6, name: "Tools of the Trade" },
-    { act: 1, off: 8, name: "The Search for Cain" },
-    { act: 1, off: 10, name: "The Forgotten Tower" },
-    { act: 1, off: 12, name: "Sisters to the Slaughter" },
-    { act: 2, off: 18, name: "Radament's Lair", skill: 1 },
-    { act: 2, off: 20, name: "The Horadric Staff" },
-    { act: 2, off: 22, name: "Tainted Sun" },
-    { act: 2, off: 24, name: "Arcane Sanctuary" },
-    { act: 2, off: 26, name: "The Summoner" },
-    { act: 2, off: 28, name: "The Seven Tombs" },
-    { act: 3, off: 34, name: "Lam Esen's Tome", stat: 5 },
-    { act: 3, off: 36, name: "Khalim's Will" },
-    { act: 3, off: 38, name: "Blade of the Old Religion" },
-    { act: 3, off: 40, name: "The Golden Bird", extra: 0x0040 },
-    { act: 3, off: 42, name: "The Blackened Temple" },
-    { act: 3, off: 44, name: "The Guardian" },
-    { act: 4, off: 50, name: "The Fallen Angel", skill: 2 },
-    { act: 4, off: 52, name: "Terror's End" },
-    { act: 4, off: 54, name: "Hell's Forge" },
-    { act: 5, off: 70, name: "Siege on Harrogath" },
-    { act: 5, off: 72, name: "Rescue on Mount Arreat" },
-    { act: 5, off: 74, name: "Prison of Ice (Malah +10 all res)", extra: 0x0180, malah: true },
-    { act: 5, off: 76, name: "Betrayal of Harrogath" },
-    { act: 5, off: 78, name: "Rite of Passage" },
-    { act: 5, off: 80, name: "Eve of Destruction" },
+    { act: 1, off: 2, name: "Den of Evil", skill: 1, flag: 0x1001 },
+    { act: 1, off: 4, name: "Sisters' Burial Grounds", flag: 0x101d },
+    { act: 1, off: 6, name: "Tools of the Trade", flag: 0x900d },
+    { act: 1, off: 8, name: "The Search for Cain", flag: 0x101d },
+    { act: 1, off: 10, name: "The Forgotten Tower", flag: 0x1055 },
+    { act: 1, off: 12, name: "Sisters to the Slaughter", flag: 0x101d },
+    { act: 2, off: 18, name: "Radament's Lair", skill: 1, flag: 0x101d },
+    { act: 2, off: 20, name: "The Horadric Staff", flag: 0x1c39 },
+    { act: 2, off: 22, name: "Tainted Sun", flag: 0x100d },
+    { act: 2, off: 24, name: "Arcane Sanctuary", flag: 0x1181 },
+    { act: 2, off: 26, name: "The Summoner", flag: 0x1005 },
+    { act: 2, off: 28, name: "The Seven Tombs", flag: 0x1e25 },
+    { act: 3, off: 34, name: "Lam Esen's Tome", stat: 5, flag: 0x1001 },
+    { act: 3, off: 36, name: "Khalim's Will", flag: 0x10fd },
+    { act: 3, off: 38, name: "Blade of the Old Religion", flag: 0x11d9 },
+    { act: 3, off: 40, name: "The Golden Bird", extra: 0x0040, flag: 0x1001 },
+    { act: 3, off: 42, name: "The Blackened Temple", flag: 0x100d },
+    { act: 3, off: 44, name: "The Guardian", flag: 0x1871 },
+    { act: 4, off: 50, name: "The Fallen Angel", skill: 2, flag: 0x1001 },
+    { act: 4, off: 52, name: "Hell's Forge", flag: 0x1301 },
+    { act: 4, off: 54, name: "Terror's End", flag: 0x1001 },
+    { act: 5, off: 70, name: "Siege on Harrogath", flag: 0x9021 },
+    { act: 5, off: 72, name: "Rescue on Mount Arreat", flag: 0x1001 },
+    { act: 5, off: 74, name: "Prison of Ice (Malah +10 all res)", extra: 0x0180, malah: true, flag: 0x178d },
+    { act: 5, off: 76, name: "Betrayal of Harrogath", flag: 0x901d },
+    { act: 5, off: 78, name: "Rite of Passage", flag: 0x132d },
+    { act: 5, off: 80, name: "Eve of Destruction", flag: 0x169d },
   ];
-  const QUEST_TRAVEL = [0, 14, 16, 30, 32, 46, 48, 62, 64];
+  // Act IV only has 3 quests; slot 56 is the real "Act 4 done / may enter Act 5" flag.
+  const QUEST_TRAVEL = [0, 14, 16, 30, 32, 46, 48, 56, 62, 64];
 
   function u16(bytes, off) {
     return bytes[off] | (bytes[off + 1] << 8);
@@ -87,7 +89,7 @@
   function countWaypoints(bytes, diff) {
     let n = 0;
     const off = wpBitsOff(diff);
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 39; i++) {
       if (bytes[off + (i >> 3)] & (1 << (i & 7))) n++;
     }
     return n;
@@ -108,7 +110,7 @@
         questsDone: done,
         questsTotal: QUEST_DEFS.length,
         waypoints: countWaypoints(bytes, diff),
-        waypointsTotal: 40,
+        waypointsTotal: 39,
         act: bytes[DIFF_OFF + diff] & 7,
         active: !!(bytes[DIFF_OFF + diff] & 0x80),
       };
@@ -145,7 +147,7 @@
           statGain += q.stat || 0;
         }
         if (q.malah && !(cur & 0x80)) malahGain += 10;
-        setU16(bytes, base + q.off, QUEST_DONE | (q.extra || 0));
+        setU16(bytes, base + q.off, q.flag || (QUEST_DONE | (q.extra || 0)));
       }
       const wpOff = WP_OFF + WP_HEADER + diff * WP_DIFF;
       bytes[wpOff] = 0x02;

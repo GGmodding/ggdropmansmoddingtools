@@ -148,6 +148,33 @@
     return list;
   }
 
+  function writeMagic(w, list) {
+    for (const mod of list || []) {
+      let valueIdx = 0;
+      w.write(mod.id, 9);
+      const first = MAG[mod.id];
+      if (!first || !first.sB) throw new Error("Cannot write unsavable stat id " + mod.id);
+      const nprops = first.np || 1;
+      const values = mod.values || mod.v || [];
+      for (let i = 0; i < nprops; i++) {
+        const prop = MAG[mod.id + i];
+        if (!prop) throw new Error("Missing follow-on stat " + (mod.id + i) + " for " + mod.id);
+        if (prop.sP) {
+          let param = values[valueIdx++] || 0;
+          if (prop.dF === 14) param |= ((values[valueIdx++] || 0) & 0x1fff) << 3;
+          if (prop.e === 2 || prop.e === 3) param |= ((values[valueIdx++] || 0) & 0x3ff) << 6;
+          w.write(param, prop.sP);
+        }
+        let v = values[valueIdx++] || 0;
+        if (prop.sA) v += prop.sA;
+        if (prop.e === 3) v |= ((values[valueIdx++] || 0) & 0xff) << 8;
+        if (!prop.sB) throw new Error("Save Bits missing for stat " + (mod.id + i));
+        w.write(v, prop.sB);
+      }
+    }
+    w.write(0x1ff, 9);
+  }
+
   function parseItem(bytes, start) {
     if (ascii(bytes, start, 2) !== "JM") throw new Error("Item header JM not found at " + start);
     const reader = bitReader(bytes, start);
@@ -236,6 +263,7 @@
 
     if (!simple) {
       try {
+        item.uidBit = reader.bitOffset();
         readExtended(reader, item, info);
       } catch (err) {
         item.parseError = err.message || String(err);
@@ -334,6 +362,7 @@
       item.quantityBit = reader.bitOffset();
       item.quantity = reader.read(9);
     }
+    item.socketsBit = reader.bitOffset();
     if (item.socketed) item.sockets = reader.read(4);
     let setFlags = 0;
     if (item.quality === QUALITY.Set) {
@@ -535,6 +564,93 @@
     return item;
   }
 
+  function insertBits(bytes, bitOff, nBits, value) {
+    const reader = bitReader(bytes, 0);
+    const writer = bitWriter();
+    const total = bytes.length * 8;
+    for (let i = 0; i < bitOff; i++) writer.write(reader.read(1), 1);
+    writer.write(value >>> 0, nBits);
+    for (let i = bitOff; i < total; i++) writer.write(reader.read(1), 1);
+    return Uint8Array.from(writer.finish());
+  }
+
+  function deleteBits(bytes, bitOff, nBits) {
+    const reader = bitReader(bytes, 0);
+    const writer = bitWriter();
+    const total = bytes.length * 8;
+    for (let i = 0; i < bitOff; i++) writer.write(reader.read(1), 1);
+    for (let i = 0; i < nBits; i++) reader.read(1);
+    for (let i = bitOff + nBits; i < total; i++) writer.write(reader.read(1), 1);
+    return Uint8Array.from(writer.finish());
+  }
+
+  const SOCKETED_BIT = 27;
+  const ETHEREAL_BIT = 38;
+
+  function parentPrefix(item) {
+    const children = item.socketedItems || [];
+    const childLen = children.reduce((n, c) => n + c.raw.length, 0);
+    if (!childLen) return { prefix: Uint8Array.from(item.raw), children };
+    return { prefix: Uint8Array.from(item.raw.subarray(0, item.raw.length - childLen)), children };
+  }
+
+  function joinRaw(prefix, children) {
+    if (!children || !children.length) return prefix;
+    const total = prefix.length + children.reduce((n, c) => n + c.raw.length, 0);
+    const out = new Uint8Array(total);
+    let o = 0;
+    out.set(prefix, o);
+    o += prefix.length;
+    for (const child of children) {
+      out.set(child.raw, o);
+      o += child.raw.length;
+    }
+    return out;
+  }
+
+  function filledSockets(item) {
+    if (item.socketedItems && item.socketedItems.length) return item.socketedItems.length;
+    return item.socketedCount || 0;
+  }
+
+  function setEthereal(item, on) {
+    if (item.simple || item.ear) throw new Error("Runes, gems, and other simple items cannot be ethereal");
+    const raw = Uint8Array.from(item.raw);
+    item.ethereal = on ? 1 : 0;
+    setBits(raw, ETHEREAL_BIT, 1, item.ethereal);
+    item.raw = raw;
+    return item;
+  }
+
+  function setSockets(item, count) {
+    if (item.simple || item.ear) throw new Error("Runes, gems, and other simple items cannot have sockets");
+    if (item.socketsBit == null) throw new Error("Could not find the socket field on this item");
+    if (item.runeword) throw new Error("Won't change sockets on a runeword");
+    const n = Math.max(0, Math.min(6, Number(count)));
+    if (!Number.isFinite(n)) throw new Error("Socket count must be 0–6");
+    const filled = filledSockets(item);
+    if (n < filled) throw new Error("This item already has " + filled + " gem" + (filled === 1 ? "" : "s") + " in it");
+    const was = item.socketed ? item.sockets || 0 : 0;
+    if (n === was) return item;
+    const { prefix, children } = parentPrefix(item);
+    let nextPrefix = prefix;
+    if (!item.socketed && n > 0) {
+      setBits(nextPrefix, SOCKETED_BIT, 1, 1);
+      nextPrefix = insertBits(nextPrefix, item.socketsBit, 4, n);
+      item.socketed = 1;
+    } else if (item.socketed && n === 0) {
+      nextPrefix = deleteBits(nextPrefix, item.socketsBit, 4);
+      setBits(nextPrefix, SOCKETED_BIT, 1, 0);
+      item.socketed = 0;
+    } else {
+      setBits(nextPrefix, item.socketsBit, 4, n);
+    }
+    if (n) item.sockets = n;
+    else delete item.sockets;
+    item.raw = joinRaw(nextPrefix, children);
+    return item;
+  }
+
   function setIdentified(item, on) {
     const raw = Uint8Array.from(item.raw);
     item.identified = on ? 1 : 0;
@@ -551,64 +667,26 @@
     item.raw = raw;
   }
 
-  function spawnSimple(code, place) {
-    const info = itemInfo(code);
-    if (!info.c && !info.s && info.k !== "m") {
-      throw new Error(info.n + " is not a compact item — spawn runes, gems, potions, or stackables");
-    }
-    if (info.c) {
-      const w = bitWriter();
-      w.writeStr("JM");
-      w.write(0, 4);
-      w.write(1, 1); // identified
-      w.write(0, 6);
-      w.write(0, 1); // socketed
-      w.write(0, 1);
-      w.write(0, 1); // new
-      w.write(0, 2);
-      w.write(0, 1); // ear
-      w.write(0, 1); // starter
-      w.write(0, 3);
-      w.write(1, 1); // simple
-      w.write(0, 1); // eth
-      w.write(1, 1); // always 1
-      w.write(0, 1);
-      w.write(0, 1);
-      w.write(0, 1);
-      w.write(0, 5);
-      w.write(101, 10); // version
-      w.write(place.location || 0, 3);
-      w.write(place.equipped || 0, 4);
-      w.write(place.x || 0, 4);
-      w.write(place.y || 0, 4);
-      w.write(place.panel || 1, 3);
-      const padded = (code + "    ").slice(0, 4);
-      for (let i = 0; i < 4; i++) w.write(padded.charCodeAt(i), 8);
-      w.write(0, 1); // sockets filled
-      const raw = w.finish();
-      const item = parseItem(raw, 0);
-      return item;
-    }
-    const w = bitWriter();
+  function writeItemHead(w, code, place, flags) {
     w.writeStr("JM");
     w.write(0, 4);
-    w.write(1, 1);
+    w.write(1, 1); // identified
     w.write(0, 6);
+    w.write(flags.socketed ? 1 : 0, 1);
     w.write(0, 1);
-    w.write(0, 1);
-    w.write(0, 1);
+    w.write(0, 1); // new
     w.write(0, 2);
-    w.write(0, 1);
-    w.write(0, 1);
+    w.write(0, 1); // ear
+    w.write(0, 1); // starter
     w.write(0, 3);
-    w.write(0, 1); // not simple
-    w.write(0, 1);
-    w.write(1, 1);
+    w.write(flags.simple ? 1 : 0, 1);
+    w.write(flags.ethereal ? 1 : 0, 1);
+    w.write(1, 1); // always 1
     w.write(0, 1);
     w.write(0, 1);
     w.write(0, 1);
     w.write(0, 5);
-    w.write(101, 10);
+    w.write(101, 10); // version
     w.write(place.location || 0, 3);
     w.write(place.equipped || 0, 4);
     w.write(place.x || 0, 4);
@@ -616,26 +694,137 @@
     w.write(place.panel || 1, 3);
     const padded = (code + "    ").slice(0, 4);
     for (let i = 0; i < 4; i++) w.write(padded.charCodeAt(i), 8);
-    w.write(0, 3);
+  }
+
+  function spawnItem(code, place, opts) {
+    opts = opts || {};
+    place = place || {};
+    if (!ITEMS[code]) throw new Error("Unknown item code " + code);
+    const info = itemInfo(code);
+    if (info.c) {
+      const w = bitWriter();
+      writeItemHead(w, code, place, { simple: 1, socketed: 0, ethereal: 0 });
+      w.write(0, 1); // sockets filled
+      return parseItem(w.finish(), 0);
+    }
+    const sockets = Math.max(0, Math.min(6, Number(opts.sockets) || 0));
+    const ethereal = opts.ethereal ? 1 : 0;
+    const quality = opts.quality || QUALITY.Normal;
+    const ilvl = Math.max(1, Math.min(127, Number(opts.ilvl) || 99));
+    const mods = opts.mods || [];
+    const w = bitWriter();
+    writeItemHead(w, code, place, { simple: 0, socketed: sockets > 0, ethereal });
+    if (info.q) {
+      const q = MAG[356] || { sB: 2, sA: 0 };
+      w.write(q.sA || 0, q.sB);
+      w.write(0, 1);
+    } else {
+      w.write(0, 3);
+    }
     w.write((Math.random() * 0xffffffff) >>> 0, 32);
-    w.write(99, 7); // ilvl
-    w.write(QUALITY.Normal, 4);
+    w.write(ilvl, 7);
+    w.write(quality, 4);
     w.write(0, 1); // multi
     w.write(0, 1); // class spec
+    if (quality === QUALITY.Low) w.write(0, 3);
+    else if (quality === QUALITY.Superior) w.write(0, 3);
+    else if (quality === QUALITY.Magic) {
+      w.write(0, 11);
+      w.write(0, 11);
+    } else if (quality === QUALITY.Set) w.write(opts.setId || 0, 12);
+    else if (quality === QUALITY.Unique) w.write(opts.uniqueId || 0, 12);
+    else if (quality === QUALITY.Rare || quality === QUALITY.Crafted) {
+      w.write(0, 8);
+      w.write(0, 8);
+      for (let i = 0; i < 6; i++) w.write(0, 1);
+    }
     if (code === "tbk" || code === "ibk") w.write(code === "ibk" ? 1 : 0, 5);
     w.write(0, 1); // timestamp
     if (info.k === "a") {
       const def = MAG[31] || { sB: 11, sA: 10 };
-      w.write(10 + (def.sA || 0), def.sB);
+      let ac = Number(info.ac) || 10;
+      if (ethereal) ac = Math.floor(ac * 1.5);
+      w.write(ac + (def.sA || 0), def.sB);
     }
     if (info.k === "a" || info.k === "w") {
       const maxd = MAG[73] || { sB: 8, sA: 0 };
-      w.write(0, maxd.sB);
+      const curd = MAG[72] || { sB: 9, sA: 0 };
+      let maxDur = opts.indestruct || info.nd ? 0 : Number(info.dur) || 0;
+      if (maxDur && ethereal) maxDur = maxDur - Math.ceil(maxDur / 2) + 1;
+      w.write(maxDur + (maxd.sA || 0), maxd.sB);
+      if (maxDur > 0) w.write(maxDur + (curd.sA || 0), curd.sB);
     }
-    if (info.s) w.write(place.quantity || 1, 9);
-    w.write(0x1ff, 9);
-    const raw = w.finish();
-    return parseItem(raw, 0);
+    if (info.s) w.write(place.quantity || opts.quantity || 1, 9);
+    if (sockets) w.write(sockets, 4);
+    writeMagic(w, mods);
+    const item = parseItem(w.finish(), 0);
+    if (item.parseError) throw new Error("Spawned item failed to parse: " + item.parseError);
+    return item;
+  }
+
+  function spawnSimple(code, place) {
+    return spawnItem(code, place, { quantity: place && place.quantity });
+  }
+
+  function uniqueById(id) {
+    const list = DB.UNIQUES || [];
+    return list.find((u) => u.i === id) || null;
+  }
+
+  function spawnUnique(id, place, opts) {
+    const u = uniqueById(id);
+    if (!u) throw new Error("Unknown unique id " + id);
+    const extra = opts || {};
+    const info = itemInfo(u.c);
+    return spawnItem(u.c, place, {
+      quality: QUALITY.Unique,
+      uniqueId: u.i,
+      mods: (u.m || []).map((m) => ({ id: m.id, values: m.v })),
+      sockets: extra.sockets != null && extra.sockets !== "" ? extra.sockets : u.s || 0,
+      ethereal: extra.ethereal || !!u.e,
+      indestruct: !!u.d,
+      ilvl: extra.ilvl || 99,
+      quantity: (place && place.quantity) || (info.s ? 60 : undefined),
+    });
+  }
+
+  const MISC_BASES = { rin: 1, amu: 1, jew: 1, cm1: 1, cm2: 1, cm3: 1, cm4: 1 };
+
+  function isSpawnBase(code, info) {
+    if (!info || info.c || info.q) return false;
+    if (info.k === "a" || info.k === "w") return true;
+    return !!MISC_BASES[code];
+  }
+
+  function spawnCatalog(query, kind) {
+    const q = String(query || "").trim().toLowerCase();
+    const out = [];
+    if (kind !== "unique") {
+      for (const code of Object.keys(ITEMS)) {
+        const info = ITEMS[code];
+        if (!isSpawnBase(code, info)) continue;
+        if (q && !(info.n + " " + code).toLowerCase().includes(q)) continue;
+        out.push({ kind: "base", code, name: info.n, w: info.w, h: info.h });
+      }
+    }
+    if (kind !== "base") {
+      for (const u of DB.UNIQUES || []) {
+        const base = ITEMS[u.c];
+        const hay = (u.n + " " + u.c + " " + ((base && base.n) || "")).toLowerCase();
+        if (q && !hay.includes(q)) continue;
+        out.push({
+          kind: "unique",
+          id: u.i,
+          code: u.c,
+          name: u.n,
+          base: base && base.n,
+          w: (base && base.w) || 1,
+          h: (base && base.h) || 1,
+        });
+      }
+    }
+    out.sort((a, b) => a.name.localeCompare(b.name));
+    return out;
   }
 
   function grids() {
@@ -685,9 +874,74 @@
     return null;
   }
 
+  function cloneItem(item) {
+    if (!item || !item.raw) throw new Error("Nothing to duplicate");
+    return rebuildClone(parseItem(Uint8Array.from(item.raw), 0));
+  }
+
+  function rebuildClone(item) {
+    const children = (item.socketedItems || []).map(rebuildClone);
+    const oldChildLen = (item.socketedItems || []).reduce((n, c) => n + c.raw.length, 0);
+    const prefixLen = item.socketedItems && item.socketedItems.length ? item.raw.length - oldChildLen : item.raw.length;
+    const prefix = Uint8Array.from(item.raw.subarray(0, prefixLen));
+    if (item.uidBit != null) {
+      const uid = (Math.random() * 0xffffffff) >>> 0;
+      setBits(prefix, item.uidBit, 32, uid);
+      item.uid = uid;
+    }
+    if (children.length) {
+      const total = prefix.length + children.reduce((n, c) => n + c.raw.length, 0);
+      const out = new Uint8Array(total);
+      let o = 0;
+      out.set(prefix, o);
+      o += prefix.length;
+      for (const child of children) {
+        out.set(child.raw, o);
+        o += child.raw.length;
+      }
+      item.raw = out;
+      item.socketedItems = children;
+    } else {
+      item.raw = prefix;
+    }
+    return item;
+  }
+
+  function locationLabel(item, where) {
+    if (where === "stash") return "Shared stash";
+    if (where === "merc") return "Mercenary";
+    if (where === "corpse") return "Corpse";
+    if (item.location === 1) return "Equipped";
+    if (item.location === 2) return "Belt";
+    if (item.panel === 4) return "Cube";
+    if (item.panel === 5) return "Personal stash";
+    if (item.panel === 1 || item.location === 0) return "Inventory";
+    return "Other";
+  }
+
+  function viewForItem(item, where) {
+    if (where === "stash") return "shared";
+    if (item.location === 1) return "equipped";
+    if (item.location === 2) return "belt";
+    if (item.panel === 4) return "cube";
+    if (item.panel === 5) return "stash";
+    return "inv";
+  }
+
+  function itemMatches(item, query, where) {
+    const q = String(query || "").trim().toLowerCase();
+    if (!q) return true;
+    const hay = [displayName(item), item.code, locationLabel(item, where), item.info && item.info.n]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return hay.includes(q);
+  }
+
   function displayName(item) {
-    const base = (item.info && item.info.n) || item.code || "?";
-    const q = item.quality ? DB.QUALITY[item.quality] : item.simple ? "" : "";
+    const uniq = item.quality === QUALITY.Unique ? uniqueById(item.uniqueId) : null;
+    const base = (uniq && uniq.n) || (item.info && item.info.n) || item.code || "?";
+    const q = uniq ? "" : item.quality ? DB.QUALITY[item.quality] : item.simple ? "" : "";
     const bits = [];
     if (item.ethereal) bits.push("Eth");
     if (item.socketed && item.sockets) bits.push(item.sockets + "os");
@@ -724,14 +978,26 @@
     applyPlacement,
     setIdentified,
     setQuantity,
+    setEthereal,
+    setSockets,
+    filledSockets,
     spawnSimple,
+    spawnItem,
+    spawnUnique,
+    spawnCatalog,
+    uniqueById,
     grids,
     itemInGrid,
     cellsUsed,
     firstFit,
     displayName,
     qualityClass,
+    cloneItem,
+    locationLabel,
+    viewForItem,
+    itemMatches,
     itemInfo,
+    isSpawnBase,
     d2Checksum,
     applyChecksum,
   };

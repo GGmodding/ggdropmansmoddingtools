@@ -389,7 +389,7 @@ input[readonly] {
 .modal[hidden] { display: none; }
 
 .modal__card {
-  max-width: 420px;
+  max-width: 460px;
   background: var(--bg-2);
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -399,7 +399,16 @@ input[readonly] {
 
 .modal__card h2 { margin: 0 0 0.75rem; font-family: var(--display); }
 .modal__card ol { margin: 0 0 1rem; padding-left: 1.2rem; color: var(--muted); }
+.modal__card .check { display: flex; margin: 0.85rem 0 1rem; }
 .modal__actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+
+.hint--danger {
+  color: var(--danger);
+  border: 1px solid rgba(227, 107, 107, 0.35);
+  background: rgba(227, 107, 107, 0.08);
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+}
 
 .panel--wide { max-width: 1280px; }
 
@@ -497,6 +506,34 @@ input[readonly] {
 
 .item-list button.is-selected { border-color: var(--accent); }
 
+.item-search {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.item-search input {
+  min-width: 180px;
+  background: #140e0c;
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 0.4rem 0.55rem;
+  font: 500 0.85rem var(--font);
+}
+
+.item-search-hits {
+  margin: 0.6rem 0 0.2rem;
+  max-height: 180px;
+}
+
+.item-cell.is-hit {
+  box-shadow: 0 0 0 2px var(--accent-2);
+}
+
 .spawn-head {
   margin: 1.2rem 0 0.5rem;
   font-family: var(--display);
@@ -507,6 +544,36 @@ input[readonly] {
 .spawn-group h4 { margin: 0 0 0.4rem; color: var(--muted); font-size: 0.8rem; }
 .spawn-group { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .spawn-group .btn { padding: 0.35rem 0.55rem; font-size: 0.78rem; }
+
+.spawn-catalog { display: grid; gap: 0.55rem; margin-top: 0.85rem; }
+.spawn-catalog-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.spawn-catalog-row input[type="search"] { flex: 1; min-width: 180px; }
+.spawn-kinds { display: flex; gap: 0.25rem; }
+.spawn-opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.spawn-opts input[type="number"] { width: 4rem; }
+.spawn-results {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  max-height: 220px;
+  overflow: auto;
+}
+.spawn-results .btn { padding: 0.35rem 0.55rem; font-size: 0.78rem; }
+.spawn-results .btn.is-unique { color: #c48a3a; }
+.spawn-results .hint { margin: 0; }
+.spawn-results .muted { color: var(--muted); font-weight: 400; }
 
 .equipped-wrap {
   display: grid;

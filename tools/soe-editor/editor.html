@@ -19,7 +19,7 @@
       <span class="brand__mark">SoE</span>
       <div class="brand__text">
         <h1>GGdropmans Sanctuary of Exile Editor</h1>
-        <p>v2 · Character / items / shared stash · Back to hub</p>
+        <p>v3 · Safe backups · Character / items / stash · Back to hub</p>
       </div>
     </a>
     <div class="topbar__actions">
@@ -42,8 +42,21 @@
 
   <section class="path-banner">
     <strong>Offline SoE only</strong>
-    <span>Close Sanctuary of Exile first. Load the <code>.d2s</code> and <code>pd2_shared.stash</code> from <code>%USERPROFILE%\Documents\Diablo II\Saves</code>. Edit stats, skills, quests, inventory, and shared stash. Always keep a backup.</span>
+    <span>Close Sanctuary of Exile first — if the game is open it will overwrite your edits on exit. Load the <code>.d2s</code> and <code>pd2_shared.stash</code> from <code>%USERPROFILE%\Documents\Diablo II\Saves</code>. Backups use <code>.d2s.bak</code> so they never show up as a second character.</span>
   </section>
+
+  <div id="write-modal" class="modal" hidden>
+    <div class="modal__card">
+      <h2 id="write-modal-title">Close Sanctuary of Exile first</h2>
+      <p id="write-modal-body" class="hint">If SoE is running it will overwrite this file when you leave a game, and these edits will vanish.</p>
+      <p id="write-modal-stale" class="hint hint--danger" hidden></p>
+      <label class="check"><input id="f-write-backup" type="checkbox" checked /> Download a <code>.bak</code> backup first (will not appear as a character)</label>
+      <div class="modal__actions">
+        <button type="button" class="btn" id="btn-write-cancel">Cancel</button>
+        <button type="button" class="btn btn--accent" id="btn-write-ok">Save</button>
+      </div>
+    </div>
+  </div>
 
   <div id="install-modal" class="modal" hidden>
     <div class="modal__card">
@@ -51,6 +64,7 @@
       <ol>
         <li>Make sure Diablo II / SoE is fully closed.</li>
         <li>Overwrite the matching <code>.d2s</code> in <code>Documents\Diablo II\Saves</code>.</li>
+        <li>Keep backups as <code>.d2s.bak</code> (Downloads is fine). Never put a second <code>.d2s</code> in Saves — that shows as a duplicate character.</li>
         <li>Launch SoE and confirm the character loads.</li>
       </ol>
       <div class="modal__actions">
@@ -169,21 +183,26 @@
         <label class="check"><input id="f-quest-rewards" type="checkbox" checked /> Grant missed quest rewards (skill / stat points)</label>
         <button type="button" class="btn btn--accent" id="btn-unlock-all">Unlock everything</button>
       </div>
-      <p class="hint">Rewards granted only for quests that were not already complete: Den of Evil +1 skill, Radament +1 skill, Izual +2 skills, Lam Esen +5 stats, and Malah’s Scroll of Resistance (+10 all resist) — each per difficulty (up to +30 all res). Also sets every difficulty to Act 5 so Harrogath and the Act 5 waypoint list actually show in-game.</p>
+      <p class="hint">Rewards granted only for quests that were not already complete: Den of Evil +1 skill, Radament +1 skill, Izual +2 skills, Lam Esen +5 stats, and Malah’s Scroll of Resistance (+10 all resist) — each per difficulty (up to +30 all res). Marks Act 4 as finished (that is what actually opens Act 5) and sets every difficulty to Harrogath. Town portal scrolls always return to your current act’s town — use the waypoint, or start a <strong>new</strong> game after saving.</p>
       <div id="quest-summary" class="quest-summary"></div>
     </section>
 
     <section id="panel-items" class="panel panel--wide" hidden>
       <div class="panel__head">
         <h2>Items &amp; stash</h2>
-        <p class="panel__sub" id="items-summary">Load a character and/or <code>pd2_shared.stash</code>. Spawned runes/gems/potions go into the first free inventory cell.</p>
+        <p class="panel__sub" id="items-summary">Load a character and/or <code>pd2_shared.stash</code>. Search below to spawn bases and uniques into the first free cell.</p>
       </div>
       <div class="row-actions">
         <button type="button" class="btn" id="btn-save-stash" disabled>Download Stash</button>
         <button type="button" class="btn" id="btn-save-stash-inplace" disabled>Save stash in place</button>
         <button type="button" class="btn" id="btn-identify-all">Identify all</button>
+        <button type="button" class="btn" id="btn-duplicate-item">Duplicate selected</button>
         <button type="button" class="btn" id="btn-delete-item">Delete selected</button>
+        <label class="item-search">Search all bags
+          <input id="f-item-search" type="search" placeholder="Zod, unique, cube…" autocomplete="off" />
+        </label>
       </div>
+      <div id="item-search-hits" class="item-list item-search-hits" hidden></div>
       <div class="item-views" id="item-views">
         <button type="button" class="tab is-active" data-view="inv">Inventory</button>
         <button type="button" class="tab" data-view="cube">Cube</button>
@@ -199,19 +218,39 @@
         </div>
         <aside class="item-inspect" id="item-inspect">
           <h3>Selected item</h3>
-          <p id="item-inspect-empty" class="hint">Click an item, then click an empty cell to move it.</p>
+            <p id="item-inspect-empty" class="hint">Click an item, then click an empty cell to move it. Duplicate copies it into the first free cell of the current grid (inventory if you are on equipped/belt).</p>
           <div id="item-inspect-body" hidden>
             <p id="item-inspect-name"></p>
             <label>Quantity
               <input id="f-item-qty" type="number" min="1" max="511" />
             </label>
+            <label>Sockets
+              <input id="f-item-socks" type="number" min="0" max="6" />
+            </label>
+            <p id="item-inspect-socks" class="hint"></p>
             <label class="check"><input id="f-item-id" type="checkbox" /> Identified</label>
+            <label class="check"><input id="f-item-eth" type="checkbox" /> Ethereal</label>
           </div>
         </aside>
       </div>
       <h3 class="spawn-head">Spawn into current grid</h3>
       <div id="spawn-groups" class="spawn-groups"></div>
-      <p class="hint">Shared stash is the separate <code>pd2_shared.stash</code> file — save it as well as the character. Socketed gems stay glued to their parent. Close SoE before overwrite.</p>
+      <div class="spawn-catalog">
+        <div class="spawn-catalog-row">
+          <input id="f-spawn-search" type="search" placeholder="Monarch, Shako, Grief, ring…" autocomplete="off" />
+          <div class="spawn-kinds" id="spawn-kinds">
+            <button type="button" class="tab is-active" data-spawn-kind="all">All</button>
+            <button type="button" class="tab" data-spawn-kind="base">Bases</button>
+            <button type="button" class="tab" data-spawn-kind="unique">Uniques</button>
+          </div>
+        </div>
+        <div class="spawn-opts">
+          <label class="check"><input id="f-spawn-eth" type="checkbox" /> Ethereal</label>
+          <label>Sockets <input id="f-spawn-socks" type="number" min="0" max="6" placeholder="—" /></label>
+        </div>
+        <div id="spawn-results" class="spawn-results"></div>
+      </div>
+      <p class="hint">Uniques spawn with max rolls from SoE UniqueItems. Shared stash is the separate <code>pd2_shared.stash</code> file — save it as well as the character. Close SoE before overwrite.</p>
     </section>
   </main>
 

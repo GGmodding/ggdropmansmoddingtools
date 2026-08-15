@@ -12,13 +12,19 @@
     backup: null,
     dirty: false,
     fileHandle: null,
+    loadedLastModified: 0,
     stash: null,
     stashName: "pd2_shared.stash",
     stashBackup: null,
     stashHandle: null,
+    stashLastModified: 0,
     stashDirty: false,
     itemView: "inv",
+    itemSearch: "",
+    searchHits: [],
     sel: null,
+    spawnKind: "all",
+    spawnQuery: "",
   };
 
   const $ = (id) => document.getElementById(id);
@@ -135,6 +141,68 @@
     return grids.inv;
   }
 
+  function setItemView(view) {
+    state.itemView = view;
+    document.querySelectorAll("#item-views .tab").forEach((el) => {
+      el.classList.toggle("is-active", el.dataset.view === view);
+    });
+  }
+
+  function allSearchable() {
+    const rows = [];
+    if (state.parsed && state.parsed.items) {
+      state.parsed.items.player.forEach((it, index) => rows.push({ where: "player", index, it }));
+      (state.parsed.items.merc || []).forEach((it, index) => rows.push({ where: "merc", index, it }));
+      (state.parsed.items.corpse || []).forEach((it, index) => rows.push({ where: "corpse", index, it }));
+    }
+    if (state.stash) {
+      state.stash.items.forEach((it, index) => rows.push({ where: "stash", index, it }));
+    }
+    return rows;
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  function renderSearchHits() {
+    const box = $("item-search-hits");
+    if (!box) return;
+    const q = (state.itemSearch || "").trim();
+    if (!q) {
+      box.hidden = true;
+      box.innerHTML = "";
+      state.searchHits = [];
+      return;
+    }
+    const hits = allSearchable().filter((row) => Items.itemMatches(row.it, q, row.where));
+    state.searchHits = hits;
+    box.hidden = false;
+    if (!hits.length) {
+      box.innerHTML = `<p class="hint">No items match “${escHtml(q)}”</p>`;
+      return;
+    }
+    box.innerHTML = hits
+      .map((row, i) => {
+        const loc = Items.locationLabel(row.it, row.where);
+        const jump = row.where === "player" || row.where === "stash";
+        return `<button type="button" data-hit="${i}" ${jump ? "" : "disabled"}>${escHtml(Items.displayName(row.it))} · ${escHtml(loc)}${jump ? "" : " (no grid yet)"}</button>`;
+      })
+      .join("");
+    box.querySelectorAll("[data-hit]").forEach((el) => {
+      el.addEventListener("click", () => jumpToHit(Number(el.dataset.hit)));
+    });
+  }
+
+  function jumpToHit(i) {
+    const row = state.searchHits[i];
+    if (!row || (row.where !== "player" && row.where !== "stash")) return;
+    setItemView(Items.viewForItem(row.it, row.where));
+    state.sel = { where: row.where, index: row.index };
+    renderItems();
+    setStatus("Selected " + Items.displayName(row.it) + " in " + Items.locationLabel(row.it, row.where));
+  }
+
   function selectedItem() {
     if (!state.sel) return null;
     const bag = itemBag(state.sel.where);
@@ -151,6 +219,24 @@
     qty.disabled = item.quantity == null;
     qty.value = item.quantity != null ? item.quantity : "";
     $("f-item-id").checked = !!item.identified;
+    const simple = !!(item.simple || item.ear);
+    const eth = $("f-item-eth");
+    eth.disabled = simple;
+    eth.checked = !!item.ethereal;
+    const socks = $("f-item-socks");
+    const canSock = !simple && item.socketsBit != null && !item.runeword;
+    socks.disabled = !canSock;
+    socks.value = item.socketed ? item.sockets || 0 : 0;
+    const hint = $("item-inspect-socks");
+    if (simple) hint.textContent = "Simple items cannot be ethereal or socketed.";
+    else if (item.runeword) hint.textContent = "Runeword sockets are locked.";
+    else if (!canSock) hint.textContent = "Socket field not found on this item.";
+    else {
+      const filled = Items.filledSockets(item);
+      hint.textContent =
+        (item.socketed ? filled + " filled / " + (item.sockets || 0) + " total. " : "No sockets yet. ") +
+        "Set 0–6. Cannot go below gems already in the item. Ethereal does not restat defense or damage.";
+    }
   }
 
   function renderSpawn() {
@@ -164,6 +250,39 @@
     }).join("");
     box.querySelectorAll("[data-spawn]").forEach((btn) => {
       btn.addEventListener("click", () => spawnCode(btn.dataset.spawn));
+    });
+    $("spawn-kinds").querySelectorAll("[data-spawn-kind]").forEach((btn) => {
+      btn.classList.toggle("is-active", btn.dataset.spawnKind === state.spawnKind);
+    });
+    renderSpawnResults();
+  }
+
+  function renderSpawnResults() {
+    const box = $("spawn-results");
+    const q = state.spawnQuery.trim();
+    if (q.length < 2) {
+      box.innerHTML = `<p class="hint">Type at least 2 letters to spawn a base or unique into the current grid.</p>`;
+      return;
+    }
+    const hits = Items.spawnCatalog(q, state.spawnKind === "all" ? "" : state.spawnKind).slice(0, 48);
+    if (!hits.length) {
+      box.innerHTML = `<p class="hint">No ${state.spawnKind === "all" ? "bases or uniques" : state.spawnKind + "s"} matching “${q}”.</p>`;
+      return;
+    }
+    box.innerHTML = hits
+      .map((h) => {
+        const extra = h.kind === "unique" && h.base ? ` <span class="muted">(${h.base})</span>` : "";
+        if (h.kind === "unique") {
+          return `<button type="button" class="btn is-unique" data-spawn-unique="${h.id}">${h.name}${extra}</button>`;
+        }
+        return `<button type="button" class="btn" data-spawn-base="${h.code}">${h.name}</button>`;
+      })
+      .join("");
+    box.querySelectorAll("[data-spawn-base]").forEach((btn) => {
+      btn.addEventListener("click", () => spawnCode(btn.dataset.spawnBase));
+    });
+    box.querySelectorAll("[data-spawn-unique]").forEach((btn) => {
+      btn.addEventListener("click", () => spawnUnique(Number(btn.dataset.spawnUnique)));
     });
   }
 
@@ -208,8 +327,9 @@
         .map(([id, , label]) => {
           const hit = occupied.get("eq-" + id);
           const sel = hit && state.sel && state.sel.where === where && state.sel.index === hit.index;
+          const match = hit && state.itemSearch && Items.itemMatches(hit.it, state.itemSearch, where);
           if (!hit) return `<button type="button" class="item-cell is-body" data-eq="${id}">${label}</button>`;
-          return `<button type="button" class="item-cell is-body is-origin ${Items.qualityClass(hit.it)}${sel ? " is-selected" : ""}" data-where="${where}" data-index="${hit.index}">${Items.displayName(hit.it)}</button>`;
+          return `<button type="button" class="item-cell is-body is-origin ${Items.qualityClass(hit.it)}${sel ? " is-selected" : ""}${match ? " is-hit" : ""}" data-where="${where}" data-index="${hit.index}">${Items.displayName(hit.it)}</button>`;
         })
         .join("");
     } else {
@@ -220,9 +340,10 @@
         for (let x = 0; x < grid.w; x++) {
           const hit = occupied.get(x + "," + y);
           const sel = hit && state.sel && state.sel.where === where && state.sel.index === hit.index;
+          const match = hit && state.itemSearch && Items.itemMatches(hit.it, state.itemSearch, where);
           if (!hit) html += `<button type="button" class="item-cell" data-x="${x}" data-y="${y}"></button>`;
-          else if (hit.fill) html += `<button type="button" class="item-cell is-fill" data-where="${where}" data-index="${hit.index}"></button>`;
-          else html += `<button type="button" class="item-cell is-origin ${Items.qualityClass(hit.it)}${sel ? " is-selected" : ""}" data-where="${where}" data-index="${hit.index}">${Items.displayName(hit.it)}</button>`;
+          else if (hit.fill) html += `<button type="button" class="item-cell is-fill${match ? " is-hit" : ""}" data-where="${where}" data-index="${hit.index}"></button>`;
+          else html += `<button type="button" class="item-cell is-origin ${Items.qualityClass(hit.it)}${sel ? " is-selected" : ""}${match ? " is-hit" : ""}" data-where="${where}" data-index="${hit.index}">${Items.displayName(hit.it)}</button>`;
         }
       }
       gridEl.innerHTML = html;
@@ -284,6 +405,7 @@
       });
     });
     renderInspect();
+    renderSearchHits();
   }
 
   function moveSelectedTo(x, y) {
@@ -307,32 +429,119 @@
     renderItems();
   }
 
-  function spawnCode(code) {
-    const info = Items.itemInfo(code);
-    const grid = currentGrid();
-    const where = state.itemView === "shared" ? "stash" : "player";
-    if (where === "player" && (!state.parsed || !state.parsed.items)) {
+  function duplicateSelected() {
+    const item = selectedItem();
+    if (!item) {
+      setStatus("Select an item first");
+      return;
+    }
+    let destView = state.itemView;
+    let destWhere = destView === "shared" ? "stash" : "player";
+    let grid = currentGrid();
+    if (grid.equipped || destView === "belt") {
+      destView = "inv";
+      destWhere = "player";
+      grid = Items.grids().inv;
+    }
+    if (destWhere === "player" && (!state.parsed || !state.parsed.items)) {
       setStatus("Load a character first");
       return;
     }
-    if (where === "stash" && !state.stash) {
-      state.stash = Items.emptyStash();
-      state.stashName = "pd2_shared.stash";
-    }
-    const bag = itemBag(where);
-    const place = grid.equipped ? null : Items.firstFit(bag, grid, info.w || 1, info.h || 1);
-    if (!place) {
-      setStatus("No free space in " + grid.label);
+    if (destWhere === "stash" && !state.stash) {
+      setStatus("Load shared stash first");
       return;
     }
     try {
-      const item = Items.spawnSimple(code, { ...place, quantity: code === "key" || code === "tbk" || code === "ibk" ? 20 : 1 });
-      bag.push(item);
-      state.sel = { where, index: bag.length - 1 };
-      if (where === "stash") setStashDirty(true);
+      const clone = Items.cloneItem(item);
+      const place = Items.firstFit(itemBag(destWhere), grid, clone.info.w || 1, clone.info.h || 1);
+      if (!place) {
+        setStatus("No free space in " + grid.label);
+        return;
+      }
+      Items.applyPlacement(clone, place);
+      const bag = itemBag(destWhere);
+      bag.push(clone);
+      setItemView(destView);
+      state.sel = { where: destWhere, index: bag.length - 1 };
+      if (destWhere === "stash") setStashDirty(true);
       else setDirty(true);
       renderItems();
-      setStatus("Spawned " + Items.displayName(item));
+      setStatus("Duplicated " + Items.displayName(clone) + " into " + grid.label);
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  }
+
+  function spawnDestination(w, h) {
+    let destView = state.itemView;
+    let destWhere = destView === "shared" ? "stash" : "player";
+    let grid = currentGrid();
+    if (grid.equipped || destView === "belt") {
+      destView = "inv";
+      destWhere = "player";
+      grid = Items.grids().inv;
+    }
+    if (destWhere === "player" && (!state.parsed || !state.parsed.items)) {
+      setStatus("Load a character first");
+      return null;
+    }
+    if (destWhere === "stash" && !state.stash) {
+      state.stash = Items.emptyStash();
+      state.stashName = "pd2_shared.stash";
+    }
+    const bag = itemBag(destWhere);
+    const place = Items.firstFit(bag, grid, w || 1, h || 1);
+    if (!place) {
+      setStatus("No free space in " + grid.label);
+      return null;
+    }
+    return { destView, destWhere, grid, bag, place };
+  }
+
+  function spawnOpts() {
+    const socks = $("f-spawn-socks").value;
+    return {
+      ethereal: $("f-spawn-eth").checked,
+      sockets: socks === "" ? undefined : Number(socks),
+    };
+  }
+
+  function finishSpawn(item, dest) {
+    dest.bag.push(item);
+    setItemView(dest.destView);
+    state.sel = { where: dest.destWhere, index: dest.bag.length - 1 };
+    if (dest.destWhere === "stash") setStashDirty(true);
+    else setDirty(true);
+    renderItems();
+    setStatus("Spawned " + Items.displayName(item) + " into " + dest.grid.label);
+  }
+
+  function spawnCode(code) {
+    const info = Items.itemInfo(code);
+    const dest = spawnDestination(info.w, info.h);
+    if (!dest) return;
+    try {
+      const extra = spawnOpts();
+      const qty = code === "key" || code === "tbk" || code === "ibk" ? 20 : 1;
+      const item = Items.spawnItem(code, { ...dest.place, quantity: qty }, extra);
+      finishSpawn(item, dest);
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  }
+
+  function spawnUnique(id) {
+    const u = Items.uniqueById(id);
+    if (!u) {
+      setStatus("Unknown unique");
+      return;
+    }
+    const info = Items.itemInfo(u.c);
+    const dest = spawnDestination(info.w, info.h);
+    if (!dest) return;
+    try {
+      const item = Items.spawnUnique(id, dest.place, spawnOpts());
+      finishSpawn(item, dest);
     } catch (err) {
       setStatus(err.message || String(err));
     }
@@ -393,12 +602,13 @@
     return bytes[0] === 0x55 && bytes[1] === 0xbb && bytes[2] === 0x55 && bytes[3] === 0xbb;
   }
 
-  async function loadStashBytes(bytes, fileName, handle) {
+  async function loadStashBytes(bytes, fileName, handle, lastModified) {
     const parsed = Items.parseStash(bytes);
     state.stash = parsed;
     state.stashName = fileName || "pd2_shared.stash";
     state.stashBackup = Uint8Array.from(bytes);
     state.stashHandle = handle || null;
+    state.stashLastModified = lastModified || 0;
     showLoaded();
     if (!state.parsed) switchTab("items");
     else renderItems();
@@ -406,9 +616,9 @@
     setStatus("Loaded " + state.stashName + " · " + parsed.items.length + " items");
   }
 
-  async function loadBytes(bytes, fileName, handle) {
+  async function loadBytes(bytes, fileName, handle, lastModified) {
     if (isStashBytes(bytes) || /\.stash$/i.test(fileName || "")) {
-      await loadStashBytes(bytes, fileName, handle);
+      await loadStashBytes(bytes, fileName, handle, lastModified);
       return;
     }
     const parsed = Save.parse(bytes);
@@ -416,6 +626,7 @@
     state.fileName = fileName || parsed.name + ".d2s";
     state.backup = Uint8Array.from(bytes);
     state.fileHandle = handle || null;
+    state.loadedLastModified = lastModified || 0;
     showLoaded();
     switchTab("character");
     render();
@@ -430,7 +641,7 @@
 
   async function loadFile(file, handle) {
     const buf = new Uint8Array(await file.arrayBuffer());
-    await loadBytes(buf, file.name, handle);
+    await loadBytes(buf, file.name, handle, file.lastModified || 0);
   }
 
   function downloadBytes(bytes, name) {
@@ -440,6 +651,116 @@
     a.download = name;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+  }
+
+  function pad2(n) {
+    return String(n).padStart(2, "0");
+  }
+
+  function backupStamp() {
+    const d = new Date();
+    return (
+      d.getFullYear() +
+      pad2(d.getMonth() + 1) +
+      pad2(d.getDate()) +
+      "-" +
+      pad2(d.getHours()) +
+      pad2(d.getMinutes()) +
+      pad2(d.getSeconds())
+    );
+  }
+
+  function bakName(fileName, fallback) {
+    const stamp = backupStamp();
+    const name = fileName || fallback || "save";
+    if (/\.d2s$/i.test(name)) return name.replace(/\.d2s$/i, "." + stamp + ".d2s.bak");
+    if (/\.stash$/i.test(name)) return name.replace(/\.stash$/i, "." + stamp + ".stash.bak");
+    return name + "." + stamp + ".bak";
+  }
+
+  async function bytesFromHandle(handle, fallback) {
+    if (handle) {
+      try {
+        const file = await handle.getFile();
+        return new Uint8Array(await file.arrayBuffer());
+      } catch (_) {}
+    }
+    return fallback ? Uint8Array.from(fallback) : null;
+  }
+
+  async function diskInfo(handle, loadedLastModified) {
+    if (!handle) return { changed: false, lastModified: 0 };
+    const file = await handle.getFile();
+    return {
+      changed: loadedLastModified > 0 && file.lastModified > loadedLastModified + 750,
+      lastModified: file.lastModified,
+      file,
+    };
+  }
+
+  function formatWhen(ms) {
+    if (!ms) return "unknown time";
+    return new Date(ms).toLocaleString();
+  }
+
+  let writeDecision = null;
+
+  function confirmWrite(opts) {
+    opts = opts || {};
+    $("write-modal-title").textContent = opts.title || "Close Sanctuary of Exile first";
+    $("write-modal-body").textContent =
+      opts.body || "If SoE is running it will overwrite this file when you leave a game, and these edits will vanish.";
+    const stale = $("write-modal-stale");
+    if (opts.staleText) {
+      stale.hidden = false;
+      stale.textContent = opts.staleText;
+    } else {
+      stale.hidden = true;
+      stale.textContent = "";
+    }
+    $("f-write-backup").checked = opts.backup !== false;
+    $("write-modal").hidden = false;
+    return new Promise((resolve) => {
+      writeDecision = resolve;
+    });
+  }
+
+  function finishWriteConfirm(ok) {
+    $("write-modal").hidden = true;
+    const backup = !!$("f-write-backup").checked;
+    const resolve = writeDecision;
+    writeDecision = null;
+    if (resolve) resolve(ok ? { ok: true, backup } : { ok: false, backup: false });
+  }
+
+  async function guardInPlaceSave({ handle, loadedLastModified, fileName, fallbackBytes, kind }) {
+    let stale = false;
+    let diskTime = 0;
+    try {
+      const info = await diskInfo(handle, loadedLastModified);
+      stale = info.changed;
+      diskTime = info.lastModified;
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+    const decision = await confirmWrite({
+      title: "Close Sanctuary of Exile first",
+      body:
+        "About to overwrite " +
+        (fileName || "this file") +
+        " in the Saves folder. Quit SoE completely before you continue — the game writes the save again when you exit a game.",
+      staleText: stale
+        ? "This file changed on disk at " +
+          formatWhen(diskTime) +
+          " (after you loaded it here). SoE was probably still running. Saving now can fight the game’s copy."
+        : "",
+    });
+    if (!decision.ok) return false;
+    if (decision.backup) {
+      const snap = await bytesFromHandle(handle, fallbackBytes);
+      if (snap && snap.length) downloadBytes(snap, bakName(fileName, kind === "stash" ? "pd2_shared.stash" : "character.d2s"));
+    }
+    return true;
   }
 
   function buildSave() {
@@ -490,11 +811,13 @@
   $("btn-close-modal").addEventListener("click", () => {
     $("install-modal").hidden = true;
   });
+  $("btn-write-cancel").addEventListener("click", () => finishWriteConfirm(false));
+  $("btn-write-ok").addEventListener("click", () => finishWriteConfirm(true));
 
   $("btn-backup").addEventListener("click", () => {
     if (!state.backup) return;
-    const base = (state.fileName || "character.d2s").replace(/\.d2s$/i, "");
-    downloadBytes(state.backup, base + ".backup.d2s");
+    downloadBytes(state.backup, bakName(state.fileName, "character.d2s"));
+    setStatus("Downloaded backup as .d2s.bak — keep it out of the Saves folder");
   });
 
   $("btn-save").addEventListener("click", () => {
@@ -512,10 +835,25 @@
   $("btn-save-inplace").addEventListener("click", async () => {
     if (!state.fileHandle) return;
     try {
+      const ok = await guardInPlaceSave({
+        handle: state.fileHandle,
+        loadedLastModified: state.loadedLastModified,
+        fileName: state.fileName,
+        fallbackBytes: state.backup,
+        kind: "d2s",
+      });
+      if (!ok) {
+        setStatus("Save cancelled");
+        return;
+      }
       const out = buildSave();
       const writable = await state.fileHandle.createWritable();
       await writable.write(out);
       await writable.close();
+      try {
+        const file = await state.fileHandle.getFile();
+        state.loadedLastModified = file.lastModified;
+      } catch (_) {}
       setDirty(false);
       setStatus("Wrote " + state.fileName + " in place · checksum " + (Save.verify(out) ? "ok" : "failed"));
     } catch (err) {
@@ -580,8 +918,7 @@
 
   document.querySelectorAll("#item-views .tab").forEach((btn) => {
     btn.addEventListener("click", () => {
-      state.itemView = btn.dataset.view;
-      document.querySelectorAll("#item-views .tab").forEach((el) => el.classList.toggle("is-active", el === btn));
+      setItemView(btn.dataset.view);
       renderItems();
     });
   });
@@ -591,7 +928,7 @@
     if (!file) return;
     try {
       const buf = new Uint8Array(await file.arrayBuffer());
-      await loadStashBytes(buf, file.name, null);
+      await loadStashBytes(buf, file.name, null, file.lastModified || 0);
     } catch (err) {
       setStatus(err.message || String(err));
     }
@@ -613,15 +950,36 @@
   $("btn-save-stash-inplace").addEventListener("click", async () => {
     if (!state.stashHandle || !state.stash) return;
     try {
+      const ok = await guardInPlaceSave({
+        handle: state.stashHandle,
+        loadedLastModified: state.stashLastModified,
+        fileName: state.stashName,
+        fallbackBytes: state.stashBackup,
+        kind: "stash",
+      });
+      if (!ok) {
+        setStatus("Stash save cancelled");
+        return;
+      }
       const out = Items.writeStash(state.stash);
       const writable = await state.stashHandle.createWritable();
       await writable.write(out);
       await writable.close();
+      try {
+        const file = await state.stashHandle.getFile();
+        state.stashLastModified = file.lastModified;
+      } catch (_) {}
       setStashDirty(false);
       setStatus("Wrote " + state.stashName + " in place");
     } catch (err) {
       setStatus(err.message || String(err));
     }
+  });
+
+  $("btn-duplicate-item").addEventListener("click", () => duplicateSelected());
+  $("f-item-search").addEventListener("input", () => {
+    state.itemSearch = $("f-item-search").value;
+    renderItems();
   });
 
   $("btn-identify-all").addEventListener("click", () => {
@@ -676,7 +1034,51 @@
     renderItems();
   });
 
+  $("f-item-eth").addEventListener("change", () => {
+    const item = selectedItem();
+    if (!item) return;
+    try {
+      Items.setEthereal(item, $("f-item-eth").checked);
+      if (state.sel.where === "stash") setStashDirty(true);
+      else setDirty(true);
+      renderItems();
+      setStatus((item.ethereal ? "Set ethereal on " : "Cleared ethereal on ") + Items.displayName(item));
+    } catch (err) {
+      $("f-item-eth").checked = !!item.ethereal;
+      setStatus(err.message || String(err));
+    }
+  });
+
+  $("f-item-socks").addEventListener("change", () => {
+    const item = selectedItem();
+    if (!item) return;
+    try {
+      Items.setSockets(item, num("f-item-socks"));
+      if (state.sel.where === "stash") setStashDirty(true);
+      else setDirty(true);
+      renderItems();
+      setStatus(
+        item.socketed
+          ? "Set " + item.sockets + " sockets on " + Items.displayName(item)
+          : "Removed sockets from " + Items.displayName(item)
+      );
+    } catch (err) {
+      $("f-item-socks").value = item.socketed ? item.sockets || 0 : 0;
+      setStatus(err.message || String(err));
+    }
+  });
+
   renderSpawn();
+  $("f-spawn-search").addEventListener("input", () => {
+    state.spawnQuery = $("f-spawn-search").value;
+    renderSpawnResults();
+  });
+  $("spawn-kinds").querySelectorAll("[data-spawn-kind]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.spawnKind = btn.dataset.spawnKind;
+      renderSpawn();
+    });
+  });
 
   ["f-name", "f-level", "f-experience", "f-gold", "f-goldbank", "f-strength", "f-dexterity", "f-vitality", "f-energy", "f-statpts", "f-newskills", "f-maxhp", "f-maxmana", "f-maxstamina", "f-hardcore"].forEach((id) => {
     const el = $(id);
