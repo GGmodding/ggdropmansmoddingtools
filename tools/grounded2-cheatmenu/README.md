@@ -5,13 +5,15 @@ In-game cheat hotkeys for **Grounded 2** via [UE4SS](https://github.com/UE4SS-RE
 **Repo:** [GGmodding/ggdropmansmoddingtools](https://github.com/GGmodding/ggdropmansmoddingtools)  
 **Discord:** [discord.gg/PTwyDTFyR](https://discord.gg/PTwyDTFyR)
 
-> **Note:** UE4SS Lua has no ImGui bindings. **F8** attaches a small help panel to the live `UI_HUD` (same safe pattern as backpack mods). A cooked LogicMods UMG pak is planned for step 2 (`logicmod/`).
+> **Note:** UE4SS Lua has no ImGui. **F8** prints the key list to the UE4SS console / on-screen text only — constructing UMG Button overlays **hard-crashes Grounded 2**, so the clickable menu is disabled. Use hotkeys. A cooked LogicMods UMG pak is the path for a real GUI later (`logicmod/`).
 
 ## Features (v1)
 
 | Key | Action |
 |-----|--------|
-| **F8** | Toggle in-game help popup (auto-hides after ~12s; also prints to UE4SS console) |
+| **F8** | Print help / status (console + on-screen text — **no widget construction**) |
+| **F3** | Toggle Super Speed ×5 (`MaineCharMovementComponent` walk/sprint/fly speeds) |
+| **F4** | Toggle Noclip fly (Flying + capsule collision off) |
 | **F6** | Fill vitals (HP / stamina / food / water / breath) |
 | **F7** | Toggle God Mode (keeps vitals topped while ON) |
 | **F9** | Duplicate held item × current qty via `ItemContainerFunctionLibrary.CreateAndAddItem` |
@@ -19,7 +21,7 @@ In-game cheat hotkeys for **Grounded 2** via [UE4SS](https://github.com/UE4SS-RE
 | **F11** | Set bag `StackSize` to 999 on inventory items |
 | **F12** | Probe pawn / inventory / library (status line) |
 
-Hotkeys always work in-world. Status prints to the UE4SS console.
+Hotkeys are the real menu. Status prints to the UE4SS console.
 
 ## Install
 
@@ -131,8 +133,8 @@ Keep `UEHelpers` / shared mods enabled if your package includes them (`cheats.lu
 | No `mods.txt` | Normal on many G2 installs — `enabled.txt` inside the mod folder is the enable switch |
 | No log line / F8 dead | UE4SS **runtime** must sit beside the exe (`dwmapi.dll` + full `ue4ss\` package). A lone `ue4ss\Mods\` folder is not enough |
 | No log line | Mod folder name / `enabled.txt` / UE4SS load |
-| F8 does nothing | Be in-world; check console for `popup attached` / `fallback on-screen text` |
-| F8 crashes | Should be fixed (HUD child, not standalone UserWidget). Re-copy `Scripts/main.lua` if you still have the old overlay version |
+| F8 crashes | Re-copy fixed `Scripts/main.lua` — clickable Button overlay is removed; F8 is console/text only |
+| F8 does nothing visible | Open UE4SS console — help prints there; on-screen PrintString may also flash |
 | “no local pawn” | Must be in-world |
 | Dup “inventory unchanged” | Same class of issue as CE Server RPC no-ops — lib path preferred; try again after opening bag once |
 | Crash on FText | Rare on some UE5.4+ builds; overlay falls back to plain string `SetText` |
@@ -146,9 +148,19 @@ Always attach `UE4SS.log` snippets when asking for help on Discord.
 - Copies **DataTable + RowName** from `UItem.ItemDataRowHandle` (not the full NetCrc blob).
 - After duplicate: re-reads inventory stack sum / slot count and reports delta in the status line.
 
-## Step 2 (out of scope here)
+## Step 2 — LogicMod pak (clickable UI)
 
-See [`logicmod/README.md`](logicmod/README.md) for a future cooked `.pak` under `Augusta\Content\Paks\LogicMods\` + BPModLoader.
+Runtime UMG Button overlays **crash Grounded 2**. A real menu needs a **cooked LogicMod**.
+
+See [`logicmod/README.md`](logicmod/README.md) for the full cook/install design (`ModActor` + `WBP_GGDropmanCheatMenu` → `LogicMods/GGDropmanCheatMenu.pak`).
+
+**Blocked without:** Unreal Engine **5.6** on your machine to package the Blueprint/Widget. This repo cannot emit a valid `.pak` from Lua alone.
+
+Until then: use **hotkeys** (F3/F4/F6/F7/…).
+
+## Step 2 (legacy stub note)
+
+Older docs called this “out of scope”; the cook guide now lives under `logicmod/`.
 
 ## Support
 

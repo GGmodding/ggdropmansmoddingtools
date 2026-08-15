@@ -29,10 +29,10 @@ Donate:  https://paypal.me/kd19902
 6. Sanity check: take damage - CE "Health Damaged" must change. If not, wrong pawn.
 7. Movement: Super Speed / Jump / Swim / Fly / Noclip / Teleport to aim (F6 horizontal + lift)
 8. Currency: Raw Science / Brainpower / Gold molars / Milk molars / Moldy milk molars (Party)
-9c. Inventory slots: custom bag/mount size (DefaultMaxSize + milk-molar upgrade tiers)
+9c. Inventory slots: bag (milk molars) + buggy (moldy molars) DefaultMaxSize + upgrade tiers
 9. Stacks: raise max to 999 + fill/freeze inventory stacks
 9b. Inventory spawn: Init helpers then Duplicate held / Spawn by name / Build staples
-10. Survive: God Mode + No Fall Damage
+10. Survive: God Mode + Buggy tank (moldy) + No Fall Damage
 11. Combat: One-shot kill | Always perfect block | Unlock all mutations
 12. Crafting: Free craft | Analyzer infinite charges | Free build (risky) | SCRUB / Session / PERMANENT
 13. Use [DISABLE ALL scripts] to turn everything off (including ACTIVATE)
@@ -114,7 +114,7 @@ local function killTimerBag(bag, key)
 end
 
 local bags = {
-  gg2_freeze_vitals, gg2_currency_freeze, gg2_stack_freeze, gg2_inv_freeze, gg2_god,
+  gg2_freeze_vitals, gg2_currency_freeze, gg2_stack_freeze, gg2_inv_freeze, gg2_buggy_inv_freeze, gg2_god, gg2_buggy_god,
   gg2_nofall, gg2_tp, gg2_speed, gg2_jump, gg2_swim, gg2_fly, gg2_noclip,
   gg2_session_unlock, gg_giant_held, gg2_oneshot, gg2_perfect_block, gg2_analyzer, gg2_spawn,
 }
@@ -132,6 +132,8 @@ end
 gg2_freeze_vitals = nil
 gg2_currency_freeze = nil
 gg2_inv_freeze = nil
+gg2_buggy_inv_freeze = nil
+gg2_buggy_god = nil
 gg2_stack_freeze = nil
 
 local skipDesc = {
@@ -1028,6 +1030,9 @@ local names = {
   "GG2_Party","GG2_RawScience","GG2_Brainpower","GG2_GoldMolars","GG2_MilkMolars","GG2_MoldyMolars",
   "GG2_InvComp","GG2_InvDefaultMaxSize","GG2_MountInvComp","GG2_MountInvDefaultMaxSize",
   "GG2_PlayerUpgradeComp","GG2_BuggyUpgradeComp",
+  "GG2_PetMaster","GG2_BuggyPet","GG2_BuggyHealthComp",
+  "GG2_BuggyMaxHealth","GG2_BuggyDamage","GG2_BuggyTamedMaxHealth",
+  "GG2_BuggyTamedRegen","GG2_BuggyTamedRegenTick","GG2_BuggyTamedCombatDelay",
 }
 for i=1,#names do
   pcall(function()
@@ -1493,7 +1498,7 @@ print("Currency FREEZE OFF")
         </CheatEntry>
         <CheatEntry>
           <ID>226</ID>
-          <Description>"Inventory slots (custom)"</Description>
+          <Description>"Inventory slots (bag + buggy)"</Description>
           <Options moHideChildren="1" moManualExpandCollapse="1"/>
           <Color>40A0C0</Color>
           <GroupHeader>1</GroupHeader>
@@ -1668,7 +1673,7 @@ print("FREEZE bag slots OFF")
             </CheatEntry>
             <CheatEntry>
               <ID>229</ID>
-              <Description>"[Script] Set buggy/mount slots (moldy upgrade path)"</Description>
+              <Description>"[Script] Set buggy slots (moldy molars + MountInventory DefaultMaxSize)"</Description>
               <Color>00FF00</Color>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
@@ -1690,34 +1695,53 @@ local function looksUObj(ptr)
   return vf ~= nil and vf &gt; 0x10000
 end
 
-local slotsRaw = inputQuery("Buggy slots", "Set mount/buggy inventory DefaultMaxSize to:", "40")
+local pawn = getAddressSafe("Player")
+local minv = readQword(pawn + 0x1440)
+if not looksUObj(minv) then
+  showMessage("No MountInventoryComponent.\n\nSit on / open a buggy inventory first,\nthen re-run this script.")
+  error("no mount inv")
+end
+
+local prev = readInteger(minv + 0x1E0) or 0
+local slotsRaw = inputQuery(
+  "Buggy slots (moldy path)",
+  string.format(
+    "Current mount DefaultMaxSize = %d.\nEnter a HIGHER value (moldy molar buggy inventory).\nSuggested: 80 or 120.",
+    prev),
+  tostring(math.max(prev + 20, 80)))
 if slotsRaw == nil then error("cancelled") end
 local slots = math.floor(tonumber(slotsRaw) or -1)
 if slots &lt; 1 or slots &gt; 500 then
   showMessage("Use a slot count between 1 and 500")
   error("bad slots")
 end
-
-local pawn = getAddressSafe("Player")
-local minv = readQword(pawn + 0x1440)
-if not looksUObj(minv) then
-  showMessage("No MountInventoryComponent.\nMount a buggy first, then re-run.")
-  error("no mount inv")
+if slots &lt;= prev then
+  showMessage(string.format(
+    "Need a value ABOVE current (%d).\nYou entered %d - no change made.",
+    prev, slots))
+  error("slots not higher")
 end
 
-local prev = readInteger(minv + 0x1E0)
 writeInteger(minv + 0x1E0, slots)
 registerSymbol("GG2_MountInvComp", minv, true)
 registerSymbol("GG2_MountInvDefaultMaxSize", minv + 0x1E0, true)
-print(string.format("Mount DefaultMaxSize %s -&gt; %d", tostring(prev), slots))
+print(string.format("Mount DefaultMaxSize %s -&gt; %d (readback %s)",
+  tostring(prev), slots, tostring(readInteger(minv + 0x1E0))))
 
+-- Moldy milk molars = Party BuggyUpgradePoints
 local party = getAddressSafe("GG2_Party")
+local moldyWas = nil
 if looksUObj(party) then
-  local cur = readInteger(party + 0x4EC) or 0
+  moldyWas = readInteger(party + 0x4EC)
+  local cur = moldyWas or 0
   if cur &lt; 99 then writeInteger(party + 0x4EC, 99) end
   registerSymbol("GG2_MoldyMolars", party + 0x4EC, true)
+  print(string.format("Moldy molars %s -&gt; %s", tostring(moldyWas), tostring(readInteger(party + 0x4EC))))
+else
+  print("Party unknown - moldy points skipped (run ACTIVATE / fill currency first)")
 end
 
+-- Max PlayerBuggyUpgradeComponent tiers (same layout as milk-molar PUC)
 local upgraded = 0
 local ps = readQword(pawn + 0x2D0)
 if looksUObj(ps) then
@@ -1735,14 +1759,102 @@ if looksUObj(ps) then
           upgraded = upgraded + 1
         end
       end
+      print(string.format("Moldy buggy upgrade tiers maxed: %d", upgraded))
+    else
+      print(string.format("BuggyUpgrades empty/odd data=%s num=%s", tostring(data), tostring(num)))
     end
+  else
+    print("PlayerBuggyUpgradeComponent missing on PlayerState")
   end
+else
+  print("PlayerState missing on pawn")
 end
 
+-- Auto-FREEZE so remount / regen cannot snap mount size back.
+if gg2_buggy_inv_freeze ~= nil and gg2_buggy_inv_freeze.timer ~= nil then
+  gg2_buggy_inv_freeze.timer.Enabled = false
+  gg2_buggy_inv_freeze.timer.destroy()
+end
+gg2_buggy_inv_freeze = { qty = slots }
+local st = gg2_buggy_inv_freeze
+st.timer = createTimer(nil, false)
+st.timer.Interval = 200
+st.timer.OnTimer = function()
+  local p = getAddressSafe("Player")
+  if p == nil then return end
+  local c = readQword(p + 0x1440)
+  if c ~= nil and c ~= 0 then writeInteger(c + 0x1E0, st.qty) end
+end
+st.timer.Enabled = true
+
 showMessage(string.format(
-  "Buggy/mount slots set to %d.\n\nMoldy molar points topped if Party known.\nMaxed %d buggy upgrade tier(s).\nRemount / reopen buggy inventory if UI is stale.",
-  slots, upgraded))
+  "Buggy slots: %s -&gt; %d (FREEZE ON).\nMoldy molars topped (was %s).\nBuggy upgrade tiers touched: %d.\n\nDismount/remount or reopen buggy inventory if UI is stale.\nDisable this script to stop freeze.",
+  tostring(prev), slots, tostring(moldyWas), upgraded))
 [DISABLE]
+{$lua}
+if syntaxcheck then return end
+local st = gg2_buggy_inv_freeze
+if st ~= nil and st.timer ~= nil then
+  st.timer.Enabled = false
+  st.timer.destroy()
+  st.timer = nil
+end
+gg2_buggy_inv_freeze = nil
+print("Set buggy slots disabled (freeze stopped)")
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>241</ID>
+              <Description>"[Script] FREEZE buggy slots (hold Mount DefaultMaxSize)"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local pawn = getAddressSafe("Player")
+local minv = readQword(pawn + 0x1440)
+local addr = getAddressSafe("GG2_MountInvDefaultMaxSize")
+if addr == nil then
+  if minv == nil or minv == 0 then
+    showMessage("No MountInventoryComponent.\nOpen buggy inventory / mount first.")
+    error("no mount")
+  end
+  addr = minv + 0x1E0
+  registerSymbol("GG2_MountInvComp", minv, true)
+  registerSymbol("GG2_MountInvDefaultMaxSize", addr, true)
+end
+if gg2_buggy_inv_freeze ~= nil and gg2_buggy_inv_freeze.timer ~= nil then
+  gg2_buggy_inv_freeze.timer.Enabled = false
+  gg2_buggy_inv_freeze.timer.destroy()
+end
+gg2_buggy_inv_freeze = { qty = readInteger(addr) or 40 }
+local st = gg2_buggy_inv_freeze
+st.timer = createTimer(nil, false)
+st.timer.Interval = 250
+st.timer.OnTimer = function()
+  local p = getAddressSafe("Player")
+  if p == nil then return end
+  local c = readQword(p + 0x1440)
+  if c ~= nil and c ~= 0 then writeInteger(c + 0x1E0, st.qty) end
+end
+st.timer.Enabled = true
+showMessage(string.format("FREEZE buggy slots ON @ %d", st.qty))
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local st = gg2_buggy_inv_freeze
+if st ~= nil and st.timer ~= nil then
+  st.timer.Enabled = false
+  st.timer.destroy()
+  st.timer = nil
+end
+gg2_buggy_inv_freeze = nil
+print("FREEZE buggy slots OFF")
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
@@ -2739,6 +2851,183 @@ print("God Mode OFF")
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
+              <ID>242</ID>
+              <Description>"[Script] Buggy tank (moldy upgrades + huge HP + fast regen)"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function sane(v, lo, hi)
+  if v == nil or v ~= v then return false end
+  return v &gt;= lo and v &lt;= hi
+end
+
+local MAX_HP = 99999
+local REGEN = 5000
+local TICK = 0.05
+local COMBAT_DELAY = 0
+
+local hpRaw = inputQuery(
+  "Buggy max HP",
+  "Moldy-path buggy tank.\nSummon your buggy first.\nMax HP (TamedMaxHealth + MaxHealth):",
+  tostring(MAX_HP))
+if hpRaw == nil then error("cancelled") end
+MAX_HP = tonumber(hpRaw) or MAX_HP
+if MAX_HP &lt; 100 or MAX_HP &gt; 1000000 then
+  showMessage("Use HP between 100 and 1000000")
+  error("bad hp")
+end
+
+local pawn = getAddressSafe("Player")
+local pmc = readQword(pawn + 0x1498) -- PetMasterComponent
+if not looksUObj(pmc) then
+  showMessage("PetMasterComponent missing.\nRe-run ACTIVATE in-world.")
+  error("no petmaster")
+end
+
+local pet = readQword(pmc + 0x158) -- CurrentPetFull
+if not looksUObj(pet) then
+  showMessage("No active buggy/pet actor.\n\nSummon your buggy (or mount it),\nthen re-run this script.")
+  error("no pet")
+end
+
+local hc = readQword(pet + 0x13A0) -- HealthComponent (SurvivalCharacter)
+if not looksUObj(hc) then
+  showMessage("Buggy HealthComponent missing on CurrentPetFull.")
+  error("no hc")
+end
+
+-- Moldy milk molars = BuggyUpgradePoints
+local party = getAddressSafe("GG2_Party")
+local moldyWas = nil
+if looksUObj(party) then
+  moldyWas = readInteger(party + 0x4EC)
+  local cur = moldyWas or 0
+  if cur &lt; 99 then writeInteger(party + 0x4EC, 99) end
+  registerSymbol("GG2_MoldyMolars", party + 0x4EC, true)
+end
+
+-- Max PlayerBuggyUpgradeComponent tiers (health upgrades live on this path)
+local upgraded = 0
+local ps = readQword(pawn + 0x2D0)
+if looksUObj(ps) then
+  local buc = readQword(ps + 0x750)
+  if looksUObj(buc) then
+    registerSymbol("GG2_BuggyUpgradeComp", buc, true)
+    local data = readQword(buc + 0xE8)
+    local num = readInteger(buc + 0xF0)
+    if isHeapPtr(data) and num ~= nil and num &gt; 0 and num &lt; 64 then
+      for i = 0, num - 1 do
+        local tierAddr = data + i * 0x20 + 0xC
+        local t = readInteger(tierAddr)
+        if t ~= nil and t &gt;= 0 and t &lt; 50 then
+          writeInteger(tierAddr, 20)
+          upgraded = upgraded + 1
+        end
+      end
+    end
+  end
+end
+
+local function applyTank(hcAddr, pmcAddr, maxHp)
+  if not looksUObj(hcAddr) then return false end
+  writeFloat(hcAddr + 0x318, maxHp)   -- MaxHealth
+  writeFloat(hcAddr + 0x4AC, maxHp)   -- TamedMaxHealth
+  writeFloat(hcAddr + 0x31C, 0)       -- CurrentDamage
+  writeBytes(hcAddr + 0x300, 0)       -- HealthState = Alive
+  writeFloat(hcAddr + 0x4A0, REGEN)   -- TamedOutOfCombatRegen
+  writeFloat(hcAddr + 0x4A4, TICK)    -- TamedOutOfCombatRegenTickRate
+  writeFloat(hcAddr + 0x4A8, COMBAT_DELAY) -- TamedCombatRegenDelay
+  -- force bRegenOutOfCombat (bit 2) on flags byte 0x10C
+  local flags = readBytes(hcAddr + 0x10C, 1, true)
+  local b = 0
+  if type(flags) == "table" and flags[1] ~= nil then b = flags[1]
+  elseif type(flags) == "number" then b = flags end
+  if math.floor(b / 4) % 2 == 0 then writeBytes(hcAddr + 0x10C, b + 4) end
+  if looksUObj(pmcAddr) then
+    writeFloat(pmcAddr + 0x1A4, maxHp) -- CurrentPetMaxHealth
+    writeFloat(pmcAddr + 0x1A8, 0)     -- CurrentPetDamage
+    writeBytes(pmcAddr + 0x1A0, 0)     -- CurrentPetHealthState Alive
+  end
+  return true
+end
+
+local prevMax = readFloat(hc + 0x318)
+local prevTamed = readFloat(hc + 0x4AC)
+local prevRegen = readFloat(hc + 0x4A0)
+local prevTick = readFloat(hc + 0x4A4)
+applyTank(hc, pmc, MAX_HP)
+
+registerSymbol("GG2_PetMaster", pmc, true)
+registerSymbol("GG2_BuggyPet", pet, true)
+registerSymbol("GG2_BuggyHealthComp", hc, true)
+registerSymbol("GG2_BuggyMaxHealth", hc + 0x318, true)
+registerSymbol("GG2_BuggyDamage", hc + 0x31C, true)
+registerSymbol("GG2_BuggyTamedMaxHealth", hc + 0x4AC, true)
+registerSymbol("GG2_BuggyTamedRegen", hc + 0x4A0, true)
+registerSymbol("GG2_BuggyTamedRegenTick", hc + 0x4A4, true)
+registerSymbol("GG2_BuggyTamedCombatDelay", hc + 0x4A8, true)
+
+print(string.format(
+  "Buggy tank: MaxHP %s/%s -&gt; %d  regen %s/%s -&gt; %g/%g  tiers=%d moldyWas=%s",
+  tostring(prevMax), tostring(prevTamed), MAX_HP,
+  tostring(prevRegen), tostring(prevTick), REGEN, TICK,
+  upgraded, tostring(moldyWas)))
+
+if gg2_buggy_god ~= nil and gg2_buggy_god.timer ~= nil then
+  gg2_buggy_god.timer.Enabled = false
+  gg2_buggy_god.timer.destroy()
+end
+gg2_buggy_god = { maxHp = MAX_HP, regen = REGEN, tick = TICK, delay = COMBAT_DELAY }
+local st = gg2_buggy_god
+st.timer = createTimer(nil, false)
+st.timer.Interval = 50
+st.timer.OnTimer = function()
+  local p = getAddressSafe("Player")
+  if p == nil then return end
+  local m = readQword(p + 0x1498)
+  if m == nil or m == 0 then return end
+  local creature = readQword(m + 0x158)
+  if creature == nil or creature == 0 then return end
+  local h = readQword(creature + 0x13A0)
+  if h == nil or h == 0 then return end
+  applyTank(h, m, st.maxHp)
+end
+st.timer.Enabled = true
+
+showMessage(string.format(
+  "Buggy tank ON (FREEZE).\n\nMax HP: %d\nRegen: %g / %.2fs (combat delay 0)\nMoldy molars topped (was %s)\nBuggy upgrade tiers touched: %d\n\nKeep buggy summoned. Disable script to stop.",
+  MAX_HP, REGEN, TICK, tostring(moldyWas), upgraded))
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local st = gg2_buggy_god
+if st ~= nil and st.timer ~= nil then
+  st.timer.Enabled = false
+  st.timer.destroy()
+  st.timer = nil
+end
+gg2_buggy_god = nil
+print("Buggy tank OFF")
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
               <ID>72</ID>
               <Description>"[Script] No Fall Damage"</Description>
               <Color>00FF00</Color>
@@ -3252,11 +3541,13 @@ if getAddressSafe("Player") == nil then
   error("no Player")
 end
 
--- AResourceAnalyzerBuilding: PowerReservoir @ +0x928
---   ChargesStored @ +0x34, ChargeCapacity @ +0x38 (floats)
--- InitialCharges @ +0x96C, HoursPerCharge @ +0x978, MaxPowerCapacity @ +0x968
-
-local TARGET = 99.0
+-- AResourceAnalyzerBuilding:
+--   PowerReservoir @ +0x928
+--     ChargesStored @ +0x34 -&gt; obj+0x95C (float)
+--     ChargeCapacity @ +0x38 -&gt; obj+0x960 (float)
+--   MaxPowerCapacity @ +0x968 (int), InitialCharges @ +0x96C (int), HoursPerCharge @ +0x978 (int)
+-- IMPORTANT: do NOT set HoursPerCharge=0 (breaks recharge math into huge negatives).
+-- IMPORTANT: do NOT inflate InitialCharges past ~32 (breaks scanner validation).
 
 local function isHeapPtr(ptr)
   if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
@@ -3269,23 +3560,27 @@ local function looksUObj(ptr)
   return vf ~= nil and vf &gt; 0x10000
 end
 
-local function looksAnalyzer(obj)
-  if not looksUObj(obj) then return false end
+local function readAnalyzer(obj)
+  if not looksUObj(obj) then return nil end
   local root = readQword(obj + 0x1B8)
-  if not looksUObj(root) then return false end
-  local init = readInteger(obj + 0x96C) -- InitialCharges
-  local hours = readInteger(obj + 0x978) -- HoursPerCharge
-  local maxP = readInteger(obj + 0x968) -- MaxPowerCapacity
-  local stored = readFloat(obj + 0x95C) -- PowerReservoir.ChargesStored
-  local cap = readFloat(obj + 0x960) -- PowerReservoir.ChargeCapacity
-  if init == nil or hours == nil or stored == nil or cap == nil then return false end
-  if init &lt; 1 or init &gt; 32 then return false end
-  if hours &lt; 0 or hours &gt; 168 then return false end
-  if maxP ~= nil and (maxP &lt; 1 or maxP &gt; 64) then return false end
-  if not (stored == stored and cap == cap) then return false end
-  if stored &lt; 0 or stored &gt; 200 then return false end
-  if cap &lt; 1 or cap &gt; 200 then return false end
-  return true
+  if not looksUObj(root) then return nil end
+  local init = readInteger(obj + 0x96C)
+  local hours = readInteger(obj + 0x978)
+  local maxP = readInteger(obj + 0x968)
+  local stored = readFloat(obj + 0x95C)
+  local cap = readFloat(obj + 0x960)
+  if init == nil or hours == nil or stored == nil or cap == nil then return nil end
+  -- Allow already-broken stored (negative / huge) so we can repair.
+  if init &lt; 1 or init &gt; 64 then return nil end
+  if hours &lt; 0 or hours &gt; 168 then return nil end
+  if maxP ~= nil and (maxP &lt; 1 or maxP &gt; 128) then return nil end
+  if not (stored == stored and cap == cap) then return nil end -- NaN check
+  if cap &lt; 1 or cap &gt; 200 then return nil end
+  return { stored = stored, cap = cap, init = init, hours = hours, maxP = maxP }
+end
+
+local function looksAnalyzer(obj)
+  return readAnalyzer(obj) ~= nil
 end
 
 local function resolveGObjects()
@@ -3317,12 +3612,16 @@ local function scanAnalyzers()
 end
 
 local function fillOne(obj)
-  writeFloat(obj + 0x960, TARGET) -- ChargeCapacity
-  writeFloat(obj + 0x95C, TARGET) -- ChargesStored
-  writeFloat(obj + 0x964, 0)      -- AdditionalChargeCapacity (ok to leave)
-  writeInteger(obj + 0x968, math.floor(TARGET)) -- MaxPowerCapacity
-  writeInteger(obj + 0x96C, math.floor(TARGET)) -- InitialCharges
-  writeInteger(obj + 0x978, 0) -- HoursPerCharge = instant recharge
+  local info = readAnalyzer(obj)
+  if info == nil then return false end
+  -- Keep the building's real capacity; only refill stored charges.
+  local cap = info.cap
+  if cap &lt; 1 then cap = 3 end
+  if cap &gt; 32 then cap = 32 end -- sane UI range
+  -- Repair broken / negative stored from older cheat versions.
+  writeFloat(obj + 0x95C, cap) -- ChargesStored = full
+  -- Do NOT touch ChargeCapacity / MaxPowerCapacity / InitialCharges / HoursPerCharge.
+  return true
 end
 
 if gg2_analyzer ~= nil and gg2_analyzer.timer ~= nil then
@@ -3336,22 +3635,41 @@ if #found == 0 then
   error("no analyzer")
 end
 
+-- One-shot repair of HoursPerCharge if a previous broken cheat set it to 0.
 for _, a in ipairs(found) do
+  local hours = readInteger(a + 0x978)
+  if hours ~= nil and hours == 0 then
+    writeInteger(a + 0x978, 1)
+    print(string.format("Analyzer %X: repaired HoursPerCharge 0 -&gt; 1", a))
+  end
+  -- If InitialCharges was inflated to 99 by the old cheat, pull it back.
+  local init = readInteger(a + 0x96C)
+  if init ~= nil and init &gt; 32 then
+    local cap = readFloat(a + 0x960) or 3
+    local fix = math.max(1, math.min(32, math.floor(cap)))
+    writeInteger(a + 0x96C, fix)
+    print(string.format("Analyzer %X: repaired InitialCharges %d -&gt; %d", a, init, fix))
+  end
+  local maxP = readInteger(a + 0x968)
+  if maxP ~= nil and maxP &gt; 64 then
+    writeInteger(a + 0x968, 8)
+    print(string.format("Analyzer %X: repaired MaxPowerCapacity %d -&gt; 8", a, maxP))
+  end
   fillOne(a)
-  print(string.format("Analyzer %X charges -&gt; %.0f (was stored=%.1f cap=%.1f)",
-    a, TARGET, readFloat(a + 0x95C) or -1, readFloat(a + 0x960) or -1))
+  local info = readAnalyzer(a)
+  print(string.format("Analyzer %X charges -&gt; stored=%.1f cap=%.1f",
+    a, info and info.stored or -1, info and info.cap or -1))
 end
 
 registerSymbol("GG2_Analyzer", found[1], true)
 registerSymbol("GG2_AnalyzerCharges", found[1] + 0x95C, true)
 registerSymbol("GG2_AnalyzerCapacity", found[1] + 0x960, true)
 
-gg2_analyzer = { addrs = found, qty = TARGET }
+gg2_analyzer = { addrs = found }
 local st = gg2_analyzer
 st.timer = createTimer(nil, false)
 st.timer.Interval = 250
 st.timer.OnTimer = function()
-  -- refresh list occasionally in case of streaming
   if st._tick == nil then st._tick = 0 end
   st._tick = st._tick + 1
   if (st._tick % 20) == 0 then
@@ -3359,15 +3677,15 @@ st.timer.OnTimer = function()
     if #again &gt; 0 then st.addrs = again end
   end
   for _, a in ipairs(st.addrs or {}) do
-    if looksAnalyzer(a) then fillOne(a) end
+    fillOne(a)
   end
 end
 st.timer.Enabled = true
 
 print(string.format("Infinite analyzer charges ON (%d building(s))", #found))
 showMessage(string.format(
-  "Infinite analyzer charges ON\n\nFound %d analyzer(s).\nCharges held at %.0f every 250ms.\nHoursPerCharge forced to 0.\n\nDisable to stop freeze.",
-  #found, TARGET))
+  "Infinite analyzer charges ON (fixed)\n\nFound %d analyzer(s).\nRefills ChargesStored to capacity every 250ms.\nDoes NOT zero HoursPerCharge (that caused the negative bug).\n\nDisable to stop freeze.",
+  #found))
 [DISABLE]
 {$lua}
 if syntaxcheck then return end

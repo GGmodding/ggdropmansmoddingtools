@@ -370,6 +370,243 @@ function M.godTick()
     end
 end
 
+local MOVE_Flying = 5
+local MOVE_Walking = 1
+local COLLISION_NoCollision = 0
+local COLLISION_QueryAndPhysics = 3
+
+function M.getCMC(pawn)
+    pawn = pawn or M.getPawn()
+    if not M.isValid(pawn) then return nil end
+    local cm = pawn.CharMovementComponent
+    if M.isValid(cm) then return cm end
+    cm = pawn.CharacterMovement
+    if M.isValid(cm) then return cm end
+    cm = pawn.MovementComponent
+    if M.isValid(cm) then return cm end
+    return nil
+end
+
+function M.getCapsule(pawn)
+    pawn = pawn or M.getPawn()
+    if not M.isValid(pawn) then return nil end
+    local cap = pawn.CapsuleComponent
+    if M.isValid(cap) then return cap end
+    return nil
+end
+
+local function saneSpeed(v, fallback)
+    if type(v) ~= "number" or v ~= v then return fallback end
+    if v < 50 or v > 20000 then return fallback end
+    return v
+end
+
+local function setFlyMode(cm, pawn, on)
+    if not M.isValid(cm) then return end
+    if on then
+        pcall(function()
+            if type(cm.SetMovementMode) == "function" then
+                cm:SetMovementMode(MOVE_Flying)
+            else
+                cm.MovementMode = MOVE_Flying
+            end
+        end)
+        pcall(function() cm.DefaultLandMovementMode = MOVE_Flying end)
+        pcall(function() cm.GravityScale = 0 end)
+        pcall(function() cm.CurrentGravityScaleOverride = 0 end)
+        pcall(function() cm.AirControl = 1.0 end)
+        pcall(function() cm.bCheatFlying = true end)
+        if M.isValid(pawn) then
+            pcall(function() pawn.ReplicatedMovementMode = MOVE_Flying end)
+        end
+    else
+        pcall(function()
+            if type(cm.SetMovementMode) == "function" then
+                cm:SetMovementMode(MOVE_Walking)
+            else
+                cm.MovementMode = MOVE_Walking
+            end
+        end)
+        pcall(function() cm.DefaultLandMovementMode = MOVE_Walking end)
+        pcall(function() cm.bCheatFlying = false end)
+        if M.isValid(pawn) then
+            pcall(function() pawn.ReplicatedMovementMode = MOVE_Walking end)
+        end
+    end
+end
+
+local function setCollisionOff(pawn, off)
+    if not M.isValid(pawn) then return end
+    pcall(function()
+        if type(pawn.SetActorEnableCollision) == "function" then
+            pawn:SetActorEnableCollision(not off)
+        end
+    end)
+    local cap = M.getCapsule(pawn)
+    if M.isValid(cap) then
+        pcall(function()
+            if type(cap.SetCollisionEnabled) == "function" then
+                cap:SetCollisionEnabled(off and COLLISION_NoCollision or COLLISION_QueryAndPhysics)
+            else
+                cap.CollisionEnabled = off and COLLISION_NoCollision or COLLISION_QueryAndPhysics
+            end
+        end)
+    end
+end
+
+M._speedEnabled = false
+M._speedMult = 5.0
+M._speedBase = nil
+
+function M.applySpeedTick()
+    if not M._speedEnabled then return end
+    local pawn = M.getPawn()
+    local cm = M.getCMC(pawn)
+    if not M.isValid(cm) then return end
+    local b = M._speedBase
+    if b == nil then return end
+    local m = M._speedMult
+    pcall(function() cm.MaxWalkSpeed = b.walk * m end)
+    pcall(function() cm.MaxWalkSpeedCrouched = b.crouch * m end)
+    pcall(function() cm.MaxFlySpeed = b.fly * m end)
+    pcall(function() cm.CurrentMaxGroundSpeed = b.curGround * m end)
+    pcall(function() cm.MaxSprintSpeed = b.sprint * m end)
+    pcall(function() cm.MaxFlySprintSpeed = b.flySprint * m end)
+    pcall(function() cm.CustomGroundSpeedMultiplier = m end)
+end
+
+function M.setSpeed(enabled, mult)
+    mult = tonumber(mult) or M._speedMult or 5.0
+    if mult < 1 then mult = 1 end
+    if mult > 50 then mult = 50 end
+    M._speedMult = mult
+
+    if not enabled then
+        local pawn = M.getPawn()
+        local cm = M.getCMC(pawn)
+        local b = M._speedBase
+        if M.isValid(cm) and b ~= nil then
+            pcall(function() cm.MaxWalkSpeed = b.walk end)
+            pcall(function() cm.MaxWalkSpeedCrouched = b.crouch end)
+            pcall(function() cm.MaxFlySpeed = b.fly end)
+            pcall(function() cm.CurrentMaxGroundSpeed = b.curGround end)
+            pcall(function() cm.MaxSprintSpeed = b.sprint end)
+            pcall(function() cm.MaxFlySprintSpeed = b.flySprint end)
+            pcall(function() cm.CustomGroundSpeedMultiplier = b.customMult end)
+        end
+        M._speedEnabled = false
+        M._speedBase = nil
+        return setStatus(true, "Speed OFF")
+    end
+
+    local pawn = M.getPawn()
+    local cm = M.getCMC(pawn)
+    if not M.isValid(cm) then
+        return setStatus(false, "no CharMovementComponent — load into a world")
+    end
+
+    local walk = saneSpeed(cm.MaxWalkSpeed, 600)
+    local crouch = saneSpeed(cm.MaxWalkSpeedCrouched, walk * 0.5)
+    local fly = saneSpeed(cm.MaxFlySpeed, walk)
+    local curGround = saneSpeed(cm.CurrentMaxGroundSpeed, walk)
+    local sprint = saneSpeed(cm.MaxSprintSpeed, walk * 1.5)
+    local flySprint = saneSpeed(cm.MaxFlySprintSpeed, sprint)
+    local customMult = cm.CustomGroundSpeedMultiplier
+    if type(customMult) ~= "number" or customMult ~= customMult then customMult = 1 end
+
+    M._speedBase = {
+        walk = walk,
+        crouch = crouch,
+        fly = fly,
+        curGround = curGround,
+        sprint = sprint,
+        flySprint = flySprint,
+        customMult = customMult,
+    }
+    M._speedEnabled = true
+    M.applySpeedTick()
+    return setStatus(true, string.format("Speed x%.0f ON (walk %.0f -> %.0f)", mult, walk, walk * mult))
+end
+
+M._noclipEnabled = false
+M._noclipMult = 5.0
+M._noclipBase = nil
+
+function M.applyNoclipTick()
+    if not M._noclipEnabled then return end
+    local pawn = M.getPawn()
+    local cm = M.getCMC(pawn)
+    if not M.isValid(cm) then return end
+    local b = M._noclipBase
+    if b == nil then return end
+    local m = M._noclipMult
+    setFlyMode(cm, pawn, true)
+    setCollisionOff(pawn, true)
+    pcall(function() cm.MaxFlySpeed = b.fly * m end)
+    pcall(function() cm.MaxFlySprintSpeed = b.flySprint * m end)
+    pcall(function() cm.CustomFlySpeedMultiplier = m end)
+    pcall(function() cm.GravityScale = 0 end)
+    pcall(function() cm.CurrentGravityScaleOverride = 0 end)
+end
+
+function M.setNoclip(enabled, mult)
+    mult = tonumber(mult) or M._noclipMult or 5.0
+    if mult < 1 then mult = 1 end
+    if mult > 50 then mult = 50 end
+    M._noclipMult = mult
+
+    local pawn = M.getPawn()
+    local cm = M.getCMC(pawn)
+    if not enabled then
+        local b = M._noclipBase
+        if M.isValid(cm) and b ~= nil then
+            setFlyMode(cm, pawn, false)
+            pcall(function() cm.GravityScale = b.gravity end)
+            pcall(function() cm.CurrentGravityScaleOverride = b.gravOverride end)
+            pcall(function() cm.MaxFlySpeed = b.fly end)
+            pcall(function() cm.MaxFlySprintSpeed = b.flySprint end)
+            pcall(function() cm.CustomFlySpeedMultiplier = b.customFly end)
+            pcall(function() cm.AirControl = b.air end)
+        end
+        setCollisionOff(pawn, false)
+        M._noclipEnabled = false
+        M._noclipBase = nil
+        return setStatus(true, "Noclip OFF (walking + collision restored)")
+    end
+
+    if not M.isValid(cm) then
+        return setStatus(false, "no CharMovementComponent — load into a world")
+    end
+
+    local gravity = cm.GravityScale
+    if type(gravity) ~= "number" or gravity ~= gravity then gravity = 1 end
+    local gravOverride = cm.CurrentGravityScaleOverride
+    if type(gravOverride) ~= "number" or gravOverride ~= gravOverride then gravOverride = 1 end
+    local fly = saneSpeed(cm.MaxFlySpeed, 600)
+    local flySprint = saneSpeed(cm.MaxFlySprintSpeed, fly)
+    local customFly = cm.CustomFlySpeedMultiplier
+    if type(customFly) ~= "number" or customFly ~= customFly then customFly = 1 end
+    local air = cm.AirControl
+    if type(air) ~= "number" or air ~= air then air = 0.05 end
+
+    M._noclipBase = {
+        gravity = gravity,
+        gravOverride = gravOverride,
+        fly = fly,
+        flySprint = flySprint,
+        customFly = customFly,
+        air = air,
+    }
+    M._noclipEnabled = true
+    M.applyNoclipTick()
+    return setStatus(true, string.format("Noclip fly ON x%.0f (collision off)", mult))
+end
+
+function M.movementTick()
+    if M._speedEnabled then M.applySpeedTick() end
+    if M._noclipEnabled then M.applyNoclipTick() end
+end
+
 function M.probe()
     local pawn = M.getPawn()
     local inv = M.getInventory(pawn)

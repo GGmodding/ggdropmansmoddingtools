@@ -1,7 +1,7 @@
 -- GGDropman Grounded 2 Cheat Menu (UE4SS Lua)
--- Hotkeys always work. F8 toggles an in-game help popup attached to the
--- live UI_HUD (same pattern as BackpackScrollBox). We do NOT construct a
--- standalone UserWidget -- that crashes Grounded 2.
+-- Hotkeys always work. F8 toggles a TEXT-ONLY help popup attached to the
+-- live UI_HUD (Border + TextBlock). Do NOT construct Button/VerticalBox
+-- overlays or standalone UserWidgets -- those crash Grounded 2 on F8.
 
 local Cheats = require("cheats")
 
@@ -17,19 +17,27 @@ local popupRoot = nil
 local popupText = nil
 local popupVisible = false
 local popupHideToken = 0
-local POPUP_SECONDS = 12
+local POPUP_SECONDS = 14
 
 local function helpLines()
     return {
         "GGDropman G2 Cheats",
         "F8   toggle this popup",
+        "F3   Toggle Super Speed x5",
+        "F4   Toggle Noclip fly",
         "F6   Fill vitals",
         "F7   Toggle God Mode",
         "F9   Duplicate held x qty",
         "PGUP Cycle dup qty (1/5/10/25)",
         "F11  Fill bag stacks to 999",
         "F12  Probe pawn/inv/lib",
-        string.format("Dup qty: %d | God: %s", dupQty, Cheats._godEnabled and "ON" or "OFF"),
+        string.format(
+            "Dup:%d God:%s Speed:%s Noclip:%s",
+            dupQty,
+            Cheats._godEnabled and "ON" or "OFF",
+            Cheats._speedEnabled and "ON" or "OFF",
+            Cheats._noclipEnabled and "ON" or "OFF"
+        ),
         tostring(Cheats.LAST_STATUS or ""),
     }
 end
@@ -56,7 +64,6 @@ end
 
 local function setPopupText(text)
     if popupText == nil or not popupText:IsValid() then return end
-    -- Prefer plain string; FText can be flaky on some UE5.6 builds.
     local ok = pcall(function() popupText:SetText(text) end)
     if not ok then
         pcall(function()
@@ -128,9 +135,11 @@ local function tryAttach(host, border)
             local slot = host:AddChildToOverlay(border)
             pcall(function()
                 if slot ~= nil then
-                    if slot.SetHorizontalAlignment ~= nil then slot:SetHorizontalAlignment(0) end
-                    if slot.SetVerticalAlignment ~= nil then slot:SetVerticalAlignment(0) end
-                    if slot.SetPadding ~= nil then slot:SetPadding({ Left = 24, Top = 72, Right = 0, Bottom = 0 }) end
+                    pcall(function() slot:SetHorizontalAlignment(0) end)
+                    pcall(function() slot:SetVerticalAlignment(0) end)
+                    pcall(function()
+                        slot:SetPadding({ Left = 24, Top = 72, Right = 0, Bottom = 0 })
+                    end)
                 end
             end)
             return slot
@@ -139,12 +148,12 @@ local function tryAttach(host, border)
             local slot = host:AddChildToCanvas(border)
             pcall(function()
                 if slot ~= nil then
-                    if slot.SetAutoSize ~= nil then slot:SetAutoSize(true) end
-                    if slot.SetPosition ~= nil then slot:SetPosition({ X = 24, Y = 72 }) end
-                    if slot.SetAnchors ~= nil then
+                    pcall(function() slot:SetAutoSize(true) end)
+                    pcall(function() slot:SetPosition({ X = 24, Y = 72 }) end)
+                    pcall(function()
                         slot:SetAnchors({ Minimum = { X = 0, Y = 0 }, Maximum = { X = 0, Y = 0 } })
-                    end
-                    if slot.SetAlignment ~= nil then slot:SetAlignment({ X = 0, Y = 0 }) end
+                    end)
+                    pcall(function() slot:SetAlignment({ X = 0, Y = 0 }) end)
                 end
             end)
             return slot
@@ -160,7 +169,7 @@ local function tryAttach(host, border)
     return false
 end
 
---- Build popup as Border+TextBlock children of the live HUD (safe path).
+--- SAFE popup: Border + TextBlock only (no Button / VerticalBox).
 local function createPopupOnHud()
     destroyPopup()
 
@@ -179,7 +188,6 @@ local function createPopupOnHud()
     end
 
     local ok, err = pcall(function()
-        -- Outer MUST be the live HUD widget (not GameInstance) -- matches backpack mod.
         local border = StaticConstructObject(BorderCls, hud, FName("GGDropmanHelpBorder"))
         if border == nil or not border:IsValid() then
             error("Border construct failed")
@@ -226,12 +234,11 @@ local function createPopupOnHud()
         return false
     end
 
-    print("[GGDropmanCheatMenu] in-game popup attached to HUD\n")
+    print("[GGDropmanCheatMenu] text popup attached to HUD\n")
     return true
 end
 
 local function showOnScreenFallback(text)
-    -- Shipping-safe-ish fallbacks if HUD attach fails.
     local ctx = Cheats.getPlayerController() or Cheats.getPawn()
     if ctx == nil then return end
 
@@ -244,7 +251,6 @@ local function showOnScreenFallback(text)
     pcall(function()
         local ksl = StaticFindObject("/Script/Engine.Default__KismetSystemLibrary")
         if ksl ~= nil and ksl:IsValid() and type(ksl.PrintString) == "function" then
-            -- One keyed message so it updates in place instead of stacking forever.
             ksl:PrintString(ctx, text, true, false, FLinearColor(0.7, 1.0, 0.55, 1.0), 10.0, FName("GGDropmanHelp"))
         end
     end)
@@ -279,8 +285,9 @@ local function setPopupVisible(visible)
         end
         printHelpConsole()
         if not ok then
+            -- Never crash the game for overlay failure — console + on-screen text only.
             showOnScreenFallback(buildHelpText())
-            print("[GGDropmanCheatMenu] used fallback on-screen text\n")
+            print("[GGDropmanCheatMenu] used fallback on-screen text (HUD attach failed)\n")
         end
         scheduleAutoHide()
     else
@@ -292,6 +299,7 @@ local function setPopupVisible(visible)
 end
 
 local function togglePopup()
+    -- Prefer console-only if previous attach is known bad; still try HUD once.
     setPopupVisible(not popupVisible)
 end
 
@@ -321,14 +329,16 @@ end
 local function doAction(action)
     print(string.format("[GGDropmanCheatMenu] key -> %s\n", tostring(action)))
     if action == "menu" then
-        runInGame(function()
-            togglePopup()
-        end)
+        -- SAFE DEFAULT: never construct UMG on F8.
+        -- Building Button/VBox (and even some Border attaches) hard-crashes G2.
+        -- Cheats are all on hotkeys; F8 only shows the key list.
+        printHelpConsole()
+        showOnScreenFallback(buildHelpText())
+        Cheats.LAST_STATUS = "[OK] Help printed (F8 is console/HUD-text only — no widget menu)"
         return
     end
     if action == "qty" then
         cycleDupQty()
-        if popupVisible then setPopupText(buildHelpText()) end
         return
     end
     runInGame(function()
@@ -336,6 +346,10 @@ local function doAction(action)
             Cheats.fillVitals()
         elseif action == "god" then
             Cheats.setGodMode(not Cheats._godEnabled)
+        elseif action == "speed" then
+            Cheats.setSpeed(not Cheats._speedEnabled, 5.0)
+        elseif action == "noclip" then
+            Cheats.setNoclip(not Cheats._noclipEnabled, 5.0)
         elseif action == "dup" then
             Cheats.duplicateHeld(dupQty)
         elseif action == "stacks" then
@@ -346,14 +360,15 @@ local function doAction(action)
     end)
 end
 
-local function scheduleGodTick()
-    ExecuteWithDelay(500, function()
-        if Cheats._godEnabled then
-            ExecuteInGameThread(function()
+local function scheduleCheatTick()
+    ExecuteWithDelay(100, function()
+        ExecuteInGameThread(function()
+            if Cheats._godEnabled then
                 pcall(function() Cheats.godTick() end)
-            end)
-        end
-        scheduleGodTick()
+            end
+            pcall(function() Cheats.movementTick() end)
+        end)
+        scheduleCheatTick()
     end)
 end
 
@@ -367,6 +382,8 @@ local function bindKey(key, action)
 end
 
 bindKey(Key.F8, "menu")
+bindKey(Key.F3, "speed")
+bindKey(Key.F4, "noclip")
 bindKey(Key.F6, "vitals")
 bindKey(Key.F7, "god")
 bindKey(Key.F9, "dup")
@@ -378,6 +395,10 @@ pcall(function()
     RegisterHook("/Script/Engine.PlayerController:ClientRestart", function()
         print("[GGDropmanCheatMenu] ClientRestart - world loaded\n")
         destroyPopup()
+        Cheats._speedEnabled = false
+        Cheats._speedBase = nil
+        Cheats._noclipEnabled = false
+        Cheats._noclipBase = nil
         ExecuteWithDelay(1500, function()
             ExecuteInGameThread(function()
                 Cheats.probe()
@@ -386,7 +407,7 @@ pcall(function()
     end)
 end)
 
-scheduleGodTick()
+scheduleCheatTick()
 
-print("[GGDropmanCheatMenu] ready - F8 popup, F6 vitals, F7 god, F9 dup, PGUP qty, F11 stacks, F12 probe\n")
+print("[GGDropmanCheatMenu] ready - F8 help (NO widgets), F3 speed, F4 noclip, F6 vitals, F7 god, F9 dup, PGUP qty, F11 stacks, F12 probe\n")
 print("[GGDropmanCheatMenu] Discord: https://discord.gg/PTwyDTFyR\n")

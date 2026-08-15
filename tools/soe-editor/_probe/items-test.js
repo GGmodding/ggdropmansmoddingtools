@@ -1,0 +1,49 @@
+const fs = require("fs");
+const path = require("path");
+const Save = require("../d2s.js");
+const Items = require("../items.js");
+
+const charPath = process.argv[2] || path.join(process.env.USERPROFILE, "Documents", "Diablo II", "Saves", "GGminions.d2s");
+const stashPath = process.argv[3] || path.join(process.env.USERPROFILE, "Documents", "Diablo II", "Saves", "pd2_shared.stash");
+const pd2Stash = path.join(process.env.USERPROFILE, "Documents", "Diablo II", "Saves-PD2-backup", "pd2_shared.stash");
+
+function summarize(items) {
+  return items.map((it) => ({
+    name: Items.displayName(it),
+    code: it.code,
+    loc: it.location,
+    panel: it.panel,
+    x: it.x,
+    y: it.y,
+    eq: it.equipped,
+    q: it.quantity,
+    raw: it.raw.length,
+  }));
+}
+
+const raw = fs.readFileSync(charPath);
+const parsed = Save.parse(raw);
+console.log("char", parsed.name, "itemsError", parsed.itemsError || "none", "player", parsed.items && parsed.items.player.length, "tail", parsed.items && parsed.items.pd2Tail.length);
+if (parsed.itemsError) process.exit(1);
+console.log(summarize(parsed.items.player));
+const written = Save.write(parsed);
+console.log("char rewrite", written.length, raw.length, "same", Buffer.from(written).equals(raw), "verify", Save.verify(written));
+
+const hp = Items.spawnSimple("r33", { location: 0, panel: 1, x: 0, y: 0 });
+console.log("spawn zod", Items.displayName(hp), hp.raw.length, hp.code, hp.simple);
+
+const stash = Items.parseStash(fs.readFileSync(stashPath));
+console.log("soe stash", stash.items.length);
+const stashOut = Items.writeStash(stash);
+console.log("soe stash rewrite", stashOut.length, fs.statSync(stashPath).size, "same", Buffer.from(stashOut).equals(fs.readFileSync(stashPath)));
+
+if (fs.existsSync(pd2Stash)) {
+  try {
+    const p = Items.parseStash(fs.readFileSync(pd2Stash));
+    console.log("pd2 stash", p.items.length, summarize(p.items).slice(0, 5));
+    const out = Items.writeStash(p);
+    console.log("pd2 rewrite", out.length, fs.statSync(pd2Stash).size, "same", Buffer.from(out).equals(fs.readFileSync(pd2Stash)), "verify", Items.d2Checksum(out) === require("../d2s.js").checksum(out));
+  } catch (err) {
+    console.log("pd2 stash FAIL", err.message);
+  }
+}

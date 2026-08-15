@@ -1,0 +1,12 @@
+-- Optional: place next to a future LogicMod as
+-- Augusta/Content/Paks/LogicMods/GGDropmanCheatMenu/config.lua
+-- (BPModLoader reads per-mod config when present alongside discovery.)
+--
+-- Default BPModLoader paths already match these values if the pak is named
+-- GGDropmanCheatMenu.pak and contains /Game/Mods/GGDropmanCheatMenu/ModActor.
+
+Mods = Mods or {}
+Mods["GGDropmanCheatMenu"] = {
+    AssetName = "ModActor_C",
+    AssetPath = "/Game/Mods/GGDropmanCheatMenu/ModActor",
+}

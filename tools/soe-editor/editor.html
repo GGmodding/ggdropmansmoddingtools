@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GGdropmans Sanctuary of Exile Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="drop-overlay" class="drop-overlay" hidden>
+    <div class="drop-overlay__panel">Drop a .d2s character or pd2_shared.stash</div>
+  </div>
+
+  <header class="topbar">
+    <a class="brand" href="../../index.html" style="text-decoration:none;color:inherit">
+      <span class="brand__mark">SoE</span>
+      <div class="brand__text">
+        <h1>GGdropmans Sanctuary of Exile Editor</h1>
+        <p>v2 · Character / items / shared stash · Back to hub</p>
+      </div>
+    </a>
+    <div class="topbar__actions">
+      <label class="btn btn--primary">
+        Load Save
+        <input id="file-input" type="file" accept=".d2s,.stash,application/octet-stream" hidden />
+      </label>
+      <label class="btn">
+        Load Stash
+        <input id="stash-input" type="file" accept=".stash,application/octet-stream" hidden />
+      </label>
+      <button id="btn-find-save" class="btn" type="button" title="Chrome/Edge picker that remembers this folder">Find Save</button>
+      <button id="btn-open-save-folder" class="btn" type="button">Open Folder</button>
+      <button id="btn-backup" class="btn" type="button" disabled>Download Backup</button>
+      <button id="btn-save" class="btn btn--accent" type="button" disabled>Save Changes</button>
+      <button id="btn-save-inplace" class="btn" type="button" disabled>Save in place</button>
+      <span id="dirty-pill" class="pill" hidden>Unsaved</span>
+    </div>
+  </header>
+
+  <section class="path-banner">
+    <strong>Offline SoE only</strong>
+    <span>Close Sanctuary of Exile first. Load the <code>.d2s</code> and <code>pd2_shared.stash</code> from <code>%USERPROFILE%\Documents\Diablo II\Saves</code>. Edit stats, skills, quests, inventory, and shared stash. Always keep a backup.</span>
+  </section>
+
+  <div id="install-modal" class="modal" hidden>
+    <div class="modal__card">
+      <h2>Save downloaded</h2>
+      <ol>
+        <li>Make sure Diablo II / SoE is fully closed.</li>
+        <li>Overwrite the matching <code>.d2s</code> in <code>Documents\Diablo II\Saves</code>.</li>
+        <li>Launch SoE and confirm the character loads.</li>
+      </ol>
+      <div class="modal__actions">
+        <button type="button" class="btn" id="btn-open-save-folder-modal">Open Folder</button>
+        <button type="button" class="btn btn--accent" id="btn-close-modal">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="tabs" id="tabs" aria-label="Editor sections" hidden>
+    <button class="tab is-active" data-tab="character" type="button">Character</button>
+    <button class="tab" data-tab="stats" type="button">Attributes</button>
+    <button class="tab" data-tab="skills" type="button">Skills</button>
+    <button class="tab" data-tab="quests" type="button">Quests</button>
+    <button class="tab" data-tab="items" type="button">Items</button>
+  </nav>
+
+  <main class="main">
+    <div id="empty-state" class="empty">
+      <h2>Load a Sanctuary of Exile .d2s</h2>
+      <p>Drag and drop your character <code>.d2s</code> or <code>pd2_shared.stash</code>, or click <strong>Load Save</strong>. Path: <code>Documents\Diablo II\Saves</code></p>
+    </div>
+
+    <section id="panel-character" class="panel is-active" hidden>
+      <div class="panel__head">
+        <h2>Character</h2>
+        <p id="char-summary" class="panel__sub"></p>
+      </div>
+      <div class="form-grid">
+        <label>Name
+          <input id="f-name" type="text" maxlength="15" autocomplete="off" />
+        </label>
+        <label>Class
+          <input id="f-class" type="text" readonly />
+        </label>
+        <label>Level
+          <input id="f-level" type="number" min="1" max="99" />
+        </label>
+        <label>Experience
+          <input id="f-experience" type="number" min="0" max="3520485254" />
+        </label>
+        <label>Gold (inventory)
+          <input id="f-gold" type="number" min="0" max="9900000" />
+        </label>
+        <label>Gold (stash)
+          <input id="f-goldbank" type="number" min="0" max="2500000" />
+        </label>
+      </div>
+      <div class="row-actions">
+        <label class="check"><input id="f-hardcore" type="checkbox" /> Hardcore</label>
+        <button type="button" class="btn" id="btn-apply-level">Set exp to this level</button>
+      </div>
+      <p class="hint">Changing level updates the header and the stats block. <strong>Set exp to this level</strong> writes the official LoD total so the game does not rewind you.</p>
+    </section>
+
+    <section id="panel-stats" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Attributes</h2>
+        <p class="panel__sub">Base saved stats. Item bonuses are not stored here — the game adds those on load.</p>
+      </div>
+      <div class="form-grid">
+        <label>Strength
+          <input id="f-strength" type="number" min="0" max="1023" />
+        </label>
+        <label>Dexterity
+          <input id="f-dexterity" type="number" min="0" max="1023" />
+        </label>
+        <label>Vitality
+          <input id="f-vitality" type="number" min="0" max="1023" />
+        </label>
+        <label>Energy
+          <input id="f-energy" type="number" min="0" max="1023" />
+        </label>
+        <label>Unused stat points
+          <input id="f-statpts" type="number" min="0" max="1023" />
+        </label>
+        <label>Unused skill points
+          <input id="f-newskills" type="number" min="0" max="255" />
+        </label>
+        <label>Life
+          <input id="f-maxhp" type="number" min="1" max="8191" />
+        </label>
+        <label>Mana
+          <input id="f-maxmana" type="number" min="0" max="8191" />
+        </label>
+        <label>Stamina
+          <input id="f-maxstamina" type="number" min="0" max="8191" />
+        </label>
+      </div>
+      <div class="row-actions">
+        <button type="button" class="btn" id="btn-fill-points">Give 500 stat + 50 skill points</button>
+      </div>
+    </section>
+
+    <section id="panel-skills" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Class skills</h2>
+        <p class="panel__sub">PD2 / SoE names, in save-file order, grouped like the in-game trees. Hard points only (no +skills from items).</p>
+      </div>
+      <div class="row-actions">
+        <label>Set all skills to
+          <input id="f-all-skills" type="number" min="0" max="60" value="20" />
+        </label>
+        <button type="button" class="btn" id="btn-all-skills">Apply</button>
+        <button type="button" class="btn" id="btn-clear-skills">Clear skills</button>
+      </div>
+      <div id="skill-trees" class="skill-trees"></div>
+    </section>
+
+    <section id="panel-quests" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Quests, difficulties, waypoints</h2>
+        <p class="panel__sub">Unlocks act travel, all waypoints, and marks every quest complete so you can make games in Normal / Nightmare / Hell.</p>
+      </div>
+      <div class="row-actions">
+        <label class="check"><input id="f-quest-rewards" type="checkbox" checked /> Grant missed quest rewards (skill / stat points)</label>
+        <button type="button" class="btn btn--accent" id="btn-unlock-all">Unlock everything</button>
+      </div>
+      <p class="hint">Rewards granted only for quests that were not already complete: Den of Evil +1 skill, Radament +1 skill, Izual +2 skills, Lam Esen +5 stats, and Malah’s Scroll of Resistance (+10 all resist) — each per difficulty (up to +30 all res). Also sets every difficulty to Act 5 so Harrogath and the Act 5 waypoint list actually show in-game.</p>
+      <div id="quest-summary" class="quest-summary"></div>
+    </section>
+
+    <section id="panel-items" class="panel panel--wide" hidden>
+      <div class="panel__head">
+        <h2>Items &amp; stash</h2>
+        <p class="panel__sub" id="items-summary">Load a character and/or <code>pd2_shared.stash</code>. Spawned runes/gems/potions go into the first free inventory cell.</p>
+      </div>
+      <div class="row-actions">
+        <button type="button" class="btn" id="btn-save-stash" disabled>Download Stash</button>
+        <button type="button" class="btn" id="btn-save-stash-inplace" disabled>Save stash in place</button>
+        <button type="button" class="btn" id="btn-identify-all">Identify all</button>
+        <button type="button" class="btn" id="btn-delete-item">Delete selected</button>
+      </div>
+      <div class="item-views" id="item-views">
+        <button type="button" class="tab is-active" data-view="inv">Inventory</button>
+        <button type="button" class="tab" data-view="cube">Cube</button>
+        <button type="button" class="tab" data-view="stash">Personal stash</button>
+        <button type="button" class="tab" data-view="shared">Shared stash</button>
+        <button type="button" class="tab" data-view="belt">Belt</button>
+        <button type="button" class="tab" data-view="equipped">Equipped</button>
+      </div>
+      <div class="item-workspace">
+        <div>
+          <div id="item-grid" class="item-grid"></div>
+          <div id="item-list" class="item-list"></div>
+        </div>
+        <aside class="item-inspect" id="item-inspect">
+          <h3>Selected item</h3>
+          <p id="item-inspect-empty" class="hint">Click an item, then click an empty cell to move it.</p>
+          <div id="item-inspect-body" hidden>
+            <p id="item-inspect-name"></p>
+            <label>Quantity
+              <input id="f-item-qty" type="number" min="1" max="511" />
+            </label>
+            <label class="check"><input id="f-item-id" type="checkbox" /> Identified</label>
+          </div>
+        </aside>
+      </div>
+      <h3 class="spawn-head">Spawn into current grid</h3>
+      <div id="spawn-groups" class="spawn-groups"></div>
+      <p class="hint">Shared stash is the separate <code>pd2_shared.stash</code> file — save it as well as the character. Socketed gems stay glued to their parent. Close SoE before overwrite.</p>
+    </section>
+  </main>
+
+  <p id="status" class="status"></p>
+
+  <script src="d2s.js"></script>
+  <script src="items-db.js"></script>
+  <script src="items.js"></script>
+  <script src="skills-db.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
