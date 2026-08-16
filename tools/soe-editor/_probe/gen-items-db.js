@@ -129,6 +129,35 @@ addItems("Armor.txt", "a");
 addItems("Weapons.txt", "w");
 addItems("Misc.txt", "m");
 
+function stubFromType(code, typeName) {
+  const t = String(typeName || "").toLowerCase();
+  const rec = { n: (typeName || code).trim() || code, k: "m", w: 1, h: 1 };
+  if (/helm|hood|cap|mask|crown|circlet|tiara|diadem|antlers|visage|wolf|pelt|bonnet/.test(t)) {
+    rec.k = "a"; rec.w = 2; rec.h = 2;
+  } else if (/boot|greave|sabaton/.test(t)) {
+    rec.k = "a"; rec.w = 2; rec.h = 2;
+  } else if (/glove|gaunt|mitten/.test(t)) {
+    rec.k = "a"; rec.w = 2; rec.h = 2;
+  } else if (/belt|sash|wrap/.test(t)) {
+    rec.k = "a"; rec.w = 2; rec.h = 1;
+  } else if (/shield|ward|aegis|kite|targe|buckler|trophy/.test(t)) {
+    rec.k = "a"; rec.w = 2; rec.h = 3;
+  } else if (/armor|plate|mail|skin|robe|garb|leather|splint|chest/.test(t)) {
+    rec.k = "a"; rec.w = 2; rec.h = 3;
+  } else if (/charm/.test(t)) {
+    rec.k = "m"; rec.w = 1; rec.h = 1;
+  } else if (/map|soulstone|cairn|ascend/.test(t)) {
+    rec.k = "m"; rec.w = 1; rec.h = 1;
+  } else if (/quiver|arrow|bolt/.test(t)) {
+    rec.k = "w"; rec.w = 1; rec.h = 3; rec.s = 1;
+  } else if (/sword|axe|mace|club|wand|scepter|javelin|spear|pole|staff|bow|cross|claw|dagger|knife|orb/.test(t)) {
+    rec.k = "w"; rec.w = 2; rec.h = 3;
+  } else if (/ring|amulet|jewel/.test(t)) {
+    rec.k = "m"; rec.w = 1; rec.h = 1;
+  }
+  return rec;
+}
+
 const props = {};
 for (const row of tsv("Properties.txt").rows) {
   const code = (row.get("code") || "").trim();
@@ -335,12 +364,17 @@ function encodeUnique(row) {
 
 const uniques = [];
 let skipPropCount = 0;
+const stubbed = [];
 const uniqueTable = tsv("UniqueItems.txt");
 uniqueTable.rows.forEach((row, i) => {
   const name = (row.get("index") || "").trim();
   const code = (row.get("code") || "").trim();
   const enabled = row.get("enabled");
   if (!name || !code || enabled === "0") return;
+  if (!items[code]) {
+    items[code] = stubFromType(code, row.get("*type") || name);
+    stubbed.push(name + " [" + code + "]");
+  }
   const enc = encodeUnique(row);
   skipPropCount += enc.skipped.length;
   const rec = { i, n: name, c: code, m: enc.mods };
@@ -372,6 +406,7 @@ const magCount = mag.filter(Boolean).length;
 const shako = uniques.find((u) => u.n === "Harlequin Crest");
 const gnasher = uniques.find((u) => u.n === "The Gnasher");
 console.log("wrote", dest, "bytes", out.length, "items", codes.length, "stats", magCount, "uniques", uniques.length, "skippedSlots", skipPropCount);
+console.log("stubbed bases", stubbed.length, stubbed.slice(0, 20).join("; "));
 console.log("sample", items.cap, items.uit, items.jew, items.r01);
 console.log("gnasher", JSON.stringify(gnasher));
 console.log("shako", JSON.stringify(shako));

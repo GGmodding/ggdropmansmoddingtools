@@ -699,7 +699,9 @@
   function spawnItem(code, place, opts) {
     opts = opts || {};
     place = place || {};
-    if (!ITEMS[code]) throw new Error("Unknown item code " + code);
+    if (!ITEMS[code]) {
+      ITEMS[code] = { n: code, k: "a", w: 2, h: 2 };
+    }
     const info = itemInfo(code);
     if (info.c) {
       const w = bitWriter();
