@@ -294,13 +294,15 @@
 
     reader.align();
     let end = reader.alignedByteOffset();
-    if (parseFailed || end <= start) {
-      const from = Math.max(start + 14, end);
-      const nextJm = findJM(bytes, from);
-      end = nextJm < 0 ? bytes.length : nextJm;
-    } else if (end + 1 < bytes.length && ascii(bytes, end, 2) !== "JM") {
-      const nextJm = findJM(bytes, end);
-      if (nextJm > end && nextJm - end <= 48) end = nextJm;
+    const nextItem = findNextItem(bytes, parseFailed ? start + 14 : end);
+    const atItem = end + 1 < bytes.length && looksLikeItem(bytes, end);
+    if (!atItem) {
+      if (nextItem > end) end = nextItem;
+      else {
+        const boundary = findSectionMarker(bytes, end);
+        if (boundary > end) end = boundary;
+        else if (parseFailed || end <= start) end = bytes.length;
+      }
     }
     if (!simple && item.socketedCount && !parseFailed) {
       item.socketedItems = [];
@@ -331,6 +333,59 @@
   function findJM(bytes, from) {
     for (let i = from; i < bytes.length - 1; i++) {
       if (bytes[i] === 0x4a && bytes[i + 1] === 0x4d) return i;
+    }
+    return -1;
+  }
+
+  function readBitsAt(bytes, bitOff, n) {
+    let v = 0;
+    for (let i = 0; i < n; i++) {
+      const byte = bytes[(bitOff + i) >> 3];
+      if (byte === undefined) return null;
+      v |= ((byte >> ((bitOff + i) & 7)) & 1) << i;
+    }
+    return v >>> 0;
+  }
+
+  function looksLikeItem(bytes, start) {
+    if (start < 0 || start + 14 > bytes.length) return false;
+    if (bytes[start] !== 0x4a || bytes[start + 1] !== 0x4d) return false;
+    const version = readBitsAt(bytes, start * 8 + 48, 10);
+    if (version !== 101 && version !== 99 && version !== 100 && version !== 102 && version !== 103) return false;
+    let code = "";
+    for (let i = 0; i < 4; i++) {
+      const c = readBitsAt(bytes, start * 8 + 76 + i * 8, 8);
+      if (c == null) return false;
+      code += String.fromCharCode(c);
+    }
+    code = code.replace(/\0/g, "").trim();
+    if (code.length < 3 || code.length > 4) return false;
+    return /^[A-Za-z0-9']+$/.test(code);
+  }
+
+  function findNextItem(bytes, from) {
+    const start = Math.max(0, from);
+    for (let i = start; i < bytes.length - 13; i++) {
+      if (bytes[i] === 0x4a && bytes[i + 1] === 0x4d && looksLikeItem(bytes, i)) return i;
+    }
+    return -1;
+  }
+
+  function findSectionMarker(bytes, from) {
+    for (let i = Math.max(0, from); i < bytes.length - 1; i++) {
+      const a = bytes[i];
+      const b = bytes[i + 1];
+      if (a === 0x6a && b === 0x66) return i; // jf
+      if (a === 0x6b && b === 0x66) return i; // kf
+      if (a === 0x4a && b === 0x4d) {
+        const count = u16(bytes, i + 2);
+        const after = i + 4;
+        if (count === 0 && after + 1 < bytes.length) {
+          const n = ascii(bytes, after, 2);
+          if (n === "jf" || n === "kf" || n === "JM") return i;
+        }
+        if (count > 0 && count < 2048 && looksLikeItem(bytes, after)) return i;
+      }
     }
     return -1;
   }
@@ -428,13 +483,13 @@
         warnings.push("File ended after " + items.length + " of " + count + " items");
         break;
       }
-      if (ascii(bytes, off, 2) !== "JM") {
-        const next = findJM(bytes, off);
+      if (ascii(bytes, off, 2) !== "JM" || !looksLikeItem(bytes, off)) {
+        const next = findNextItem(bytes, ascii(bytes, off, 2) === "JM" ? off + 2 : off);
         if (next < 0) {
           warnings.push("Item header JM not found at " + off + " (" + (count - items.length) + " unread)");
           break;
         }
-        warnings.push("Re-synced item list at " + next + " (skipped " + (next - off) + " bytes @ " + off + ")");
+        if (next !== off) warnings.push("Re-synced item list at " + next + " (skipped " + (next - off) + " bytes @ " + off + ")");
         off = next;
       }
       try {
@@ -442,7 +497,7 @@
         const size = item.raw && item.raw.length ? item.raw.length : 0;
         if (!size) {
           warnings.push("Zero-length item at " + off);
-          const next = findJM(bytes, off + 2);
+          const next = findNextItem(bytes, off + 2);
           if (next < 0) break;
           off = next;
           continue;
@@ -451,7 +506,7 @@
         off += size;
       } catch (err) {
         warnings.push((err.message || String(err)) + " (item " + (i + 1) + "/" + count + ")");
-        const next = findJM(bytes, off + 2);
+        const next = findNextItem(bytes, off + 2);
         if (next < 0) break;
         off = next;
       }
@@ -479,7 +534,25 @@
     const player = parseItemList(bytes, jmOff);
     let off = player.end;
     const warnings = player.warnings ? player.warnings.slice() : [];
-    if (ascii(bytes, off, 2) !== "JM") throw new Error("Corpse JM not found at " + off);
+    if (ascii(bytes, off, 2) !== "JM") {
+      const next = findSectionMarker(bytes, off);
+      if (next < 0 || ascii(bytes, next, 2) !== "JM") {
+        warnings.push("Corpse JM not found at " + off);
+        return {
+          player: player.items,
+          corpse: [],
+          corpseCount: 0,
+          corpseExtra: new Uint8Array(0),
+          merc: [],
+          hasMerc: false,
+          golem: null,
+          warnings,
+          pd2Tail: bytes.slice(off),
+        };
+      }
+      warnings.push("Re-synced corpse list at " + next + " (from " + off + ")");
+      off = next;
+    }
     const corpseCount = u16(bytes, off + 2);
     off += 4;
     let corpseExtra = new Uint8Array(0);
@@ -493,6 +566,15 @@
     }
     let merc = { items: [] };
     let hasMerc = false;
+    if (ascii(bytes, off, 2) !== "jf") {
+      for (let i = off; i < bytes.length - 1; i++) {
+        if (bytes[i] === 0x6a && bytes[i + 1] === 0x66) {
+          warnings.push("Re-synced merc marker at " + i + " (from " + off + ")");
+          off = i;
+          break;
+        }
+      }
+    }
     if (ascii(bytes, off, 2) === "jf") {
       off += 2;
       if (ascii(bytes, off, 2) === "JM") {
@@ -502,14 +584,40 @@
         if (merc.warnings && merc.warnings.length) warnings.push.apply(warnings, merc.warnings);
       }
     }
-    if (ascii(bytes, off, 2) !== "kf") throw new Error("Golem kf not found at " + off);
+    if (ascii(bytes, off, 2) !== "kf") {
+      for (let i = off; i < bytes.length - 1; i++) {
+        if (bytes[i] === 0x6b && bytes[i + 1] === 0x66) {
+          warnings.push("Re-synced golem marker at " + i + " (from " + off + ")");
+          off = i;
+          break;
+        }
+      }
+    }
+    if (ascii(bytes, off, 2) !== "kf") {
+      warnings.push("Golem kf not found at " + off);
+      return {
+        player: player.items,
+        corpse: corpse.items,
+        corpseCount,
+        corpseExtra,
+        merc: merc.items,
+        hasMerc,
+        golem: null,
+        warnings,
+        pd2Tail: bytes.slice(off),
+      };
+    }
     off += 2;
     const hasGolem = bytes[off];
     off += 1;
     let golem = null;
     if (hasGolem) {
-      golem = parseItem(bytes, off);
-      off += golem.raw.length;
+      try {
+        golem = parseItem(bytes, off);
+        off += golem.raw.length;
+      } catch (err) {
+        warnings.push("Golem: " + (err.message || err));
+      }
     }
     return {
       player: player.items,
