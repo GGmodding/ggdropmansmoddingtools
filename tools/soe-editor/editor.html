@@ -183,74 +183,88 @@
         <label class="check"><input id="f-quest-rewards" type="checkbox" checked /> Grant missed quest rewards (skill / stat points)</label>
         <button type="button" class="btn btn--accent" id="btn-unlock-all">Unlock everything</button>
       </div>
-      <p class="hint">Rewards granted only for quests that were not already complete: Den of Evil +1 skill, Radament +1 skill, Izual +2 skills, Lam Esen +5 stats, and Malah’s Scroll of Resistance (+10 all resist) — each per difficulty (up to +30 all res). Marks Act 4 as finished (that is what actually opens Act 5) and sets every difficulty to Harrogath. Town portal scrolls always return to your current act’s town — use the waypoint, or start a <strong>new</strong> game after saving.</p>
+      <p class="hint">Skipping the cube quest means Cain never hands you one, so Unlock everything also puts a Horadric Cube in inventory (or personal stash if inventory is full). Rewards granted only for quests that were not already complete: Den of Evil +1 skill, Radament +1 skill, Izual +2 skills, Lam Esen +5 stats, and Malah’s Scroll of Resistance (+10 all resist) — each per difficulty (up to +30 all res). Marks Act 4 as finished (that is what actually opens Act 5) and sets every difficulty to Harrogath. Town portal scrolls always return to your current act’s town — use the waypoint, or start a <strong>new</strong> game after saving.</p>
       <div id="quest-summary" class="quest-summary"></div>
     </section>
 
     <section id="panel-items" class="panel panel--wide" hidden>
       <div class="panel__head">
         <h2>Items &amp; stash</h2>
-        <p class="panel__sub" id="items-summary">Load a character and/or <code>pd2_shared.stash</code>. Search below to spawn bases and uniques into the first free cell.</p>
+        <p class="panel__sub" id="items-summary">Load a character and/or <code>pd2_shared.stash</code>.</p>
       </div>
-      <div class="row-actions">
-        <button type="button" class="btn" id="btn-save-stash" disabled>Download Stash</button>
-        <button type="button" class="btn" id="btn-save-stash-inplace" disabled>Save stash in place</button>
-        <button type="button" class="btn" id="btn-identify-all">Identify all</button>
-        <button type="button" class="btn" id="btn-duplicate-item">Duplicate selected</button>
-        <button type="button" class="btn" id="btn-delete-item">Delete selected</button>
-        <label class="item-search">Search all bags
+      <div class="item-toolbar">
+        <label class="item-search">
+          <span class="item-search-label">Find</span>
           <input id="f-item-search" type="search" placeholder="Zod, unique, cube…" autocomplete="off" />
         </label>
+        <button type="button" class="btn" id="btn-identify-all">Identify all</button>
+        <button type="button" class="btn" id="btn-save-stash" disabled>Download stash</button>
+        <button type="button" class="btn" id="btn-save-stash-inplace" disabled>Save stash in place</button>
       </div>
       <div id="item-search-hits" class="item-list item-search-hits" hidden></div>
-      <div class="item-views" id="item-views">
-        <button type="button" class="tab is-active" data-view="inv">Inventory</button>
-        <button type="button" class="tab" data-view="cube">Cube</button>
-        <button type="button" class="tab" data-view="stash">Personal stash</button>
-        <button type="button" class="tab" data-view="shared">Shared stash</button>
-        <button type="button" class="tab" data-view="belt">Belt</button>
-        <button type="button" class="tab" data-view="equipped">Equipped</button>
-      </div>
       <div class="item-workspace">
-        <div>
+        <div class="item-board">
+          <div class="item-views" id="item-views">
+            <button type="button" class="tab is-active" data-view="inv">Inventory <span class="bag-count" data-count="inv"></span></button>
+            <button type="button" class="tab" data-view="cube">Cube <span class="bag-count" data-count="cube"></span></button>
+            <button type="button" class="tab" data-view="stash">Stash <span class="bag-count" data-count="stash"></span></button>
+            <button type="button" class="tab" data-view="shared">Shared <span class="bag-count" data-count="shared"></span></button>
+            <button type="button" class="tab" data-view="belt">Belt <span class="bag-count" data-count="belt"></span></button>
+            <button type="button" class="tab" data-view="equipped">Equipped <span class="bag-count" data-count="equipped"></span></button>
+          </div>
+          <p class="item-board-hint" id="item-board-hint">Click an item to inspect it. Click an empty cell to move it.</p>
           <div id="item-grid" class="item-grid"></div>
           <div id="item-list" class="item-list"></div>
         </div>
         <aside class="item-inspect" id="item-inspect">
-          <h3>Selected item</h3>
-            <p id="item-inspect-empty" class="hint">Click an item, then click an empty cell to move it. Duplicate copies it into the first free cell of the current grid (inventory if you are on equipped/belt).</p>
+          <h3>Item</h3>
+          <p id="item-inspect-empty" class="hint">Select an item on the grid. Duplicate, sockets, and ethereal live here.</p>
           <div id="item-inspect-body" hidden>
-            <p id="item-inspect-name"></p>
-            <label>Quantity
-              <input id="f-item-qty" type="number" min="1" max="511" />
-            </label>
-            <label>Sockets
-              <input id="f-item-socks" type="number" min="0" max="6" />
-            </label>
+            <p id="item-inspect-name" class="item-inspect-name"></p>
+            <p id="item-inspect-meta" class="item-inspect-meta"></p>
+            <ul id="item-inspect-mods" class="item-inspect-mods"></ul>
+            <p id="item-inspect-gems" class="item-inspect-gems" hidden></p>
+            <div class="item-inspect-fields">
+              <label id="item-qty-wrap">Quantity
+                <input id="f-item-qty" type="number" min="1" max="511" />
+              </label>
+              <label id="item-socks-wrap">Sockets
+                <input id="f-item-socks" type="number" min="0" max="6" />
+              </label>
+              <label class="check"><input id="f-item-id" type="checkbox" /> Identified</label>
+              <label class="check"><input id="f-item-eth" type="checkbox" /> Ethereal</label>
+            </div>
             <p id="item-inspect-socks" class="hint"></p>
-            <label class="check"><input id="f-item-id" type="checkbox" /> Identified</label>
-            <label class="check"><input id="f-item-eth" type="checkbox" /> Ethereal</label>
+            <div class="item-inspect-actions">
+              <button type="button" class="btn" id="btn-duplicate-item">Duplicate</button>
+              <button type="button" class="btn btn--danger" id="btn-delete-item">Delete</button>
+            </div>
           </div>
         </aside>
       </div>
-      <h3 class="spawn-head">Spawn into current grid</h3>
-      <div id="spawn-groups" class="spawn-groups"></div>
-      <div class="spawn-catalog">
-        <div class="spawn-catalog-row">
-          <input id="f-spawn-search" type="search" placeholder="Monarch, Shako, Grief, ring…" autocomplete="off" />
-          <div class="spawn-kinds" id="spawn-kinds">
-            <button type="button" class="tab is-active" data-spawn-kind="all">All</button>
-            <button type="button" class="tab" data-spawn-kind="base">Bases</button>
-            <button type="button" class="tab" data-spawn-kind="unique">Uniques</button>
+      <div class="spawn-card">
+        <div class="spawn-card-head">
+          <h3 class="spawn-head">Add items</h3>
+          <p class="hint" id="spawn-into">Spawns into the current bag’s first free cell.</p>
+        </div>
+        <div class="spawn-catalog">
+          <div class="spawn-catalog-row">
+            <input id="f-spawn-search" type="search" placeholder="Search bases and uniques: Monarch, Shako, ring…" autocomplete="off" />
+            <div class="spawn-kinds" id="spawn-kinds">
+              <button type="button" class="tab is-active" data-spawn-kind="all">All</button>
+              <button type="button" class="tab" data-spawn-kind="base">Bases</button>
+              <button type="button" class="tab" data-spawn-kind="unique">Uniques</button>
+            </div>
           </div>
+          <div class="spawn-opts">
+            <label class="check"><input id="f-spawn-eth" type="checkbox" /> Ethereal</label>
+            <label>Sockets <input id="f-spawn-socks" type="number" min="0" max="6" placeholder="—" /></label>
+          </div>
+          <div id="spawn-results" class="spawn-results"></div>
         </div>
-        <div class="spawn-opts">
-          <label class="check"><input id="f-spawn-eth" type="checkbox" /> Ethereal</label>
-          <label>Sockets <input id="f-spawn-socks" type="number" min="0" max="6" placeholder="—" /></label>
-        </div>
-        <div id="spawn-results" class="spawn-results"></div>
+        <div id="spawn-groups" class="spawn-groups"></div>
+        <p class="hint">Uniques use max rolls. Shared stash is <code>pd2_shared.stash</code> — save it as well as the character. Close SoE before overwrite. Esc deselects, Delete removes the selected item.</p>
       </div>
-      <p class="hint">Uniques spawn with max rolls from SoE UniqueItems. Shared stash is the separate <code>pd2_shared.stash</code> file — save it as well as the character. Close SoE before overwrite.</p>
     </section>
   </main>
 

@@ -133,12 +133,15 @@
 
   function currentGrid() {
     const grids = Items.grids();
-    if (state.itemView === "equipped") return { w: 3, h: 5, panel: 0, location: 1, label: "Equipped", equipped: true };
-    if (state.itemView === "shared") return grids.shared;
-    if (state.itemView === "cube") return grids.cube;
-    if (state.itemView === "stash") return grids.stash;
-    if (state.itemView === "belt") return grids.belt;
-    return grids.inv;
+    let grid;
+    if (state.itemView === "equipped") grid = { w: 3, h: 5, panel: 0, location: 1, label: "Equipped", equipped: true };
+    else if (state.itemView === "shared") grid = grids.shared;
+    else if (state.itemView === "cube") grid = grids.cube;
+    else if (state.itemView === "stash") grid = grids.stash;
+    else if (state.itemView === "belt") grid = grids.belt;
+    else grid = grids.inv;
+    const where = state.itemView === "shared" ? "stash" : "player";
+    return Items.fitGrid(itemBag(where), grid);
   }
 
   function setItemView(view) {
@@ -214,8 +217,21 @@
     $("item-inspect-empty").hidden = !!item;
     $("item-inspect-body").hidden = !item;
     if (!item) return;
-    $("item-inspect-name").textContent = Items.displayName(item) + "  [" + item.code + "]";
+    const nameEl = $("item-inspect-name");
+    nameEl.textContent = Items.displayName(item);
+    nameEl.className = "item-inspect-name " + Items.qualityClass(item);
+    $("item-inspect-meta").textContent = Items.inspectMeta(item, state.sel.where);
+    const mods = Items.formatMods(item);
+    const modsEl = $("item-inspect-mods");
+    modsEl.innerHTML = mods.map((line) => `<li>${escHtml(line)}</li>`).join("");
+    modsEl.hidden = !mods.length;
+    const gems = (item.socketedItems || []).map((g) => Items.displayName(g));
+    const gemsEl = $("item-inspect-gems");
+    gemsEl.hidden = !gems.length;
+    gemsEl.textContent = gems.length ? "Socketed: " + gems.join(", ") : "";
+    const qtyWrap = $("item-qty-wrap");
     const qty = $("f-item-qty");
+    qtyWrap.hidden = item.quantity == null;
     qty.disabled = item.quantity == null;
     qty.value = item.quantity != null ? item.quantity : "";
     $("f-item-id").checked = !!item.identified;
@@ -225,6 +241,7 @@
     eth.checked = !!item.ethereal;
     const socks = $("f-item-socks");
     const canSock = !simple && item.socketsBit != null && !item.runeword;
+    $("item-socks-wrap").hidden = simple;
     socks.disabled = !canSock;
     socks.value = item.socketed ? item.sockets || 0 : 0;
     const hint = $("item-inspect-socks");
@@ -235,7 +252,7 @@
       const filled = Items.filledSockets(item);
       hint.textContent =
         (item.socketed ? filled + " filled / " + (item.sockets || 0) + " total. " : "No sockets yet. ") +
-        "Set 0–6. Cannot go below gems already in the item. Ethereal does not restat defense or damage.";
+        "0–6 sockets. Cannot go below gems already in the item. Ethereal does not restat defense or damage.";
     }
   }
 
@@ -306,44 +323,63 @@
       }
     });
 
+    const hint = $("item-board-hint");
+    if (hint) {
+      hint.textContent = selectedItem()
+        ? "Click an empty cell to move " + Items.displayName(selectedItem()) + ". Click it again to deselect."
+        : "Click an item to inspect it. Click an empty cell to move the selected item.";
+    }
+    const spawnInto = $("spawn-into");
+    if (spawnInto) {
+      const dest = grid.equipped || state.itemView === "belt" ? "Inventory" : grid.label;
+      spawnInto.textContent = "Adds to the first free cell in " + dest + ".";
+    }
+
     if (grid.equipped) {
       const slots = [
-        [0, 1, "Helm"],
-        [2, 2, "Amulet"],
-        [3, 3, "Armor"],
-        [4, 4, "Weapon"],
-        [5, 5, "Shield"],
-        [6, 6, "R Ring"],
-        [7, 7, "L Ring"],
-        [8, 8, "Belt"],
-        [9, 9, "Boots"],
-        [10, 10, "Gloves"],
-        [11, 11, "Alt Wpn"],
-        [12, 12, "Alt Shd"],
+        [1, "helm", "Helm"],
+        [2, "amu", "Amulet"],
+        [3, "armor", "Armor"],
+        [4, "wpn", "Weapon"],
+        [5, "shd", "Shield"],
+        [6, "rring", "Right ring"],
+        [7, "lring", "Left ring"],
+        [8, "belt", "Belt"],
+        [9, "boot", "Boots"],
+        [10, "glv", "Gloves"],
+        [11, "altw", "Alt weapon"],
+        [12, "alts", "Alt shield"],
       ];
       gridEl.className = "item-grid equipped-wrap";
       gridEl.style.gridTemplateColumns = "";
+      gridEl.style.gridTemplateRows = "";
       gridEl.innerHTML = slots
-        .map(([id, , label]) => {
+        .map(([id, slot, label]) => {
           const hit = occupied.get("eq-" + id);
           const sel = hit && state.sel && state.sel.where === where && state.sel.index === hit.index;
           const match = hit && state.itemSearch && Items.itemMatches(hit.it, state.itemSearch, where);
-          if (!hit) return `<button type="button" class="item-cell is-body" data-eq="${id}">${label}</button>`;
-          return `<button type="button" class="item-cell is-body is-origin ${Items.qualityClass(hit.it)}${sel ? " is-selected" : ""}${match ? " is-hit" : ""}" data-where="${where}" data-index="${hit.index}">${Items.displayName(hit.it)}</button>`;
+          if (!hit) {
+            return `<button type="button" class="item-cell is-body" data-eq="${id}" data-slot="${slot}">${label}</button>`;
+          }
+          return `<button type="button" class="item-cell is-body is-origin ${Items.qualityClass(hit.it)}${sel ? " is-selected" : ""}${match ? " is-hit" : ""}" data-where="${where}" data-index="${hit.index}" data-slot="${slot}" title="${escHtml(Items.displayName(hit.it))}">${escHtml(Items.gridLabel(hit.it))}</button>`;
         })
         .join("");
     } else {
       gridEl.className = "item-grid";
-      gridEl.style.gridTemplateColumns = `repeat(${grid.w}, 36px)`;
+      gridEl.style.gridTemplateColumns = `repeat(${grid.w}, 40px)`;
+      gridEl.style.gridTemplateRows = `repeat(${grid.h}, 40px)`;
       let html = "";
       for (let y = 0; y < grid.h; y++) {
         for (let x = 0; x < grid.w; x++) {
           const hit = occupied.get(x + "," + y);
+          if (hit && hit.fill) continue;
           const sel = hit && state.sel && state.sel.where === where && state.sel.index === hit.index;
           const match = hit && state.itemSearch && Items.itemMatches(hit.it, state.itemSearch, where);
-          if (!hit) html += `<button type="button" class="item-cell" data-x="${x}" data-y="${y}"></button>`;
-          else if (hit.fill) html += `<button type="button" class="item-cell is-fill${match ? " is-hit" : ""}" data-where="${where}" data-index="${hit.index}"></button>`;
-          else html += `<button type="button" class="item-cell is-origin ${Items.qualityClass(hit.it)}${sel ? " is-selected" : ""}${match ? " is-hit" : ""}" data-where="${where}" data-index="${hit.index}">${Items.displayName(hit.it)}</button>`;
+          const style = `grid-column:${x + 1}/span ${hit ? hit.it.info.w || 1 : 1};grid-row:${y + 1}/span ${hit ? hit.it.info.h || 1 : 1}`;
+          if (!hit) html += `<button type="button" class="item-cell" data-x="${x}" data-y="${y}" style="${style}"></button>`;
+          else {
+            html += `<button type="button" class="item-cell is-origin ${Items.qualityClass(hit.it)}${sel ? " is-selected" : ""}${match ? " is-hit" : ""}" data-where="${where}" data-index="${hit.index}" style="${style}" title="${escHtml(Items.displayName(hit.it))}">${escHtml(Items.gridLabel(hit.it))}</button>`;
+          }
         }
       }
       gridEl.innerHTML = html;
@@ -360,7 +396,7 @@
         return false;
       });
     listEl.innerHTML = extras
-      .map(({ it, index }) => `<button type="button" data-where="${where}" data-index="${index}">${Items.displayName(it)} @ ${it.x},${it.y}</button>`)
+      .map(({ it, index }) => `<button type="button" data-where="${where}" data-index="${index}">${escHtml(Items.displayName(it))} @ ${it.x},${it.y}</button>`)
       .join("");
 
     const nPlayer = state.parsed && state.parsed.items ? state.parsed.items.player.length : 0;
@@ -371,9 +407,26 @@
       (state.stash ? nStash + " in shared stash" : "shared stash not loaded") +
       (state.parsed && state.parsed.itemsError ? " · item parse warning: " + state.parsed.itemsError : "");
 
+    const counts = { inv: 0, cube: 0, stash: 0, shared: nStash, belt: 0, equipped: 0 };
+    if (state.parsed && state.parsed.items) {
+      for (const it of state.parsed.items.player) {
+        if (it.location === 1) counts.equipped++;
+        else if (it.location === 2) counts.belt++;
+        else if (it.panel === 4) counts.cube++;
+        else if (it.panel === 5) counts.stash++;
+        else counts.inv++;
+      }
+    }
+    document.querySelectorAll("#item-views [data-count]").forEach((el) => {
+      const n = counts[el.dataset.count] || 0;
+      el.textContent = n ? n : "";
+    });
+
     gridEl.querySelectorAll("[data-index]").forEach((el) => {
       el.addEventListener("click", () => {
-        state.sel = { where: el.dataset.where, index: Number(el.dataset.index) };
+        const index = Number(el.dataset.index);
+        if (state.sel && state.sel.where === el.dataset.where && state.sel.index === index) state.sel = null;
+        else state.sel = { where: el.dataset.where, index };
         renderItems();
       });
     });
@@ -470,6 +523,20 @@
     } catch (err) {
       setStatus(err.message || String(err));
     }
+  }
+
+  function deleteSelected() {
+    if (!state.sel) {
+      setStatus("Select an item first");
+      return;
+    }
+    const bag = itemBag(state.sel.where);
+    const gone = bag.splice(state.sel.index, 1)[0];
+    if (state.sel.where === "stash") setStashDirty(true);
+    else setDirty(true);
+    state.sel = null;
+    renderItems();
+    setStatus("Deleted " + (gone ? Items.displayName(gone) : "item"));
   }
 
   function spawnDestination(w, h) {
@@ -906,6 +973,9 @@
     const extra = [];
     if (result.skillGain || result.statGain) extra.push(`+${result.skillGain} skill pts, +${result.statGain} stat pts`);
     if (result.malahGain) extra.push(`+${result.malahGain} all resist (Malah)`);
+    if (result.cube && result.cube.added) extra.push("Horadric Cube → " + result.cube.label);
+    else if (result.cube && result.cube.reason === "already") extra.push("cube already present");
+    else if (result.cube && result.cube.reason === "no-space") extra.push("no space for cube — spawn it from Items");
     setStatus("Unlocked all quests, waypoints, and difficulties" + (extra.length ? " · " + extra.join(" · ") : " · rewards were already collected"));
   });
 
@@ -1001,15 +1071,21 @@
     setStatus(n ? "Identified " + n + " items" : "Everything was already identified");
   });
 
-  $("btn-delete-item").addEventListener("click", () => {
-    if (!state.sel) return;
-    const bag = itemBag(state.sel.where);
-    const gone = bag.splice(state.sel.index, 1)[0];
-    if (state.sel.where === "stash") setStashDirty(true);
-    else setDirty(true);
-    state.sel = null;
-    renderItems();
-    setStatus("Deleted " + (gone ? Items.displayName(gone) : "item"));
+  $("btn-delete-item").addEventListener("click", () => deleteSelected());
+
+  document.addEventListener("keydown", (ev) => {
+    if (!$("panel-items") || $("panel-items").hidden) return;
+    if (ev.target && ev.target.closest && ev.target.closest("input, textarea")) return;
+    if (ev.key === "Escape") {
+      if (!state.sel) return;
+      state.sel = null;
+      renderItems();
+    } else if (ev.key === "Delete") {
+      if (state.sel) {
+        ev.preventDefault();
+        deleteSelected();
+      }
+    }
   });
 
   $("f-item-qty").addEventListener("change", () => {

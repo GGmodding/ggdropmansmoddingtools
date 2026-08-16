@@ -14,7 +14,7 @@
     { group: "Gems", codes: ["gpv","gpw","gpg","gpr","gpb","gpy","skz","gzv","glw","glg","glr","glb","gly","skl"] },
     { group: "Potions", codes: ["hp1","hp2","hp3","hp4","hp5","mp1","mp2","mp3","mp4","mp5","rvs","rvl"] },
     { group: "Scrolls", codes: ["tsc","isc"] },
-    { group: "Misc", codes: ["key","tbk","ibk","jew","cm1","cm2","cm3"] },
+    { group: "Misc", codes: ["box","key","tbk","ibk","jew","cm1","cm2","cm3"] },
   ];
 
   function bitReader(bytes, start) {
@@ -829,12 +829,24 @@
 
   function grids() {
     return {
-      inv: { w: 10, h: 4, panel: 1, location: 0, label: "Inventory" },
+      inv: { w: 10, h: 8, panel: 1, location: 0, label: "Inventory" },
       cube: { w: 3, h: 4, panel: 4, location: 0, label: "Cube" },
       stash: { w: 6, h: 8, panel: 5, location: 0, label: "Personal stash" },
       shared: { w: 10, h: 16, panel: 6, location: 0, label: "Shared stash" },
       belt: { w: 16, h: 1, panel: 0, location: 2, label: "Belt" },
     };
+  }
+
+  function fitGrid(items, grid) {
+    if (!grid || grid.equipped) return grid;
+    let w = grid.w;
+    let h = grid.h;
+    for (const it of items || []) {
+      if (!itemInGrid(it, grid)) continue;
+      w = Math.max(w, (it.x || 0) + (it.info.w || 1));
+      h = Math.max(h, (it.y || 0) + (it.info.h || 1));
+    }
+    return { ...grid, w: Math.min(16, w), h: Math.min(16, h) };
   }
 
   function itemInGrid(item, grid) {
@@ -852,6 +864,7 @@
   }
 
   function firstFit(items, grid, w, h) {
+    grid = fitGrid(items, grid);
     const taken = new Set();
     for (const it of items) {
       if (!itemInGrid(it, grid)) continue;
@@ -872,6 +885,40 @@
       }
     }
     return null;
+  }
+
+  function isCube(item) {
+    return item && item.code === "box";
+  }
+
+  function findCube(parsed, stash) {
+    const bags = [];
+    if (parsed && parsed.items) {
+      bags.push(parsed.items.player, parsed.items.corpse, parsed.items.merc);
+      if (parsed.items.golem) bags.push([parsed.items.golem]);
+    }
+    if (stash && stash.items) bags.push(stash.items);
+    for (const bag of bags) {
+      const hit = (bag || []).find(isCube);
+      if (hit) return hit;
+    }
+    return null;
+  }
+
+  function giveCube(parsed) {
+    if (!parsed || !parsed.items) return { added: false, reason: "no-items" };
+    if (findCube(parsed)) return { added: false, reason: "already" };
+    const info = itemInfo("box");
+    const w = info.w || 2;
+    const h = info.h || 2;
+    const tries = [grids().inv, grids().stash];
+    for (const grid of tries) {
+      const place = firstFit(parsed.items.player, grid, w, h);
+      if (!place) continue;
+      parsed.items.player.push(spawnItem("box", place, {}));
+      return { added: true, place, label: grid.label };
+    }
+    return { added: false, reason: "no-space" };
   }
 
   function cloneItem(item) {
@@ -950,17 +997,45 @@
     return [q && q !== "Normal" ? q : "", base, bits.length ? "(" + bits.join(", ") + ")" : ""].filter(Boolean).join(" ");
   }
 
+  function gridLabel(item) {
+    const uniq = item.quality === QUALITY.Unique ? uniqueById(item.uniqueId) : null;
+    let n = (uniq && uniq.n) || (item.info && item.info.n) || item.code || "?";
+    n = n.replace(/ Rune$/, "");
+    if (item.quantity > 1) n = item.quantity + "× " + n;
+    return n;
+  }
+
+  function formatMods(item) {
+    return (item.mods || []).map((m) => {
+      const rec = MAG[m.id];
+      const name = rec && rec.s ? rec.s.replace(/^item_/, "").replace(/_/g, " ") : "stat " + m.id;
+      const vals = (m.values || []).join(", ");
+      return vals ? name + "  " + vals : name;
+    });
+  }
+
+  function inspectMeta(item, where) {
+    const bits = [locationLabel(item, where), item.code];
+    if (item.ilvl) bits.push("ilvl " + item.ilvl);
+    if (item.defense != null) bits.push("Defense " + item.defense);
+    if (item.maxDur != null) bits.push(item.maxDur ? "Dur " + (item.dur || 0) + "/" + item.maxDur : "Indestructible");
+    if (item.runeword) bits.push("Runeword");
+    return bits.filter(Boolean).join(" · ");
+  }
+
   function qualityClass(item) {
-    if (item.ethereal) return "eth";
+    let cls = "normal";
     switch (item.quality) {
-      case 4: return "magic";
-      case 5: return "set";
-      case 6: return "rare";
-      case 7: return "unique";
-      case 8: return "crafted";
-      case 3: return "superior";
-      default: return item.simple ? "simple" : "normal";
+      case 4: cls = "magic"; break;
+      case 5: cls = "set"; break;
+      case 6: cls = "rare"; break;
+      case 7: cls = "unique"; break;
+      case 8: cls = "crafted"; break;
+      case 3: cls = "superior"; break;
+      default: cls = item.simple ? "simple" : "normal";
     }
+    if (item.ethereal) cls += " eth";
+    return cls;
   }
 
   const api = {
@@ -986,11 +1061,16 @@
     spawnUnique,
     spawnCatalog,
     uniqueById,
+    findCube,
+    giveCube,
     grids,
     itemInGrid,
     cellsUsed,
     firstFit,
     displayName,
+    gridLabel,
+    formatMods,
+    inspectMeta,
     qualityClass,
     cloneItem,
     locationLabel,
@@ -998,6 +1078,7 @@
     itemMatches,
     itemInfo,
     isSpawnBase,
+    fitGrid,
     d2Checksum,
     applyChecksum,
   };

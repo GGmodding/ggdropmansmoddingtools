@@ -165,7 +165,10 @@
       parsed.stats.newskills = Math.min(255, (parsed.stats.newskills || 0) + skillGain);
       parsed.stats.statpts = Math.min(1023, (parsed.stats.statpts || 0) + statGain);
     }
-    return { skillGain, statGain, malahGain };
+    const result = { skillGain, statGain, malahGain };
+    const Items = typeof window !== "undefined" ? window.SoEItems : require("./items.js");
+    if (Items && Items.giveCube && parsed.items) result.cube = Items.giveCube(parsed);
+    return result;
   }
 
   // Arreat Summit 1.10+ totals required to *be* this level.

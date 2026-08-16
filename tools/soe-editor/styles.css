@@ -127,6 +127,11 @@ code {
   border-color: #9a3a1c;
 }
 
+.btn--danger {
+  border-color: #6a3030;
+  color: #f0c0c0;
+}
+
 .pill {
   border-radius: 999px;
   padding: 0.35rem 0.7rem;
@@ -410,25 +415,74 @@ input[readonly] {
   border-radius: 8px;
 }
 
-.panel--wide { max-width: 1280px; }
+.panel--wide { max-width: 1400px; }
 
-.item-views {
+.item-toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
-  margin: 1rem 0 0.75rem;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0 0 0.75rem;
+}
+
+.item-search {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 1;
+  min-width: 220px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.item-search-label { font-weight: 600; }
+
+.item-search input {
+  flex: 1;
+  min-width: 0;
+  background: #140e0c;
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.45rem 0.65rem;
+  font: 500 0.9rem var(--font);
+}
+
+.item-search-hits {
+  margin: 0 0 0.75rem;
+  max-height: 140px;
 }
 
 .item-workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 240px;
+  grid-template-columns: minmax(0, 1fr) 300px;
   gap: 1rem;
   align-items: start;
 }
 
+.item-board-hint {
+  margin: 0 0 0.55rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.item-views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0 0 0.55rem;
+}
+
+.bag-count {
+  margin-left: 0.2rem;
+  color: var(--accent-2);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
 .item-grid {
   display: grid;
-  gap: 3px;
+  gap: 2px;
   background: #0a0605;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -438,60 +492,127 @@ input[readonly] {
 }
 
 .item-cell {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
+  min-width: 0;
+  min-height: 0;
   border: 1px solid #3a241c;
-  background: #1a100e;
-  border-radius: 4px;
+  background: #16100e;
+  border-radius: 3px;
   position: relative;
   cursor: pointer;
   padding: 0;
 }
 
+.item-cell:hover { background: #241610; }
+
 .item-cell.is-origin {
   background: #3a2214;
-  border-color: var(--accent-2);
+  border-color: #8a5a30;
   color: var(--text);
-  font: 600 0.62rem/1.1 var(--font);
+  font: 600 0.62rem/1.15 var(--font);
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 2px;
+  padding: 3px;
   z-index: 1;
+  overflow: hidden;
 }
 
-.item-cell.is-origin.magic { color: #7a8cff; }
-.item-cell.is-origin.rare { color: #e8c36a; }
-.item-cell.is-origin.set { color: #4caf62; }
-.item-cell.is-origin.unique { color: #c48a3a; }
-.item-cell.is-origin.crafted { color: #c45a2d; }
-.item-cell.is-origin.eth { outline: 1px dashed #9ad; }
+.item-cell.is-origin:hover { filter: brightness(1.12); }
+.item-cell.is-origin.magic { color: #8ea0ff; border-color: #4a58a0; }
+.item-cell.is-origin.rare { color: #e8c36a; border-color: #a07a28; }
+.item-cell.is-origin.set { color: #6ed07a; border-color: #2e7a3a; }
+.item-cell.is-origin.unique { color: #c48a3a; border-color: #8a5a18; }
+.item-cell.is-origin.crafted { color: #e07a4a; border-color: #8a3a18; }
+.item-cell.is-origin.superior { color: #d8d0c0; }
+.item-cell.is-origin.eth { box-shadow: inset 0 0 0 1px rgba(150, 200, 220, 0.55); }
 .item-cell.is-selected { box-shadow: 0 0 0 2px var(--accent); }
-.item-cell.is-fill { background: rgba(212, 106, 58, 0.18); cursor: pointer; }
-.item-cell.is-body { width: auto; min-width: 92px; height: 44px; }
+.item-cell.is-hit { box-shadow: 0 0 0 2px var(--accent-2); }
+.item-cell.is-selected.is-hit { box-shadow: 0 0 0 2px var(--accent), 0 0 0 4px var(--accent-2); }
+.item-cell.is-body {
+  width: auto;
+  min-width: 96px;
+  height: 48px;
+  font-size: 0.72rem;
+}
 
 .item-inspect {
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: rgba(0, 0, 0, 0.22);
-  padding: 0.85rem;
+  background: rgba(0, 0, 0, 0.28);
+  padding: 0.9rem;
+  position: sticky;
+  top: 88px;
 }
 
 .item-inspect h3 {
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.45rem;
   font-family: var(--display);
   font-size: 0.95rem;
   color: var(--accent-2);
 }
 
-.item-list {
+.item-inspect-name {
+  margin: 0 0 0.35rem;
+  font: 700 1rem/1.25 var(--font);
+  color: var(--text);
+}
+
+.item-inspect-name.magic { color: #8ea0ff; }
+.item-inspect-name.rare { color: #e8c36a; }
+.item-inspect-name.set { color: #6ed07a; }
+.item-inspect-name.unique { color: #c48a3a; }
+.item-inspect-name.crafted { color: #e07a4a; }
+
+.item-inspect-meta {
+  margin: 0 0 0.65rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.item-inspect-mods {
+  list-style: none;
+  margin: 0 0 0.7rem;
+  padding: 0;
+  display: grid;
+  gap: 0.15rem;
+  max-height: 180px;
+  overflow: auto;
+  font-size: 0.78rem;
+  color: #d7c08a;
+}
+
+.item-inspect-gems {
+  margin: 0 0 0.65rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.item-inspect-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem 0.7rem;
+  margin-bottom: 0.35rem;
+}
+
+.item-inspect-actions {
+  display: flex;
+  gap: 0.45rem;
   margin-top: 0.75rem;
+}
+
+.item-list {
+  margin-top: 0.65rem;
   display: grid;
   gap: 0.25rem;
-  max-height: 280px;
+  max-height: 160px;
   overflow: auto;
 }
+
+.item-list:empty { display: none; }
 
 .item-list button {
   text-align: left;
@@ -506,46 +627,36 @@ input[readonly] {
 
 .item-list button.is-selected { border-color: var(--accent); }
 
-.item-search {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  margin-left: auto;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
-.item-search input {
-  min-width: 180px;
-  background: #140e0c;
+.spawn-card {
+  margin-top: 1.25rem;
   border: 1px solid var(--line);
-  color: var(--text);
-  border-radius: 6px;
-  padding: 0.4rem 0.55rem;
-  font: 500 0.85rem var(--font);
+  border-radius: var(--radius);
+  background: rgba(0, 0, 0, 0.18);
+  padding: 0.9rem 1rem 1rem;
 }
 
-.item-search-hits {
-  margin: 0.6rem 0 0.2rem;
-  max-height: 180px;
-}
-
-.item-cell.is-hit {
-  box-shadow: 0 0 0 2px var(--accent-2);
+.spawn-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.65rem;
 }
 
 .spawn-head {
-  margin: 1.2rem 0 0.5rem;
+  margin: 0;
   font-family: var(--display);
   font-size: 1rem;
 }
 
-.spawn-groups { display: grid; gap: 0.75rem; }
-.spawn-group h4 { margin: 0 0 0.4rem; color: var(--muted); font-size: 0.8rem; }
-.spawn-group { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-.spawn-group .btn { padding: 0.35rem 0.55rem; font-size: 0.78rem; }
+.spawn-card-head .hint { margin: 0; }
 
-.spawn-catalog { display: grid; gap: 0.55rem; margin-top: 0.85rem; }
+.spawn-groups { display: grid; gap: 0.55rem; margin-top: 0.75rem; }
+.spawn-group h4 { margin: 0 0 0.3rem; color: var(--muted); font-size: 0.75rem; letter-spacing: 0.04em; text-transform: uppercase; }
+.spawn-group { display: flex; flex-wrap: wrap; gap: 0.28rem; }
+.spawn-group .btn { padding: 0.28rem 0.48rem; font-size: 0.75rem; }
+
+.spawn-catalog { display: grid; gap: 0.5rem; }
 .spawn-catalog-row {
   display: flex;
   flex-wrap: wrap;
@@ -567,7 +678,7 @@ input[readonly] {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
-  max-height: 220px;
+  max-height: 180px;
   overflow: auto;
 }
 .spawn-results .btn { padding: 0.35rem 0.55rem; font-size: 0.78rem; }
@@ -577,13 +688,33 @@ input[readonly] {
 
 .equipped-wrap {
   display: grid;
-  grid-template-columns: repeat(3, minmax(92px, 1fr));
+  grid-template-columns: repeat(3, minmax(100px, 1fr));
+  grid-template-areas:
+    ". helm amu"
+    "wpn armor shd"
+    "glv belt boot"
+    "rring lring ."
+    "altw alts .";
   gap: 6px;
-  width: min(420px, 100%);
+  width: min(460px, 100%);
 }
 
-@media (max-width: 900px) {
+.equipped-wrap [data-slot="helm"] { grid-area: helm; }
+.equipped-wrap [data-slot="amu"] { grid-area: amu; }
+.equipped-wrap [data-slot="wpn"] { grid-area: wpn; }
+.equipped-wrap [data-slot="armor"] { grid-area: armor; }
+.equipped-wrap [data-slot="shd"] { grid-area: shd; }
+.equipped-wrap [data-slot="glv"] { grid-area: glv; }
+.equipped-wrap [data-slot="belt"] { grid-area: belt; }
+.equipped-wrap [data-slot="boot"] { grid-area: boot; }
+.equipped-wrap [data-slot="rring"] { grid-area: rring; }
+.equipped-wrap [data-slot="lring"] { grid-area: lring; }
+.equipped-wrap [data-slot="altw"] { grid-area: altw; }
+.equipped-wrap [data-slot="alts"] { grid-area: alts; }
+
+@media (max-width: 980px) {
   .item-workspace { grid-template-columns: 1fr; }
+  .item-inspect { position: static; }
 }
 
 @media (max-width: 800px) {
