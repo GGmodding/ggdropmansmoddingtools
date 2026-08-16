@@ -4,7 +4,9 @@
   const Save = window.SoESave;
   const Skills = window.SoESkills;
   const Items = window.SoEItems;
+  const Vault = window.SoEVault;
   const SAVE_DIR = "%USERPROFILE%\\Documents\\Diablo II\\Saves";
+  const SAVE_TABS = { character: 1, stats: 1, skills: 1, quests: 1, items: 1 };
 
   const state = {
     parsed: null,
@@ -25,6 +27,12 @@
     sel: null,
     spawnKind: "all",
     spawnQuery: "",
+    vaultItems: [],
+    vaultSel: null,
+    vaultQuery: "",
+    colQuery: "",
+    colFilter: "all",
+    craftSel: null,
   };
 
   const $ = (id) => document.getElementById(id);
@@ -49,27 +57,36 @@
   }
 
   function showLoaded() {
-    const has = !!(state.parsed || state.stash);
-    $("empty-state").hidden = has;
-    $("tabs").hidden = !has;
-    if (!has) {
-      ["character", "stats", "skills", "quests", "items"].forEach((id) => {
-        $("panel-" + id).hidden = true;
-      });
-    }
+    const tab = currentPanel();
+    applyTabVisibility(tab);
   }
 
   function currentPanel() {
-    return document.querySelector(".tab.is-active")?.dataset.tab || "character";
+    return document.querySelector("#tabs .tab.is-active")?.dataset.tab || "character";
+  }
+
+  function canShowPanel(tab) {
+    if (!SAVE_TABS[tab]) return true;
+    if (tab === "items") return !!(state.parsed || state.stash);
+    return !!state.parsed;
+  }
+
+  function applyTabVisibility(tab) {
+    const ok = canShowPanel(tab);
+    $("empty-state").hidden = ok;
+    document.querySelectorAll("main > .panel").forEach((el) => {
+      el.hidden = el.id !== "panel-" + tab || !ok;
+    });
   }
 
   function switchTab(tab) {
-    document.querySelectorAll(".tab").forEach((el) => {
+    document.querySelectorAll("#tabs .tab").forEach((el) => {
       el.classList.toggle("is-active", el.dataset.tab === tab);
     });
-    document.querySelectorAll(".panel").forEach((el) => {
-      el.hidden = el.id !== "panel-" + tab;
-    });
+    applyTabVisibility(tab);
+    if (tab === "vault") renderVault();
+    if (tab === "collection") renderCollection();
+    if (tab === "craft") renderCraft();
   }
 
   function num(id) {
@@ -276,12 +293,13 @@
 
   function renderSpawnResults() {
     const box = $("spawn-results");
+    if (!box) return;
     const q = state.spawnQuery.trim();
     if (q.length < 2) {
-      box.innerHTML = `<p class="hint">Type at least 2 letters to spawn a base or unique into the current grid.</p>`;
+      box.innerHTML = `<p class="hint">Type at least 2 letters. Click a result to preview, then Send.</p>`;
       return;
     }
-    const hits = Items.spawnCatalog(q, state.spawnKind === "all" ? "" : state.spawnKind).slice(0, 48);
+    const hits = Items.spawnCatalog(q, state.spawnKind === "all" ? "" : state.spawnKind).slice(0, 64);
     if (!hits.length) {
       box.innerHTML = `<p class="hint">No ${state.spawnKind === "all" ? "bases or uniques" : state.spawnKind + "s"} matching “${q}”.</p>`;
       return;
@@ -289,18 +307,78 @@
     box.innerHTML = hits
       .map((h) => {
         const extra = h.kind === "unique" && h.base ? ` <span class="muted">(${h.base})</span>` : "";
+        const sel =
+          state.craftSel &&
+          ((h.kind === "unique" && state.craftSel.kind === "unique" && state.craftSel.id === h.id) ||
+            (h.kind === "base" && state.craftSel.kind === "base" && state.craftSel.code === h.code));
         if (h.kind === "unique") {
-          return `<button type="button" class="btn is-unique" data-spawn-unique="${h.id}">${h.name}${extra}</button>`;
+          return `<button type="button" class="btn is-unique${sel ? " is-selected" : ""}" data-spawn-unique="${h.id}">${h.name}${extra}</button>`;
         }
-        return `<button type="button" class="btn" data-spawn-base="${h.code}">${h.name}</button>`;
+        return `<button type="button" class="btn${sel ? " is-selected" : ""}" data-spawn-base="${h.code}">${h.name}</button>`;
       })
       .join("");
     box.querySelectorAll("[data-spawn-base]").forEach((btn) => {
-      btn.addEventListener("click", () => spawnCode(btn.dataset.spawnBase));
+      btn.addEventListener("click", () => selectCraft({ kind: "base", code: btn.dataset.spawnBase }));
     });
     box.querySelectorAll("[data-spawn-unique]").forEach((btn) => {
-      btn.addEventListener("click", () => spawnUnique(Number(btn.dataset.spawnUnique)));
+      btn.addEventListener("click", () => selectCraft({ kind: "unique", id: Number(btn.dataset.spawnUnique) }));
     });
+  }
+
+  function selectCraft(sel) {
+    state.craftSel = sel;
+    renderCraft();
+  }
+
+  function renderCraft() {
+    renderSpawn();
+    renderCraftPreview();
+  }
+
+  function renderCraftPreview() {
+    const empty = $("craft-inspect-empty");
+    const body = $("craft-inspect-body");
+    if (!empty || !body) return;
+    const sel = state.craftSel;
+    if (!sel) {
+      empty.hidden = false;
+      body.hidden = true;
+      return;
+    }
+    empty.hidden = true;
+    body.hidden = false;
+    if (sel.kind === "unique") {
+      const u = Items.uniqueById(sel.id);
+      if (!u) {
+        empty.hidden = false;
+        body.hidden = true;
+        return;
+      }
+      const info = Items.itemInfo(u.c);
+      $("craft-inspect-name").textContent = u.n;
+      $("craft-inspect-name").className = "item-inspect-name unique";
+      $("craft-inspect-meta").textContent = (info.n || u.c) + " · " + u.c + (u.s ? " · " + u.s + "os" : "") + (u.e ? " · Eth" : "");
+      const mods = Items.formatUniqueMods(u);
+      $("craft-inspect-mods").innerHTML = mods.map((line) => `<li>${escHtml(line)}</li>`).join("");
+      $("craft-inspect-mods").hidden = !mods.length;
+    } else {
+      const info = Items.itemInfo(sel.code);
+      $("craft-inspect-name").textContent = info.n || sel.code;
+      $("craft-inspect-name").className = "item-inspect-name";
+      $("craft-inspect-meta").textContent = sel.code + " · " + (info.w || 1) + "×" + (info.h || 1);
+      $("craft-inspect-mods").innerHTML = "";
+      $("craft-inspect-mods").hidden = true;
+    }
+  }
+
+  function sendCraft() {
+    const sel = state.craftSel;
+    if (!sel) {
+      setStatus("Select a base or unique first");
+      return;
+    }
+    if (sel.kind === "unique") spawnUnique(sel.id);
+    else spawnCode(sel.code);
   }
 
   function renderItems() {
@@ -328,11 +406,6 @@
       hint.textContent = selectedItem()
         ? "Click an empty cell to move " + Items.displayName(selectedItem()) + ". Click it again to deselect."
         : "Click an item to inspect it. Click an empty cell to move the selected item.";
-    }
-    const spawnInto = $("spawn-into");
-    if (spawnInto) {
-      const dest = grid.equipped || state.itemView === "belt" ? "Inventory" : grid.label;
-      spawnInto.textContent = "Adds to the first free cell in " + dest + ".";
     }
 
     if (grid.equipped) {
@@ -539,17 +612,30 @@
     setStatus("Deleted " + (gone ? Items.displayName(gone) : "item"));
   }
 
-  function spawnDestination(w, h) {
-    let destView = state.itemView;
+  function spawnDestination(w, h, destKey) {
+    destKey = destKey || ($("f-craft-dest") && $("f-craft-dest").value) || state.itemView;
+    if (destKey === "vault") {
+      return { destView: "vault", destWhere: "vault", grid: { label: "Vault" }, bag: null, place: { x: 0, y: 0, location: 0, panel: 1, equipped: 0 } };
+    }
+    let destView = destKey;
+    if (destView === "inventory") destView = "inv";
+    if (destView !== "inv" && destView !== "cube" && destView !== "stash" && destView !== "shared") {
+      destView = state.itemView;
+    }
     let destWhere = destView === "shared" ? "stash" : "player";
-    let grid = currentGrid();
+    let grid;
+    const grids = Items.grids();
+    if (destView === "shared") grid = grids.shared;
+    else if (destView === "cube") grid = grids.cube;
+    else if (destView === "stash") grid = grids.stash;
+    else grid = grids.inv;
     if (grid.equipped || destView === "belt") {
       destView = "inv";
       destWhere = "player";
-      grid = Items.grids().inv;
+      grid = grids.inv;
     }
     if (destWhere === "player" && (!state.parsed || !state.parsed.items)) {
-      setStatus("Load a character first");
+      setStatus("Load a character first, or send to Vault");
       return null;
     }
     if (destWhere === "stash" && !state.stash) {
@@ -559,7 +645,7 @@
     const bag = itemBag(destWhere);
     const place = Items.firstFit(bag, grid, w || 1, h || 1);
     if (!place) {
-      setStatus("No free space in " + grid.label);
+      setStatus("No free space in " + grid.label + " — send to Vault instead");
       return null;
     }
     return { destView, destWhere, grid, bag, place };
@@ -573,7 +659,19 @@
     };
   }
 
-  function finishSpawn(item, dest) {
+  async function finishSpawn(item, dest) {
+    if (dest.destWhere === "vault") {
+      try {
+        await Vault.addItem(item);
+        await refreshVault();
+        setStatus("Stored " + Items.displayName(item) + " in Vault");
+        renderCraft();
+        renderCollection();
+      } catch (err) {
+        setStatus(err.message || String(err));
+      }
+      return;
+    }
     dest.bag.push(item);
     setItemView(dest.destView);
     state.sel = { where: dest.destWhere, index: dest.bag.length - 1 };
@@ -612,6 +710,265 @@
     } catch (err) {
       setStatus(err.message || String(err));
     }
+  }
+
+  async function refreshVault() {
+    try {
+      state.vaultItems = await Vault.list();
+    } catch (err) {
+      state.vaultItems = [];
+      setStatus(err.message || String(err));
+    }
+    if (state.vaultSel != null && !state.vaultItems.some((r) => r.id === state.vaultSel)) state.vaultSel = null;
+    renderVault();
+  }
+
+  function vaultRecordClass(rec) {
+    const fake = { quality: rec.quality, ethereal: rec.ethereal };
+    return Items.qualityClass(fake);
+  }
+
+  function renderVault() {
+    const box = $("vault-list");
+    const summary = $("vault-summary");
+    if (!box) return;
+    const q = (state.vaultQuery || "").trim().toLowerCase();
+    const rows = state.vaultItems.filter((r) => {
+      if (!q) return true;
+      return [r.name, r.code, String(r.uniqueId || "")].join(" ").toLowerCase().includes(q);
+    });
+    if (summary) {
+      summary.textContent =
+        state.vaultItems.length +
+        " item" +
+        (state.vaultItems.length === 1 ? "" : "s") +
+        " in the browser vault" +
+        (q ? " · showing " + rows.length : "") +
+        ". Copy from character/stash, or export a JSON backup.";
+    }
+    box.innerHTML = rows
+      .map((r) => {
+        const sel = state.vaultSel === r.id ? " is-selected" : "";
+        return `<button type="button" class="vault-row ${vaultRecordClass(r)}${sel}" data-vault-id="${r.id}">${escHtml(r.name || r.code)}</button>`;
+      })
+      .join("");
+    box.querySelectorAll("[data-vault-id]").forEach((el) => {
+      el.addEventListener("click", () => {
+        state.vaultSel = Number(el.dataset.vaultId);
+        renderVault();
+      });
+    });
+    renderVaultInspect();
+  }
+
+  function selectedVaultRecord() {
+    return state.vaultItems.find((r) => r.id === state.vaultSel) || null;
+  }
+
+  function renderVaultInspect() {
+    const rec = selectedVaultRecord();
+    const empty = $("vault-inspect-empty");
+    const body = $("vault-inspect-body");
+    if (!empty || !body) return;
+    empty.hidden = !!rec;
+    body.hidden = !rec;
+    if (!rec) return;
+    let item = null;
+    try {
+      item = Vault.recordToItem(rec);
+    } catch (_) {}
+    $("vault-inspect-name").textContent = rec.name || (item && Items.displayName(item)) || rec.code;
+    $("vault-inspect-name").className = "item-inspect-name " + vaultRecordClass(rec);
+    $("vault-inspect-meta").textContent = item ? Items.inspectMeta(item, "vault") : rec.code;
+    const mods = item ? Items.formatMods(item) : [];
+    $("vault-inspect-mods").innerHTML = mods.map((line) => `<li>${escHtml(line)}</li>`).join("");
+    $("vault-inspect-mods").hidden = !mods.length;
+  }
+
+  async function depositSelected(move) {
+    const item = selectedItem();
+    if (!item) {
+      setStatus("Select an item on the Items tab first");
+      return;
+    }
+    try {
+      const clone = Items.cloneItem(item);
+      await Vault.addItem(clone);
+      if (move) deleteSelected();
+      await refreshVault();
+      renderCollection();
+      setStatus((move ? "Moved " : "Copied ") + Items.displayName(item) + " to Vault");
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  }
+
+  async function copyBagToVault(where) {
+    const bag = where === "stash" ? (state.stash && state.stash.items) : state.parsed && state.parsed.items && state.parsed.items.player;
+    if (!bag || !bag.length) {
+      setStatus(where === "stash" ? "Load shared stash first" : "Load a character first");
+      return;
+    }
+    try {
+      const n = await Vault.addMany(bag.map((it) => Items.cloneItem(it)));
+      await refreshVault();
+      renderCollection();
+      setStatus("Copied " + n + " items into Vault");
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  }
+
+  function withdrawDestKey() {
+    if (state.itemView === "shared" && state.stash) return "shared";
+    if (state.itemView === "stash" && state.parsed) return "stash";
+    if (state.itemView === "cube" && state.parsed) return "cube";
+    if (state.parsed) return "inv";
+    if (state.stash) return "shared";
+    return "inv";
+  }
+
+  async function withdrawVault(removeAfter) {
+    const rec = selectedVaultRecord();
+    if (!rec) {
+      setStatus("Select a vault item first");
+      return;
+    }
+    let item;
+    try {
+      item = Items.cloneItem(Vault.recordToItem(rec));
+    } catch (err) {
+      setStatus(err.message || String(err));
+      return;
+    }
+    const dest = spawnDestination(item.info.w, item.info.h, withdrawDestKey());
+    if (!dest || dest.destWhere === "vault") {
+      setStatus("Load a character or shared stash to withdraw into");
+      return;
+    }
+    Items.applyPlacement(item, dest.place);
+    dest.bag.push(item);
+    setItemView(dest.destView);
+    state.sel = { where: dest.destWhere, index: dest.bag.length - 1 };
+    if (dest.destWhere === "stash") setStashDirty(true);
+    else setDirty(true);
+    if (removeAfter) {
+      await Vault.remove(rec.id);
+      await refreshVault();
+    }
+    switchTab("items");
+    renderItems();
+    setStatus("Withdrew " + Items.displayName(item) + " into " + dest.grid.label);
+  }
+
+  async function deleteVaultSelected() {
+    const rec = selectedVaultRecord();
+    if (!rec) return;
+    await Vault.remove(rec.id);
+    await refreshVault();
+    renderCollection();
+    setStatus("Removed " + (rec.name || rec.code) + " from Vault");
+  }
+
+  async function exportVault() {
+    try {
+      const payload = await Vault.exportPayload();
+      const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "soe-vault-" + backupStamp() + ".json";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+      setStatus("Exported " + payload.items.length + " vault items");
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  }
+
+  async function importVaultFile(file) {
+    try {
+      const payload = JSON.parse(await file.text());
+      const n = await Vault.importPayload(payload);
+      await refreshVault();
+      renderCollection();
+      setStatus("Imported " + n + " items into Vault");
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  }
+
+  function ownedUniqueIds() {
+    const ids = new Set();
+    for (const row of allSearchable()) {
+      if (row.it && row.it.quality === 7 && row.it.uniqueId != null) ids.add(row.it.uniqueId);
+    }
+    for (const rec of state.vaultItems) {
+      if (rec.quality === 7 && rec.uniqueId != null) ids.add(rec.uniqueId);
+    }
+    return ids;
+  }
+
+  function renderCollection() {
+    const box = $("col-groups");
+    const summary = $("col-summary");
+    const prog = $("col-progress");
+    if (!box) return;
+    const owned = ownedUniqueIds();
+    const all = Items.allUniques();
+    const have = all.filter((u) => owned.has(u.i)).length;
+    const q = (state.colQuery || "").trim().toLowerCase();
+    if (summary) {
+      summary.textContent =
+        have + " / " + all.length + " uniques owned (character + stash + vault). Click a missing unique to preview it on Craft.";
+    }
+    if (prog) {
+      prog.hidden = false;
+      const pct = all.length ? Math.round((have / all.length) * 100) : 0;
+      prog.innerHTML = `<strong>${have} / ${all.length}</strong> unique collection · ${pct}%<div class="col-bar"><span style="width:${pct}%"></span></div>`;
+    }
+    $("col-filters").querySelectorAll("[data-col-filter]").forEach((btn) => {
+      btn.classList.toggle("is-active", btn.dataset.colFilter === state.colFilter);
+    });
+    const groups = {};
+    for (const u of all) {
+      const isOwned = owned.has(u.i);
+      if (state.colFilter === "owned" && !isOwned) continue;
+      if (state.colFilter === "missing" && isOwned) continue;
+      const info = Items.itemInfo(u.c);
+      const hay = (u.n + " " + u.c + " " + ((info && info.n) || "")).toLowerCase();
+      if (q && !hay.includes(q)) continue;
+      const kind = Items.uniqueKind(u);
+      if (!groups[kind]) groups[kind] = [];
+      groups[kind].push({ u, info, isOwned });
+    }
+    const order = ["Weapons", "Armor", "Jewelry", "Other"];
+    box.innerHTML = order
+      .filter((k) => groups[k] && groups[k].length)
+      .map((k) => {
+        const cards = groups[k]
+          .map(({ u, info, isOwned }) => {
+            return `<button type="button" class="col-item ${isOwned ? "owned" : "missing"}" data-unique="${u.i}">
+              ${escHtml(u.n)}<span class="col-base">${escHtml((info && info.n) || u.c)}${isOwned ? " · owned" : ""}</span>
+            </button>`;
+          })
+          .join("");
+        return `<div class="col-group"><h3>${k} · ${groups[k].length}</h3><div class="col-grid">${cards}</div></div>`;
+      })
+      .join("");
+    box.querySelectorAll("[data-unique]").forEach((el) => {
+      el.addEventListener("click", () => {
+        const id = Number(el.dataset.unique);
+        state.craftSel = { kind: "unique", id };
+        const u = Items.uniqueById(id);
+        if (u) {
+          state.spawnQuery = u.n;
+          state.spawnKind = "unique";
+          const search = $("f-spawn-search");
+          if (search) search.value = u.n;
+        }
+        switchTab("craft");
+      });
+    });
   }
 
   function renderQuests() {
@@ -663,6 +1020,7 @@
       renderQuests();
     }
     renderItems();
+    renderCollection();
   }
 
   function isStashBytes(bytes) {
@@ -975,7 +1333,7 @@
     if (result.malahGain) extra.push(`+${result.malahGain} all resist (Malah)`);
     if (result.cube && result.cube.added) extra.push("Horadric Cube → " + result.cube.label);
     else if (result.cube && result.cube.reason === "already") extra.push("cube already present");
-    else if (result.cube && result.cube.reason === "no-space") extra.push("no space for cube — spawn it from Items");
+    else if (result.cube && result.cube.reason === "no-space") extra.push("no space for cube — spawn it from Craft");
     setStatus("Unlocked all quests, waypoints, and difficulties" + (extra.length ? " · " + extra.join(" · ") : " · rewards were already collected"));
   });
 
@@ -1047,6 +1405,8 @@
   });
 
   $("btn-duplicate-item").addEventListener("click", () => duplicateSelected());
+  $("btn-copy-vault").addEventListener("click", () => depositSelected(false));
+  $("btn-move-vault").addEventListener("click", () => depositSelected(true));
   $("f-item-search").addEventListener("input", () => {
     state.itemSearch = $("f-item-search").value;
     renderItems();
@@ -1145,6 +1505,7 @@
   });
 
   renderSpawn();
+  refreshVault().then(() => renderCollection());
   $("f-spawn-search").addEventListener("input", () => {
     state.spawnQuery = $("f-spawn-search").value;
     renderSpawnResults();
@@ -1153,6 +1514,35 @@
     btn.addEventListener("click", () => {
       state.spawnKind = btn.dataset.spawnKind;
       renderSpawn();
+    });
+  });
+  $("btn-craft-send").addEventListener("click", () => sendCraft());
+
+  $("f-vault-search").addEventListener("input", () => {
+    state.vaultQuery = $("f-vault-search").value;
+    renderVault();
+  });
+  $("btn-vault-from-char").addEventListener("click", () => copyBagToVault("player"));
+  $("btn-vault-from-stash").addEventListener("click", () => copyBagToVault("stash"));
+  $("btn-vault-export").addEventListener("click", () => exportVault());
+  $("vault-import").addEventListener("change", async (ev) => {
+    const file = ev.target.files && ev.target.files[0];
+    if (!file) return;
+    await importVaultFile(file);
+    ev.target.value = "";
+  });
+  $("btn-vault-withdraw").addEventListener("click", () => withdrawVault(false));
+  $("btn-vault-withdraw-del").addEventListener("click", () => withdrawVault(true));
+  $("btn-vault-delete").addEventListener("click", () => deleteVaultSelected());
+
+  $("f-col-search").addEventListener("input", () => {
+    state.colQuery = $("f-col-search").value;
+    renderCollection();
+  });
+  $("col-filters").querySelectorAll("[data-col-filter]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.colFilter = btn.dataset.colFilter;
+      renderCollection();
     });
   });
 

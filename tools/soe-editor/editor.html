@@ -19,7 +19,7 @@
       <span class="brand__mark">SoE</span>
       <div class="brand__text">
         <h1>GGdropmans Sanctuary of Exile Editor</h1>
-        <p>v3 · Safe backups · Character / items / stash · Back to hub</p>
+        <p>v4 · Vault · Collection · Craft · Safe backups · Back to hub</p>
       </div>
     </a>
     <div class="topbar__actions">
@@ -74,18 +74,21 @@
     </div>
   </div>
 
-  <nav class="tabs" id="tabs" aria-label="Editor sections" hidden>
+  <nav class="tabs" id="tabs" aria-label="Editor sections">
     <button class="tab is-active" data-tab="character" type="button">Character</button>
     <button class="tab" data-tab="stats" type="button">Attributes</button>
     <button class="tab" data-tab="skills" type="button">Skills</button>
     <button class="tab" data-tab="quests" type="button">Quests</button>
     <button class="tab" data-tab="items" type="button">Items</button>
+    <button class="tab" data-tab="vault" type="button">Vault</button>
+    <button class="tab" data-tab="collection" type="button">Collection</button>
+    <button class="tab" data-tab="craft" type="button">Craft</button>
   </nav>
 
   <main class="main">
     <div id="empty-state" class="empty">
       <h2>Load a Sanctuary of Exile .d2s</h2>
-      <p>Drag and drop your character <code>.d2s</code> or <code>pd2_shared.stash</code>, or click <strong>Load Save</strong>. Path: <code>Documents\Diablo II\Saves</code></p>
+      <p>Drag and drop your character <code>.d2s</code> or <code>pd2_shared.stash</code>, or click <strong>Load Save</strong>. Vault, Collection, and Craft work without a save loaded — they keep an unlimited item database in this browser.</p>
     </div>
 
     <section id="panel-character" class="panel is-active" hidden>
@@ -237,34 +240,123 @@
             <p id="item-inspect-socks" class="hint"></p>
             <div class="item-inspect-actions">
               <button type="button" class="btn" id="btn-duplicate-item">Duplicate</button>
+              <button type="button" class="btn" id="btn-copy-vault">Copy to Vault</button>
+              <button type="button" class="btn" id="btn-move-vault">Move to Vault</button>
               <button type="button" class="btn btn--danger" id="btn-delete-item">Delete</button>
             </div>
           </div>
         </aside>
       </div>
       <div class="spawn-card">
-        <div class="spawn-card-head">
-          <h3 class="spawn-head">Add items</h3>
-          <p class="hint" id="spawn-into">Spawns into the current bag’s first free cell.</p>
+        <p class="hint">Crafting lives on the <strong>Craft</strong> tab. Extra uniques go to <strong>Vault</strong> (unlimited). Collection tracks which uniques you have on the character, stash, and vault.</p>
+      </div>
+    </section>
+
+    <section id="panel-vault" class="panel panel--wide" hidden>
+      <div class="panel__head">
+        <h2>Vault</h2>
+        <p class="panel__sub" id="vault-summary">Unlimited item database stored in this browser. Transfer to and from inventory / shared stash without filling grid space.</p>
+      </div>
+      <div class="item-toolbar">
+        <label class="item-search">
+          <span class="item-search-label">Find</span>
+          <input id="f-vault-search" type="search" placeholder="Goldrim, Zod, unique…" autocomplete="off" />
+        </label>
+        <button type="button" class="btn" id="btn-vault-from-char">Copy character items</button>
+        <button type="button" class="btn" id="btn-vault-from-stash">Copy shared stash</button>
+        <button type="button" class="btn" id="btn-vault-export">Export vault</button>
+        <label class="btn">Import vault
+          <input id="vault-import" type="file" accept=".json,application/json" hidden />
+        </label>
+      </div>
+      <div class="item-workspace">
+        <div class="item-board">
+          <div id="vault-list" class="vault-list"></div>
         </div>
-        <div class="spawn-catalog">
-          <div class="spawn-catalog-row">
-            <input id="f-spawn-search" type="search" placeholder="Search bases and uniques: Monarch, Shako, ring…" autocomplete="off" />
-            <div class="spawn-kinds" id="spawn-kinds">
-              <button type="button" class="tab is-active" data-spawn-kind="all">All</button>
-              <button type="button" class="tab" data-spawn-kind="base">Bases</button>
-              <button type="button" class="tab" data-spawn-kind="unique">Uniques</button>
+        <aside class="item-inspect" id="vault-inspect">
+          <h3>Stored item</h3>
+          <p id="vault-inspect-empty" class="hint">Select an item. Withdraw copies it into the current Items bag (or shared stash).</p>
+          <div id="vault-inspect-body" hidden>
+            <p id="vault-inspect-name" class="item-inspect-name"></p>
+            <p id="vault-inspect-meta" class="item-inspect-meta"></p>
+            <ul id="vault-inspect-mods" class="item-inspect-mods"></ul>
+            <div class="item-inspect-actions">
+              <button type="button" class="btn btn--accent" id="btn-vault-withdraw">Withdraw</button>
+              <button type="button" class="btn" id="btn-vault-withdraw-del">Withdraw &amp; remove</button>
+              <button type="button" class="btn btn--danger" id="btn-vault-delete">Delete</button>
             </div>
           </div>
-          <div class="spawn-opts">
-            <label class="check"><input id="f-spawn-eth" type="checkbox" /> Ethereal</label>
-            <label>Sockets <input id="f-spawn-socks" type="number" min="0" max="6" placeholder="—" /></label>
-          </div>
-          <div id="spawn-results" class="spawn-results"></div>
-        </div>
-        <div id="spawn-groups" class="spawn-groups"></div>
-        <p class="hint">Uniques use max rolls. Shared stash is <code>pd2_shared.stash</code> — save it as well as the character. Close SoE before overwrite. Esc deselects, Delete removes the selected item.</p>
+        </aside>
       </div>
+    </section>
+
+    <section id="panel-collection" class="panel panel--wide" hidden>
+      <div class="panel__head">
+        <h2>Collection</h2>
+        <p class="panel__sub" id="col-summary">Owned uniques on this character, shared stash, and vault vs the SoE unique list.</p>
+      </div>
+      <div class="item-toolbar">
+        <label class="item-search">
+          <span class="item-search-label">Find</span>
+          <input id="f-col-search" type="search" placeholder="Goldrim, Shako, monarch…" autocomplete="off" />
+        </label>
+        <div class="spawn-kinds" id="col-filters">
+          <button type="button" class="tab is-active" data-col-filter="all">All</button>
+          <button type="button" class="tab" data-col-filter="owned">Owned</button>
+          <button type="button" class="tab" data-col-filter="missing">Missing</button>
+        </div>
+      </div>
+      <div id="col-progress" class="col-progress" hidden></div>
+      <div id="col-groups" class="col-groups"></div>
+    </section>
+
+    <section id="panel-craft" class="panel panel--wide" hidden>
+      <div class="panel__head">
+        <h2>Craft</h2>
+        <p class="panel__sub">Pick a base or unique, set ethereal / sockets, and send it to a bag or the vault. Uniques use max rolls.</p>
+      </div>
+      <div class="item-workspace">
+        <div class="item-board">
+          <div class="spawn-catalog">
+            <div class="spawn-catalog-row">
+              <input id="f-spawn-search" type="search" placeholder="Search bases and uniques: Monarch, Shako, Goldrim…" autocomplete="off" />
+              <div class="spawn-kinds" id="spawn-kinds">
+                <button type="button" class="tab is-active" data-spawn-kind="all">All</button>
+                <button type="button" class="tab" data-spawn-kind="base">Bases</button>
+                <button type="button" class="tab" data-spawn-kind="unique">Uniques</button>
+              </div>
+            </div>
+            <div class="spawn-opts">
+              <label>Send to
+                <select id="f-craft-dest">
+                  <option value="vault">Vault (unlimited)</option>
+                  <option value="inv">Inventory</option>
+                  <option value="cube">Cube</option>
+                  <option value="stash">Personal stash</option>
+                  <option value="shared">Shared stash</option>
+                </select>
+              </label>
+              <label class="check"><input id="f-spawn-eth" type="checkbox" /> Ethereal</label>
+              <label>Sockets <input id="f-spawn-socks" type="number" min="0" max="6" placeholder="—" /></label>
+            </div>
+            <div id="spawn-results" class="spawn-results spawn-results--tall"></div>
+            <div id="spawn-groups" class="spawn-groups"></div>
+          </div>
+        </div>
+        <aside class="item-inspect" id="craft-inspect">
+          <h3>Preview</h3>
+          <p id="craft-inspect-empty" class="hint">Select a unique or base, then Send. Missing uniques from Collection land here too.</p>
+          <div id="craft-inspect-body" hidden>
+            <p id="craft-inspect-name" class="item-inspect-name"></p>
+            <p id="craft-inspect-meta" class="item-inspect-meta"></p>
+            <ul id="craft-inspect-mods" class="item-inspect-mods"></ul>
+            <div class="item-inspect-actions">
+              <button type="button" class="btn btn--accent" id="btn-craft-send">Send</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+      <p class="hint">Close SoE before overwriting a save. Vault items stay in this browser until you export them.</p>
     </section>
   </main>
 
@@ -273,6 +365,7 @@
   <script src="d2s.js"></script>
   <script src="items-db.js"></script>
   <script src="items.js"></script>
+  <script src="vault.js"></script>
   <script src="skills-db.js"></script>
   <script src="app.js"></script>
 </body>

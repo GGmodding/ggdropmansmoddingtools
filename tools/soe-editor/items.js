@@ -829,6 +829,35 @@
     return out;
   }
 
+  function allUniques() {
+    return DB.UNIQUES || [];
+  }
+
+  function uniqueKind(u) {
+    const c = u && u.c;
+    if (c === "rin" || c === "amu" || c === "jew" || /^cm[1-4]$/.test(c || "")) return "Jewelry";
+    const info = ITEMS[c] || {};
+    if (info.k === "w") return "Weapons";
+    if (info.k === "a") return "Armor";
+    return "Other";
+  }
+
+  function formatModLine(id, vals) {
+    const rec = MAG[id];
+    const name = rec && rec.s ? rec.s.replace(/^item_/, "").replace(/_/g, " ") : "stat " + id;
+    const v = (vals || []).join(", ");
+    return v ? name + "  " + v : name;
+  }
+
+  function formatUniqueMods(u) {
+    return (u && u.m ? u.m : []).map((m) => formatModLine(m.id, m.v));
+  }
+
+  function itemFromRaw(raw) {
+    const bytes = raw instanceof Uint8Array ? raw : new Uint8Array(raw);
+    return parseItem(bytes, 0);
+  }
+
   function grids() {
     return {
       inv: { w: 10, h: 8, panel: 1, location: 0, label: "Inventory" },
@@ -1063,6 +1092,10 @@
     spawnUnique,
     spawnCatalog,
     uniqueById,
+    allUniques,
+    uniqueKind,
+    formatUniqueMods,
+    itemFromRaw,
     findCube,
     giveCube,
     grids,

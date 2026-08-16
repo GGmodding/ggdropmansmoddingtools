@@ -600,6 +600,7 @@ input[readonly] {
 
 .item-inspect-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.45rem;
   margin-top: 0.75rem;
 }
@@ -685,6 +686,117 @@ input[readonly] {
 .spawn-results .btn.is-unique { color: #c48a3a; }
 .spawn-results .hint { margin: 0; }
 .spawn-results .muted { color: var(--muted); font-weight: 400; }
+.spawn-results--tall { max-height: 280px; }
+.spawn-opts select {
+  background: #140e0c;
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.35rem 0.5rem;
+  font: 500 0.85rem var(--font);
+}
+
+.vault-list {
+  display: grid;
+  gap: 0.28rem;
+  max-height: min(70vh, 640px);
+  overflow: auto;
+}
+
+.vault-list:empty::before {
+  content: "Vault is empty. Copy items from Items, or craft uniques into the vault.";
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.vault-row {
+  text-align: left;
+  background: #140e0c;
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  font: 500 0.85rem/1.25 var(--font);
+  cursor: pointer;
+}
+
+.vault-row.is-selected { border-color: var(--accent); }
+.vault-row.unique { color: #c48a3a; }
+.vault-row.rare { color: #e8c36a; }
+.vault-row.set { color: #6ed07a; }
+.vault-row.magic { color: #8ea0ff; }
+.vault-row.crafted { color: #e07a4a; }
+
+.col-progress {
+  margin: 0 0 0.85rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.22);
+  font-size: 0.9rem;
+}
+
+.col-bar {
+  margin-top: 0.4rem;
+  height: 8px;
+  border-radius: 99px;
+  background: #2a1a14;
+  overflow: hidden;
+}
+
+.col-bar > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #c45a2d, #e8c36a);
+}
+
+.col-groups { display: grid; gap: 1.1rem; }
+
+.col-group h3 {
+  margin: 0 0 0.45rem;
+  font-family: var(--display);
+  font-size: 0.95rem;
+  color: var(--accent-2);
+}
+
+.col-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 0.35rem;
+}
+
+.col-item {
+  text-align: left;
+  background: #140e0c;
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.4rem 0.5rem;
+  font: 500 0.78rem/1.25 var(--font);
+  cursor: pointer;
+}
+
+.col-item .col-base {
+  display: block;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.col-item.owned {
+  border-color: #2e7a3a;
+  color: #c48a3a;
+}
+
+.col-item.missing {
+  opacity: 0.72;
+}
+
+.col-item.missing:hover { opacity: 1; }
+
+.btn.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
 
 .equipped-wrap {
   display: grid;
