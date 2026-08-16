@@ -29,21 +29,32 @@ check(
   JSON.stringify({ def: ethMon.defense, dur: ethMon.maxDur, sock: ethMon.sockets })
 );
 
-const shako = Items.uniqueById(249);
-check("shako row", shako && shako.n === "Harlequin Crest" && shako.c === "uap", JSON.stringify(shako && { n: shako.n, mods: shako.m.length }));
+const shako = (Items.spawnCatalog("harlequin crest", "unique") || [])[0];
+check("shako row", shako && shako.name === "Harlequin Crest" && shako.code === "uap", JSON.stringify(shako && { n: shako.name, id: shako.id }));
 
-const crest = Items.spawnUnique(249, place, {});
+const crest = Items.spawnUnique(shako.id, place, {});
 check(
   "harlequin",
   crest.quality === 7 &&
-    crest.uniqueId === 249 &&
+    crest.uniqueId === shako.id &&
     crest.code === "uap" &&
     !crest.parseError &&
     Items.displayName(crest) === "Harlequin Crest" &&
     crest.mods.some((m) => m.id === 127 && m.values[0] === 2) &&
     crest.mods.some((m) => m.id === 216 && m.values[0] === 8),
-  JSON.stringify({ name: Items.displayName(crest), q: crest.quality, mods: crest.mods.map((m) => [m.id, m.values]) })
+  JSON.stringify({ name: Items.displayName(crest), q: crest.quality, id: crest.uniqueId, mods: crest.mods.map((m) => [m.id, m.values]) })
 );
+
+const wraith = (Items.spawnCatalog("wraithflight", "unique") || [])[0];
+check("wraithflight row", wraith && wraith.name === "Wraithflight" && wraith.code === "7gl" && wraith.id === 386, JSON.stringify(wraith));
+if (wraith) {
+  const wf = Items.spawnUnique(wraith.id, place, {});
+  check(
+    "wraithflight spawn",
+    wf.quality === 7 && wf.uniqueId === 386 && wf.code === "7gl" && !wf.parseError && Items.displayName(wf).startsWith("Wraithflight"),
+    JSON.stringify({ name: Items.displayName(wf), id: wf.uniqueId, code: wf.code, eth: wf.ethereal })
+  );
+}
 
 const gnasher = Items.spawnUnique(0, place, {});
 check(

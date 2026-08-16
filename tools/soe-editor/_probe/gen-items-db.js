@@ -372,18 +372,25 @@ const uniques = [];
 let skipPropCount = 0;
 const stubbed = [];
 const uniqueTable = tsv("UniqueItems.txt");
+// UniqueItems.bin / save uniqueId skip the Expansion placeholder row.
+// Counting it made every LoD unique off-by-one (Wraithflight spawned as Bonehew).
+let expansionIdx = -1;
+uniqueTable.rows.forEach((row, i) => {
+  if ((row.get("index") || "").trim() === "Expansion") expansionIdx = i;
+});
 uniqueTable.rows.forEach((row, i) => {
   const name = (row.get("index") || "").trim();
   const code = (row.get("code") || "").trim();
   const enabled = row.get("enabled");
   if (!name || !code || enabled === "0") return;
+  const id = expansionIdx >= 0 && i > expansionIdx ? i - 1 : i;
   if (!items[code]) {
     items[code] = stubFromType(code, row.get("*type") || name);
     stubbed.push(name + " [" + code + "]");
   }
   const enc = encodeUnique(row);
   skipPropCount += enc.skipped.length;
-  const rec = { i, n: name, c: code, m: enc.mods };
+  const rec = { i: id, n: name, c: code, m: enc.mods };
   if (enc.flags.sock) rec.s = enc.flags.sock;
   if (enc.flags.eth) rec.e = 1;
   if (enc.flags.ind) rec.d = 1;
@@ -411,7 +418,10 @@ const codes = Object.keys(items);
 const magCount = mag.filter(Boolean).length;
 const shako = uniques.find((u) => u.n === "Harlequin Crest");
 const gnasher = uniques.find((u) => u.n === "The Gnasher");
+const wraith = uniques.find((u) => u.n === "Wraithflight");
+const bonehew = uniques.find((u) => u.n === "Bonehew");
 console.log("wrote", dest, "bytes", out.length, "items", codes.length, "stats", magCount, "uniques", uniques.length, "skippedSlots", skipPropCount);
+console.log("expansionIdx", expansionIdx, "wraith", wraith && wraith.i, "bonehew", bonehew && bonehew.i);
 console.log("stubbed bases", stubbed.length, stubbed.slice(0, 20).join("; "));
 console.log("sample", items.cap, items.uit, items.jew, items.r01);
 console.log("gnasher", JSON.stringify(gnasher));
