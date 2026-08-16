@@ -22,6 +22,7 @@
     stashLastModified: 0,
     stashDirty: false,
     itemView: "inv",
+    weaponSet: 1,
     itemSearch: "",
     searchHits: [],
     sel: null,
@@ -151,8 +152,7 @@
   function currentGrid() {
     const grids = Items.grids();
     let grid;
-    if (state.itemView === "equipped") grid = { w: 3, h: 5, panel: 0, location: 1, label: "Equipped", equipped: true };
-    else if (state.itemView === "shared") grid = grids.shared;
+    if (state.itemView === "shared") grid = grids.shared;
     else if (state.itemView === "cube") grid = grids.cube;
     else if (state.itemView === "stash") grid = grids.stash;
     else if (state.itemView === "belt") grid = grids.belt;
@@ -218,6 +218,7 @@
     const row = state.searchHits[i];
     if (!row || (row.where !== "player" && row.where !== "stash")) return;
     setItemView(Items.viewForItem(row.it, row.where));
+    if (row.where === "player") revealEquipped(row.it);
     state.sel = { where: row.where, index: row.index };
     renderItems();
     setStatus("Selected " + Items.displayName(row.it) + " in " + Items.locationLabel(row.it, row.where));
@@ -271,20 +272,42 @@
         (item.socketed ? filled + " filled / " + (item.sockets || 0) + " total. " : "No sockets yet. ") +
         "0–6 sockets. Cannot go below gems already in the item. Ethereal does not restat defense or damage.";
     }
+    const unequip = $("btn-unequip-item");
+    if (unequip) unequip.hidden = item.location !== 1;
+  }
+
+  function spawnLabel(code) {
+    const n = (Items.itemInfo(code).n || code).replace(/ Rune$/, "");
+    return n.replace(/^Craft Ingredient /, "").replace(/^Orb of /, "").replace(/ Orb$/, "");
+  }
+
+  function fillSpawnGroups(box, groups, destFn) {
+    if (!box) return;
+    box.innerHTML = groups
+      .map((g) => {
+        const btns = g.codes
+          .filter((c) => Items.itemInfo(c).n)
+          .map((c) => `<button type="button" class="btn" data-spawn="${c}">${spawnLabel(c)}</button>`)
+          .join("");
+        return `<div class="spawn-group"><h4>${g.group}</h4>${btns}</div>`;
+      })
+      .join("");
+    box.querySelectorAll("[data-spawn]").forEach((btn) => {
+      btn.addEventListener("click", () => spawnCode(btn.dataset.spawn, destFn && destFn()));
+    });
+  }
+
+  function currentSpawnDest() {
+    if (state.itemView === "shared") return "shared";
+    if (state.itemView === "stash") return "stash";
+    if (state.itemView === "cube") return "cube";
+    return "inv";
   }
 
   function renderSpawn() {
-    const box = $("spawn-groups");
-    box.innerHTML = Items.SPAWN.map((g) => {
-      const btns = g.codes
-        .filter((c) => Items.itemInfo(c).n)
-        .map((c) => `<button type="button" class="btn" data-spawn="${c}">${Items.itemInfo(c).n.replace(/ Rune$/, "")}</button>`)
-        .join("");
-      return `<div class="spawn-group"><h4>${g.group}</h4>${btns}</div>`;
-    }).join("");
-    box.querySelectorAll("[data-spawn]").forEach((btn) => {
-      btn.addEventListener("click", () => spawnCode(btn.dataset.spawn));
-    });
+    const quick = Items.SPAWN.filter((g) => g.group === "Runes" || g.group === "Currency" || g.group === "Infusions");
+    fillSpawnGroups($("item-spawn-groups"), quick, currentSpawnDest);
+    fillSpawnGroups($("spawn-groups"), Items.SPAWN, null);
     $("spawn-kinds").querySelectorAll("[data-spawn-kind]").forEach((btn) => {
       btn.classList.toggle("is-active", btn.dataset.spawnKind === state.spawnKind);
     });
@@ -381,6 +404,106 @@
     else spawnCode(sel.code);
   }
 
+  function itemCellHtml(hit, where, attrs, emptyLabel) {
+    const sel = hit && state.sel && state.sel.where === where && state.sel.index === hit.index;
+    const match = hit && state.itemSearch && Items.itemMatches(hit.it, state.itemSearch, where);
+    const q = hit ? Items.qualityClass(hit.it) : "";
+    const qty = hit && hit.it.quantity > 1 ? `<span class="d2-qty">${hit.it.quantity}</span>` : "";
+    const name = hit ? escHtml(Items.gridLabel(hit.it)) : "";
+    const title = hit ? escHtml(Items.displayName(hit.it)) : escHtml(emptyLabel || "");
+    const cls = `item-cell${hit ? " is-origin " + q : ""}${sel ? " is-selected" : ""}${match ? " is-hit" : ""}`;
+    return `<button type="button" class="${cls}" title="${title}" ${attrs}>${name}${qty}</button>`;
+  }
+
+  function weaponSlotIds() {
+    return state.weaponSet === 2 ? { wpn: 11, shd: 12 } : { wpn: 4, shd: 5 };
+  }
+
+  function revealEquipped(item) {
+    if (!item || item.location !== 1) return;
+    if (item.equipped === 11 || item.equipped === 12) state.weaponSet = 2;
+    else if (item.equipped === 4 || item.equipped === 5) state.weaponSet = 1;
+  }
+
+  function selectPlayerItem(index) {
+    const bag = itemBag("player");
+    const item = bag[index];
+    if (item && item.location === 1) revealEquipped(item);
+    if (state.sel && state.sel.where === "player" && state.sel.index === index) state.sel = null;
+    else state.sel = { where: "player", index };
+    renderItems();
+  }
+
+  function renderDoll() {
+    const doll = $("d2-doll");
+    if (!doll) return;
+    const show = !!state.parsed;
+    doll.hidden = !show;
+    if (!show) return;
+    const where = "player";
+    const bag = itemBag(where);
+    const byEq = new Map();
+    bag.forEach((it, index) => {
+      if (it.location === 1) byEq.set(it.equipped, { it, index });
+    });
+    const { wpn, shd } = weaponSlotIds();
+    const slots = [
+      [1, "helm", "Helm"],
+      [2, "amu", "Amulet"],
+      [3, "armor", "Armor"],
+      [wpn, "wpn", "Weapon"],
+      [shd, "shd", "Shield"],
+      [6, "rring", "Right ring"],
+      [7, "lring", "Left ring"],
+      [8, "belt", "Belt"],
+      [9, "boot", "Boots"],
+      [10, "glv", "Gloves"],
+    ];
+    const set1 = state.weaponSet !== 2;
+    doll.innerHTML =
+      `<div class="d2-wswap" style="grid-column:1/3;grid-row:1">
+        <button type="button" data-wset="1" class="${set1 ? "is-active" : ""}">I</button>
+        <button type="button" data-wset="2" class="${set1 ? "" : "is-active"}">II</button>
+      </div>
+      <div class="d2-wswap" style="grid-column:9/11;grid-row:1">
+        <button type="button" data-wset="1" class="${set1 ? "is-active" : ""}">I</button>
+        <button type="button" data-wset="2" class="${set1 ? "" : "is-active"}">II</button>
+      </div>` +
+      slots
+        .map(([id, slot, label]) => {
+          const hit = byEq.get(id);
+          return itemCellHtml(hit, where, `data-slot="${slot}" data-eq="${id}"${hit ? ` data-where="${where}" data-index="${hit.index}"` : ""}`, label);
+        })
+        .join("");
+    doll.querySelectorAll("[data-wset]").forEach((el) => {
+      el.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        state.weaponSet = Number(el.dataset.wset) === 2 ? 2 : 1;
+        renderItems();
+      });
+    });
+  }
+
+  function renderEquippedList() {
+    const box = $("item-eq-list");
+    if (!box) return;
+    const bag = itemBag("player");
+    const rows = bag
+      .map((it, index) => ({ it, index }))
+      .filter(({ it }) => it.location === 1);
+    box.hidden = !state.parsed || !rows.length;
+    if (box.hidden) return;
+    box.innerHTML = rows
+      .map(({ it, index }) => {
+        const sel = state.sel && state.sel.where === "player" && state.sel.index === index;
+        return `<button type="button" class="${Items.qualityClass(it)}${sel ? " is-selected" : ""}" data-eq-index="${index}">${escHtml(Items.displayName(it))} · ${escHtml(Items.locationLabel(it, "player"))}</button>`;
+      })
+      .join("");
+    box.querySelectorAll("[data-eq-index]").forEach((el) => {
+      el.addEventListener("click", () => selectPlayerItem(Number(el.dataset.eqIndex)));
+    });
+  }
+
   function renderItems() {
     const gridEl = $("item-grid");
     const listEl = $("item-list");
@@ -389,10 +512,6 @@
     const bag = itemBag(where);
     const occupied = new Map();
     bag.forEach((it, index) => {
-      if (grid.equipped) {
-        if (it.location === 1) occupied.set("eq-" + it.equipped, { it, index });
-        return;
-      }
       if (!Items.itemInGrid(it, grid)) return;
       occupied.set(it.x + "," + it.y, { it, index });
       for (const c of Items.cellsUsed(it)) {
@@ -404,64 +523,43 @@
     const hint = $("item-board-hint");
     if (hint) {
       hint.textContent = selectedItem()
-        ? "Click an empty cell to move " + Items.displayName(selectedItem()) + ". Click it again to deselect."
+        ? "Click an empty cell or gear slot to move " + Items.displayName(selectedItem()) + "."
         : "Click an item to inspect it. Click an empty cell to move the selected item.";
     }
 
-    if (grid.equipped) {
-      const slots = [
-        [1, "helm", "Helm"],
-        [2, "amu", "Amulet"],
-        [3, "armor", "Armor"],
-        [4, "wpn", "Weapon"],
-        [5, "shd", "Shield"],
-        [6, "rring", "Right ring"],
-        [7, "lring", "Left ring"],
-        [8, "belt", "Belt"],
-        [9, "boot", "Boots"],
-        [10, "glv", "Gloves"],
-        [11, "altw", "Alt weapon"],
-        [12, "alts", "Alt shield"],
-      ];
-      gridEl.className = "item-grid equipped-wrap";
-      gridEl.style.gridTemplateColumns = "";
-      gridEl.style.gridTemplateRows = "";
-      gridEl.innerHTML = slots
-        .map(([id, slot, label]) => {
-          const hit = occupied.get("eq-" + id);
-          const sel = hit && state.sel && state.sel.where === where && state.sel.index === hit.index;
-          const match = hit && state.itemSearch && Items.itemMatches(hit.it, state.itemSearch, where);
-          if (!hit) {
-            return `<button type="button" class="item-cell is-body" data-eq="${id}" data-slot="${slot}">${label}</button>`;
-          }
-          return `<button type="button" class="item-cell is-body is-origin ${Items.qualityClass(hit.it)}${sel ? " is-selected" : ""}${match ? " is-hit" : ""}" data-where="${where}" data-index="${hit.index}" data-slot="${slot}" title="${escHtml(Items.displayName(hit.it))}">${escHtml(Items.gridLabel(hit.it))}</button>`;
-        })
-        .join("");
-    } else {
-      gridEl.className = "item-grid";
-      gridEl.style.gridTemplateColumns = `repeat(${grid.w}, 40px)`;
-      gridEl.style.gridTemplateRows = `repeat(${grid.h}, 40px)`;
-      let html = "";
-      for (let y = 0; y < grid.h; y++) {
-        for (let x = 0; x < grid.w; x++) {
-          const hit = occupied.get(x + "," + y);
-          if (hit && hit.fill) continue;
-          const sel = hit && state.sel && state.sel.where === where && state.sel.index === hit.index;
-          const match = hit && state.itemSearch && Items.itemMatches(hit.it, state.itemSearch, where);
-          const style = `grid-column:${x + 1}/span ${hit ? hit.it.info.w || 1 : 1};grid-row:${y + 1}/span ${hit ? hit.it.info.h || 1 : 1}`;
-          if (!hit) html += `<button type="button" class="item-cell" data-x="${x}" data-y="${y}" style="${style}"></button>`;
-          else {
-            html += `<button type="button" class="item-cell is-origin ${Items.qualityClass(hit.it)}${sel ? " is-selected" : ""}${match ? " is-hit" : ""}" data-where="${where}" data-index="${hit.index}" style="${style}" title="${escHtml(Items.displayName(hit.it))}">${escHtml(Items.gridLabel(hit.it))}</button>`;
-          }
-        }
-      }
-      gridEl.innerHTML = html;
+    renderDoll();
+    renderEquippedList();
+
+    const footer = $("d2-footer");
+    if (footer) {
+      footer.hidden = !state.parsed;
+      if (!footer.hidden) $("d2-gold").textContent = String(state.parsed.stats.gold || 0);
     }
+
+    gridEl.className = "item-grid d2-bag";
+    gridEl.style.gridTemplateColumns = `repeat(${grid.w}, var(--d2-cell))`;
+    gridEl.style.gridTemplateRows = `repeat(${grid.h}, var(--d2-cell))`;
+    let html = "";
+    for (let y = 0; y < grid.h; y++) {
+      for (let x = 0; x < grid.w; x++) {
+        const hit = occupied.get(x + "," + y);
+        if (hit && hit.fill) continue;
+        const style = `grid-column:${x + 1}/span ${hit ? hit.it.info.w || 1 : 1};grid-row:${y + 1}/span ${hit ? hit.it.info.h || 1 : 1}`;
+        html += itemCellHtml(
+          hit,
+          where,
+          hit
+            ? `data-where="${where}" data-index="${hit.index}" style="${style}"`
+            : `data-x="${x}" data-y="${y}" style="${style}"`
+        );
+      }
+    }
+    gridEl.innerHTML = html;
 
     const extras = bag
       .map((it, index) => ({ it, index }))
       .filter(({ it, index }) => {
-        if (grid.equipped) return it.location === 1 && !occupied.has("eq-" + it.equipped);
+        if (it.location === 1) return false;
         if (Items.itemInGrid(it, grid)) {
           const origin = occupied.get(it.x + "," + it.y);
           return origin && origin.index !== index;
@@ -480,10 +578,10 @@
       (state.stash ? nStash + " in shared stash" : "shared stash not loaded") +
       (state.parsed && state.parsed.itemsError ? " · item parse warning: " + state.parsed.itemsError : "");
 
-    const counts = { inv: 0, cube: 0, stash: 0, shared: nStash, belt: 0, equipped: 0 };
+    const counts = { inv: 0, cube: 0, stash: 0, shared: nStash, belt: 0 };
     if (state.parsed && state.parsed.items) {
       for (const it of state.parsed.items.player) {
-        if (it.location === 1) counts.equipped++;
+        if (it.location === 1) continue;
         else if (it.location === 2) counts.belt++;
         else if (it.panel === 4) counts.cube++;
         else if (it.panel === 5) counts.stash++;
@@ -495,38 +593,49 @@
       el.textContent = n ? n : "";
     });
 
-    gridEl.querySelectorAll("[data-index]").forEach((el) => {
-      el.addEventListener("click", () => {
-        const index = Number(el.dataset.index);
-        if (state.sel && state.sel.where === el.dataset.where && state.sel.index === index) state.sel = null;
-        else state.sel = { where: el.dataset.where, index };
-        renderItems();
+    function bindClicks(root) {
+      if (!root) return;
+      root.querySelectorAll("[data-index]").forEach((el) => {
+        el.addEventListener("click", () => {
+          const index = Number(el.dataset.index);
+          const whereClick = el.dataset.where;
+          if (whereClick === "player") {
+            selectPlayerItem(index);
+            return;
+          }
+          if (state.sel && state.sel.where === whereClick && state.sel.index === index) state.sel = null;
+          else state.sel = { where: whereClick, index };
+          renderItems();
+        });
       });
-    });
-    gridEl.querySelectorAll("[data-x]").forEach((el) => {
-      el.addEventListener("click", () => moveSelectedTo(Number(el.dataset.x), Number(el.dataset.y)));
-    });
+      root.querySelectorAll("[data-x]").forEach((el) => {
+        el.addEventListener("click", () => moveSelectedTo(Number(el.dataset.x), Number(el.dataset.y)));
+      });
+      root.querySelectorAll("[data-eq]").forEach((el) => {
+        el.addEventListener("click", () => {
+          if (el.dataset.index) return;
+          const item = selectedItem();
+          if (!item) return;
+          const destWhere = "player";
+          if (state.sel.where !== destWhere) {
+            const src = itemBag(state.sel.where);
+            const [moved] = src.splice(state.sel.index, 1);
+            itemBag(destWhere).push(moved);
+            state.sel = { where: destWhere, index: itemBag(destWhere).length - 1 };
+            setStashDirty(true);
+            setDirty(true);
+          }
+          Items.applyPlacement(selectedItem(), { location: 1, equipped: Number(el.dataset.eq), x: 0, y: 0, panel: 0 });
+          setDirty(true);
+          renderItems();
+        });
+      });
+    }
+    bindClicks(gridEl);
+    bindClicks($("d2-doll"));
     listEl.querySelectorAll("[data-index]").forEach((el) => {
       el.addEventListener("click", () => {
         state.sel = { where: el.dataset.where, index: Number(el.dataset.index) };
-        renderItems();
-      });
-    });
-    gridEl.querySelectorAll("[data-eq]").forEach((el) => {
-      el.addEventListener("click", () => {
-        const item = selectedItem();
-        if (!item) return;
-        const destWhere = "player";
-        if (state.sel.where !== destWhere) {
-          const src = itemBag(state.sel.where);
-          const [moved] = src.splice(state.sel.index, 1);
-          itemBag(destWhere).push(moved);
-          state.sel = { where: destWhere, index: itemBag(destWhere).length - 1 };
-          setStashDirty(true);
-          setDirty(true);
-        }
-        Items.applyPlacement(selectedItem(), { location: 1, equipped: Number(el.dataset.eq), x: 0, y: 0, panel: 0 });
-        setDirty(true);
         renderItems();
       });
     });
@@ -553,6 +662,24 @@
     if (destWhere === "stash") setStashDirty(true);
     else setDirty(true);
     renderItems();
+  }
+
+  function unequipSelected() {
+    const item = selectedItem();
+    if (!item || item.location !== 1) {
+      setStatus("Select an equipped item first");
+      return;
+    }
+    const dest = spawnDestination(item.info.w, item.info.h, "inv");
+    if (!dest || dest.destWhere === "vault") {
+      setStatus("No inventory space to unequip — send it to Vault instead");
+      return;
+    }
+    Items.applyPlacement(item, dest.place);
+    setDirty(true);
+    setItemView("inv");
+    renderItems();
+    setStatus("Unequipped " + Items.displayName(item) + " into Inventory");
   }
 
   function duplicateSelected() {
@@ -681,9 +808,9 @@
     setStatus("Spawned " + Items.displayName(item) + " into " + dest.grid.label);
   }
 
-  function spawnCode(code) {
+  function spawnCode(code, destKey) {
     const info = Items.itemInfo(code);
-    const dest = spawnDestination(info.w, info.h);
+    const dest = spawnDestination(info.w, info.h, destKey);
     if (!dest) return;
     try {
       const extra = spawnOpts();
@@ -1038,7 +1165,15 @@
     if (!state.parsed) switchTab("items");
     else renderItems();
     setStashDirty(false);
-    setStatus("Loaded " + state.stashName + " · " + parsed.items.length + " items");
+    const warn = parsed.warnings && parsed.warnings.length;
+    setStatus(
+      "Loaded " +
+        state.stashName +
+        " · " +
+        parsed.items.length +
+        " items" +
+        (warn ? " · " + warn + " parse warning(s): " + parsed.warnings[0] : "")
+    );
   }
 
   async function loadBytes(bytes, fileName, handle, lastModified) {
@@ -1060,7 +1195,10 @@
       "Loaded " +
         state.fileName +
         (Save.verify(bytes) ? " · checksum ok" : " · checksum mismatch") +
-        (parsed.items ? " · " + parsed.items.player.length + " items" : parsed.itemsError ? " · items unread: " + parsed.itemsError : "")
+        (parsed.items ? " · " + parsed.items.player.length + " items" : parsed.itemsError ? " · items unread: " + parsed.itemsError : "") +
+        (parsed.items && parsed.items.warnings && parsed.items.warnings.length
+          ? " · " + parsed.items.warnings.length + " parse warning(s): " + parsed.items.warnings[0]
+          : "")
     );
   }
 
@@ -1404,6 +1542,7 @@
     }
   });
 
+  $("btn-unequip-item").addEventListener("click", () => unequipSelected());
   $("btn-duplicate-item").addEventListener("click", () => duplicateSelected());
   $("btn-copy-vault").addEventListener("click", () => depositSelected(false));
   $("btn-move-vault").addEventListener("click", () => depositSelected(true));

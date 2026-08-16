@@ -213,15 +213,26 @@
             <button type="button" class="tab" data-view="stash">Stash <span class="bag-count" data-count="stash"></span></button>
             <button type="button" class="tab" data-view="shared">Shared <span class="bag-count" data-count="shared"></span></button>
             <button type="button" class="tab" data-view="belt">Belt <span class="bag-count" data-count="belt"></span></button>
-            <button type="button" class="tab" data-view="equipped">Equipped <span class="bag-count" data-count="equipped"></span></button>
           </div>
           <p class="item-board-hint" id="item-board-hint">Click an item to inspect it. Click an empty cell to move it.</p>
-          <div id="item-grid" class="item-grid"></div>
+          <div class="d2-stage">
+            <div class="d2-panel" id="d2-panel">
+              <span class="d2-corner d2-corner--bl"></span>
+              <span class="d2-corner d2-corner--br"></span>
+              <div id="d2-doll" class="d2-doll" hidden></div>
+              <div id="item-eq-list" class="item-eq-list" hidden></div>
+              <div id="item-grid" class="item-grid d2-bag"></div>
+              <div id="d2-footer" class="d2-footer" hidden>
+                <span class="d2-gold-ico" aria-hidden="true"></span>
+                <span id="d2-gold" class="d2-gold">0</span>
+              </div>
+            </div>
+          </div>
           <div id="item-list" class="item-list"></div>
         </div>
         <aside class="item-inspect" id="item-inspect">
           <h3>Item</h3>
-          <p id="item-inspect-empty" class="hint">Select an item on the grid. Duplicate, sockets, and ethereal live here.</p>
+          <p id="item-inspect-empty" class="hint">Select an item on the paperdoll, equipped list, or bag. Duplicate, sockets, ethereal, and unequip live here.</p>
           <div id="item-inspect-body" hidden>
             <p id="item-inspect-name" class="item-inspect-name"></p>
             <p id="item-inspect-meta" class="item-inspect-meta"></p>
@@ -239,6 +250,7 @@
             </div>
             <p id="item-inspect-socks" class="hint"></p>
             <div class="item-inspect-actions">
+              <button type="button" class="btn" id="btn-unequip-item">Unequip</button>
               <button type="button" class="btn" id="btn-duplicate-item">Duplicate</button>
               <button type="button" class="btn" id="btn-copy-vault">Copy to Vault</button>
               <button type="button" class="btn" id="btn-move-vault">Move to Vault</button>
@@ -248,7 +260,11 @@
         </aside>
       </div>
       <div class="spawn-card">
-        <p class="hint">Crafting lives on the <strong>Craft</strong> tab. Extra uniques go to <strong>Vault</strong> (unlimited). Collection tracks which uniques you have on the character, stash, and vault.</p>
+        <div class="spawn-card-head">
+          <h3 class="spawn-head">Spawn runes, currency &amp; infusions</h3>
+          <p class="hint">Adds into the bag you’re viewing (inventory, cube, stash, or shared).</p>
+        </div>
+        <div id="item-spawn-groups" class="spawn-groups"></div>
       </div>
     </section>
 

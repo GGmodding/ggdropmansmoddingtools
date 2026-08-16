@@ -11,6 +11,8 @@
 
   const SPAWN = [
     { group: "Runes", codes: ["r01","r02","r03","r04","r05","r06","r07","r08","r09","r10","r11","r12","r13","r14","r15","r16","r17","r18","r19","r20","r21","r22","r23","r24","r25","r26","r27","r28","r29","r30","r31","r32","r33"] },
+    { group: "Currency", codes: ["ooal","dvo","csor","mfo","exo","etor","llmr"] },
+    { group: "Infusions", codes: ["crfb","crfc","crfs","crfh","crfv","crfu","crfp"] },
     { group: "Gems", codes: ["gpv","gpw","gpg","gpr","gpb","gpy","skz","gzv","glw","glg","glr","glb","gly","skl"] },
     { group: "Potions", codes: ["hp1","hp2","hp3","hp4","hp5","mp1","mp2","mp3","mp4","mp5","rvs","rvl"] },
     { group: "Scrolls", codes: ["tsc","isc"] },
@@ -36,6 +38,9 @@
       bitOffset: () => bit,
       byteOffset: () => start + (bit >> 3),
       alignedByteOffset: () => start + Math.ceil(bit / 8),
+      seek(n) {
+        bit = Math.max(0, n);
+      },
     };
   }
 
@@ -261,30 +266,64 @@
     }
     item.socketedCount = reader.read(sockBits);
 
+    let parseFailed = false;
     if (!simple) {
-      try {
-        item.uidBit = reader.bitOffset();
-        readExtended(reader, item, info);
-      } catch (err) {
-        item.parseError = err.message || String(err);
+      const extStart = reader.bitOffset();
+      const kinds = ITEMS[item.code] ? [info.k] : ["a", "w", "m"];
+      let lastErr = null;
+      for (const k of kinds) {
+        try {
+          reader.seek(extStart);
+          const tryInfo = ITEMS[item.code] ? info : { n: info.n, k, w: info.w || 1, h: info.h || 1 };
+          item.info = tryInfo;
+          item.uidBit = extStart;
+          readExtended(reader, item, tryInfo);
+          lastErr = null;
+          break;
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      if (lastErr) {
+        item.parseError = lastErr.message || String(lastErr);
+        parseFailed = true;
+        reader.seek(extStart);
       }
     }
 
     reader.align();
-    const nextJm = findJM(bytes, start + 2);
-    const end = nextJm < 0 ? bytes.length : nextJm;
-    if (!simple && item.socketedCount) {
+    let end = reader.alignedByteOffset();
+    if (parseFailed || end <= start) {
+      const from = Math.max(start + 14, end);
+      const nextJm = findJM(bytes, from);
+      end = nextJm < 0 ? bytes.length : nextJm;
+    } else if (end + 1 < bytes.length && ascii(bytes, end, 2) !== "JM") {
+      const nextJm = findJM(bytes, end);
+      if (nextJm > end && nextJm - end <= 48) end = nextJm;
+    }
+    if (!simple && item.socketedCount && !parseFailed) {
       item.socketedItems = [];
-      let childOff = nextJm < 0 ? start + 14 : nextJm;
+      let childOff = end;
       for (let i = 0; i < item.socketedCount; i++) {
-        const child = parseItem(bytes, childOff);
-        item.socketedItems.push(child);
-        childOff += child.raw.length;
+        if (childOff + 2 > bytes.length || ascii(bytes, childOff, 2) !== "JM") {
+          item.parseError = (item.parseError ? item.parseError + "; " : "") + "missing socketed item " + (i + 1);
+          break;
+        }
+        try {
+          const child = parseItem(bytes, childOff);
+          item.socketedItems.push(child);
+          childOff += child.raw.length;
+          if (!child.raw.length) break;
+        } catch (err) {
+          item.parseError = (item.parseError ? item.parseError + "; " : "") + "socket " + (i + 1) + ": " + (err.message || err);
+          break;
+        }
       }
       item.raw = bytes.slice(start, childOff);
     } else {
       item.raw = bytes.slice(start, end);
     }
+    if (!item.raw.length) item.raw = bytes.slice(start, Math.min(bytes.length, start + 14));
     return item;
   }
 
@@ -381,13 +420,42 @@
     if (ascii(bytes, start, 2) !== "JM") throw new Error("Item list JM not found at " + start);
     const count = u16(bytes, start + 2);
     const items = [];
+    const warnings = [];
     let off = start + 4;
     for (let i = 0; i < count; i++) {
-      const item = parseItem(bytes, off);
-      items.push(item);
-      off += item.raw.length;
+      if (off + 2 > bytes.length) {
+        warnings.push("File ended after " + items.length + " of " + count + " items");
+        break;
+      }
+      if (ascii(bytes, off, 2) !== "JM") {
+        const next = findJM(bytes, off);
+        if (next < 0) {
+          warnings.push("Item header JM not found at " + off + " (" + (count - items.length) + " unread)");
+          break;
+        }
+        warnings.push("Re-synced item list at " + next + " (skipped " + (next - off) + " bytes @ " + off + ")");
+        off = next;
+      }
+      try {
+        const item = parseItem(bytes, off);
+        const size = item.raw && item.raw.length ? item.raw.length : 0;
+        if (!size) {
+          warnings.push("Zero-length item at " + off);
+          const next = findJM(bytes, off + 2);
+          if (next < 0) break;
+          off = next;
+          continue;
+        }
+        items.push(item);
+        off += size;
+      } catch (err) {
+        warnings.push((err.message || String(err)) + " (item " + (i + 1) + "/" + count + ")");
+        const next = findJM(bytes, off + 2);
+        if (next < 0) break;
+        off = next;
+      }
     }
-    return { items, start, end: off, count };
+    return { items, start, end: off, count, warnings };
   }
 
   function writeItemList(items) {
@@ -409,6 +477,7 @@
   function parseCharSection(bytes, jmOff) {
     const player = parseItemList(bytes, jmOff);
     let off = player.end;
+    const warnings = player.warnings ? player.warnings.slice() : [];
     if (ascii(bytes, off, 2) !== "JM") throw new Error("Corpse JM not found at " + off);
     const corpseCount = u16(bytes, off + 2);
     off += 4;
@@ -419,6 +488,7 @@
       off += 12;
       corpse = parseItemList(bytes, off);
       off = corpse.end;
+      if (corpse.warnings && corpse.warnings.length) warnings.push.apply(warnings, corpse.warnings);
     }
     let merc = { items: [] };
     let hasMerc = false;
@@ -428,6 +498,7 @@
         hasMerc = true;
         merc = parseItemList(bytes, off);
         off = merc.end;
+        if (merc.warnings && merc.warnings.length) warnings.push.apply(warnings, merc.warnings);
       }
     }
     if (ascii(bytes, off, 2) !== "kf") throw new Error("Golem kf not found at " + off);
@@ -447,6 +518,7 @@
       merc: merc.items,
       hasMerc,
       golem,
+      warnings,
       pd2Tail: bytes.slice(off),
     };
   }
@@ -509,6 +581,7 @@
       header: bytes.slice(0, STASH_HEADER),
       items: list.items,
       goldHint: u32(bytes, 0x12),
+      warnings: list.warnings || [],
     };
   }
 
@@ -860,7 +933,7 @@
 
   function grids() {
     return {
-      inv: { w: 10, h: 8, panel: 1, location: 0, label: "Inventory" },
+      inv: { w: 10, h: 4, panel: 1, location: 0, label: "Inventory" },
       cube: { w: 3, h: 4, panel: 4, location: 0, label: "Cube" },
       stash: { w: 6, h: 8, panel: 5, location: 0, label: "Personal stash" },
       shared: { w: 10, h: 16, panel: 6, location: 0, label: "Shared stash" },
@@ -989,7 +1062,10 @@
     if (where === "stash") return "Shared stash";
     if (where === "merc") return "Mercenary";
     if (where === "corpse") return "Corpse";
-    if (item.location === 1) return "Equipped";
+    if (item.location === 1) {
+      const body = (DB.BODY || [])[item.equipped];
+      return body ? "Equipped · " + body : "Equipped";
+    }
     if (item.location === 2) return "Belt";
     if (item.panel === 4) return "Cube";
     if (item.panel === 5) return "Personal stash";
@@ -999,7 +1075,7 @@
 
   function viewForItem(item, where) {
     if (where === "stash") return "shared";
-    if (item.location === 1) return "equipped";
+    if (item.location === 1) return "inv";
     if (item.location === 2) return "belt";
     if (item.panel === 4) return "cube";
     if (item.panel === 5) return "stash";
