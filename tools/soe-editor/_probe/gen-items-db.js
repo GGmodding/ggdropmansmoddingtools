@@ -362,6 +362,12 @@ function encodeUnique(row) {
   return { mods: list, flags, skipped };
 }
 
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { encodeUnique, tsv, items };
+}
+
+if (require.main !== module) return;
+
 const uniques = [];
 let skipPropCount = 0;
 const stubbed = [];

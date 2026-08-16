@@ -232,11 +232,25 @@
         </div>
         <aside class="item-inspect" id="item-inspect">
           <h3>Item</h3>
-          <p id="item-inspect-empty" class="hint">Select an item on the paperdoll, equipped list, or bag. Duplicate, sockets, ethereal, and unequip live here.</p>
+          <p id="item-inspect-empty" class="hint">Select an item on the paperdoll, equipped list, or bag. Duplicate, sockets, ethereal, affixes, and unequip live here.</p>
           <div id="item-inspect-body" hidden>
             <p id="item-inspect-name" class="item-inspect-name"></p>
             <p id="item-inspect-meta" class="item-inspect-meta"></p>
             <ul id="item-inspect-mods" class="item-inspect-mods"></ul>
+            <div id="item-affix-editor" class="affix-editor" hidden>
+              <h4>Affixes</h4>
+              <div id="item-affix-slots" class="affix-slots"></div>
+              <div class="affix-add">
+                <div class="spawn-kinds" id="affix-kinds">
+                  <button type="button" class="tab is-active" data-affix-kind="prefix">Prefix</button>
+                  <button type="button" class="tab" data-affix-kind="suffix">Suffix</button>
+                </div>
+                <input id="f-affix-search" type="search" placeholder="Whale, FCR, life, Sturdy…" autocomplete="off" />
+              </div>
+              <label class="check affix-all"><input id="f-affix-all" type="checkbox" /> Show affixes that don’t fit this base</label>
+              <div id="affix-results" class="affix-results"></div>
+              <p id="item-affix-hint" class="hint">Search and click an affix. Magic items get one prefix and one suffix; a second of the same kind turns it rare. Uniques keep their name and gain the extra stats.</p>
+            </div>
             <p id="item-inspect-gems" class="item-inspect-gems" hidden></p>
             <div class="item-inspect-fields">
               <label id="item-qty-wrap">Quantity
@@ -380,6 +394,7 @@
 
   <script src="d2s.js"></script>
   <script src="items-db.js"></script>
+  <script src="affixes-db.js"></script>
   <script src="items.js"></script>
   <script src="vault.js"></script>
   <script src="skills-db.js"></script>

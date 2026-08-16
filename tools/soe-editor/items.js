@@ -2,6 +2,7 @@
   "use strict";
 
   const DB = typeof window !== "undefined" ? window.SoEItemsDB : require("./items-db.js");
+  const AFF = typeof window !== "undefined" ? window.SoEAffixes || {} : require("./affixes-db.js");
   const MAG = DB.MAG;
   const ITEMS = DB.ITEMS;
 
@@ -837,6 +838,346 @@
     return item;
   }
 
+  function overwriteItem(dst, src) {
+    for (const k of Object.keys(dst)) delete dst[k];
+    Object.assign(dst, src);
+    return dst;
+  }
+
+  function serializeItem(item) {
+    if (!item || item.simple || item.ear) throw new Error("This item cannot have affixes");
+    const info = item.info || itemInfo(item.code);
+    const w = bitWriter();
+    w.writeStr("JM");
+    w.write(item.flagsLo || 0, 4);
+    w.write(item.identified ? 1 : 0, 1);
+    w.write(item.flagsMid || 0, 6);
+    w.write(item.socketed ? 1 : 0, 1);
+    w.write(item.flag12 || 0, 1);
+    w.write(item.isNew ? 1 : 0, 1);
+    w.write(item.flags14 || 0, 2);
+    w.write(0, 1);
+    w.write(item.starter ? 1 : 0, 1);
+    w.write(item.flags18 || 0, 3);
+    w.write(0, 1);
+    w.write(item.ethereal ? 1 : 0, 1);
+    w.write(item.flag23 != null ? item.flag23 : 1, 1);
+    w.write(item.personalized ? 1 : 0, 1);
+    w.write(item.flag25 || 0, 1);
+    w.write(item.runeword ? 1 : 0, 1);
+    w.write(item.flags27 || 0, 5);
+    w.write(item.version || 101, 10);
+    w.write(item.location || 0, 3);
+    w.write(item.equipped || 0, 4);
+    w.write(item.x || 0, 4);
+    w.write(item.y || 0, 4);
+    w.write(item.panel || 0, 3);
+    const padded = ((item.code || "") + "    ").slice(0, 4);
+    for (let i = 0; i < 4; i++) w.write(padded.charCodeAt(i), 8);
+    const filled = filledSockets(item);
+    if (info.q) {
+      const q = MAG[356] || { sB: 2, sA: 0 };
+      w.write((item.questDiff || 0) + (q.sA || 0), q.sB);
+      w.write(filled ? 1 : 0, 1);
+    } else {
+      w.write(filled, 3);
+    }
+    w.write((item.uid || 0) >>> 0, 32);
+    w.write(Math.max(1, Math.min(127, item.ilvl || 99)), 7);
+    const quality = item.quality || QUALITY.Normal;
+    w.write(quality, 4);
+    w.write(item.multiPic ? 1 : 0, 1);
+    if (item.multiPic) w.write(item.pictureId || 0, 3);
+    w.write(item.classSpec ? 1 : 0, 1);
+    if (item.classSpec) w.write(item.autoAffix || 0, 11);
+    if (quality === QUALITY.Low) w.write(item.lowQuality || 0, 3);
+    else if (quality === QUALITY.Superior) w.write(item.superior || 0, 3);
+    else if (quality === QUALITY.Magic) {
+      w.write(item.prefix || 0, 11);
+      w.write(item.suffix || 0, 11);
+    } else if (quality === QUALITY.Set) w.write(item.setId || 0, 12);
+    else if (quality === QUALITY.Unique) w.write(item.uniqueId || 0, 12);
+    else if (quality === QUALITY.Rare || quality === QUALITY.Crafted) {
+      w.write(item.rareName1 || 1, 8);
+      w.write(item.rareName2 || 1, 8);
+      const aff = item.rareAffixes || [];
+      for (let i = 0; i < 6; i++) {
+        if (aff[i]) {
+          w.write(1, 1);
+          w.write(aff[i], 11);
+        } else w.write(0, 1);
+      }
+    }
+    if (item.runeword) {
+      w.write(item.runewordId || 0, 12);
+      w.write(0, 4);
+    }
+    if (item.personalized) {
+      const name = String(item.personalizedName || "");
+      for (let i = 0; i < 16; i++) {
+        const c = i < name.length ? name.charCodeAt(i) & 127 : 0;
+        w.write(c, 7);
+        if (!c) break;
+      }
+    }
+    if (item.code === "tbk" || item.code === "ibk") w.write(item.code === "ibk" ? 1 : 0, 5);
+    w.write(item.timestamp ? 1 : 0, 1);
+    if (info.k === "a") {
+      const def = MAG[31] || { sB: 11, sA: 10 };
+      w.write((item.defense != null ? item.defense : Number(info.ac) || 10) + (def.sA || 0), def.sB);
+    }
+    if (info.k === "a" || info.k === "w") {
+      const maxd = MAG[73] || { sB: 8, sA: 0 };
+      const curd = MAG[72] || { sB: 9, sA: 0 };
+      const maxDur = item.maxDur != null ? item.maxDur : Number(info.dur) || 0;
+      w.write(maxDur + (maxd.sA || 0), maxd.sB);
+      if (maxDur > 0) w.write((item.dur != null ? item.dur : maxDur) + (curd.sA || 0), curd.sB);
+    }
+    if (info.s) w.write(item.quantity || 1, 9);
+    if (item.socketed) w.write(item.sockets || 0, 4);
+    if (quality === QUALITY.Set) w.write(0, 5);
+    writeMagic(w, item.mods || []);
+    if (item.runeword) writeMagic(w, item.runewordMods || []);
+    const parent = w.finish();
+    const next = parseItem(joinRaw(parent, item.socketedItems || []), 0);
+    if (next.parseError) throw new Error("Rewritten item failed to parse: " + next.parseError);
+    return next;
+  }
+
+  function rewriteItem(item) {
+    return overwriteItem(item, serializeItem(item));
+  }
+
+  const typeAncCache = new Map();
+  function typeAncestors(code) {
+    if (typeAncCache.has(code)) return typeAncCache.get(code);
+    const seen = new Set();
+    function walk(c) {
+      if (!c || seen.has(c)) return;
+      seen.add(c);
+      for (const p of (AFF.TYPES && AFF.TYPES[c]) || []) walk(p);
+    }
+    walk(code);
+    typeAncCache.set(code, seen);
+    return seen;
+  }
+
+  function itemTypeSet(item) {
+    const have = new Set();
+    for (const t of (AFF.ITEMT && item && AFF.ITEMT[item.code]) || []) {
+      for (const a of typeAncestors(t)) have.add(a);
+    }
+    return have;
+  }
+
+  function affixFits(affix, item) {
+    if (!affix || !item) return true;
+    const have = itemTypeSet(item);
+    if (!have.size) return true;
+    if ((affix.e || []).some((t) => have.has(t))) return false;
+    const itype = affix.t || [];
+    if (!itype.length) return true;
+    return itype.some((t) => have.has(t));
+  }
+
+  function affixList(kind) {
+    return kind === "suffix" ? AFF.SUFFIX || [] : AFF.PREFIX || [];
+  }
+
+  function findAffix(kind, id) {
+    const n = Number(id) || 0;
+    if (!n) return null;
+    return affixList(kind).find((a) => a.i === n) || null;
+  }
+
+  function affixName(kind, id) {
+    const a = findAffix(kind, id);
+    return a ? a.n : "";
+  }
+
+  function rareName(kind, id) {
+    const list = kind === "suffix" ? AFF.RARE_S : AFF.RARE_P;
+    return (list && list[id]) || "";
+  }
+
+  function mergeModLists(lists) {
+    const byId = new Map();
+    for (const list of lists) {
+      for (const m of list || []) {
+        const vals = (m.v || m.values || []).slice();
+        const prev = byId.get(m.id);
+        if (!prev) byId.set(m.id, { id: m.id, values: vals });
+        else {
+          for (let i = 0; i < vals.length; i++) prev.values[i] = (prev.values[i] || 0) + (vals[i] || 0);
+        }
+      }
+    }
+    return [...byId.values()];
+  }
+
+  function subtractMods(base, extra) {
+    const byId = new Map((base || []).map((m) => [m.id, { id: m.id, values: (m.values || m.v || []).slice() }]));
+    for (const m of extra || []) {
+      const prev = byId.get(m.id);
+      if (!prev) continue;
+      const vals = m.v || m.values || [];
+      for (let i = 0; i < vals.length; i++) prev.values[i] = (prev.values[i] || 0) - (vals[i] || 0);
+      if (prev.values.every((v) => !v)) byId.delete(m.id);
+    }
+    return [...byId.values()];
+  }
+
+  function affixMods(kind, id) {
+    const a = findAffix(kind, id);
+    return a && a.m ? a.m.map((m) => ({ id: m.id, values: (m.v || []).slice() })) : [];
+  }
+
+  function padRare(arr) {
+    const out = (arr || []).slice(0, 6);
+    while (out.length < 6) out.push(null);
+    return out;
+  }
+
+  function rareFromMagic(item) {
+    const aff = [item.prefix || null, item.suffix || null, null, null, null, null];
+    item.quality = QUALITY.Rare;
+    item.rareName1 = item.rareName1 || 1;
+    item.rareName2 = item.rareName2 || 1;
+    item.rareAffixes = aff;
+    delete item.prefix;
+    delete item.suffix;
+    return aff;
+  }
+
+  function rebuildAffixMods(item) {
+    if (item.quality === QUALITY.Magic) {
+      item.mods = mergeModLists([affixMods("prefix", item.prefix), affixMods("suffix", item.suffix)]);
+      return;
+    }
+    if (item.quality === QUALITY.Rare || item.quality === QUALITY.Crafted) {
+      const aff = padRare(item.rareAffixes);
+      const lists = [];
+      for (let i = 0; i < 6; i++) {
+        if (!aff[i]) continue;
+        lists.push(affixMods(i % 2 === 0 ? "prefix" : "suffix", aff[i]));
+      }
+      item.mods = mergeModLists(lists);
+    }
+  }
+
+  function itemAffixSlots(item) {
+    const prefixes = [];
+    const suffixes = [];
+    if (!item || item.simple || item.ear) return { prefixes, suffixes, mode: "none" };
+    if (item.quality === QUALITY.Magic) {
+      if (item.prefix) prefixes.push({ id: item.prefix, name: affixName("prefix", item.prefix), kind: "prefix", slot: 0 });
+      if (item.suffix) suffixes.push({ id: item.suffix, name: affixName("suffix", item.suffix), kind: "suffix", slot: 1 });
+      return { prefixes, suffixes, mode: "magic" };
+    }
+    if (item.quality === QUALITY.Rare || item.quality === QUALITY.Crafted) {
+      const aff = padRare(item.rareAffixes);
+      for (let i = 0; i < 6; i++) {
+        if (!aff[i]) continue;
+        const kind = i % 2 === 0 ? "prefix" : "suffix";
+        const rec = { id: aff[i], name: affixName(kind, aff[i]), kind, slot: i };
+        if (kind === "prefix") prefixes.push(rec);
+        else suffixes.push(rec);
+      }
+      return { prefixes, suffixes, mode: "rare" };
+    }
+    if (item.quality === QUALITY.Unique || item.quality === QUALITY.Set) {
+      for (const e of item.extraAffixes || []) {
+        const rec = { id: e.id, name: affixName(e.kind, e.id), kind: e.kind, slot: e.id };
+        if (e.kind === "prefix") prefixes.push(rec);
+        else suffixes.push(rec);
+      }
+      return { prefixes, suffixes, mode: "extra" };
+    }
+    return { prefixes, suffixes, mode: "magic" };
+  }
+
+  function canEditAffixes(item) {
+    return !!(item && !item.simple && !item.ear && !item.parseError);
+  }
+
+  function searchAffixes(query, kind, item, opts) {
+    const q = String(query || "").trim().toLowerCase();
+    const fitOnly = !opts || opts.fit !== false;
+    const out = [];
+    for (const a of affixList(kind)) {
+      if (q && !(a.s || "").includes(q) && !(a.n || "").toLowerCase().includes(q)) continue;
+      if (fitOnly && item && !affixFits(a, item)) continue;
+      out.push(a);
+      if (out.length >= 40) break;
+    }
+    return out;
+  }
+
+  function addAffix(item, kind, id) {
+    if (!canEditAffixes(item)) throw new Error("Select a real item first");
+    if (item.runeword) throw new Error("Won't change affixes on a runeword");
+    const affix = findAffix(kind, id);
+    if (!affix) throw new Error("Unknown affix");
+    item.identified = 1;
+    if (item.quality === QUALITY.Unique || item.quality === QUALITY.Set) {
+      const extras = (item.extraAffixes || []).concat([{ kind, id: affix.i }]);
+      item.mods = mergeModLists([item.mods, affixMods(kind, id)]);
+      rewriteItem(item);
+      item.extraAffixes = extras;
+      return item;
+    }
+    if (item.quality !== QUALITY.Magic && item.quality !== QUALITY.Rare && item.quality !== QUALITY.Crafted) {
+      item.quality = QUALITY.Magic;
+      item.prefix = 0;
+      item.suffix = 0;
+    }
+    if (item.quality === QUALITY.Magic) {
+      if (kind === "prefix" && item.prefix) rareFromMagic(item);
+      else if (kind === "suffix" && item.suffix) rareFromMagic(item);
+    }
+    if (item.quality === QUALITY.Magic) {
+      if (kind === "prefix") item.prefix = affix.i;
+      else item.suffix = affix.i;
+    } else {
+      const aff = padRare(item.rareAffixes);
+      const start = kind === "prefix" ? 0 : 1;
+      let slot = -1;
+      for (let i = start; i < 6; i += 2) {
+        if (!aff[i]) {
+          slot = i;
+          break;
+        }
+      }
+      if (slot < 0) throw new Error("This item already has 3 " + (kind === "prefix" ? "prefixes" : "suffixes"));
+      aff[slot] = affix.i;
+      item.rareAffixes = aff;
+    }
+    rebuildAffixMods(item);
+    return rewriteItem(item);
+  }
+
+  function removeAffix(item, kind, slot) {
+    if (!canEditAffixes(item)) throw new Error("Select a real item first");
+    if (item.runeword) throw new Error("Won't change affixes on a runeword");
+    if (item.quality === QUALITY.Unique || item.quality === QUALITY.Set) {
+      const extras = (item.extraAffixes || []).filter((e) => !(e.kind === kind && e.id === slot));
+      item.mods = subtractMods(item.mods, affixMods(kind, slot));
+      rewriteItem(item);
+      item.extraAffixes = extras;
+      return item;
+    }
+    if (item.quality === QUALITY.Magic) {
+      if (kind === "prefix") item.prefix = 0;
+      else item.suffix = 0;
+    } else if (item.quality === QUALITY.Rare || item.quality === QUALITY.Crafted) {
+      const aff = padRare(item.rareAffixes);
+      aff[slot] = null;
+      item.rareAffixes = aff;
+    }
+    rebuildAffixMods(item);
+    return rewriteItem(item);
+  }
+
   function spawnSimple(code, place) {
     return spawnItem(code, place, { quantity: place && place.quantity });
   }
@@ -1094,8 +1435,19 @@
 
   function displayName(item) {
     const uniq = item.quality === QUALITY.Unique ? uniqueById(item.uniqueId) : null;
-    const base = (uniq && uniq.n) || (item.info && item.info.n) || item.code || "?";
-    const q = uniq ? "" : item.quality ? DB.QUALITY[item.quality] : item.simple ? "" : "";
+    let base = (uniq && uniq.n) || (item.info && item.info.n) || item.code || "?";
+    let q = uniq ? "" : item.quality ? DB.QUALITY[item.quality] : item.simple ? "" : "";
+    if (item.quality === QUALITY.Magic) {
+      const p = affixName("prefix", item.prefix);
+      const s = affixName("suffix", item.suffix);
+      base = [p, (item.info && item.info.n) || item.code, s].filter(Boolean).join(" ");
+      q = "";
+    } else if (item.quality === QUALITY.Rare || item.quality === QUALITY.Crafted) {
+      const n1 = rareName("prefix", item.rareName1);
+      const n2 = rareName("suffix", item.rareName2);
+      if (n1 || n2) base = [n1, n2].filter(Boolean).join(" ");
+      q = item.quality === QUALITY.Crafted ? "Crafted" : "";
+    }
     const bits = [];
     if (item.ethereal) bits.push("Eth");
     if (item.socketed && item.sockets) bits.push(item.sockets + "os");
@@ -1167,6 +1519,13 @@
     spawnItem,
     spawnUnique,
     spawnCatalog,
+    addAffix,
+    removeAffix,
+    searchAffixes,
+    itemAffixSlots,
+    canEditAffixes,
+    affixName,
+    findAffix,
     uniqueById,
     allUniques,
     uniqueKind,

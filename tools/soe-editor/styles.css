@@ -759,6 +759,84 @@ input[readonly] {
   color: #6969ff;
 }
 
+.affix-editor {
+  margin: 0 0 0.75rem;
+  padding: 0.65rem 0.7rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.affix-editor h4 {
+  margin: 0 0 0.45rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.affix-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-bottom: 0.5rem;
+}
+
+.affix-slots:empty { display: none; }
+
+.affix-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  border: 1px solid var(--line);
+  background: #140e0c;
+  color: #6969ff;
+  border-radius: 999px;
+  padding: 0.18rem 0.35rem 0.18rem 0.5rem;
+  font: 500 0.75rem/1.2 var(--font);
+}
+
+.affix-chip--suffix { color: #9aa0ff; }
+
+.affix-chip button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  padding: 0 0.15rem;
+}
+
+.affix-add {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.affix-add input[type="search"] {
+  width: 100%;
+}
+
+.affix-all { margin: 0.2rem 0 0.35rem; }
+
+.affix-results {
+  display: grid;
+  gap: 0.22rem;
+  max-height: 160px;
+  overflow: auto;
+}
+
+.affix-results .btn {
+  text-align: left;
+  padding: 0.28rem 0.45rem;
+  font-size: 0.75rem;
+}
+
+.affix-results .muted {
+  color: var(--muted);
+  font-weight: 400;
+}
+
 .item-inspect-gems {
   margin: 0 0 0.65rem;
   font-size: 0.78rem;
