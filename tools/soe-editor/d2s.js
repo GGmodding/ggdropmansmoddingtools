@@ -494,7 +494,7 @@
       const meta = STAT_META[id];
       let value = Number(stats[meta.key] || 0);
       if (value < 0) value = 0;
-      const max = (1 << meta.bits) - 1;
+      const max = meta.bits >= 32 ? 0xffffffff : ((1 << meta.bits) - 1) >>> 0;
       let raw = meta.shift ? value * (1 << meta.shift) : value;
       if (raw > max) raw = max;
       writer.write(id, 9);

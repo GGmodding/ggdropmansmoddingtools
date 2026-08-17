@@ -27,6 +27,13 @@ console.log("char", parsed.name, "itemsError", parsed.itemsError || "none", "pla
 if (parsed.itemsError) process.exit(1);
 console.log(summarize(parsed.items.player));
 const written = Save.write(parsed);
+const again = Save.parse(written);
+if (again.stats.experience !== parsed.stats.experience) {
+  console.log("FAIL experience roundtrip", parsed.stats.experience, "->", again.stats.experience);
+  process.exitCode = 1;
+} else {
+  console.log("ok experience roundtrip", again.stats.experience);
+}
 console.log("char rewrite", written.length, raw.length, "same", Buffer.from(written).equals(raw), "verify", Save.verify(written));
 
 const hp = Items.spawnSimple("r33", { location: 0, panel: 1, x: 0, y: 0 });

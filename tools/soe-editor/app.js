@@ -292,6 +292,20 @@
     nameEl.textContent = Items.displayName(item);
     nameEl.className = "item-inspect-name " + Items.qualityClass(item);
     $("item-inspect-meta").textContent = Items.inspectMeta(item, state.sel.where);
+    const aurasEl = $("item-inspect-auras");
+    if (aurasEl) {
+      const auras = Items.listAuras ? Items.listAuras(item) : [];
+      if (auras.length) {
+        aurasEl.hidden = false;
+        aurasEl.textContent =
+          auras.length +
+          " item auras (all apply while equipped): " +
+          auras.map((a) => a.skill + " " + a.level).join(" · ");
+      } else {
+        aurasEl.hidden = true;
+        aurasEl.textContent = "";
+      }
+    }
     const fields = Items.itemStatFields(item).filter((f) => f.kind !== "defense");
     const modsEl = $("item-inspect-mods");
     const statHint = $("item-stat-hint");

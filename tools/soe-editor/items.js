@@ -1857,7 +1857,12 @@
         fields.push({ i: valueIdx++, label: "Charges", min: 0, max: 255, param: false });
         fields.push({ i: valueIdx++, label: "Max charges", min: 0, max: 255, param: true });
       } else {
-        fields.push({ i: valueIdx++, label: name, min: range.min, max: range.max, param: false });
+        let label = name;
+        if (prop.s === "item_aura") {
+          const auraName = skillName(values[0] || 0);
+          label = auraName ? auraName + " level" : "Aura level";
+        }
+        fields.push({ i: valueIdx++, label, min: range.min, max: range.max, param: false });
       }
     }
     return fields.map((f) => ({ ...f, value: values[f.i] || 0, skillName: f.skill ? skillName(values[f.i] || 0) : "" }));
@@ -2159,9 +2164,22 @@
     return item;
   }
 
+  function listAuras(item) {
+    return (item.mods || [])
+      .filter((m) => MAG[m.id] && MAG[m.id].s === "item_aura")
+      .map((m) => {
+        const v = m.values || [];
+        return { id: v[0] || 0, skill: skillName(v[0] || 0), level: v[1] || 0 };
+      });
+  }
+
   function formatMods(item) {
     return (item.mods || []).map((m) => {
       const rec = MAG[m.id];
+      if (rec && rec.s === "item_aura") {
+        const v = m.values || [];
+        return "Level " + (v[1] || 0) + " " + skillName(v[0] || 0) + " Aura when Equipped";
+      }
       const name = rec && rec.s ? rec.s.replace(/^item_/, "").replace(/_/g, " ") : "stat " + m.id;
       const vals = (m.values || []).join(", ");
       return vals ? name + "  " + vals : name;
@@ -2240,6 +2258,7 @@
     displayName,
     gridLabel,
     formatMods,
+    listAuras,
     itemStatFields,
     setModValue,
     setItemDefense,
