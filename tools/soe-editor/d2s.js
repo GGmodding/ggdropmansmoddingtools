@@ -38,6 +38,48 @@
   const WP_ALL = [0xff, 0xff, 0xff, 0xff, 0x7f, 0x00, 0x00, 0x00];
   const NPC_OFF = 0x2c9;
   const DIFF_NAMES = ["Normal", "Nightmare", "Hell"];
+  const MERC_OFF = 0xb1;
+  const WP_DEFS = [
+    { act: 1, name: "Rogue Encampment" },
+    { act: 1, name: "Cold Plains" },
+    { act: 1, name: "Stony Field" },
+    { act: 1, name: "Dark Wood" },
+    { act: 1, name: "Black Marsh" },
+    { act: 1, name: "Outer Cloister" },
+    { act: 1, name: "Jail" },
+    { act: 1, name: "Inner Cloister" },
+    { act: 1, name: "Catacombs" },
+    { act: 2, name: "Lut Gholein" },
+    { act: 2, name: "Sewers" },
+    { act: 2, name: "Dry Hills" },
+    { act: 2, name: "Halls of the Dead" },
+    { act: 2, name: "Far Oasis" },
+    { act: 2, name: "Lost City" },
+    { act: 2, name: "Palace Cellar" },
+    { act: 2, name: "Arcane Sanctuary" },
+    { act: 2, name: "Canyon of the Magi" },
+    { act: 3, name: "Kurast Docks" },
+    { act: 3, name: "Spider Forest" },
+    { act: 3, name: "Great Marsh" },
+    { act: 3, name: "Flayer Jungle" },
+    { act: 3, name: "Lower Kurast" },
+    { act: 3, name: "Kurast Bazaar" },
+    { act: 3, name: "Upper Kurast" },
+    { act: 3, name: "Travincal" },
+    { act: 3, name: "Durance of Hate" },
+    { act: 4, name: "Pandemonium Fortress" },
+    { act: 4, name: "City of the Damned" },
+    { act: 4, name: "River of Flame" },
+    { act: 5, name: "Harrogath" },
+    { act: 5, name: "Frigid Highlands" },
+    { act: 5, name: "Arreat Plateau" },
+    { act: 5, name: "Crystalline Passage" },
+    { act: 5, name: "Halls of Pain" },
+    { act: 5, name: "Glacial Trail" },
+    { act: 5, name: "Frozen Tundra" },
+    { act: 5, name: "The Ancients' Way" },
+    { act: 5, name: "Worldstone Keep" },
+  ];
 
   const QUEST_DEFS = [
     { act: 1, off: 2, name: "Den of Evil", skill: 1, flag: 0x1001 },
@@ -78,6 +120,15 @@
     bytes[off] = value & 0xff;
     bytes[off + 1] = (value >> 8) & 0xff;
   }
+  function u32(bytes, off) {
+    return (bytes[off] | (bytes[off + 1] << 8) | (bytes[off + 2] << 16) | (bytes[off + 3] << 24)) >>> 0;
+  }
+  function setU32(bytes, off, value) {
+    bytes[off] = value & 0xff;
+    bytes[off + 1] = (value >>> 8) & 0xff;
+    bytes[off + 2] = (value >>> 16) & 0xff;
+    bytes[off + 3] = (value >>> 24) & 0xff;
+  }
 
   function questBase(diff) {
     return QUEST_OFF + QUEST_HEADER + diff * QUEST_DIFF;
@@ -116,6 +167,97 @@
       };
     });
     return { diffs, progression: bytes[PROG_OFF] };
+  }
+
+  function listWaypoints(bytes, diff) {
+    const off = wpBitsOff(diff);
+    return WP_DEFS.map((wp, i) => ({
+      i,
+      act: wp.act,
+      name: wp.name,
+      on: !!(bytes[off + (i >> 3)] & (1 << (i & 7))),
+    }));
+  }
+
+  function setWaypoint(bytes, diff, index, on) {
+    const i = Number(index);
+    if (i < 0 || i >= WP_DEFS.length) return;
+    const off = wpBitsOff(diff);
+    const bit = 1 << (i & 7);
+    if (on) bytes[off + (i >> 3)] |= bit;
+    else bytes[off + (i >> 3)] &= ~bit;
+  }
+
+  function setAllWaypoints(bytes, diff, on) {
+    const wpOff = WP_OFF + WP_HEADER + diff * WP_DIFF;
+    bytes[wpOff] = 0x02;
+    bytes[wpOff + 1] = 0x01;
+    for (let i = 0; i < WP_ALL.length; i++) bytes[wpOff + 2 + i] = on ? WP_ALL[i] : 0;
+  }
+
+  function setQuestDone(bytes, diff, questOff, done) {
+    const q = QUEST_DEFS.find((x) => x.off === questOff);
+    if (!q) return;
+    const base = questBase(diff);
+    setU16(bytes, base + q.off, done ? q.flag || (QUEST_DONE | (q.extra || 0)) : 0);
+  }
+
+  function npcIntroduced(bytes) {
+    if (bytes[NPC_OFF] !== 0x01 || bytes[NPC_OFF + 1] !== 0x77) return false;
+    for (let i = 4; i < 52; i++) if (bytes[NPC_OFF + i] !== 0xff) return false;
+    return true;
+  }
+
+  function setNpcIntroduced(bytes, on) {
+    if (bytes[NPC_OFF] !== 0x01 || bytes[NPC_OFF + 1] !== 0x77) return;
+    for (let i = 4; i < 52; i++) bytes[NPC_OFF + i] = on ? 0xff : 0;
+  }
+
+  function mercKind(typeId) {
+    const t = Number(typeId) || 0;
+    if (t <= 5) return "Rogue Scout";
+    if (t <= 14) return "Desert Mercenary";
+    if (t <= 23) return "Iron Wolf";
+    if (t <= 32) return "Barbarian";
+    return "Hireling #" + t;
+  }
+
+  function parseMerc(bytes) {
+    return {
+      dead: !!(u16(bytes, MERC_OFF) & 0x0004),
+      seed: u32(bytes, 0xb3),
+      nameId: u16(bytes, 0xb7),
+      typeId: u16(bytes, 0xb9),
+      exp: u32(bytes, 0xbb),
+      kind: mercKind(u16(bytes, 0xb9)),
+    };
+  }
+
+  function writeMerc(bytes, merc) {
+    if (!merc) return;
+    let flags = u16(bytes, MERC_OFF);
+    if (merc.dead) flags |= 0x0004;
+    else flags &= ~0x0004;
+    setU16(bytes, MERC_OFF, flags);
+    setU32(bytes, 0xb3, merc.seed || 0);
+    setU16(bytes, 0xb7, merc.nameId || 0);
+    setU16(bytes, 0xb9, merc.typeId || 0);
+    setU32(bytes, 0xbb, merc.exp || 0);
+  }
+
+  function hireDefaultMerc(parsed) {
+    parsed.merc = {
+      dead: false,
+      seed: (Math.random() * 0xffffffff) >>> 0,
+      nameId: 0,
+      typeId: 4,
+      exp: 0,
+      kind: mercKind(4),
+    };
+    writeMerc(parsed.bytes, parsed.merc);
+    if (parsed.items) parsed.items.hasMerc = true;
+    if (parsed.items && !parsed.items.merc) parsed.items.merc = [];
+    return parsed.merc;
   }
 
   function unlockProgress(parsed, opts) {
@@ -405,8 +547,11 @@
       hardcore: !!(status & 0x04),
       died: !!(status & 0x08),
       expansion: !!(status & 0x20),
+      ladder: !!(status & 0x40),
       progression: bytes[0x25],
       progress: summarizeProgress(bytes),
+      merc: parseMerc(bytes),
+      npcIntro: npcIntroduced(bytes),
       stats,
       present,
       skills,
@@ -441,10 +586,17 @@
     o += mid.length;
     out.set(suffix, o);
     writeName(out, parsed.name);
-    out[0x24] = (parsed.hardcore ? 0x04 : 0) | (parsed.died ? 0x08 : 0) | 0x20;
+    const prev = parsed.status != null ? parsed.status : src[0x24];
+    out[0x24] =
+      (prev & ~0x4c) |
+      (parsed.hardcore ? 0x04 : 0) |
+      (parsed.died ? 0x08 : 0) |
+      0x20 |
+      (parsed.ladder ? 0x40 : 0);
     out[0x25] = parsed.progression != null ? parsed.progression & 0xff : out[0x25];
     out[0x28] = parsed.classId & 0xff;
     out[0x2b] = Math.max(1, Math.min(99, Number(parsed.stats.level || 1)));
+    writeMerc(out, parsed.merc);
     return applyChecksum(out);
   }
 
@@ -467,7 +619,28 @@
     CLASSES,
     DIFF_NAMES,
     QUEST_DEFS,
+    WP_DEFS,
     EDIT_KEYS,
+    EXP_TABLE,
+    parse,
+    write,
+    checksum,
+    applyChecksum,
+    expForLevel,
+    verify,
+    readName,
+    summarizeProgress,
+    unlockProgress,
+    listWaypoints,
+    setWaypoint,
+    setAllWaypoints,
+    setQuestDone,
+    npcIntroduced,
+    setNpcIntroduced,
+    parseMerc,
+    writeMerc,
+    hireDefaultMerc,
+    mercKind,
     EXP_TABLE,
     parse,
     write,

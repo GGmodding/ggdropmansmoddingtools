@@ -79,6 +79,8 @@
     <button class="tab" data-tab="stats" type="button">Attributes</button>
     <button class="tab" data-tab="skills" type="button">Skills</button>
     <button class="tab" data-tab="quests" type="button">Quests</button>
+    <button class="tab" data-tab="waypoints" type="button">Waypoints</button>
+    <button class="tab" data-tab="merc" type="button">Mercenary</button>
     <button class="tab" data-tab="items" type="button">Items</button>
     <button class="tab" data-tab="vault" type="button">Vault</button>
     <button class="tab" data-tab="collection" type="button">Collection</button>
@@ -101,7 +103,15 @@
           <input id="f-name" type="text" maxlength="15" autocomplete="off" />
         </label>
         <label>Class
-          <input id="f-class" type="text" readonly />
+          <select id="f-class">
+            <option value="0">Amazon</option>
+            <option value="1">Sorceress</option>
+            <option value="2">Necromancer</option>
+            <option value="3">Paladin</option>
+            <option value="4">Barbarian</option>
+            <option value="5">Druid</option>
+            <option value="6">Assassin</option>
+          </select>
         </label>
         <label>Level
           <input id="f-level" type="number" min="1" max="99" />
@@ -118,6 +128,9 @@
       </div>
       <div class="row-actions">
         <label class="check"><input id="f-hardcore" type="checkbox" /> Hardcore</label>
+        <label class="check"><input id="f-died" type="checkbox" /> Died</label>
+        <label class="check"><input id="f-ladder" type="checkbox" /> Ladder</label>
+        <label class="check"><input id="f-expansion" type="checkbox" checked disabled /> Expansion</label>
         <button type="button" class="btn" id="btn-apply-level">Set exp to this level</button>
       </div>
       <p class="hint">Changing level updates the header and the stats block. <strong>Set exp to this level</strong> writes the official LoD total so the game does not rewind you.</p>
@@ -184,10 +197,46 @@
       </div>
       <div class="row-actions">
         <label class="check"><input id="f-quest-rewards" type="checkbox" checked /> Grant missed quest rewards (skill / stat points)</label>
+        <label class="check"><input id="f-npc-intro" type="checkbox" /> All NPCs introduced</label>
         <button type="button" class="btn btn--accent" id="btn-unlock-all">Unlock everything</button>
       </div>
       <p class="hint">Skipping the cube quest means Cain never hands you one, so Unlock everything also puts a Horadric Cube in inventory (or personal stash if inventory is full). Rewards granted only for quests that were not already complete: Den of Evil +1 skill, Radament +1 skill, Izual +2 skills, Lam Esen +5 stats, and Malah’s Scroll of Resistance (+10 all resist) — each per difficulty (up to +30 all res). Marks Act 4 as finished (that is what actually opens Act 5) and sets every difficulty to Harrogath. Town portal scrolls always return to your current act’s town — use the waypoint, or start a <strong>new</strong> game after saving.</p>
       <div id="quest-summary" class="quest-summary"></div>
+    </section>
+
+    <section id="panel-waypoints" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Waypoints</h2>
+        <p class="panel__sub">Check the towns and wilderness waypoints you want unlocked. Town portal still returns to the act you were in last.</p>
+      </div>
+      <div id="waypoint-board" class="waypoint-board"></div>
+    </section>
+
+    <section id="panel-merc" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Mercenary</h2>
+        <p class="panel__sub">Hireling type, name id, experience, and gear. Gear also appears under Items → Mercenary.</p>
+      </div>
+      <div class="form-grid">
+        <label>Type id
+          <input id="f-merc-type" type="number" min="0" max="65535" />
+        </label>
+        <label>Name id
+          <input id="f-merc-name" type="number" min="0" max="65535" />
+        </label>
+        <label>Experience
+          <input id="f-merc-exp" type="number" min="0" max="4294967295" />
+        </label>
+        <label>Kind
+          <input id="f-merc-kind" type="text" readonly />
+        </label>
+      </div>
+      <div class="row-actions">
+        <label class="check"><input id="f-merc-dead" type="checkbox" /> Dead</label>
+        <button type="button" class="btn" id="btn-merc-hire">Hire default merc</button>
+        <button type="button" class="btn" id="btn-merc-items">Open merc items</button>
+      </div>
+      <p id="merc-summary" class="hint"></p>
     </section>
 
     <section id="panel-items" class="panel panel--wide" hidden>
@@ -213,6 +262,8 @@
             <button type="button" class="tab" data-view="stash">Stash <span class="bag-count" data-count="stash"></span></button>
             <button type="button" class="tab" data-view="shared">Shared <span class="bag-count" data-count="shared"></span></button>
             <button type="button" class="tab" data-view="belt">Belt <span class="bag-count" data-count="belt"></span></button>
+            <button type="button" class="tab" data-view="merc">Merc <span class="bag-count" data-count="merc"></span></button>
+            <button type="button" class="tab" data-view="corpse">Corpse <span class="bag-count" data-count="corpse"></span></button>
           </div>
           <p class="item-board-hint" id="item-board-hint">Click an item to inspect it. Click an empty cell to move it.</p>
           <div class="d2-stage">
@@ -236,7 +287,54 @@
           <div id="item-inspect-body" hidden>
             <p id="item-inspect-name" class="item-inspect-name"></p>
             <p id="item-inspect-meta" class="item-inspect-meta"></p>
+            <div id="item-extras" class="item-extras" hidden>
+              <label>Quality
+                <select id="f-item-quality">
+                  <option value="1">Low</option>
+                  <option value="2">Normal</option>
+                  <option value="3">Superior</option>
+                  <option value="4">Magic</option>
+                  <option value="5">Set</option>
+                  <option value="6">Rare</option>
+                  <option value="7">Unique</option>
+                  <option value="8">Crafted</option>
+                </select>
+              </label>
+              <label id="item-unique-wrap">Unique
+                <select id="f-item-unique"></select>
+              </label>
+              <label id="item-set-wrap">Set id
+                <input id="f-item-setid" type="number" min="0" max="4095" />
+              </label>
+              <label>Item level
+                <input id="f-item-ilvl" type="number" min="1" max="127" />
+              </label>
+              <label id="item-def-wrap">Defense
+                <input id="f-item-def" type="number" min="0" max="2047" />
+              </label>
+              <label id="item-dur-wrap">Durability
+                <input id="f-item-dur" type="number" min="0" max="511" />
+              </label>
+              <label id="item-maxdur-wrap">Max durability
+                <input id="f-item-maxdur" type="number" min="0" max="255" />
+              </label>
+              <label id="item-rare1-wrap">Rare name 1
+                <select id="f-item-rare1"></select>
+              </label>
+              <label id="item-rare2-wrap">Rare name 2
+                <select id="f-item-rare2"></select>
+              </label>
+              <label>Personalized
+                <input id="f-item-pname" type="text" maxlength="15" autocomplete="off" placeholder="(none)" />
+              </label>
+              <label id="item-indestruct-wrap" class="check"><input id="f-item-indestruct" type="checkbox" /> Indestructible</label>
+            </div>
             <ul id="item-inspect-mods" class="item-inspect-mods"></ul>
+            <div id="prop-add" class="prop-add" hidden>
+              <input id="f-prop-search" type="search" placeholder="Add property: fire resist, FCR, life…" autocomplete="off" />
+              <div id="prop-results" class="affix-results"></div>
+            </div>
+            <p id="item-stat-hint" class="hint" hidden>Type rolls, or search to add a property. Save format caps some stats (resist 205, enhanced defense 511, item defense 2037).</p>
             <div id="item-affix-editor" class="affix-editor" hidden>
               <h4>Affixes</h4>
               <div id="item-affix-slots" class="affix-slots"></div>
@@ -269,9 +367,15 @@
               </div>
               <label class="check affix-all"><input id="f-affix-all" type="checkbox" /> Show affixes that don’t fit this base</label>
               <div id="affix-results" class="affix-results"></div>
-              <p id="item-affix-hint" class="hint">Pick a prefix and suffix from the lists. A second prefix or suffix turns the item rare. Uniques keep their name and gain the extra stats.</p>
+              <p id="item-affix-hint" class="hint">Pick a prefix and suffix, then type the numbers above. A second prefix or suffix turns the item rare. Uniques keep their name and gain the extra stats.</p>
             </div>
             <p id="item-inspect-gems" class="item-inspect-gems" hidden></p>
+            <div id="item-socket-fill" class="item-socket-fill" hidden>
+              <label>Fill socket
+                <select id="f-socket-gem"></select>
+              </label>
+              <button type="button" class="btn" id="btn-socket-fill">Insert</button>
+            </div>
             <div class="item-inspect-fields">
               <label id="item-qty-wrap">Quantity
                 <input id="f-item-qty" type="number" min="1" max="511" />
@@ -285,6 +389,12 @@
             <p id="item-inspect-socks" class="hint"></p>
             <div class="item-inspect-actions">
               <button type="button" class="btn" id="btn-unequip-item">Unequip</button>
+              <button type="button" class="btn" id="btn-copy-item">Copy</button>
+              <button type="button" class="btn" id="btn-paste-item">Paste</button>
+              <button type="button" class="btn" id="btn-export-item">Export .d2i</button>
+              <label class="btn">Import .d2i
+                <input id="d2i-input" type="file" accept=".d2i,.d2s,application/octet-stream" hidden />
+              </label>
               <button type="button" class="btn" id="btn-duplicate-item">Duplicate</button>
               <button type="button" class="btn" id="btn-copy-vault">Copy to Vault</button>
               <button type="button" class="btn" id="btn-move-vault">Move to Vault</button>
@@ -411,6 +521,30 @@
   </main>
 
   <p id="status" class="status"></p>
+
+  <div id="create-modal" class="modal" hidden>
+    <div class="modal__card modal__card--create">
+      <h2>Create item here</h2>
+      <p class="hint">Pick a base or unique. It lands in the empty cell you right-clicked.</p>
+      <input id="f-create-search" type="search" placeholder="Search: Monarch, Shako, jewel…" autocomplete="off" />
+      <div id="create-results" class="spawn-results"></div>
+      <div class="modal__actions">
+        <button type="button" class="btn" id="btn-create-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="item-menu" class="item-menu" hidden>
+    <div id="item-menu-drag" class="item-menu-drag" title="Drag to move">⋮⋮ Move</div>
+    <button type="button" data-act="copy">Copy</button>
+    <button type="button" data-act="paste">Paste</button>
+    <button type="button" data-act="duplicate">Duplicate</button>
+    <button type="button" data-act="identify">Identify</button>
+    <button type="button" data-act="unequip">Unequip</button>
+    <button type="button" data-act="export">Export .d2i</button>
+    <button type="button" data-act="create">Create base here</button>
+    <button type="button" data-act="delete" class="danger">Delete</button>
+  </div>
 
   <script src="d2s.js"></script>
   <script src="items-db.js"></script>

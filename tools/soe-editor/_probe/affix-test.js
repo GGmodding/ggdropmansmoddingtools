@@ -70,3 +70,85 @@ check(
   helm.quality === 4 && helm.prefix === sturdy.i && helm.suffix === health.i && !helm.parseError && Items.displayName(helm).includes("Sturdy"),
   JSON.stringify({ q: helm.quality, name: Items.displayName(helm), prefix: helm.prefix, suffix: helm.suffix, err: helm.parseError })
 );
+
+const rolled = Items.spawnItem("fhl", place, {});
+Items.setAffixSlot(rolled, "prefix", 0, sturdy.i);
+const ed = rolled.mods.find((m) => m.id === 16);
+check("sturdy starts at max roll", !!(ed && ed.values[0] > 0), ed && ed.values);
+const setEd = Items.setModValue(rolled, rolled.mods.findIndex((m) => m.id === 16), 0, 400);
+check("custom enhanced defense 400", setEd.value === 400 && !setEd.clamped && rolled.mods.some((m) => m.id === 16 && m.values[0] === 400), JSON.stringify(setEd));
+const again = Items.parseItem(rolled.raw, 0);
+check("custom ed roundtrip", again.mods.some((m) => m.id === 16 && m.values[0] === 400) && !again.parseError, JSON.stringify(again.mods));
+
+const capDef = Items.setItemDefense(rolled, 999);
+check("item defense 999", capDef.value === 999 && rolled.defense === 999 && !capDef.clamped, JSON.stringify({ def: rolled.defense, r: capDef }));
+const defAgain = Items.parseItem(rolled.raw, 0);
+check("defense 999 roundtrip", defAgain.defense === 999 && !defAgain.parseError, defAgain.defense);
+
+const resHelm = Items.spawnItem("fhl", place, {});
+const crimson = Items.searchAffixes("crimson", "prefix", resHelm, { fit: false }).find((a) => /fire resist/i.test(a.d || "")) || Items.searchAffixes("ruby", "prefix", resHelm, { fit: false })[0];
+check("fire resist prefix exists", !!crimson, crimson && { n: crimson.n, d: crimson.d, m: crimson.m });
+Items.setAffixSlot(resHelm, "prefix", 0, crimson.i);
+const fireIdx = resHelm.mods.findIndex((m) => m.id === 39);
+check("fire resist applied", fireIdx >= 0, JSON.stringify(resHelm.mods));
+const clamped = Items.setModValue(resHelm, fireIdx, 0, 999);
+check("fire resist 999 clamps to save max", clamped.clamped && clamped.value === clamped.max && clamped.max === 205, JSON.stringify(clamped));
+const fireBack = Items.parseItem(resHelm.raw, 0);
+check("clamped resist roundtrip", fireBack.mods.some((m) => m.id === 39 && m.values[0] === 205), JSON.stringify(fireBack.mods));
+
+const white = Items.spawnItem("fhl", place, {});
+Items.addMod(white, 39);
+check("add fire resist property", white.mods.some((m) => m.id === 39) && !white.parseError, JSON.stringify(white.mods));
+Items.setModValue(white, white.mods.findIndex((m) => m.id === 39), 0, 80);
+check("typed resist 80", white.mods.some((m) => m.id === 39 && m.values[0] === 80), JSON.stringify(white.mods));
+Items.removeMod(white, white.mods.findIndex((m) => m.id === 39));
+check("remove property", !white.mods.some((m) => m.id === 39) && !white.parseError, JSON.stringify(white.mods));
+
+const shakoItem = Items.spawnItem("uap", place, {});
+Items.setQuality(shakoItem, 7, { uniqueId: 248, applyMods: true });
+check(
+  "quality to harlequin",
+  shakoItem.quality === 7 && shakoItem.uniqueId === 248 && !shakoItem.parseError && Items.displayName(shakoItem).includes("Harlequin"),
+  JSON.stringify({ q: shakoItem.quality, id: shakoItem.uniqueId, name: Items.displayName(shakoItem), err: shakoItem.parseError })
+);
+Items.setPersonalized(shakoItem, "God");
+check("personalize", shakoItem.personalized && shakoItem.personalizedName === "God" && !shakoItem.parseError, shakoItem.personalizedName);
+const named = Items.parseItem(shakoItem.raw, 0);
+check("personalize roundtrip", named.personalizedName === "God" && !named.parseError, named.personalizedName);
+
+const stats = Items.listSavableStats("fire resist");
+check("savable stat catalog", stats.some((s) => s.id === 39), stats.slice(0, 3));
+
+const d2i = Items.parseD2i(Items.itemBytes(shakoItem));
+check("d2i roundtrip", d2i.uniqueId === 248 && d2i.personalizedName === "God", Items.displayName(d2i));
+
+const sockHelm = Items.spawnItem("fhl", place, { sockets: 2 });
+Items.insertSocketed(sockHelm, Items.spawnItem("r01"));
+check("socket filler", sockHelm.socketedItems && sockHelm.socketedItems.length === 1 && sockHelm.socketedItems[0].code === "r01" && !sockHelm.parseError, JSON.stringify(sockHelm.socketedItems && sockHelm.socketedItems[0]));
+Items.setIndestructible(sockHelm, true);
+check("indestructible", sockHelm.maxDur === 0 && !sockHelm.parseError, sockHelm.maxDur);
+Items.setItemDefense(sockHelm, 120);
+check("extras defense", sockHelm.defense === 120 && !sockHelm.parseError, sockHelm.defense);
+
+check("on kill property listed", Items.listSavableStats("on kill").some((s) => s.id === 196), Items.listSavableStats("on kill").map((s) => s.label).slice(0, 5));
+const procs = Items.listSkillProcs("uber diablo on kill");
+check(
+  "uber diablo on kill presets",
+  procs.some((p) => p.id === 196 && (p.skillName === "UberDiabSummon" || p.skillId === 592)),
+  procs.slice(0, 6).map((p) => p.label)
+);
+const procHelm = Items.spawnItem("fhl", place, {});
+const summon = procs.find((p) => p.skillId === 592 && p.id === 196) || procs[0];
+Items.addMod(procHelm, summon.id, summon.values);
+check(
+  "add uber diablo on kill",
+  procHelm.mods.some((m) => m.id === 196 && m.values[1] === 592) && !procHelm.parseError,
+  JSON.stringify(procHelm.mods)
+);
+const procBack = Items.parseItem(procHelm.raw, 0);
+check(
+  "uber diablo on kill roundtrip",
+  procBack.mods.some((m) => m.id === 196 && m.values[1] === 592 && m.values[2] === 100) && !procBack.parseError,
+  JSON.stringify(procBack.mods)
+);
+check("skill name lookup", Items.skillName(592) === "UberDiabSummon", Items.skillName(592));

@@ -47,3 +47,29 @@ if (fs.existsSync(pd2Stash)) {
     console.log("pd2 stash FAIL", err.message);
   }
 }
+
+function check(name, ok, extra) {
+  console.log(ok ? "ok" : "FAIL", name, extra || "");
+  if (!ok) process.exitCode = 1;
+}
+
+const wp = Save.listWaypoints(parsed.bytes, 0);
+check("waypoint list 39", wp.length === 39, wp.length);
+Save.setAllWaypoints(parsed.bytes, 0, true);
+check("all waypoints on", Save.listWaypoints(parsed.bytes, 0).every((w) => w.on), Save.listWaypoints(parsed.bytes, 0).filter((w) => w.on).length);
+Save.setWaypoint(parsed.bytes, 0, 0, false);
+check("toggle rogue camp off", !Save.listWaypoints(parsed.bytes, 0)[0].on);
+Save.setQuestDone(parsed.bytes, 0, 2, true);
+check("set den done", Save.summarizeProgress(parsed.bytes).diffs[0].quests[0].done);
+Save.setNpcIntroduced(parsed.bytes, true);
+check("npc intro", Save.npcIntroduced(parsed.bytes));
+parsed.ladder = true;
+parsed.died = false;
+const withFlags = Save.write(parsed);
+const againFlags = Save.parse(withFlags);
+check("ladder survives write", againFlags.ladder && againFlags.expansion && !againFlags.died, JSON.stringify({ ladder: againFlags.ladder, exp: againFlags.expansion, died: againFlags.died, hc: againFlags.hardcore }));
+Save.hireDefaultMerc(parsed);
+check("hire merc", parsed.merc && parsed.merc.typeId === 4 && parsed.items.hasMerc, JSON.stringify(parsed.merc));
+const withMerc = Save.write(parsed);
+const againMerc = Save.parse(withMerc);
+check("merc header roundtrip", againMerc.merc.typeId === 4 && againMerc.merc.nameId === 0, JSON.stringify(againMerc.merc));

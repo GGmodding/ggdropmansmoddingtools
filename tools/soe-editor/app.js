@@ -10,7 +10,7 @@
   const HANDLE_STORE = "kv";
   const SAVES_DIR_KEY = "savesDir";
   const STASH_FILE_NAMES = ["pd2_shared.stash", "PD2_Shared.stash"];
-  const SAVE_TABS = { character: 1, stats: 1, skills: 1, quests: 1, items: 1 };
+  const SAVE_TABS = { character: 1, stats: 1, skills: 1, quests: 1, waypoints: 1, merc: 1, items: 1 };
 
   const state = {
     parsed: null,
@@ -41,6 +41,11 @@
     affixKind: "prefix",
     affixQuery: "",
     affixAll: false,
+    propQuery: "",
+    clipboard: null,
+    menu: null,
+    menuDrag: null,
+    createCell: null,
   };
 
   const $ = (id) => document.getElementById(id);
@@ -95,6 +100,9 @@
     if (tab === "vault") renderVault();
     if (tab === "collection") renderCollection();
     if (tab === "craft") renderCraft();
+    if (tab === "waypoints") renderWaypoints();
+    if (tab === "merc") renderMerc();
+    if (tab === "quests") renderQuests();
   }
 
   function num(id) {
@@ -106,6 +114,19 @@
     if (!p) return;
     p.name = $("f-name").value.trim();
     p.hardcore = $("f-hardcore").checked;
+    p.died = $("f-died").checked;
+    p.ladder = $("f-ladder").checked;
+    p.classId = Number($("f-class").value || p.classId || 0);
+    p.className = Save.CLASSES[p.classId] || p.className;
+    if (p.merc) {
+      p.merc.typeId = num("f-merc-type");
+      p.merc.nameId = num("f-merc-name");
+      p.merc.exp = num("f-merc-exp");
+      p.merc.dead = $("f-merc-dead").checked;
+      p.merc.kind = Save.mercKind(p.merc.typeId);
+      Save.writeMerc(p.bytes, p.merc);
+    }
+    if ($("f-npc-intro")) Save.setNpcIntroduced(p.bytes, $("f-npc-intro").checked);
     const s = p.stats;
     s.level = num("f-level");
     s.experience = num("f-experience");
@@ -153,7 +174,17 @@
 
   function itemBag(where) {
     if (where === "stash") return state.stash ? state.stash.items : [];
-    return state.parsed && state.parsed.items ? state.parsed.items.player : [];
+    if (!state.parsed || !state.parsed.items) return [];
+    if (where === "merc") return state.parsed.items.merc || [];
+    if (where === "corpse") return state.parsed.items.corpse || [];
+    return state.parsed.items.player;
+  }
+
+  function viewWhere(view) {
+    if (view === "shared") return "stash";
+    if (view === "merc") return "merc";
+    if (view === "corpse") return "corpse";
+    return "player";
   }
 
   function currentGrid() {
@@ -163,8 +194,10 @@
     else if (state.itemView === "cube") grid = grids.cube;
     else if (state.itemView === "stash") grid = grids.stash;
     else if (state.itemView === "belt") grid = grids.belt;
+    else if (state.itemView === "merc") grid = grids.merc;
+    else if (state.itemView === "corpse") grid = grids.corpse;
     else grid = grids.inv;
-    const where = state.itemView === "shared" ? "stash" : "player";
+    const where = viewWhere(state.itemView);
     return Items.fitGrid(itemBag(where), grid);
   }
 
@@ -212,8 +245,8 @@
     box.innerHTML = hits
       .map((row, i) => {
         const loc = Items.locationLabel(row.it, row.where);
-        const jump = row.where === "player" || row.where === "stash";
-        return `<button type="button" data-hit="${i}" ${jump ? "" : "disabled"}>${escHtml(Items.displayName(row.it))} · ${escHtml(loc)}${jump ? "" : " (no grid yet)"}</button>`;
+        const jump = true;
+        return `<button type="button" data-hit="${i}">${escHtml(Items.displayName(row.it))} · ${escHtml(loc)}</button>`;
       })
       .join("");
     box.querySelectorAll("[data-hit]").forEach((el) => {
@@ -223,7 +256,7 @@
 
   function jumpToHit(i) {
     const row = state.searchHits[i];
-    if (!row || (row.where !== "player" && row.where !== "stash")) return;
+    if (!row) return;
     setItemView(Items.viewForItem(row.it, row.where));
     if (row.where === "player") revealEquipped(row.it);
     state.sel = { where: row.where, index: row.index };
@@ -237,6 +270,19 @@
     return bag[state.sel.index] || null;
   }
 
+  let skillOptionsHtml = "";
+
+  function skillSelectOptions(selected) {
+    if (!skillOptionsHtml) {
+      const skills = (Items.allSkills() || []).slice().sort((a, b) => a.n.localeCompare(b.n) || a.i - b.i);
+      skillOptionsHtml = skills.map((s) => `<option value="${s.i}">${escHtml(s.n)}</option>`).join("");
+    }
+    const id = Number(selected) || 0;
+    const known = (Items.allSkills() || []).some((s) => s.i === id);
+    const extra = known ? "" : `<option value="${id}">${escHtml(Items.skillName(id))} (#${id})</option>`;
+    return extra + skillOptionsHtml;
+  }
+
   function renderInspect() {
     const item = selectedItem();
     $("item-inspect-empty").hidden = !!item;
@@ -246,10 +292,48 @@
     nameEl.textContent = Items.displayName(item);
     nameEl.className = "item-inspect-name " + Items.qualityClass(item);
     $("item-inspect-meta").textContent = Items.inspectMeta(item, state.sel.where);
-    const mods = Items.formatMods(item);
+    const fields = Items.itemStatFields(item).filter((f) => f.kind !== "defense");
     const modsEl = $("item-inspect-mods");
-    modsEl.innerHTML = mods.map((line) => `<li>${escHtml(line)}</li>`).join("");
-    modsEl.hidden = !mods.length;
+    const statHint = $("item-stat-hint");
+    modsEl.innerHTML = fields
+      .map((f) => {
+        const key =
+          f.kind === "defense"
+            ? 'data-stat="defense"'
+            : `data-mod-i="${f.modIndex}" data-val-i="${f.valueIndex}"`;
+        const del =
+          f.kind === "mod" && f.valueIndex === 0
+            ? `<button type="button" class="stat-remove" data-mod-remove="${f.modIndex}" title="Remove property">×</button>`
+            : `<span></span>`;
+        if (f.skill) {
+          return `<li class="stat-row stat-row--skill"><label>${escHtml(f.label)}
+            <select ${key}>${skillSelectOptions(f.value)}</select>
+          </label>${del}</li>`;
+        }
+        return `<li class="stat-row"><label>${escHtml(f.label)} <input type="number" ${key} value="${f.value}" min="${f.min}" max="${f.max}" /></label><span class="stat-range">${f.min}–${f.max}</span>${del}</li>`;
+      })
+      .join("");
+    modsEl.hidden = !fields.length;
+    if (statHint) statHint.hidden = !fields.length && !(Items.canEditAffixes(item) && !item.runeword);
+    modsEl.querySelectorAll("select[data-mod-i]").forEach((sel) => {
+      const field = fields.find((f) => f.skill && String(f.modIndex) === sel.dataset.modI && String(f.valueIndex) === sel.dataset.valI);
+      if (field) sel.value = String(field.value);
+    });
+    modsEl.querySelectorAll("[data-mod-remove]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        try {
+          Items.removeMod(item, Number(btn.dataset.modRemove));
+          markItemDirty();
+          renderItems();
+          setStatus("Removed property from " + Items.displayName(item));
+        } catch (err) {
+          setStatus(err.message || String(err));
+        }
+      });
+    });
+    renderItemExtras(item);
+    renderPropAdd(item);
+    renderSocketFill(item);
     renderAffixEditor(item);
     const gems = (item.socketedItems || []).map((g) => Items.displayName(g));
     const gemsEl = $("item-inspect-gems");
@@ -287,6 +371,146 @@
   function markItemDirty() {
     if (state.sel && state.sel.where === "stash") setStashDirty(true);
     else setDirty(true);
+  }
+
+  function renderItemExtras(item) {
+    const box = $("item-extras");
+    if (!box) return;
+    const simple = !!(item.simple || item.ear);
+    box.hidden = simple;
+    if (simple) return;
+    const q = item.quality || 2;
+    $("f-item-quality").value = String(q);
+    const uniqWrap = $("item-unique-wrap");
+    const setWrap = $("item-set-wrap");
+    uniqWrap.hidden = q !== 7;
+    setWrap.hidden = q !== 5;
+    fillUniqueSelect(item);
+    if (q === 5) $("f-item-setid").value = item.setId || 0;
+    $("f-item-ilvl").value = item.ilvl || 1;
+    const info = item.info || Items.itemInfo(item.code);
+    const hasDef = info.k === "a";
+    const hasDur = info.k === "a" || info.k === "w";
+    $("item-def-wrap").hidden = !hasDef;
+    if (hasDef) $("f-item-def").value = item.defense != null ? item.defense : Number(info.ac) || 0;
+    $("item-dur-wrap").hidden = !hasDur;
+    $("item-maxdur-wrap").hidden = !hasDur;
+    $("item-indestruct-wrap").hidden = !hasDur;
+    if (hasDur) {
+      $("f-item-dur").value = item.dur != null ? item.dur : "";
+      $("f-item-maxdur").value = item.maxDur != null ? item.maxDur : "";
+    }
+    $("f-item-indestruct").checked = hasDur && item.maxDur === 0;
+    $("f-item-pname").value = item.personalized ? item.personalizedName || "" : "";
+    const rare = q === 6 || q === 8;
+    $("item-rare1-wrap").hidden = !rare;
+    $("item-rare2-wrap").hidden = !rare;
+    if (rare) {
+      fillRareSelect($("f-item-rare1"), "prefix", item.rareName1 || 1);
+      fillRareSelect($("f-item-rare2"), "suffix", item.rareName2 || 1);
+    }
+  }
+
+  function fillUniqueSelect(item) {
+    const sel = $("f-item-unique");
+    if (!sel) return;
+    const all = Items.allUniques() || [];
+    const same = all.filter((u) => u.c === item.code);
+    const list = same.length ? same : all;
+    sel.innerHTML = list.map((u) => `<option value="${u.i}">${escHtml(u.n)}</option>`).join("");
+    const id = item.uniqueId;
+    if (id != null && sel.value !== String(id)) {
+      const hit = all.find((u) => u.i === id);
+      sel.insertAdjacentHTML("afterbegin", `<option value="${id}">${escHtml(hit ? hit.n : "#" + id)}</option>`);
+    }
+    if (id != null) sel.value = String(id);
+  }
+
+  function uniqueIdForItem(item) {
+    const picked = Number($("f-item-unique") && $("f-item-unique").value);
+    if (picked) return picked;
+    if (item.uniqueId) return item.uniqueId;
+    const all = Items.allUniques() || [];
+    const same = all.find((u) => u.c === item.code);
+    return same ? same.i : all[0] && all[0].i;
+  }
+
+  function fillRareSelect(sel, kind, selected) {
+    if (!sel) return;
+    const list = Items.rareNameList(kind);
+    sel.innerHTML = list.map((r) => `<option value="${r.i}">${escHtml(r.n)}</option>`).join("");
+    sel.value = String(selected);
+  }
+
+  function renderPropAdd(item) {
+    const box = $("prop-add");
+    if (!box) return;
+    const can = Items.canEditAffixes(item) && !item.runeword;
+    box.hidden = !can;
+    if (!can) return;
+    const search = $("f-prop-search");
+    if (search && search.value !== state.propQuery) search.value = state.propQuery;
+    const results = $("prop-results");
+    const q = (state.propQuery || "").trim();
+    if (!q) {
+      results.innerHTML = `<p class="hint">Search to add a property: fire resist, FCR, on kill, Uber Diablo, charged, aura…</p>`;
+      return;
+    }
+    const procs = Items.listSkillProcs(q).slice(0, 20);
+    const hits = Items.listSavableStats(q).slice(0, 24);
+    if (!procs.length && !hits.length) {
+      results.innerHTML = `<p class="hint">No savable stats or skills matching “${escHtml(q)}”.</p>`;
+      return;
+    }
+    results.innerHTML =
+      (procs.length
+        ? procs
+            .map(
+              (s) =>
+                `<button type="button" class="btn" data-add-stat="${s.id}" data-add-values="${escHtml(JSON.stringify(s.values))}">${escHtml(s.label)} <span class="muted">${escHtml(s.group)}</span></button>`
+            )
+            .join("")
+        : "") +
+      hits
+        .map((s) => `<button type="button" class="btn" data-add-stat="${s.id}">${escHtml(s.label)} <span class="muted">${escHtml(s.group)}</span></button>`)
+        .join("");
+    results.querySelectorAll("[data-add-stat]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        try {
+          const raw = btn.dataset.addValues;
+          const values = raw ? JSON.parse(raw) : undefined;
+          Items.addMod(item, Number(btn.dataset.addStat), values);
+          state.propQuery = "";
+          markItemDirty();
+          renderItems();
+          setStatus("Added " + btn.textContent.replace(/\s+/g, " ").trim() + " to " + Items.displayName(item));
+        } catch (err) {
+          setStatus(err.message || String(err));
+        }
+      });
+    });
+  }
+
+  function socketGems() {
+    const codes = [];
+    for (const g of Items.SPAWN) {
+      if (g.group === "Runes" || g.group === "Gems" || g.group === "Misc") codes.push.apply(codes, g.codes);
+    }
+    return codes.filter((c) => c === "jew" || /^r\d\d$/.test(c) || /^g[pz]/.test(c) || /^sk/.test(c) || /^gl/.test(c) || /^gz/.test(c));
+  }
+
+  function renderSocketFill(item) {
+    const box = $("item-socket-fill");
+    if (!box) return;
+    const sockets = item.socketed ? item.sockets || 0 : 0;
+    const filled = Items.filledSockets(item);
+    const can = !item.simple && !item.ear && !item.runeword && sockets > filled;
+    box.hidden = !can;
+    if (!can) return;
+    const sel = $("f-socket-gem");
+    sel.innerHTML = socketGems()
+      .map((c) => `<option value="${c}">${escHtml((Items.itemInfo(c).n || c).replace(/ Rune$/, " rune"))}</option>`)
+      .join("");
   }
 
   function fillAffixSelect(sel, kind, item, selectedId) {
@@ -356,9 +580,9 @@
     const hint = $("item-affix-hint");
     const loaded = (Items.listAffixes("prefix").length || 0) + (Items.listAffixes("suffix").length || 0);
     if (!loaded) hint.textContent = "Affix list did not load. Check affixes-db.js.";
-    else if (slots.mode === "extra") hint.textContent = "Adds this affix’s max rolls onto the unique/set without renaming it.";
-    else if (slots.mode === "rare") hint.textContent = "Rares and crafts can hold up to 3 prefixes and 3 suffixes. Picks max rolls.";
-    else hint.textContent = "Pick prefix and suffix from the lists. Filling Prefix 2 or Suffix 2 turns it rare. Picks max rolls.";
+    else if (slots.mode === "extra") hint.textContent = "Adds this affix onto the unique/set without renaming it. Edit the numbers above.";
+    else if (slots.mode === "rare") hint.textContent = "Rares and crafts can hold up to 3 prefixes and 3 suffixes. Edit the numbers above after picking.";
+    else hint.textContent = "Pick prefix and suffix, then type the rolls above. Filling Prefix 2 or Suffix 2 turns it rare.";
     renderAffixResults(item);
   }
 
@@ -564,38 +788,51 @@
   function renderDoll() {
     const doll = $("d2-doll");
     if (!doll) return;
-    const show = !!state.parsed;
+    const mercView = state.itemView === "merc";
+    const corpseView = state.itemView === "corpse";
+    const show = !!state.parsed && state.itemView !== "shared";
     doll.hidden = !show;
     if (!show) return;
-    const where = "player";
+    const where = mercView ? "merc" : corpseView ? "corpse" : "player";
     const bag = itemBag(where);
     const byEq = new Map();
     bag.forEach((it, index) => {
       if (it.location === 1) byEq.set(it.equipped, { it, index });
     });
     const { wpn, shd } = weaponSlotIds();
-    const slots = [
+    const hirelingSlots = [
       [1, "helm", "Helm"],
-      [2, "amu", "Amulet"],
       [3, "armor", "Armor"],
-      [wpn, "wpn", "Weapon"],
-      [shd, "shd", "Shield"],
-      [6, "rring", "Right ring"],
-      [7, "lring", "Left ring"],
-      [8, "belt", "Belt"],
+      [4, "wpn", "Weapon"],
+      [5, "shd", "Shield"],
       [9, "boot", "Boots"],
-      [10, "glv", "Gloves"],
     ];
+    const slots = mercView || corpseView
+      ? hirelingSlots
+      : [
+          [1, "helm", "Helm"],
+          [2, "amu", "Amulet"],
+          [3, "armor", "Armor"],
+          [wpn, "wpn", "Weapon"],
+          [shd, "shd", "Shield"],
+          [6, "rring", "Right ring"],
+          [7, "lring", "Left ring"],
+          [8, "belt", "Belt"],
+          [9, "boot", "Boots"],
+          [10, "glv", "Gloves"],
+        ];
     const set1 = state.weaponSet !== 2;
     doll.innerHTML =
-      `<div class="d2-wswap" style="grid-column:1/3;grid-row:1">
+      (mercView || corpseView
+        ? `<div class="d2-wswap" style="grid-column:1/11;grid-row:1"><span class="hint">${mercView ? "Mercenary" : "Corpse"}</span></div>`
+        : `<div class="d2-wswap" style="grid-column:1/3;grid-row:1">
         <button type="button" data-wset="1" class="${set1 ? "is-active" : ""}">I</button>
         <button type="button" data-wset="2" class="${set1 ? "" : "is-active"}">II</button>
       </div>
       <div class="d2-wswap" style="grid-column:9/11;grid-row:1">
         <button type="button" data-wset="1" class="${set1 ? "is-active" : ""}">I</button>
         <button type="button" data-wset="2" class="${set1 ? "" : "is-active"}">II</button>
-      </div>` +
+      </div>`) +
       slots
         .map(([id, slot, label]) => {
           const hit = byEq.get(id);
@@ -614,7 +851,8 @@
   function renderEquippedList() {
     const box = $("item-eq-list");
     if (!box) return;
-    const bag = itemBag("player");
+    const where = state.itemView === "merc" ? "merc" : state.itemView === "corpse" ? "corpse" : "player";
+    const bag = itemBag(where);
     const rows = bag
       .map((it, index) => ({ it, index }))
       .filter(({ it }) => it.location === 1);
@@ -622,12 +860,18 @@
     if (box.hidden) return;
     box.innerHTML = rows
       .map(({ it, index }) => {
-        const sel = state.sel && state.sel.where === "player" && state.sel.index === index;
-        return `<button type="button" class="${Items.qualityClass(it)}${sel ? " is-selected" : ""}" data-eq-index="${index}">${escHtml(Items.displayName(it))} · ${escHtml(Items.locationLabel(it, "player"))}</button>`;
+        const sel = state.sel && state.sel.where === where && state.sel.index === index;
+        return `<button type="button" class="${Items.qualityClass(it)}${sel ? " is-selected" : ""}" data-eq-index="${index}">${escHtml(Items.displayName(it))} · ${escHtml(Items.locationLabel(it, where))}</button>`;
       })
       .join("");
     box.querySelectorAll("[data-eq-index]").forEach((el) => {
-      el.addEventListener("click", () => selectPlayerItem(Number(el.dataset.eqIndex)));
+      el.addEventListener("click", () => {
+        if (where === "player") selectPlayerItem(Number(el.dataset.eqIndex));
+        else {
+          state.sel = { where, index: Number(el.dataset.eqIndex) };
+          renderItems();
+        }
+      });
     });
   }
 
@@ -635,7 +879,7 @@
     const gridEl = $("item-grid");
     const listEl = $("item-list");
     const grid = currentGrid();
-    const where = state.itemView === "shared" ? "stash" : "player";
+    const where = viewWhere(state.itemView);
     const bag = itemBag(where);
     const occupied = new Map();
     bag.forEach((it, index) => {
@@ -705,7 +949,7 @@
       (state.stash ? nStash + " in shared stash" : "shared stash not loaded") +
       (state.parsed && state.parsed.itemsError ? " · item parse warning: " + state.parsed.itemsError : "");
 
-    const counts = { inv: 0, cube: 0, stash: 0, shared: nStash, belt: 0 };
+    const counts = { inv: 0, cube: 0, stash: 0, shared: nStash, belt: 0, merc: 0, corpse: 0 };
     if (state.parsed && state.parsed.items) {
       for (const it of state.parsed.items.player) {
         if (it.location === 1) continue;
@@ -714,6 +958,8 @@
         else if (it.panel === 5) counts.stash++;
         else counts.inv++;
       }
+      counts.merc = (state.parsed.items.merc || []).length;
+      counts.corpse = (state.parsed.items.corpse || []).length;
     }
     document.querySelectorAll("#item-views [data-count]").forEach((el) => {
       const n = counts[el.dataset.count] || 0;
@@ -743,7 +989,7 @@
           if (el.dataset.index) return;
           const item = selectedItem();
           if (!item) return;
-          const destWhere = "player";
+          const destWhere = state.itemView === "merc" ? "merc" : state.itemView === "corpse" ? "corpse" : "player";
           if (state.sel.where !== destWhere) {
             const src = itemBag(state.sel.where);
             const [moved] = src.splice(state.sel.index, 1);
@@ -755,6 +1001,19 @@
           Items.applyPlacement(selectedItem(), { location: 1, equipped: Number(el.dataset.eq), x: 0, y: 0, panel: 0 });
           setDirty(true);
           renderItems();
+        });
+      });
+      root.querySelectorAll("[data-index], [data-x]").forEach((el) => {
+        el.addEventListener("contextmenu", (ev) => {
+          ev.preventDefault();
+          if (el.dataset.index != null) {
+            const whereClick = el.dataset.where || viewWhere(state.itemView);
+            state.sel = { where: whereClick, index: Number(el.dataset.index) };
+            renderInspect();
+            showItemMenu(ev.clientX, ev.clientY, { kind: "item" });
+          } else {
+            showItemMenu(ev.clientX, ev.clientY, { kind: "cell", x: Number(el.dataset.x), y: Number(el.dataset.y) });
+          }
         });
       });
     }
@@ -775,7 +1034,7 @@
     if (!item) return;
     const grid = currentGrid();
     if (grid.equipped) return;
-    const destWhere = state.itemView === "shared" ? "stash" : "player";
+    const destWhere = viewWhere(state.itemView);
     if (state.sel.where !== destWhere) {
       const src = itemBag(state.sel.where);
       const [moved] = src.splice(state.sel.index, 1);
@@ -816,7 +1075,7 @@
       return;
     }
     let destView = state.itemView;
-    let destWhere = destView === "shared" ? "stash" : "player";
+    let destWhere = viewWhere(destView);
     let grid = currentGrid();
     if (grid.equipped || destView === "belt") {
       destView = "inv";
@@ -866,6 +1125,195 @@
     setStatus("Deleted " + (gone ? Items.displayName(gone) : "item"));
   }
 
+  function copySelected() {
+    const item = selectedItem();
+    if (!item) {
+      setStatus("Select an item first");
+      return;
+    }
+    state.clipboard = Items.itemBytes(item);
+    setStatus("Copied " + Items.displayName(item));
+  }
+
+  function pasteCopied(place) {
+    if (!state.clipboard) {
+      setStatus("Clipboard is empty — copy an item first");
+      return;
+    }
+    try {
+      const clone = Items.cloneItem(Items.parseD2i(state.clipboard));
+      let dest = place
+        ? { destView: state.itemView, destWhere: viewWhere(state.itemView), grid: currentGrid(), bag: itemBag(viewWhere(state.itemView)), place: { x: place.x, y: place.y, location: currentGrid().location, panel: currentGrid().panel, equipped: 0 } }
+        : spawnDestination(clone.info.w, clone.info.h, currentSpawnDest());
+      if (!dest || dest.destWhere === "vault") {
+        setStatus("No space to paste");
+        return;
+      }
+      if (dest.destWhere === "player" && (!state.parsed || !state.parsed.items)) {
+        setStatus("Load a character first");
+        return;
+      }
+      Items.applyPlacement(clone, dest.place);
+      dest.bag.push(clone);
+      if (dest.destWhere === "stash") setStashDirty(true);
+      else setDirty(true);
+      if (dest.destWhere === "merc" && state.parsed.items) state.parsed.items.hasMerc = true;
+      state.sel = { where: dest.destWhere, index: dest.bag.length - 1 };
+      renderItems();
+      setStatus("Pasted " + Items.displayName(clone));
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  }
+
+  function exportSelected() {
+    const item = selectedItem();
+    if (!item) {
+      setStatus("Select an item first");
+      return;
+    }
+    const name = (Items.displayName(item) || "item").replace(/[^\w.-]+/g, "_").slice(0, 40) + ".d2i";
+    downloadBytes(Items.itemBytes(item), name);
+    setStatus("Exported " + name);
+  }
+
+  async function importD2iFile(file) {
+    const buf = new Uint8Array(await file.arrayBuffer());
+    const item = Items.parseD2i(buf);
+    const dest = spawnDestination(item.info.w, item.info.h, currentSpawnDest());
+    if (!dest || dest.destWhere === "vault") return;
+    Items.applyPlacement(item, dest.place);
+    dest.bag.push(item);
+    if (dest.destWhere === "stash") setStashDirty(true);
+    else setDirty(true);
+    state.sel = { where: dest.destWhere, index: dest.bag.length - 1 };
+    renderItems();
+    setStatus("Imported " + Items.displayName(item));
+  }
+
+  function hideCreateModal() {
+    const modal = $("create-modal");
+    if (modal) modal.hidden = true;
+    state.createCell = null;
+  }
+
+  function renderCreateResults() {
+    const box = $("create-results");
+    if (!box) return;
+    const q = ($("f-create-search") && $("f-create-search").value) || "";
+    const hits = Items.spawnCatalog(q, "").slice(0, 48);
+    if (!hits.length) {
+      box.innerHTML = `<p class="hint">No bases or uniques match.</p>`;
+      return;
+    }
+    box.innerHTML = hits
+      .map((h) => {
+        const kind = h.kind === "unique" ? "unique" : "base";
+        const id = h.kind === "unique" ? h.id : h.code;
+        return `<button type="button" class="btn" data-create-kind="${kind}" data-create-id="${escHtml(String(id))}">${escHtml(h.name)}${h.base ? ` <span class="muted">${escHtml(h.base)}</span>` : ""}</button>`;
+      })
+      .join("");
+    box.querySelectorAll("[data-create-kind]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        createChosenAt(btn.dataset.createKind, btn.dataset.createId);
+      });
+    });
+  }
+
+  function openCreateAt(x, y) {
+    const destWhere = viewWhere(state.itemView);
+    if (destWhere === "stash" && !state.stash) {
+      setStatus("Load shared stash first");
+      return;
+    }
+    if (destWhere !== "stash" && (!state.parsed || !state.parsed.items)) {
+      setStatus("Load a character first");
+      return;
+    }
+    state.createCell = { x, y };
+    $("create-modal").hidden = false;
+    $("f-create-search").value = "";
+    renderCreateResults();
+    $("f-create-search").focus();
+  }
+
+  function createChosenAt(kind, id) {
+    const cell = state.createCell;
+    if (!cell) return;
+    const destWhere = viewWhere(state.itemView);
+    const grid = currentGrid();
+    const bag = itemBag(destWhere);
+    const place = { x: cell.x, y: cell.y, location: grid.location, panel: grid.panel, equipped: 0 };
+    try {
+      const item = kind === "unique" ? Items.spawnUnique(Number(id), place) : Items.spawnItem(id, place);
+      const w = item.info.w || 1;
+      const h = item.info.h || 1;
+      if (cell.x + w > grid.w || cell.y + h > grid.h) {
+        setStatus("That item does not fit in this cell");
+        return;
+      }
+      const taken = new Set();
+      for (const it of bag) {
+        if (!Items.itemInGrid(it, grid)) continue;
+        for (const c of Items.cellsUsed(it)) taken.add(c.x + "," + c.y);
+      }
+      for (let dy = 0; dy < h; dy++) {
+        for (let dx = 0; dx < w; dx++) {
+          if (taken.has(cell.x + dx + "," + (cell.y + dy))) {
+            setStatus("Not enough empty space for " + Items.displayName(item));
+            return;
+          }
+        }
+      }
+      bag.push(item);
+      if (destWhere === "stash") setStashDirty(true);
+      else setDirty(true);
+      if (destWhere === "merc" && state.parsed.items) state.parsed.items.hasMerc = true;
+      state.sel = { where: destWhere, index: bag.length - 1 };
+      hideCreateModal();
+      renderItems();
+      setStatus("Created " + Items.displayName(item));
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  }
+
+  function hideItemMenu() {
+    const menu = $("item-menu");
+    if (menu) {
+      menu.hidden = true;
+      menu.classList.remove("is-dragging");
+    }
+    state.menu = null;
+    state.menuDrag = null;
+  }
+
+  function clampMenuPos(menu, x, y) {
+    const w = menu.offsetWidth || 160;
+    const h = menu.offsetHeight || 220;
+    return {
+      x: Math.max(8, Math.min(window.innerWidth - w - 8, x)),
+      y: Math.max(8, Math.min(window.innerHeight - h - 8, y)),
+    };
+  }
+
+  function showItemMenu(x, y, info) {
+    const menu = $("item-menu");
+    if (!menu) return;
+    state.menu = info;
+    menu.hidden = false;
+    const pos = clampMenuPos(menu, x, y);
+    menu.style.left = pos.x + "px";
+    menu.style.top = pos.y + "px";
+    menu.querySelector("[data-act='unequip']").hidden = !selectedItem() || selectedItem().location !== 1;
+    menu.querySelector("[data-act='create']").hidden = info.kind !== "cell";
+    menu.querySelector("[data-act='copy']").hidden = info.kind !== "item";
+    menu.querySelector("[data-act='duplicate']").hidden = info.kind !== "item";
+    menu.querySelector("[data-act='identify']").hidden = info.kind !== "item";
+    menu.querySelector("[data-act='export']").hidden = info.kind !== "item";
+    menu.querySelector("[data-act='delete']").hidden = info.kind !== "item";
+  }
+
   function spawnDestination(w, h, destKey) {
     destKey = destKey || ($("f-craft-dest") && $("f-craft-dest").value) || state.itemView;
     if (destKey === "vault") {
@@ -873,15 +1321,17 @@
     }
     let destView = destKey;
     if (destView === "inventory") destView = "inv";
-    if (destView !== "inv" && destView !== "cube" && destView !== "stash" && destView !== "shared") {
+    if (destView !== "inv" && destView !== "cube" && destView !== "stash" && destView !== "shared" && destView !== "merc" && destView !== "corpse") {
       destView = state.itemView;
     }
-    let destWhere = destView === "shared" ? "stash" : "player";
+    let destWhere = viewWhere(destView);
     let grid;
     const grids = Items.grids();
     if (destView === "shared") grid = grids.shared;
     else if (destView === "cube") grid = grids.cube;
     else if (destView === "stash") grid = grids.stash;
+    else if (destView === "merc") grid = grids.merc;
+    else if (destView === "corpse") grid = grids.corpse;
     else grid = grids.inv;
     if (grid.equipped || destView === "belt") {
       destView = "inv";
@@ -1227,19 +1677,25 @@
 
   function renderQuests() {
     const p = state.parsed;
+    if (!p) return;
     const box = $("quest-summary");
     const progress = Save.summarizeProgress(p.bytes);
     p.progress = progress;
+    if ($("f-npc-intro")) $("f-npc-intro").checked = Save.npcIntroduced(p.bytes);
     box.innerHTML = progress.diffs
-      .map((d) => {
+      .map((d, diff) => {
         const acts = [1, 2, 3, 4, 5]
           .map((act) => {
             const qs = d.quests.filter((q) => q.act === act);
             const done = qs.filter((q) => q.done).length;
             const items = qs
-              .map((q) => `<li class="${q.done ? "is-done" : ""}">${q.done ? "✓" : "○"} ${q.name}</li>`)
+              .map((q) => {
+                const def = Save.QUEST_DEFS.find((x) => x.name === q.name);
+                const off = def ? def.off : 0;
+                return `<label><input type="checkbox" data-quest-diff="${diff}" data-quest-off="${off}" ${q.done ? "checked" : ""} /> ${q.name}</label>`;
+              })
               .join("");
-            return `<div class="quest-act"><h4>Act ${act} <span>${done}/${qs.length}</span></h4><ul>${items}</ul></div>`;
+            return `<div class="quest-act"><h4>Act ${act} <span>${done}/${qs.length}</span></h4>${items}</div>`;
           })
           .join("");
         return `<article class="quest-diff">
@@ -1248,18 +1704,80 @@
         </article>`;
       })
       .join("");
+    box.querySelectorAll("[data-quest-off]").forEach((el) => {
+      el.addEventListener("change", () => {
+        Save.setQuestDone(p.bytes, Number(el.dataset.questDiff), Number(el.dataset.questOff), el.checked);
+        setDirty(true);
+        renderQuests();
+      });
+    });
+  }
+
+  function renderWaypoints() {
+    const p = state.parsed;
+    const box = $("waypoint-board");
+    if (!p || !box) return;
+    box.innerHTML = Save.DIFF_NAMES.map((name, diff) => {
+      const list = Save.listWaypoints(p.bytes, diff);
+      const acts = [1, 2, 3, 4, 5]
+        .map((act) => {
+          const wps = list.filter((w) => w.act === act);
+          const rows = wps
+            .map((w) => `<label><input type="checkbox" data-wp-diff="${diff}" data-wp-i="${w.i}" ${w.on ? "checked" : ""} /> ${w.name}</label>`)
+            .join("");
+          return `<div class="waypoint-act"><h4>Act ${act}</h4>${rows}</div>`;
+        })
+        .join("");
+      return `<article class="waypoint-diff">
+        <h3>${name}
+          <span>
+            <button type="button" class="btn" data-wp-all="${diff}" data-on="1">All</button>
+            <button type="button" class="btn" data-wp-all="${diff}" data-on="0">None</button>
+          </span>
+        </h3>
+        <div class="waypoint-acts">${acts}</div>
+      </article>`;
+    }).join("");
+    box.querySelectorAll("[data-wp-i]").forEach((el) => {
+      el.addEventListener("change", () => {
+        Save.setWaypoint(p.bytes, Number(el.dataset.wpDiff), Number(el.dataset.wpI), el.checked);
+        setDirty(true);
+      });
+    });
+    box.querySelectorAll("[data-wp-all]").forEach((el) => {
+      el.addEventListener("click", () => {
+        Save.setAllWaypoints(p.bytes, Number(el.dataset.wpAll), el.dataset.on === "1");
+        setDirty(true);
+        renderWaypoints();
+      });
+    });
+  }
+
+  function renderMerc() {
+    const p = state.parsed;
+    if (!p) return;
+    if (!p.merc) p.merc = Save.parseMerc(p.bytes);
+    $("f-merc-type").value = p.merc.typeId || 0;
+    $("f-merc-name").value = p.merc.nameId || 0;
+    $("f-merc-exp").value = p.merc.exp || 0;
+    $("f-merc-dead").checked = !!p.merc.dead;
+    $("f-merc-kind").value = Save.mercKind(p.merc.typeId);
+    const n = p.items && p.items.merc ? p.items.merc.length : 0;
+    $("merc-summary").textContent = (p.items && p.items.hasMerc ? "Hired. " : "No hireling items block. ") + n + " item(s) on the mercenary.";
   }
 
   function render() {
     const p = state.parsed;
     if (p) {
       $("f-name").value = p.name;
-      $("f-class").value = p.className;
+      $("f-class").value = String(p.classId);
       $("f-level").value = p.stats.level;
       $("f-experience").value = p.stats.experience;
       $("f-gold").value = p.stats.gold;
       $("f-goldbank").value = p.stats.goldbank;
       $("f-hardcore").checked = p.hardcore;
+      $("f-died").checked = !!p.died;
+      $("f-ladder").checked = !!p.ladder;
       $("f-strength").value = p.stats.strength;
       $("f-dexterity").value = p.stats.dexterity;
       $("f-vitality").value = p.stats.vitality;
@@ -1269,9 +1787,11 @@
       $("f-maxhp").value = p.stats.maxhp;
       $("f-maxmana").value = p.stats.maxmana;
       $("f-maxstamina").value = p.stats.maxstamina;
-      $("char-summary").textContent = `${p.name} · ${p.className} · level ${p.stats.level}${p.hardcore ? " · Hardcore" : ""}`;
+      $("char-summary").textContent = `${p.name} · ${p.className} · level ${p.stats.level}${p.hardcore ? " · Hardcore" : ""}${p.ladder ? " · Ladder" : ""}`;
       renderSkills();
       renderQuests();
+      renderWaypoints();
+      renderMerc();
     }
     renderItems();
     renderCollection();
@@ -1727,6 +2247,7 @@
     if (!state.parsed) return;
     flush();
     const result = Save.unlockProgress(state.parsed, { rewards: $("f-quest-rewards").checked });
+    Save.setNpcIntroduced(state.parsed.bytes, true);
     render();
     setDirty(true);
     const extra = [];
@@ -1807,6 +2328,165 @@
 
   $("btn-unequip-item").addEventListener("click", () => unequipSelected());
   $("btn-duplicate-item").addEventListener("click", () => duplicateSelected());
+  $("btn-copy-item").addEventListener("click", () => copySelected());
+  $("btn-paste-item").addEventListener("click", () => pasteCopied());
+  $("btn-export-item").addEventListener("click", () => exportSelected());
+  $("d2i-input").addEventListener("change", async (ev) => {
+    const file = ev.target.files && ev.target.files[0];
+    if (!file) return;
+    try {
+      await importD2iFile(file);
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+    ev.target.value = "";
+  });
+  $("btn-socket-fill").addEventListener("click", () => {
+    const item = selectedItem();
+    if (!item) return;
+    try {
+      const gem = Items.spawnItem($("f-socket-gem").value, { location: 0, panel: 0, x: 0, y: 0 });
+      Items.insertSocketed(item, gem);
+      markItemDirty();
+      renderItems();
+      setStatus("Socketed " + Items.displayName(gem) + " into " + Items.displayName(item));
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+  $("f-item-quality").addEventListener("change", () => {
+    const item = selectedItem();
+    if (!item) return;
+    try {
+      const extra = {};
+      if (Number($("f-item-quality").value) === 7) extra.uniqueId = uniqueIdForItem(item);
+      if (Number($("f-item-quality").value) === 5) extra.setId = Number($("f-item-setid").value) || 0;
+      Items.setQuality(item, Number($("f-item-quality").value), extra);
+      markItemDirty();
+      renderItems();
+      setStatus("Set quality on " + Items.displayName(item));
+    } catch (err) {
+      setStatus(err.message || String(err));
+      renderInspect();
+    }
+  });
+  $("f-item-unique").addEventListener("change", () => {
+    const item = selectedItem();
+    if (!item) return;
+    try {
+      Items.setQuality(item, 7, { uniqueId: Number($("f-item-unique").value), applyMods: true });
+      markItemDirty();
+      renderItems();
+      setStatus("Set unique " + Items.displayName(item));
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+  $("f-item-setid").addEventListener("change", () => {
+    const item = selectedItem();
+    if (!item) return;
+    try {
+      Items.setQuality(item, 5, { setId: Number($("f-item-setid").value), applyMods: false });
+      markItemDirty();
+      renderItems();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+  $("f-item-def").addEventListener("change", () => {
+    const item = selectedItem();
+    if (!item) return;
+    try {
+      Items.setItemDefense(item, $("f-item-def").value);
+      markItemDirty();
+      renderItems();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+  $("f-item-ilvl").addEventListener("change", () => {
+    const item = selectedItem();
+    if (!item) return;
+    try {
+      Items.setIlvl(item, $("f-item-ilvl").value);
+      markItemDirty();
+      renderItems();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+  $("f-item-dur").addEventListener("change", () => {
+    const item = selectedItem();
+    if (!item) return;
+    try {
+      Items.setItemDurability(item, $("f-item-dur").value, $("f-item-maxdur").value);
+      markItemDirty();
+      renderItems();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+  $("f-item-maxdur").addEventListener("change", () => {
+    const item = selectedItem();
+    if (!item) return;
+    try {
+      Items.setItemDurability(item, $("f-item-dur").value, $("f-item-maxdur").value);
+      markItemDirty();
+      renderItems();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+  $("f-item-indestruct").addEventListener("change", () => {
+    const item = selectedItem();
+    if (!item) return;
+    try {
+      Items.setIndestructible(item, $("f-item-indestruct").checked);
+      markItemDirty();
+      renderItems();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+  $("f-item-pname").addEventListener("change", () => {
+    const item = selectedItem();
+    if (!item) return;
+    try {
+      Items.setPersonalized(item, $("f-item-pname").value);
+      markItemDirty();
+      renderItems();
+      setStatus($("f-item-pname").value ? "Personalized " + Items.displayName(item) : "Cleared personalization");
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+  $("f-item-rare1").addEventListener("change", () => {
+    const item = selectedItem();
+    if (!item) return;
+    try {
+      Items.setRareNames(item, $("f-item-rare1").value, $("f-item-rare2").value);
+      markItemDirty();
+      renderItems();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+  $("f-item-rare2").addEventListener("change", () => {
+    const item = selectedItem();
+    if (!item) return;
+    try {
+      Items.setRareNames(item, $("f-item-rare1").value, $("f-item-rare2").value);
+      markItemDirty();
+      renderItems();
+    } catch (err) {
+      setStatus(err.message || String(err));
+    }
+  });
+  $("f-prop-search").addEventListener("input", () => {
+    state.propQuery = $("f-prop-search").value;
+    const item = selectedItem();
+    if (item) renderPropAdd(item);
+  });
   $("btn-copy-vault").addEventListener("click", () => depositSelected(false));
   $("btn-move-vault").addEventListener("click", () => depositSelected(true));
   $("f-item-search").addEventListener("input", () => {
@@ -1816,7 +2496,11 @@
 
   $("btn-identify-all").addEventListener("click", () => {
     const bags = [];
-    if (state.parsed && state.parsed.items) bags.push(["player", state.parsed.items.player]);
+    if (state.parsed && state.parsed.items) {
+      bags.push(["player", state.parsed.items.player]);
+      bags.push(["merc", state.parsed.items.merc || []]);
+      bags.push(["corpse", state.parsed.items.corpse || []]);
+    }
     if (state.stash) bags.push(["stash", state.stash.items]);
     let n = 0;
     for (const [where, bag] of bags) {
@@ -1836,6 +2520,11 @@
   $("btn-delete-item").addEventListener("click", () => deleteSelected());
 
   document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape" && $("create-modal") && !$("create-modal").hidden) {
+      hideCreateModal();
+      ev.preventDefault();
+      return;
+    }
     if (!$("panel-items") || $("panel-items").hidden) return;
     if (ev.target && ev.target.closest && ev.target.closest("input, textarea")) return;
     if (ev.key === "Escape") {
@@ -1884,6 +2573,30 @@
     } catch (err) {
       $("f-item-eth").checked = !!item.ethereal;
       setStatus(err.message || String(err));
+    }
+  });
+
+  $("item-inspect-mods").addEventListener("change", (ev) => {
+    const input = ev.target && ev.target.closest && ev.target.closest("input[type='number'], select");
+    if (!input) return;
+    const item = selectedItem();
+    if (!item) return;
+    try {
+      let result;
+      if (input.dataset.stat === "defense") result = Items.setItemDefense(item, input.value);
+      else if (input.dataset.modI != null) {
+        result = Items.setModValue(item, Number(input.dataset.modI), Number(input.dataset.valI), input.value);
+      } else return;
+      markItemDirty();
+      renderItems();
+      const skillLabel = input.tagName === "SELECT" ? Items.skillName(Number(input.value)) : "";
+      const msg = result.clamped
+        ? "Save format caps " + result.label + " at " + result.max + " (asked for " + input.value + ")"
+        : "Set " + result.label + " to " + (skillLabel || result.value) + " on " + Items.displayName(item);
+      setStatus(msg);
+    } catch (err) {
+      setStatus(err.message || String(err));
+      renderInspect();
     }
   });
 
@@ -1991,10 +2704,102 @@
     });
   });
 
-  ["f-name", "f-level", "f-experience", "f-gold", "f-goldbank", "f-strength", "f-dexterity", "f-vitality", "f-energy", "f-statpts", "f-newskills", "f-maxhp", "f-maxmana", "f-maxstamina", "f-hardcore"].forEach((id) => {
+  ["f-name", "f-level", "f-experience", "f-gold", "f-goldbank", "f-strength", "f-dexterity", "f-vitality", "f-energy", "f-statpts", "f-newskills", "f-maxhp", "f-maxmana", "f-maxstamina", "f-hardcore", "f-died", "f-ladder", "f-class", "f-merc-type", "f-merc-name", "f-merc-exp", "f-merc-dead"].forEach((id) => {
     const el = $(id);
+    if (!el) return;
     el.addEventListener("input", () => setDirty(true));
     el.addEventListener("change", () => setDirty(true));
+  });
+  $("f-npc-intro").addEventListener("change", () => {
+    if (!state.parsed) return;
+    Save.setNpcIntroduced(state.parsed.bytes, $("f-npc-intro").checked);
+    setDirty(true);
+  });
+  $("btn-merc-hire").addEventListener("click", () => {
+    if (!state.parsed) return;
+    Save.hireDefaultMerc(state.parsed);
+    setDirty(true);
+    renderMerc();
+    setStatus("Hired a default Rogue Scout — edit type/name/exp as needed");
+  });
+  $("btn-merc-items").addEventListener("click", () => {
+    if (state.parsed) flush();
+    switchTab("items");
+    setItemView("merc");
+    renderItems();
+  });
+  $("btn-create-cancel").addEventListener("click", () => hideCreateModal());
+  $("f-create-search").addEventListener("input", () => renderCreateResults());
+  $("create-modal").addEventListener("click", (ev) => {
+    if (ev.target === $("create-modal")) hideCreateModal();
+  });
+  $("f-class").addEventListener("change", () => {
+    if (!state.parsed) return;
+    state.parsed.classId = Number($("f-class").value || 0);
+    state.parsed.className = Save.CLASSES[state.parsed.classId] || state.parsed.className;
+    setDirty(true);
+    renderSkills();
+  });
+  (function bindItemMenuDrag() {
+    const menu = $("item-menu");
+    const handle = $("item-menu-drag");
+    if (!menu || !handle) return;
+    handle.addEventListener("pointerdown", (ev) => {
+      if (ev.button !== 0) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      const rect = menu.getBoundingClientRect();
+      state.menuDrag = { dx: ev.clientX - rect.left, dy: ev.clientY - rect.top };
+      menu.classList.add("is-dragging");
+      try {
+        handle.setPointerCapture(ev.pointerId);
+      } catch (_) {}
+    });
+    handle.addEventListener("pointermove", (ev) => {
+      if (!state.menuDrag) return;
+      const pos = clampMenuPos(menu, ev.clientX - state.menuDrag.dx, ev.clientY - state.menuDrag.dy);
+      menu.style.left = pos.x + "px";
+      menu.style.top = pos.y + "px";
+    });
+    function endDrag(ev) {
+      if (!state.menuDrag) return;
+      state.menuDrag = null;
+      menu.classList.remove("is-dragging");
+      if (ev && handle.hasPointerCapture && handle.hasPointerCapture(ev.pointerId)) {
+        try {
+          handle.releasePointerCapture(ev.pointerId);
+        } catch (_) {}
+      }
+    }
+    handle.addEventListener("pointerup", endDrag);
+    handle.addEventListener("pointercancel", endDrag);
+  })();
+  $("item-menu").addEventListener("click", (ev) => {
+    const btn = ev.target.closest("[data-act]");
+    if (!btn) return;
+    const act = btn.dataset.act;
+    const info = state.menu;
+    hideItemMenu();
+    if (act === "copy") copySelected();
+    else if (act === "paste") pasteCopied(info && info.kind === "cell" ? { x: info.x, y: info.y } : null);
+    else if (act === "duplicate") duplicateSelected();
+    else if (act === "identify") {
+      const item = selectedItem();
+      if (item) {
+        Items.setIdentified(item, true);
+        markItemDirty();
+        renderItems();
+      }
+    } else if (act === "unequip") unequipSelected();
+    else if (act === "export") exportSelected();
+    else if (act === "create" && info && info.kind === "cell") openCreateAt(info.x, info.y);
+    else if (act === "delete") deleteSelected();
+  });
+  document.addEventListener("click", (ev) => {
+    if ($("item-menu") && !$("item-menu").hidden && !ev.target.closest("#item-menu")) hideItemMenu();
+    if (!ev.target.closest(".skill-pick, .skill-pick-list")) {
+      document.querySelectorAll(".skill-pick-list").forEach((el) => el.remove());
+    }
   });
 
   const overlay = $("drop-overlay");
@@ -2010,8 +2815,17 @@
     overlay.hidden = true;
     const files = Array.from((ev.dataTransfer && ev.dataTransfer.files) || []);
     if (!files.length) return;
+    const d2i = files.find((f) => /\.d2i$/i.test(f.name));
     const d2s = files.find((f) => /\.d2s$/i.test(f.name));
     const stashFile = files.find((f) => /\.stash$/i.test(f.name));
+    if (d2i && !d2s) {
+      try {
+        await importD2iFile(d2i);
+      } catch (err) {
+        setStatus(err.message || String(err));
+      }
+      return;
+    }
     const first = d2s || files[0];
     try {
       const handle = await handleFromDrop(ev, first);

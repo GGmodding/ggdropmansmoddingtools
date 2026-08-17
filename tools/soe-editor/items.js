@@ -154,6 +154,30 @@
     return list;
   }
 
+  function clampBits(v, bits) {
+    if (!bits) return 0;
+    const max = bits >= 31 ? 0x7fffffff : (1 << bits) - 1;
+    v = Math.round(Number(v) || 0);
+    if (v < 0) return 0;
+    if (v > max) return max;
+    return v >>> 0;
+  }
+
+  function saveRange(prop) {
+    const bits = (prop && prop.sB) || 0;
+    const add = (prop && prop.sA) || 0;
+    if (!bits) return { min: 0, max: 0 };
+    const maxStored = bits >= 31 ? 0x7fffffff : (1 << bits) - 1;
+    return { min: -add, max: maxStored - add };
+  }
+
+  function clampSave(prop, v) {
+    const r = saveRange(prop);
+    v = Math.round(Number(v));
+    if (!Number.isFinite(v)) v = 0;
+    return Math.max(r.min, Math.min(r.max, v));
+  }
+
   function writeMagic(w, list) {
     for (const mod of list || []) {
       let valueIdx = 0;
@@ -169,13 +193,13 @@
           let param = values[valueIdx++] || 0;
           if (prop.dF === 14) param |= ((values[valueIdx++] || 0) & 0x1fff) << 3;
           if (prop.e === 2 || prop.e === 3) param |= ((values[valueIdx++] || 0) & 0x3ff) << 6;
-          w.write(param, prop.sP);
+          w.write(clampBits(param, prop.sP), prop.sP);
         }
         let v = values[valueIdx++] || 0;
         if (prop.sA) v += prop.sA;
         if (prop.e === 3) v |= ((values[valueIdx++] || 0) & 0xff) << 8;
         if (!prop.sB) throw new Error("Save Bits missing for stat " + (mod.id + i));
-        w.write(v, prop.sB);
+        w.write(clampBits(v, prop.sB), prop.sB);
       }
     }
     w.write(0x1ff, 9);
@@ -1056,14 +1080,15 @@
     w.write(item.timestamp ? 1 : 0, 1);
     if (info.k === "a") {
       const def = MAG[31] || { sB: 11, sA: 10 };
-      w.write((item.defense != null ? item.defense : Number(info.ac) || 10) + (def.sA || 0), def.sB);
+      const ac = clampSave(def, item.defense != null ? item.defense : Number(info.ac) || 10);
+      w.write(ac + (def.sA || 0), def.sB);
     }
     if (info.k === "a" || info.k === "w") {
       const maxd = MAG[73] || { sB: 8, sA: 0 };
       const curd = MAG[72] || { sB: 9, sA: 0 };
-      const maxDur = item.maxDur != null ? item.maxDur : Number(info.dur) || 0;
+      const maxDur = clampSave(maxd, item.maxDur != null ? item.maxDur : Number(info.dur) || 0);
       w.write(maxDur + (maxd.sA || 0), maxd.sB);
-      if (maxDur > 0) w.write((item.dur != null ? item.dur : maxDur) + (curd.sA || 0), curd.sB);
+      if (maxDur > 0) w.write(clampSave(curd, item.dur != null ? item.dur : maxDur) + (curd.sA || 0), curd.sB);
     }
     if (info.s) w.write(item.quantity || 1, 9);
     if (item.socketed) w.write(item.sockets || 0, 4);
@@ -1077,7 +1102,10 @@
   }
 
   function rewriteItem(item) {
-    return overwriteItem(item, serializeItem(item));
+    const extras = item.extraAffixes;
+    overwriteItem(item, serializeItem(item));
+    if (extras) item.extraAffixes = extras;
+    return item;
   }
 
   const typeAncCache = new Map();
@@ -1475,6 +1503,8 @@
       stash: { w: 6, h: 8, panel: 5, location: 0, label: "Personal stash" },
       shared: { w: 10, h: 16, panel: 6, location: 0, label: "Shared stash" },
       belt: { w: 16, h: 1, panel: 0, location: 2, label: "Belt" },
+      merc: { w: 10, h: 4, panel: 1, location: 0, label: "Mercenary" },
+      corpse: { w: 10, h: 4, panel: 1, location: 0, label: "Corpse" },
     };
   }
 
@@ -1612,6 +1642,8 @@
 
   function viewForItem(item, where) {
     if (where === "stash") return "shared";
+    if (where === "merc") return "merc";
+    if (where === "corpse") return "corpse";
     if (item.location === 1) return "inv";
     if (item.location === 2) return "belt";
     if (item.panel === 4) return "cube";
@@ -1658,6 +1690,473 @@
     n = n.replace(/ Rune$/, "");
     if (item.quantity > 1) n = item.quantity + "× " + n;
     return n;
+  }
+
+  const STAT_LABEL = {
+    strength: "to Strength",
+    energy: "to Energy",
+    dexterity: "to Dexterity",
+    vitality: "to Vitality",
+    maxhp: "to Life",
+    maxmana: "to Mana",
+    maxstamina: "to Stamina",
+    item_armor_percent: "Enhanced Defense",
+    item_maxdamage_percent: "Enhanced Damage",
+    item_mindamage_percent: "Enhanced Damage (min)",
+    tohit: "to Attack Rating",
+    armorclass: "Defense",
+    armorclass_vs_missile: "Defense vs Missile",
+    fireresist: "Fire Resist",
+    lightresist: "Lightning Resist",
+    coldresist: "Cold Resist",
+    poisonresist: "Poison Resist",
+    magicresist: "Magic Resist",
+    maxfireresist: "Maximum Fire Resist",
+    maxlightresist: "Maximum Lightning Resist",
+    maxcoldresist: "Maximum Cold Resist",
+    maxpoisonresist: "Maximum Poison Resist",
+    item_fastercastrate: "Faster Cast Rate",
+    item_fasterattackrate: "Increased Attack Speed",
+    item_fastermovevelocity: "Faster Run/Walk",
+    item_fastergethitrate: "Faster Hit Recovery",
+    item_fasterblockrate: "Faster Block Rate",
+    item_magicbonus: "Magic Find",
+    item_goldbonus: "Extra Gold",
+    item_lifesteal: "Life Stolen per Hit",
+    item_manasteal: "Mana Stolen per Hit",
+    item_allskills: "to All Skills",
+    item_addclassskills: "to Class Skills",
+    item_addskill_tab: "to Skill Tab",
+    item_elemskill: "to Elemental Skills",
+    item_singleskill: "to Skill",
+    item_nonclassskill: "to Skill (oskill)",
+    item_skillonattack: "Chance to Cast Skill on Attack",
+    item_skillonkill: "Chance to Cast Skill on Kill",
+    item_skillondeath: "Chance to Cast Skill on Death",
+    item_skillonhit: "Chance to Cast Skill on Hit",
+    item_skillonlevelup: "Chance to Cast Skill on Level Up",
+    item_skilloncast: "Chance to Cast Skill on Cast",
+    item_skillongethit: "Chance to Cast Skill when Struck",
+    item_charged_skill: "Charged Skill",
+    item_aura: "Aura when Equipped",
+    item_skillonequip: "Skill when Equipped",
+    item_knockback: "Knockback",
+    item_restinpeace: "Slain Monsters Rest in Peace",
+    item_howl: "Hit Causes Monster to Flee",
+    item_stupidity: "Hit Blinds Target",
+    item_ignoretargetac: "Ignore Target Defense",
+    item_preventheal: "Prevent Monster Heal",
+    item_halffreezeduration: "Half Freeze Duration",
+    item_freeze: "Freezes Target",
+    item_cannotbefrozen: "Cannot Be Frozen",
+    item_reanimate: "Reanimate as",
+    item_pierce: "Pierce",
+    item_magicarrow: "Fires Magic Arrows",
+    item_explosivearrow: "Fires Explosive Arrows",
+    item_openwounds: "Open Wounds",
+    item_crushingblow: "Crushing Blow",
+    item_deadlystrike: "Deadly Strike",
+    item_slow: "Slows Target by",
+    item_healafterkill: "Life after Each Kill",
+    item_addexperience: "Extra Experience",
+    item_reducedprices: "Reduce Vendor Prices",
+    item_lightradius: "Light Radius",
+    item_req_percent: "Requirements",
+    item_attackertakeslightdamage: "Attacker Takes Lightning Damage",
+    item_absorbfire_percent: "Fire Absorb",
+    item_absorblight_percent: "Lightning Absorb",
+    item_replenish_durability: "Repairs Durability",
+    item_replenish_quantity: "Replenishes Quantity",
+    item_extra_stack: "Increased Stack Size",
+    item_indesctructible: "Indestructible",
+    maxdamage: "Maximum Damage",
+    mindamage: "Minimum Damage",
+    secondary_maxdamage: "Maximum Damage (2h)",
+    secondary_mindamage: "Minimum Damage (2h)",
+    item_maxdurability: "Max Durability",
+  };
+
+  const STAT_ALIAS = {
+    item_skillonattack: "proc cast on attack swing",
+    item_skillonkill: "proc cast on kill spawn uber diablo",
+    item_skillondeath: "proc cast on death",
+    item_skillonhit: "proc cast on hit striking spawn uber diablo",
+    item_skillonlevelup: "proc cast on level up",
+    item_skilloncast: "proc cast on cast",
+    item_skillongethit: "proc cast when struck gethit",
+    item_charged_skill: "charges charged skill",
+    item_aura: "aura when equipped",
+    item_skillonequip: "skill on equip",
+    item_nonclassskill: "oskill extra skill",
+    item_singleskill: "plus to skill",
+    item_reanimate: "reanimate as monster",
+  };
+
+  function skillsApi() {
+    if (typeof window !== "undefined" && window.SoESkills) return window.SoESkills;
+    try {
+      return require("./skills-db.js");
+    } catch (_) {
+      return { ALL: [], skillName: (id) => "Skill " + id, searchSkills: () => [] };
+    }
+  }
+
+  function skillName(id) {
+    const api = skillsApi();
+    return api.skillName ? api.skillName(id) : "Skill " + id;
+  }
+
+  function prettyStatName(id) {
+    const rec = MAG[id];
+    if (rec && STAT_LABEL[rec.s]) return STAT_LABEL[rec.s];
+    const name = rec && rec.s ? rec.s.replace(/^item_/, "").replace(/_/g, " ") : "stat " + id;
+    return name;
+  }
+
+  function isSkillStat(prop) {
+    if (!prop) return false;
+    if (prop.dF === 16 || prop.dF === 27 || prop.dF === 28) return true;
+    return /skill|aura/.test(prop.s || "") && prop.s !== "item_reanimate";
+  }
+
+  function modFields(mod) {
+    const fields = [];
+    const first = MAG[mod && mod.id];
+    if (!first) return fields;
+    const nprops = first.np || 1;
+    let valueIdx = 0;
+    const values = (mod.values || mod.v || []).slice();
+    for (let i = 0; i < nprops; i++) {
+      const id = mod.id + i;
+      const prop = MAG[id];
+      if (!prop) break;
+      const name = prettyStatName(id);
+      if (prop.sP) {
+        if (prop.dF === 14) {
+          fields.push({ i: valueIdx++, label: "Skill tab", min: 0, max: 7, param: true });
+          fields.push({ i: valueIdx++, label: "Skill", min: 0, max: 0x1fff, param: true, skill: true });
+        } else if (prop.e === 2 || prop.e === 3) {
+          fields.push({ i: valueIdx++, label: "Skill level", min: 0, max: 63, param: true });
+          fields.push({ i: valueIdx++, label: "Skill", min: 0, max: 0x3ff, param: true, skill: true });
+        } else {
+          const pmax = prop.sP >= 31 ? 0x7fffffff : (1 << prop.sP) - 1;
+          fields.push({
+            i: valueIdx++,
+            label: isSkillStat(prop) ? "Skill" : name + " param",
+            min: 0,
+            max: pmax,
+            param: true,
+            skill: isSkillStat(prop),
+          });
+        }
+      }
+      const range = saveRange(prop);
+      if (prop.e === 2) {
+        fields.push({ i: valueIdx++, label: "Chance %", min: range.min, max: range.max, param: false });
+      } else if (prop.e === 3) {
+        fields.push({ i: valueIdx++, label: "Charges", min: 0, max: 255, param: false });
+        fields.push({ i: valueIdx++, label: "Max charges", min: 0, max: 255, param: true });
+      } else {
+        fields.push({ i: valueIdx++, label: name, min: range.min, max: range.max, param: false });
+      }
+    }
+    return fields.map((f) => ({ ...f, value: values[f.i] || 0, skillName: f.skill ? skillName(values[f.i] || 0) : "" }));
+  }
+
+  function itemStatFields(item) {
+    const out = [];
+    if (!item || item.simple || item.ear) return out;
+    const info = item.info || itemInfo(item.code);
+    if (info.k === "a") {
+      const r = saveRange(MAG[31] || { sB: 11, sA: 10 });
+      out.push({
+        kind: "defense",
+        label: "Defense",
+        value: item.defense != null ? item.defense : Number(info.ac) || 0,
+        min: r.min,
+        max: r.max,
+      });
+    }
+    (item.mods || []).forEach((mod, modIndex) => {
+      for (const f of modFields(mod)) {
+        out.push({ kind: "mod", modIndex, valueIndex: f.i, label: f.label, value: f.value, min: f.min, max: f.max, param: f.param });
+      }
+    });
+    return out;
+  }
+
+  function setItemDefense(item, n) {
+    if (!item || item.simple || item.ear) throw new Error("This item has no defense");
+    const info = item.info || itemInfo(item.code);
+    if (info.k !== "a") throw new Error("This item has no defense");
+    const next = clampSave(MAG[31] || { sB: 11, sA: 10 }, n);
+    const asked = Math.round(Number(n));
+    item.defense = next;
+    rewriteItem(item);
+    return { value: item.defense, clamped: Number.isFinite(asked) && next !== asked, min: saveRange(MAG[31]).min, max: saveRange(MAG[31]).max, label: "Defense" };
+  }
+
+  function setModValue(item, modIndex, valueIndex, n) {
+    if (!item || item.simple || item.ear) throw new Error("This item has no stats to edit");
+    const mod = (item.mods || [])[modIndex];
+    if (!mod) throw new Error("No such stat");
+    const field = modFields(mod).find((f) => f.i === valueIndex);
+    if (!field) throw new Error("No such stat value");
+    const asked = Math.round(Number(n));
+    if (!Number.isFinite(asked)) throw new Error("Need a number");
+    const v = Math.max(field.min, Math.min(field.max, asked));
+    const values = (mod.values || mod.v || []).slice();
+    while (values.length <= valueIndex) values.push(0);
+    values[valueIndex] = v;
+    mod.values = values;
+    delete mod.v;
+    rewriteItem(item);
+    return { value: v, clamped: v !== asked, min: field.min, max: field.max, label: field.label };
+  }
+
+  function leadStatIds() {
+    const skip = new Set();
+    const leads = [];
+    for (let id = 0; id < MAG.length; id++) {
+      if (skip.has(id) || !MAG[id] || !MAG[id].sB) continue;
+      leads.push(id);
+      const np = MAG[id].np || 1;
+      for (let i = 1; i < np; i++) skip.add(id + i);
+    }
+    return leads;
+  }
+
+  function statGroup(name) {
+    const s = String(name || "").toLowerCase();
+    if (/skillon|charged_skill|item_aura|skillonequip/.test(s)) return "Procs";
+    if (/resist/.test(s)) return "Resists";
+    if (/armor|defense|block/.test(s)) return "Defense";
+    if (/damage|tohit|deadly|crush|openwound|pierce|lifesteal|manasteal/.test(s)) return "Damage";
+    if (/skill|aura|oskill/.test(s)) return "Skills";
+    if (/magicbonus|goldbonus|quantity|socket|fastercast|fasterattack|fastermove|fastergethit|fasterblock/.test(s)) return "Extra";
+    return "Other";
+  }
+
+  function listSavableStats(query) {
+    const q = String(query || "").trim().toLowerCase();
+    const tokens = q.split(/\s+/).filter(Boolean);
+    const out = [];
+    for (const id of leadStatIds()) {
+      const rec = MAG[id];
+      const label = prettyStatName(id);
+      const hay = (label + " " + (rec.s || "") + " " + (STAT_ALIAS[rec.s] || "") + " " + id).toLowerCase();
+      if (tokens.length && !tokens.every((t) => hay.includes(t))) continue;
+      const range = saveRange(rec);
+      out.push({ id, label, name: rec.s, group: statGroup(rec.s), min: range.min, max: range.max });
+    }
+    out.sort((a, b) => a.group.localeCompare(b.group) || a.label.localeCompare(b.label) || a.id - b.id);
+    return out;
+  }
+
+  function defaultModValues(id) {
+    return modFields({ id, values: [] }).map((f) => {
+      if (f.skill) return 0;
+      if (/chance/i.test(f.label)) return Math.min(100, f.max);
+      if (/level/i.test(f.label) && f.param) return 1;
+      if (/max charges/i.test(f.label)) return 20;
+      if (/^charges$/i.test(f.label)) return 20;
+      if (f.param) return 0;
+      if (f.max <= 0) return 0;
+      return Math.min(f.max, Math.max(1, f.max > 200 ? Math.min(50, f.max) : f.max));
+    });
+  }
+
+  const PROC_KINDS = [
+    { id: 198, verb: "on Hit", keys: ["hit", "striking"] },
+    { id: 196, verb: "on Kill", keys: ["kill"] },
+    { id: 195, verb: "on Attack", keys: ["attack", "swing"] },
+    { id: 201, verb: "when Struck", keys: ["struck", "gethit", "get hit"] },
+    { id: 200, verb: "on Cast", keys: ["cast"] },
+    { id: 197, verb: "on Death", keys: ["death"] },
+    { id: 199, verb: "on Level Up", keys: ["level"] },
+    { id: 204, verb: "Charges", keys: ["charge", "charged"] },
+    { id: 151, verb: "Aura", keys: ["aura"] },
+    { id: 97, verb: "oskill", keys: ["oskill"] },
+    { id: 107, verb: "to Skill", keys: ["plus", "to skill"] },
+  ];
+
+  function valuesForSkillMod(statId, skillId) {
+    const fields = modFields({ id: statId, values: [] });
+    return fields.map((f) => {
+      if (f.skill) return Number(skillId) || 0;
+      if (/chance/i.test(f.label)) return Math.min(100, f.max);
+      if (/level/i.test(f.label)) return 1;
+      if (/max charges/i.test(f.label)) return 20;
+      if (/^charges$/i.test(f.label)) return 20;
+      if (statId === 151 || statId === 97 || statId === 107) return 1;
+      if (f.param) return 0;
+      return Math.min(f.max, Math.max(1, f.max > 200 ? 1 : f.max));
+    });
+  }
+
+  function listSkillProcs(query) {
+    const q = String(query || "").trim().toLowerCase();
+    if (!q) return [];
+    const eventHit = PROC_KINDS.filter((p) => p.keys.some((k) => q.includes(k)));
+    const kinds = eventHit.length ? eventHit : PROC_KINDS.filter((p) => p.id === 198 || p.id === 196 || p.id === 195 || p.id === 204);
+    const stop = new Set(["on", "when", "to", "a", "the", "skill", "cast", "chance", "proc"]);
+    for (const p of PROC_KINDS) for (const k of p.keys) k.split(/\s+/).forEach((w) => stop.add(w));
+    const skillQuery = q.split(/\s+/).filter((t) => t && !stop.has(t)).join(" ");
+    const api = skillsApi();
+    const skills = (api.searchSkills ? api.searchSkills(skillQuery || q) : []).slice();
+    if (/diablo|spawn|summon/.test(q)) {
+      skills.sort((a, b) => {
+        const as = /summon/i.test(a.n) ? 0 : 1;
+        const bs = /summon/i.test(b.n) ? 0 : 1;
+        return as - bs || a.i - b.i;
+      });
+    }
+    const picked = skills.slice(0, 12);
+    if (!picked.length) return [];
+    const out = [];
+    for (const sk of picked) {
+      for (const p of kinds) {
+        out.push({
+          id: p.id,
+          skillId: sk.i,
+          skillName: sk.n,
+          label: p.verb + ": " + sk.n,
+          group: "Procs",
+          values: valuesForSkillMod(p.id, sk.i),
+        });
+      }
+    }
+    return out;
+  }
+
+  function addMod(item, id, values) {
+    if (!item || item.simple || item.ear) throw new Error("This item cannot have properties");
+    id = Number(id);
+    if (!MAG[id] || !MAG[id].sB) throw new Error("Unknown or unsavable stat id " + id);
+    const vals = values && values.length ? values.slice() : defaultModValues(id);
+    item.mods = (item.mods || []).concat([{ id, values: vals }]);
+    item.identified = 1;
+    return rewriteItem(item);
+  }
+
+  function removeMod(item, modIndex) {
+    if (!item || !item.mods || !item.mods[modIndex]) throw new Error("No such property");
+    item.mods.splice(modIndex, 1);
+    return rewriteItem(item);
+  }
+
+  function setQuality(item, quality, extra) {
+    extra = extra || {};
+    if (!item || item.simple || item.ear) throw new Error("Cannot change quality on this item");
+    quality = Number(quality);
+    if (!quality || quality < 1 || quality > 8) throw new Error("Unknown quality");
+    item.quality = quality;
+    item.identified = 1;
+    if (quality === QUALITY.Magic) {
+      item.prefix = item.prefix || 0;
+      item.suffix = item.suffix || 0;
+    } else if (quality === QUALITY.Rare || quality === QUALITY.Crafted) {
+      item.rareName1 = extra.rareName1 || item.rareName1 || 1;
+      item.rareName2 = extra.rareName2 || item.rareName2 || 1;
+      if (!item.rareAffixes || !item.rareAffixes.length) {
+        item.rareAffixes = padRare([item.prefix || null, item.suffix || null]);
+      }
+    } else if (quality === QUALITY.Unique) {
+      const id = extra.uniqueId != null ? extra.uniqueId : item.uniqueId;
+      const u = uniqueById(id);
+      if (!u) throw new Error("Pick a unique");
+      item.uniqueId = u.i;
+      if (extra.applyMods !== false) {
+        item.mods = (u.m || []).map((m) => ({ id: m.id, values: (m.v || []).slice() }));
+      }
+    } else if (quality === QUALITY.Set) {
+      item.setId = extra.setId != null ? Number(extra.setId) : item.setId || 0;
+    }
+    return rewriteItem(item);
+  }
+
+  function setIlvl(item, n) {
+    if (!item || item.simple || item.ear) throw new Error("This item has no item level");
+    item.ilvl = Math.max(1, Math.min(127, Number(n) || 1));
+    return rewriteItem(item);
+  }
+
+  function setPersonalized(item, name) {
+    if (!item || item.simple || item.ear) throw new Error("Cannot personalize this item");
+    const n = String(name || "").replace(/[^\x20-\x7e]/g, "").slice(0, 15);
+    if (!n) {
+      item.personalized = 0;
+      delete item.personalizedName;
+    } else {
+      item.personalized = 1;
+      item.personalizedName = n;
+    }
+    return rewriteItem(item);
+  }
+
+  function setIndestructible(item, on) {
+    if (!item || item.simple || item.ear) throw new Error("This item has no durability");
+    const info = item.info || itemInfo(item.code);
+    if (info.k !== "a" && info.k !== "w") throw new Error("This item has no durability");
+    if (on) {
+      item.maxDur = 0;
+      item.dur = 0;
+    } else {
+      let maxD = Number(info.dur) || 1;
+      if (item.ethereal) maxD = maxD - Math.ceil(maxD / 2) + 1;
+      item.maxDur = maxD;
+      item.dur = maxD;
+    }
+    return rewriteItem(item);
+  }
+
+  function setItemDurability(item, cur, max) {
+    if (!item || item.simple || item.ear) throw new Error("This item has no durability");
+    const maxd = MAG[73] || { sB: 8, sA: 0 };
+    const curd = MAG[72] || { sB: 9, sA: 0 };
+    item.maxDur = clampSave(maxd, max);
+    if (item.maxDur > 0) item.dur = clampSave(curd, cur != null ? cur : item.maxDur);
+    else item.dur = 0;
+    return rewriteItem(item);
+  }
+
+  function setRareNames(item, name1, name2) {
+    if (!item || (item.quality !== QUALITY.Rare && item.quality !== QUALITY.Crafted)) {
+      throw new Error("Rare names are only on rare or crafted items");
+    }
+    item.rareName1 = Math.max(1, Number(name1) || 1);
+    item.rareName2 = Math.max(1, Number(name2) || 1);
+    return rewriteItem(item);
+  }
+
+  function rareNameList(kind) {
+    const list = kind === "suffix" ? AFF.RARE_S : AFF.RARE_P;
+    return (list || []).map((n, i) => ({ i, n })).filter((r) => r.i && r.n);
+  }
+
+  function insertSocketed(item, gem) {
+    if (!item || item.simple || item.ear) throw new Error("This item cannot be socketed");
+    const sockets = item.socketed ? item.sockets || 0 : 0;
+    const filled = filledSockets(item);
+    if (!sockets || filled >= sockets) throw new Error("No empty socket");
+    const child = cloneItem(gem);
+    applyPlacement(child, { location: 0, equipped: 0, x: 0, y: 0, panel: 0 });
+    item.socketedItems = (item.socketedItems || []).concat([child]);
+    return rewriteItem(item);
+  }
+
+  function itemBytes(item) {
+    if (!item || !item.raw) throw new Error("Nothing to export");
+    return Uint8Array.from(item.raw);
+  }
+
+  function parseD2i(bytes) {
+    const buf = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    if (buf.length < 4) throw new Error("File is too small to be an item");
+    const start = ascii(buf, 0, 2) === "JM" ? 0 : buf[0] === 0x4a && buf[1] === 0x4d ? 0 : 0;
+    const item = parseItem(buf, start);
+    if (item.parseError) throw new Error("Could not parse item: " + item.parseError);
+    return item;
   }
 
   function formatMods(item) {
@@ -1741,6 +2240,26 @@
     displayName,
     gridLabel,
     formatMods,
+    itemStatFields,
+    setModValue,
+    setItemDefense,
+    listSavableStats,
+    listSkillProcs,
+    searchSkills: (q) => skillsApi().searchSkills ? skillsApi().searchSkills(q) : [],
+    allSkills: () => skillsApi().ALL || [],
+    skillName,
+    addMod,
+    removeMod,
+    setQuality,
+    setIlvl,
+    setPersonalized,
+    setIndestructible,
+    setItemDurability,
+    setRareNames,
+    rareNameList,
+    insertSocketed,
+    itemBytes,
+    parseD2i,
     inspectMeta,
     qualityClass,
     cloneItem,
