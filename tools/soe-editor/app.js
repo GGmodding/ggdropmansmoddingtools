@@ -6,6 +6,10 @@
   const Items = window.SoEItems;
   const Vault = window.SoEVault;
   const SAVE_DIR = "%USERPROFILE%\\Documents\\Diablo II\\Saves";
+  const HANDLE_DB = "soe-editor-handles";
+  const HANDLE_STORE = "kv";
+  const SAVES_DIR_KEY = "savesDir";
+  const STASH_FILE_NAMES = ["pd2_shared.stash", "PD2_Shared.stash"];
   const SAVE_TABS = { character: 1, stats: 1, skills: 1, quests: 1, items: 1 };
 
   const state = {
@@ -1277,7 +1281,123 @@
     return bytes[0] === 0x55 && bytes[1] === 0xbb && bytes[2] === 0x55 && bytes[3] === 0xbb;
   }
 
-  async function loadStashBytes(bytes, fileName, handle, lastModified) {
+  function openHandleDb() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(HANDLE_DB, 1);
+      req.onupgradeneeded = () => {
+        if (!req.result.objectStoreNames.contains(HANDLE_STORE)) req.result.createObjectStore(HANDLE_STORE);
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error || new Error("IndexedDB open failed"));
+    });
+  }
+
+  async function idbGetHandle(key) {
+    try {
+      const db = await openHandleDb();
+      return await new Promise((resolve, reject) => {
+        const req = db.transaction(HANDLE_STORE, "readonly").objectStore(HANDLE_STORE).get(key);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+      });
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function idbSetHandle(key, value) {
+    try {
+      const db = await openHandleDb();
+      await new Promise((resolve, reject) => {
+        const req = db.transaction(HANDLE_STORE, "readwrite").objectStore(HANDLE_STORE).put(value, key);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    } catch (_) {}
+  }
+
+  async function dirWithPermission(dir, mode) {
+    if (!dir || !dir.queryPermission) return null;
+    try {
+      const q = await dir.queryPermission({ mode: mode || "read" });
+      if (q === "granted") return dir;
+      if (q === "prompt") {
+        const r = await dir.requestPermission({ mode: mode || "read" });
+        if (r === "granted") return dir;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  async function rememberSavesDir(dir) {
+    if (dir) await idbSetHandle(SAVES_DIR_KEY, dir);
+  }
+
+  async function rememberDirFromFileHandle(handle) {
+    if (!handle || typeof handle.getParent !== "function") return null;
+    try {
+      const dir = await handle.getParent();
+      await rememberSavesDir(dir);
+      return dir;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function stashHandleFromDir(dir) {
+    if (!dir) return null;
+    const allowed = await dirWithPermission(dir, "readwrite") || await dirWithPermission(dir, "read");
+    if (!allowed) return null;
+    for (const name of STASH_FILE_NAMES) {
+      try {
+        return { handle: await allowed.getFileHandle(name), name };
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  async function dirsToSearchForStash(fileHandle) {
+    const dirs = [];
+    const fromFile = await rememberDirFromFileHandle(fileHandle);
+    if (fromFile) dirs.push(fromFile);
+    const remembered = await idbGetHandle(SAVES_DIR_KEY);
+    if (remembered && remembered !== fromFile) dirs.push(remembered);
+    return dirs;
+  }
+
+  async function tryAutoloadStash(fileHandle) {
+    if (state.stashDirty) return { ok: false, skipped: "unsaved stash edits" };
+    let dirs = await dirsToSearchForStash(fileHandle);
+    if (!dirs.length && fileHandle && window.showDirectoryPicker) {
+      try {
+        const dir = await window.showDirectoryPicker({
+          id: "soe-saves",
+          startIn: fileHandle,
+          mode: "readwrite",
+        });
+        await rememberSavesDir(dir);
+        dirs = [dir];
+      } catch (err) {
+        if (!err || err.name !== "AbortError") {
+          /* folder picker unavailable or denied */
+        }
+      }
+    }
+    for (const dir of dirs) {
+      const found = await stashHandleFromDir(dir);
+      if (!found) continue;
+      try {
+        const file = await found.handle.getFile();
+        const buf = new Uint8Array(await file.arrayBuffer());
+        await loadStashBytes(buf, found.name, found.handle, file.lastModified || 0, { silent: true });
+        await rememberSavesDir(dir);
+        return { ok: true, name: found.name, count: state.stash.items.length };
+      } catch (_) {}
+    }
+    return { ok: false };
+  }
+
+  async function loadStashBytes(bytes, fileName, handle, lastModified, opts) {
     const parsed = Items.parseStash(bytes);
     state.stash = parsed;
     state.stashName = fileName || "pd2_shared.stash";
@@ -1288,6 +1408,8 @@
     if (!state.parsed) switchTab("items");
     else renderItems();
     setStashDirty(false);
+    rememberDirFromFileHandle(handle);
+    if (opts && opts.silent) return parsed;
     const warn = parsed.warnings && parsed.warnings.length;
     setStatus(
       "Loaded " +
@@ -1297,6 +1419,7 @@
         " items" +
         (warn ? " · " + warn + " parse warning(s): " + parsed.warnings[0] : "")
     );
+    return parsed;
   }
 
   async function loadBytes(bytes, fileName, handle, lastModified) {
@@ -1314,15 +1437,32 @@
     switchTab("character");
     render();
     setDirty(false);
-    setStatus(
+    let msg =
       "Loaded " +
-        state.fileName +
-        (Save.verify(bytes) ? " · checksum ok" : " · checksum mismatch") +
-        (parsed.items ? " · " + parsed.items.player.length + " items" : parsed.itemsError ? " · items unread: " + parsed.itemsError : "") +
-        (parsed.items && parsed.items.warnings && parsed.items.warnings.length
-          ? " · " + parsed.items.warnings.length + " parse warning(s): " + parsed.items.warnings[0]
-          : "")
-    );
+      state.fileName +
+      (Save.verify(bytes) ? " · checksum ok" : " · checksum mismatch") +
+      (parsed.items ? " · " + parsed.items.player.length + " items" : parsed.itemsError ? " · items unread: " + parsed.itemsError : "") +
+      (parsed.items && parsed.items.warnings && parsed.items.warnings.length
+        ? " · " + parsed.items.warnings.length + " parse warning(s): " + parsed.items.warnings[0]
+        : "");
+    const stash = await tryAutoloadStash(handle);
+    if (stash.ok) msg += " · shared stash " + stash.name + " (" + stash.count + " items)";
+    else if (stash.skipped) msg += " · shared stash left as-is (" + stash.skipped + ")";
+    else if (!state.stash) msg += " · shared stash not found beside the .d2s";
+    setStatus(msg);
+  }
+
+  async function handleFromDrop(ev, file) {
+    const items = ev.dataTransfer && ev.dataTransfer.items;
+    if (!file || !items) return null;
+    for (const item of items) {
+      if (item.kind !== "file" || !item.getAsFileSystemHandle) continue;
+      try {
+        const handle = await item.getAsFileSystemHandle();
+        if (handle && handle.kind === "file" && handle.name === file.name) return handle;
+      } catch (_) {}
+    }
+    return null;
   }
 
   async function loadFile(file, handle) {
@@ -1868,10 +2008,19 @@
   window.addEventListener("drop", async (ev) => {
     ev.preventDefault();
     overlay.hidden = true;
-    const file = ev.dataTransfer?.files && ev.dataTransfer.files[0];
-    if (!file) return;
+    const files = Array.from((ev.dataTransfer && ev.dataTransfer.files) || []);
+    if (!files.length) return;
+    const d2s = files.find((f) => /\.d2s$/i.test(f.name));
+    const stashFile = files.find((f) => /\.stash$/i.test(f.name));
+    const first = d2s || files[0];
     try {
-      await loadFile(file, null);
+      const handle = await handleFromDrop(ev, first);
+      await loadFile(first, handle);
+      if (d2s && stashFile && stashFile !== first) {
+        const stashHandle = await handleFromDrop(ev, stashFile);
+        const buf = new Uint8Array(await stashFile.arrayBuffer());
+        await loadStashBytes(buf, stashFile.name, stashHandle, stashFile.lastModified || 0);
+      }
     } catch (err) {
       setStatus(err.message || String(err));
     }
