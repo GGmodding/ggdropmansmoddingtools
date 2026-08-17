@@ -292,8 +292,10 @@ function readAffixes(file) {
     if (!name) return;
     const enc = encodeUnique(wrapAffix(row));
     skipped += enc.skipped.length;
+    const commentRaw = String(row.get("*comment") || "").trim();
+    const comment = Number(commentRaw);
     const rec = {
-      i: idx + 1,
+      i: commentRaw !== "" && Number.isFinite(comment) && comment > 0 ? comment : idx + 1,
       n: name,
       m: enc.mods.map((m) => ({ id: m.id, v: m.v })),
     };
@@ -335,6 +337,7 @@ function readNames(file) {
 
 const prefixes = readAffixes("MagicPrefix.txt");
 const suffixes = readAffixes("MagicSuffix.txt");
+const automagic = fs.existsSync(path.join(dir, "AutoMagic.txt")) ? readAffixes("AutoMagic.txt") : { list: [], skipped: 0 };
 
 const types = {};
 for (const row of tsv("ItemTypes.txt").rows) {
@@ -357,6 +360,7 @@ for (const file of ["Armor.txt", "Weapons.txt", "Misc.txt"]) {
 const api = {
   PREFIX: prefixes.list,
   SUFFIX: suffixes.list,
+  AUTO: automagic.list,
   RARE_P: readNames("RarePrefix.txt"),
   RARE_S: readNames("RareSuffix.txt"),
   TYPES: types,
@@ -384,6 +388,8 @@ console.log(
   prefixes.list.length,
   "suffixes",
   suffixes.list.length,
+  "auto",
+  automagic.list.length,
   "types",
   Object.keys(types).length,
   "items",

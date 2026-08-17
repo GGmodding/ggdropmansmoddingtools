@@ -328,7 +328,17 @@
       })
       .join("");
     modsEl.hidden = !fields.length;
-    if (statHint) statHint.hidden = !fields.length && !(Items.canEditAffixes(item) && !item.runeword);
+    if (statHint) {
+      if (item.parseError) {
+        statHint.hidden = false;
+        statHint.textContent =
+          "Couldn't decode this item's saved property rolls. Prefix/suffix/automagic names come from the item header; numbers below are from those tables, not the original rolls. Random +skills on wands and necro heads (staffmods) only live in the unread rolls.";
+      } else {
+        statHint.textContent =
+          "Type rolls, or search to add a property. SoE items (version 103) store wider stat fields than spawned editor items.";
+        statHint.hidden = !fields.length && !(Items.canEditAffixes(item) && !item.runeword);
+      }
+    }
     modsEl.querySelectorAll("select[data-mod-i]").forEach((sel) => {
       const field = fields.find((f) => f.skill && String(f.modIndex) === sel.dataset.modI && String(f.valueIndex) === sel.dataset.valI);
       if (field) sel.value = String(field.value);

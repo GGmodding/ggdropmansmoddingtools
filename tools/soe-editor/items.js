@@ -117,17 +117,76 @@
     return ITEMS[code] || { n: code, k: "m", w: 1, h: 1 };
   }
 
-  function readMagic(reader) {
+  function verOf(item) {
+    return (item && Number(item.version)) || 101;
+  }
+
+  function magWide(ver) {
+    return ver >= 103;
+  }
+
+  function magIdBits(ver) {
+    return magWide(ver) ? 10 : 9;
+  }
+
+  function magTerm(ver) {
+    return magWide(ver) ? 0x3ff : 0x1ff;
+  }
+
+  function magUse(prop, ver) {
+    if (!prop) return prop;
+    if (magWide(ver)) {
+      if (prop.sB) return prop;
+      if (prop.oB) {
+        return {
+          s: prop.s,
+          sB: prop.oB,
+          sA: prop.oA != null ? prop.oA : prop.sA || 0,
+          sP: prop.oP != null ? prop.oP : prop.sP || 0,
+          e: prop.e,
+          dF: prop.dF,
+          np: prop.np,
+        };
+      }
+      return prop;
+    }
+    if (prop.oB == null && prop.oA == null && prop.oP == null) return prop;
+    return {
+      s: prop.s,
+      sB: prop.oB != null ? prop.oB : prop.sB,
+      sA: prop.oA != null ? prop.oA : prop.sA || 0,
+      sP: prop.oP != null ? prop.oP : prop.sP || 0,
+      e: prop.e,
+      dF: prop.dF,
+      np: prop.np,
+    };
+  }
+
+  function magProp(id, ver) {
+    return magUse(MAG[id], ver);
+  }
+
+  function groupedFollowOn(mods, id) {
+    for (const m of mods) {
+      const np = (MAG[m.id] && MAG[m.id].np) || 1;
+      if (np > 1 && id > m.id && id < m.id + np) return true;
+    }
+    return false;
+  }
+
+  function readMagic(reader, ver) {
     const list = [];
+    const idBits = magIdBits(ver);
+    const term = magTerm(ver);
     for (;;) {
-      const id = reader.read(9);
-      if (id === 0x1ff) break;
-      const first = MAG[id];
+      const id = reader.read(idBits);
+      if (id === term) break;
+      const first = magProp(id, ver);
       if (!first || !first.sB) throw new Error("Unknown or unsavable item stat id " + id);
       const nprops = first.np || 1;
       const values = [];
       for (let i = 0; i < nprops; i++) {
-        const prop = MAG[id + i];
+        const prop = magProp(id + i, ver);
         if (!prop) throw new Error("Missing follow-on stat " + (id + i) + " for " + id);
         if (prop.sP) {
           let param = reader.read(prop.sP);
@@ -178,16 +237,17 @@
     return Math.max(r.min, Math.min(r.max, v));
   }
 
-  function writeMagic(w, list) {
+  function writeMagic(w, list, ver) {
+    const idBits = magIdBits(ver);
     for (const mod of list || []) {
       let valueIdx = 0;
-      w.write(mod.id, 9);
-      const first = MAG[mod.id];
+      w.write(mod.id, idBits);
+      const first = magProp(mod.id, ver);
       if (!first || !first.sB) throw new Error("Cannot write unsavable stat id " + mod.id);
       const nprops = first.np || 1;
       const values = mod.values || mod.v || [];
       for (let i = 0; i < nprops; i++) {
-        const prop = MAG[mod.id + i];
+        const prop = magProp(mod.id + i, ver);
         if (!prop) throw new Error("Missing follow-on stat " + (mod.id + i) + " for " + mod.id);
         if (prop.sP) {
           let param = values[valueIdx++] || 0;
@@ -202,7 +262,7 @@
         w.write(clampBits(v, prop.sB), prop.sB);
       }
     }
-    w.write(0x1ff, 9);
+    w.write(magTerm(ver), idBits);
   }
 
   function parseItem(bytes, start) {
@@ -285,7 +345,7 @@
     const isQuest = !!info.q;
     let sockBits = simple ? 1 : 3;
     if (isQuest) {
-      const q = MAG[356] || { sB: 2, sA: 0 };
+      const q = magProp(356, item.version || 101) || { sB: 2, sA: 0 };
       item.questDiff = reader.read(q.sB) - (q.sA || 0);
       sockBits = 1;
     }
@@ -467,13 +527,14 @@
     }
     if (item.code === "tbk" || item.code === "ibk") reader.read(5);
     item.timestamp = reader.read(1);
+    const ver = verOf(item);
     if (info.k === "a") {
-      const def = MAG[31] || { sB: 11, sA: 10 };
+      const def = magProp(31, ver) || { sB: 11, sA: 10 };
       item.defense = reader.read(def.sB) - (def.sA || 0);
     }
     if (info.k === "a" || info.k === "w") {
-      const maxd = MAG[73] || { sB: 8, sA: 0 };
-      const curd = MAG[72] || { sB: 9, sA: 0 };
+      const maxd = magProp(73, ver) || { sB: 8, sA: 0 };
+      const curd = magProp(72, ver) || { sB: 9, sA: 0 };
       item.maxDur = reader.read(maxd.sB) - (maxd.sA || 0);
       if (item.maxDur > 0) item.dur = reader.read(curd.sB) - (curd.sA || 0);
     }
@@ -488,12 +549,17 @@
       setFlags = reader.read(5);
       item.setFlags = setFlags;
     }
-    item.mods = readMagic(reader);
-    while (setFlags) {
-      if (setFlags & 1) item.mods = item.mods.concat(readMagic(reader));
-      setFlags >>>= 1;
+    try {
+      item.mods = readMagic(reader, ver);
+      while (setFlags) {
+        if (setFlags & 1) item.mods = item.mods.concat(readMagic(reader, ver));
+        setFlags >>>= 1;
+      }
+      if (item.runeword) item.runewordMods = readMagic(reader, ver);
+    } catch (err) {
+      item.parseError = err.message || String(err);
+      item.mods = modsFromKnownAffixes(item);
     }
-    if (item.runeword) item.runewordMods = readMagic(reader);
   }
 
   function parseItemList(bytes, start) {
@@ -923,7 +989,7 @@
     const w = bitWriter();
     writeItemHead(w, code, place, { simple: 0, socketed: sockets > 0, ethereal });
     if (info.q) {
-      const q = MAG[356] || { sB: 2, sA: 0 };
+      const q = magProp(356, 101) || { sB: 2, sA: 0 };
       w.write(q.sA || 0, q.sB);
       w.write(0, 1);
     } else {
@@ -949,14 +1015,14 @@
     if (code === "tbk" || code === "ibk") w.write(code === "ibk" ? 1 : 0, 5);
     w.write(0, 1); // timestamp
     if (info.k === "a") {
-      const def = MAG[31] || { sB: 11, sA: 10 };
+      const def = magProp(31, 101) || { sB: 11, sA: 10 };
       let ac = Number(info.ac) || 10;
       if (ethereal) ac = Math.floor(ac * 1.5);
       w.write(ac + (def.sA || 0), def.sB);
     }
     if (info.k === "a" || info.k === "w") {
-      const maxd = MAG[73] || { sB: 8, sA: 0 };
-      const curd = MAG[72] || { sB: 9, sA: 0 };
+      const maxd = magProp(73, 101) || { sB: 8, sA: 0 };
+      const curd = magProp(72, 101) || { sB: 9, sA: 0 };
       let maxDur = opts.indestruct || info.nd ? 0 : Number(info.dur) || 0;
       if (maxDur && ethereal) maxDur = maxDur - Math.ceil(maxDur / 2) + 1;
       w.write(maxDur + (maxd.sA || 0), maxd.sB);
@@ -964,7 +1030,7 @@
     }
     if (info.s) w.write(place.quantity || opts.quantity || 1, 9);
     if (sockets) w.write(sockets, 4);
-    writeMagic(w, mods);
+    writeMagic(w, mods, 101);
     const item = parseItem(w.finish(), 0);
     if (item.parseError) throw new Error("Spawned item failed to parse: " + item.parseError);
     return item;
@@ -1031,8 +1097,9 @@
     const padded = ((item.code || "") + "    ").slice(0, 4);
     for (let i = 0; i < 4; i++) w.write(padded.charCodeAt(i), 8);
     const filled = filledSockets(item);
+    const ver = verOf(item);
     if (info.q) {
-      const q = MAG[356] || { sB: 2, sA: 0 };
+      const q = magProp(356, ver) || { sB: 2, sA: 0 };
       w.write((item.questDiff || 0) + (q.sA || 0), q.sB);
       w.write(filled ? 1 : 0, 1);
     } else {
@@ -1079,13 +1146,13 @@
     if (item.code === "tbk" || item.code === "ibk") w.write(item.code === "ibk" ? 1 : 0, 5);
     w.write(item.timestamp ? 1 : 0, 1);
     if (info.k === "a") {
-      const def = MAG[31] || { sB: 11, sA: 10 };
+      const def = magProp(31, ver) || { sB: 11, sA: 10 };
       const ac = clampSave(def, item.defense != null ? item.defense : Number(info.ac) || 10);
       w.write(ac + (def.sA || 0), def.sB);
     }
     if (info.k === "a" || info.k === "w") {
-      const maxd = MAG[73] || { sB: 8, sA: 0 };
-      const curd = MAG[72] || { sB: 9, sA: 0 };
+      const maxd = magProp(73, ver) || { sB: 8, sA: 0 };
+      const curd = magProp(72, ver) || { sB: 9, sA: 0 };
       const maxDur = clampSave(maxd, item.maxDur != null ? item.maxDur : Number(info.dur) || 0);
       w.write(maxDur + (maxd.sA || 0), maxd.sB);
       if (maxDur > 0) w.write(clampSave(curd, item.dur != null ? item.dur : maxDur) + (curd.sA || 0), curd.sB);
@@ -1093,8 +1160,8 @@
     if (info.s) w.write(item.quantity || 1, 9);
     if (item.socketed) w.write(item.sockets || 0, 4);
     if (quality === QUALITY.Set) w.write(0, 5);
-    writeMagic(w, item.mods || []);
-    if (item.runeword) writeMagic(w, item.runewordMods || []);
+    writeMagic(w, item.mods || [], ver);
+    if (item.runeword) writeMagic(w, item.runewordMods || [], ver);
     const parent = w.finish();
     const next = parseItem(joinRaw(parent, item.socketedItems || []), 0);
     if (next.parseError) throw new Error("Rewritten item failed to parse: " + next.parseError);
@@ -1148,6 +1215,12 @@
     const n = Number(id) || 0;
     if (!n) return null;
     return affixList(kind).find((a) => a.i === n) || null;
+  }
+
+  function findAuto(id) {
+    const n = Number(id) || 0;
+    if (!n) return null;
+    return (AFF.AUTO || []).find((a) => a.i === n) || null;
   }
 
   function affixName(kind, id) {
@@ -1229,6 +1302,27 @@
       }
       item.mods = mergeModLists(lists);
     }
+  }
+
+  function modsFromKnownAffixes(item) {
+    const lists = [];
+    if (item.quality === QUALITY.Magic) {
+      lists.push(affixMods("prefix", item.prefix), affixMods("suffix", item.suffix));
+    } else if (item.quality === QUALITY.Rare || item.quality === QUALITY.Crafted) {
+      const aff = padRare(item.rareAffixes);
+      for (let i = 0; i < 6; i++) {
+        if (!aff[i]) continue;
+        lists.push(affixMods(i % 2 === 0 ? "prefix" : "suffix", aff[i]));
+      }
+    } else if (item.quality === QUALITY.Unique) {
+      const u = uniqueById(item.uniqueId);
+      if (u && u.m) lists.push(u.m.map((m) => ({ id: m.id, values: (m.v || []).slice() })));
+    }
+    if (item.classSpec && item.autoAffix) {
+      const auto = findAuto(item.autoAffix);
+      if (auto && auto.m) lists.push(auto.m.map((m) => ({ id: m.id, values: (m.v || []).slice() })));
+    }
+    return mergeModLists(lists);
   }
 
   function itemAffixSlots(item) {
@@ -1704,6 +1798,10 @@
     item_maxdamage_percent: "Enhanced Damage",
     item_mindamage_percent: "Enhanced Damage (min)",
     tohit: "to Attack Rating",
+    toblock: "Increased Chance of Blocking",
+    poisonmindam: "Poison Damage Min",
+    poisonmaxdam: "Poison Damage Max",
+    poisonlength: "Poison Length",
     armorclass: "Defense",
     armorclass_vs_missile: "Defense vs Missile",
     fireresist: "Fire Resist",
@@ -1819,16 +1917,16 @@
     return /skill|aura/.test(prop.s || "") && prop.s !== "item_reanimate";
   }
 
-  function modFields(mod) {
+  function modFields(mod, ver) {
     const fields = [];
-    const first = MAG[mod && mod.id];
+    const first = magProp(mod && mod.id, ver);
     if (!first) return fields;
     const nprops = first.np || 1;
     let valueIdx = 0;
     const values = (mod.values || mod.v || []).slice();
     for (let i = 0; i < nprops; i++) {
       const id = mod.id + i;
-      const prop = MAG[id];
+      const prop = magProp(id, ver);
       if (!prop) break;
       const name = prettyStatName(id);
       if (prop.sP) {
@@ -1872,8 +1970,9 @@
     const out = [];
     if (!item || item.simple || item.ear) return out;
     const info = item.info || itemInfo(item.code);
+    const ver = verOf(item);
     if (info.k === "a") {
-      const r = saveRange(MAG[31] || { sB: 11, sA: 10 });
+      const r = saveRange(magProp(31, ver) || { sB: 11, sA: 10 });
       out.push({
         kind: "defense",
         label: "Defense",
@@ -1883,8 +1982,19 @@
       });
     }
     (item.mods || []).forEach((mod, modIndex) => {
-      for (const f of modFields(mod)) {
-        out.push({ kind: "mod", modIndex, valueIndex: f.i, label: f.label, value: f.value, min: f.min, max: f.max, param: f.param });
+      if (groupedFollowOn(item.mods, mod.id)) return;
+      for (const f of modFields(mod, ver)) {
+        out.push({
+          kind: "mod",
+          modIndex,
+          valueIndex: f.i,
+          label: f.label,
+          value: f.value,
+          min: f.min,
+          max: f.max,
+          param: f.param,
+          skill: f.skill,
+        });
       }
     });
     return out;
@@ -1894,18 +2004,18 @@
     if (!item || item.simple || item.ear) throw new Error("This item has no defense");
     const info = item.info || itemInfo(item.code);
     if (info.k !== "a") throw new Error("This item has no defense");
-    const next = clampSave(MAG[31] || { sB: 11, sA: 10 }, n);
+    const next = clampSave(magProp(31, verOf(item)) || { sB: 11, sA: 10 }, n);
     const asked = Math.round(Number(n));
     item.defense = next;
     rewriteItem(item);
-    return { value: item.defense, clamped: Number.isFinite(asked) && next !== asked, min: saveRange(MAG[31]).min, max: saveRange(MAG[31]).max, label: "Defense" };
+    return { value: item.defense, clamped: Number.isFinite(asked) && next !== asked, min: saveRange(magProp(31, verOf(item))).min, max: saveRange(magProp(31, verOf(item))).max, label: "Defense" };
   }
 
   function setModValue(item, modIndex, valueIndex, n) {
     if (!item || item.simple || item.ear) throw new Error("This item has no stats to edit");
     const mod = (item.mods || [])[modIndex];
     if (!mod) throw new Error("No such stat");
-    const field = modFields(mod).find((f) => f.i === valueIndex);
+    const field = modFields(mod, verOf(item)).find((f) => f.i === valueIndex);
     if (!field) throw new Error("No such stat value");
     const asked = Math.round(Number(n));
     if (!Number.isFinite(asked)) throw new Error("Need a number");
@@ -1923,7 +2033,7 @@
     const skip = new Set();
     const leads = [];
     for (let id = 0; id < MAG.length; id++) {
-      if (skip.has(id) || !MAG[id] || !MAG[id].sB) continue;
+      if (skip.has(id) || !MAG[id] || !(MAG[id].sB || MAG[id].oB)) continue;
       leads.push(id);
       const np = MAG[id].np || 1;
       for (let i = 1; i < np; i++) skip.add(id + i);
@@ -2037,7 +2147,8 @@
   function addMod(item, id, values) {
     if (!item || item.simple || item.ear) throw new Error("This item cannot have properties");
     id = Number(id);
-    if (!MAG[id] || !MAG[id].sB) throw new Error("Unknown or unsavable stat id " + id);
+    const save = magProp(id, verOf(item));
+    if (!save || !save.sB) throw new Error("Unknown or unsavable stat id " + id);
     const vals = values && values.length ? values.slice() : defaultModValues(id);
     item.mods = (item.mods || []).concat([{ id, values: vals }]);
     item.identified = 1;
@@ -2117,8 +2228,8 @@
 
   function setItemDurability(item, cur, max) {
     if (!item || item.simple || item.ear) throw new Error("This item has no durability");
-    const maxd = MAG[73] || { sB: 8, sA: 0 };
-    const curd = MAG[72] || { sB: 9, sA: 0 };
+    const maxd = magProp(73, verOf(item)) || { sB: 8, sA: 0 };
+    const curd = magProp(72, verOf(item)) || { sB: 9, sA: 0 };
     item.maxDur = clampSave(maxd, max);
     if (item.maxDur > 0) item.dur = clampSave(curd, cur != null ? cur : item.maxDur);
     else item.dur = 0;
@@ -2174,11 +2285,19 @@
   }
 
   function formatMods(item) {
-    return (item.mods || []).map((m) => {
+    return (item.mods || [])
+      .filter((m) => !groupedFollowOn(item.mods, m.id))
+      .map((m) => {
       const rec = MAG[m.id];
       if (rec && rec.s === "item_aura") {
         const v = m.values || [];
         return "Level " + (v[1] || 0) + " " + skillName(v[0] || 0) + " Aura when Equipped";
+      }
+      if (rec && rec.s === "item_singleskill") {
+        const v = m.values || [];
+        const n = v.length > 1 ? v[v.length - 1] : 0;
+        const sk = v[0] || 0;
+        return "+" + n + " to " + skillName(sk);
       }
       const name = rec && rec.s ? rec.s.replace(/^item_/, "").replace(/_/g, " ") : "stat " + m.id;
       const vals = (m.values || []).join(", ");
@@ -2192,7 +2311,8 @@
     if (item.defense != null) bits.push("Defense " + item.defense);
     if (item.maxDur != null) bits.push(item.maxDur ? "Dur " + (item.dur || 0) + "/" + item.maxDur : "Indestructible");
     if (item.runeword) bits.push("Runeword");
-    if (item.parseError) bits.push("needs rebuild");
+    if (item.classSpec && item.autoAffix) bits.push("automagic #" + item.autoAffix);
+    if (item.parseError) bits.push("property rolls unread — showing affix names");
     return bits.filter(Boolean).join(" · ");
   }
 

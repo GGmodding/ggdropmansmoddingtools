@@ -55,6 +55,12 @@ for (const row of stats.rows) {
     e: Number(row.get("Encode") || 0),
     dF: Number(row.get("descfunc") || 0),
   };
+  const oB = Number(row.get("Save Bits S12") || 0);
+  const oA = Number(row.get("Save Add S12") || 0);
+  const oP = Number(row.get("Save Param Bits S12") || 0);
+  if (oB !== rec.sB) rec.oB = oB;
+  if (oA !== rec.sA) rec.oA = oA;
+  if (oP !== rec.sP) rec.oP = oP;
   if (NP[name]) rec.np = NP[name];
   mag[id] = rec;
   statId[name] = id;
