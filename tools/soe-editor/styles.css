@@ -807,6 +807,27 @@ input[readonly] {
   padding: 0 0.15rem;
 }
 
+.affix-picks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem 0.5rem;
+  margin: 0 0 0.55rem;
+}
+.affix-picks label {
+  display: grid;
+  gap: 0.18rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.affix-picks select {
+  width: 100%;
+  font: 500 0.8rem/1.3 var(--font);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .affix-add {
   display: grid;
   gap: 0.35rem;

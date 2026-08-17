@@ -240,16 +240,36 @@
             <div id="item-affix-editor" class="affix-editor" hidden>
               <h4>Affixes</h4>
               <div id="item-affix-slots" class="affix-slots"></div>
+              <div id="affix-picks" class="affix-picks">
+                <label>Prefix
+                  <select id="f-affix-prefix"></select>
+                </label>
+                <label>Suffix
+                  <select id="f-affix-suffix"></select>
+                </label>
+                <label>Prefix 2
+                  <select id="f-affix-prefix2"></select>
+                </label>
+                <label>Suffix 2
+                  <select id="f-affix-suffix2"></select>
+                </label>
+                <label>Prefix 3
+                  <select id="f-affix-prefix3"></select>
+                </label>
+                <label>Suffix 3
+                  <select id="f-affix-suffix3"></select>
+                </label>
+              </div>
               <div class="affix-add">
                 <div class="spawn-kinds" id="affix-kinds">
                   <button type="button" class="tab is-active" data-affix-kind="prefix">Prefix</button>
                   <button type="button" class="tab" data-affix-kind="suffix">Suffix</button>
                 </div>
-                <input id="f-affix-search" type="search" placeholder="Whale, FCR, life, Sturdy…" autocomplete="off" />
+                <input id="f-affix-search" type="search" placeholder="Filter: Whale, FCR, life, Sturdy…" autocomplete="off" />
               </div>
               <label class="check affix-all"><input id="f-affix-all" type="checkbox" /> Show affixes that don’t fit this base</label>
               <div id="affix-results" class="affix-results"></div>
-              <p id="item-affix-hint" class="hint">Search and click an affix. Magic items get one prefix and one suffix; a second of the same kind turns it rare. Uniques keep their name and gain the extra stats.</p>
+              <p id="item-affix-hint" class="hint">Pick a prefix and suffix from the lists. A second prefix or suffix turns the item rare. Uniques keep their name and gain the extra stats.</p>
             </div>
             <p id="item-inspect-gems" class="item-inspect-gems" hidden></p>
             <div class="item-inspect-fields">

@@ -285,6 +285,25 @@
     else setDirty(true);
   }
 
+  function fillAffixSelect(sel, kind, item, selectedId) {
+    if (!sel) return;
+    const list = Items.listAffixes(kind, item, { query: state.affixQuery, fit: !state.affixAll });
+    const cur = Number(selectedId) || 0;
+    if (cur && !list.some((a) => a.i === cur)) {
+      const a = Items.findAffix(kind, cur);
+      if (a) list.unshift(a);
+    }
+    const opts = ['<option value="0">(none)</option>'].concat(
+      list.map((a) => `<option value="${a.i}">${escHtml(a.d || a.n)}</option>`)
+    );
+    sel.innerHTML = opts.join("");
+    sel.value = String(cur);
+    if (cur && sel.value !== String(cur)) {
+      sel.insertAdjacentHTML("beforeend", `<option value="${cur}">#${cur}</option>`);
+      sel.value = String(cur);
+    }
+  }
+
   function renderAffixEditor(item) {
     const box = $("item-affix-editor");
     if (!box) return;
@@ -292,12 +311,17 @@
     box.hidden = !can;
     if (!can) return;
     const slots = Items.itemAffixSlots(item);
+    const extra = slots.mode === "extra";
+    const picks = $("affix-picks");
+    if (picks) picks.hidden = extra;
+    const kinds = $("affix-kinds");
+    if (kinds) kinds.hidden = !extra;
     const slotBox = $("item-affix-slots");
     const chips = [...slots.prefixes, ...slots.suffixes].map((s) => {
       const label = s.name || (s.kind + " #" + s.id);
       return `<span class="affix-chip${s.kind === "suffix" ? " affix-chip--suffix" : ""}">${escHtml(label)} <button type="button" data-affix-remove="${s.kind}" data-affix-slot="${s.slot}" title="Remove">×</button></span>`;
     });
-    slotBox.innerHTML = chips.join("");
+    slotBox.innerHTML = extra ? chips.join("") : "";
     slotBox.querySelectorAll("[data-affix-remove]").forEach((btn) => {
       btn.addEventListener("click", () => {
         try {
@@ -310,6 +334,15 @@
         }
       });
     });
+    if (!extra) {
+      const ids = Items.affixSlotIds(item);
+      fillAffixSelect($("f-affix-prefix"), "prefix", item, ids.prefixes[0]);
+      fillAffixSelect($("f-affix-suffix"), "suffix", item, ids.suffixes[0]);
+      fillAffixSelect($("f-affix-prefix2"), "prefix", item, ids.prefixes[1]);
+      fillAffixSelect($("f-affix-suffix2"), "suffix", item, ids.suffixes[1]);
+      fillAffixSelect($("f-affix-prefix3"), "prefix", item, ids.prefixes[2]);
+      fillAffixSelect($("f-affix-suffix3"), "suffix", item, ids.suffixes[2]);
+    }
     $("affix-kinds").querySelectorAll("[data-affix-kind]").forEach((btn) => {
       btn.classList.toggle("is-active", btn.dataset.affixKind === state.affixKind);
     });
@@ -317,18 +350,25 @@
     if (search && search.value !== state.affixQuery) search.value = state.affixQuery;
     $("f-affix-all").checked = !!state.affixAll;
     const hint = $("item-affix-hint");
-    if (slots.mode === "extra") hint.textContent = "Adds this affix’s max rolls onto the unique/set without renaming it.";
+    const loaded = (Items.listAffixes("prefix").length || 0) + (Items.listAffixes("suffix").length || 0);
+    if (!loaded) hint.textContent = "Affix list did not load. Check affixes-db.js.";
+    else if (slots.mode === "extra") hint.textContent = "Adds this affix’s max rolls onto the unique/set without renaming it.";
     else if (slots.mode === "rare") hint.textContent = "Rares and crafts can hold up to 3 prefixes and 3 suffixes. Picks max rolls.";
-    else hint.textContent = "Magic items get one prefix and one suffix. A second of the same kind turns it rare. Picks max rolls.";
+    else hint.textContent = "Pick prefix and suffix from the lists. Filling Prefix 2 or Suffix 2 turns it rare. Picks max rolls.";
     renderAffixResults(item);
   }
 
   function renderAffixResults(item) {
     const box = $("affix-results");
     if (!box) return;
+    const extra = Items.itemAffixSlots(item).mode === "extra";
+    if (!extra) {
+      box.innerHTML = "";
+      return;
+    }
     const q = state.affixQuery.trim();
     if (!q) {
-      box.innerHTML = `<p class="hint">Type to search ${state.affixKind === "suffix" ? "suffixes" : "prefixes"} that fit this item.</p>`;
+      box.innerHTML = `<p class="hint">Type to search ${state.affixKind === "suffix" ? "suffixes" : "prefixes"} to add onto this unique.</p>`;
       return;
     }
     const hits = Items.searchAffixes(q, state.affixKind, item, { fit: !state.affixAll });
@@ -339,14 +379,14 @@
     box.innerHTML = hits
       .map((a) => {
         const mods = (a.m || []).map((m) => Items.formatMods({ mods: [{ id: m.id, values: m.v }] })[0]).filter(Boolean);
-        const extra = mods.length ? ` <span class="muted">${escHtml(mods.join(" · "))}</span>` : "";
-        return `<button type="button" class="btn" data-affix-add="${a.i}">${escHtml(a.n)}${extra}</button>`;
+        const extraLine = mods.length ? ` <span class="muted">${escHtml(mods.join(" · "))}</span>` : "";
+        return `<button type="button" class="btn" data-affix-add="${a.i}">${escHtml(a.d || a.n)}${extraLine}</button>`;
       })
       .join("");
     box.querySelectorAll("[data-affix-add]").forEach((btn) => {
       btn.addEventListener("click", () => {
         try {
-          const name = Items.affixName(state.affixKind, Number(btn.dataset.affixAdd)) || "affix";
+          const name = Items.affixLabel(state.affixKind, Number(btn.dataset.affixAdd)) || "affix";
           Items.addAffix(item, state.affixKind, Number(btn.dataset.affixAdd));
           state.affixQuery = "";
           markItemDirty();
@@ -1710,7 +1750,7 @@
   $("f-affix-search").addEventListener("input", () => {
     state.affixQuery = $("f-affix-search").value;
     const item = selectedItem();
-    if (item) renderAffixResults(item);
+    if (item) renderAffixEditor(item);
   });
   $("affix-kinds").querySelectorAll("[data-affix-kind]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -1722,7 +1762,32 @@
   $("f-affix-all").addEventListener("change", () => {
     state.affixAll = $("f-affix-all").checked;
     const item = selectedItem();
-    if (item) renderAffixResults(item);
+    if (item) renderAffixEditor(item);
+  });
+  [
+    ["f-affix-prefix", "prefix", 0],
+    ["f-affix-suffix", "suffix", 0],
+    ["f-affix-prefix2", "prefix", 1],
+    ["f-affix-suffix2", "suffix", 1],
+    ["f-affix-prefix3", "prefix", 2],
+    ["f-affix-suffix3", "suffix", 2],
+  ].forEach(([id, kind, index]) => {
+    const el = $(id);
+    if (!el) return;
+    el.addEventListener("change", () => {
+      const item = selectedItem();
+      if (!item) return;
+      try {
+        const name = Items.affixLabel(kind, Number(el.value) || 0) || "(none)";
+        Items.setAffixSlot(item, kind, index, Number(el.value) || 0);
+        markItemDirty();
+        renderItems();
+        setStatus((Number(el.value) ? "Set " : "Cleared ") + kind + " to " + name);
+      } catch (err) {
+        setStatus(err.message || String(err));
+        renderAffixEditor(item);
+      }
+    });
   });
 
   $("f-item-socks").addEventListener("change", () => {

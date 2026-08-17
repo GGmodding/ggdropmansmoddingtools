@@ -10,7 +10,8 @@ const cap = Items.spawnItem("cap", place, {});
 check("spawn cap", cap.code === "cap" && !cap.parseError, Items.displayName(cap));
 
 const sturdy = Items.searchAffixes("sturdy", "prefix", cap)[0];
-check("search sturdy", !!(sturdy && sturdy.n === "Sturdy"), JSON.stringify(sturdy && { i: sturdy.i, t: sturdy.t }));
+check("search sturdy", !!(sturdy && sturdy.n === "Sturdy"), JSON.stringify(sturdy && { i: sturdy.i, t: sturdy.t, d: sturdy.d }));
+check("sturdy uses defense text", !!(sturdy && /enhanced defense/i.test(sturdy.d || "")), sturdy && sturdy.d);
 Items.addAffix(cap, "prefix", sturdy.i);
 check(
   "magic sturdy cap",
@@ -19,7 +20,11 @@ check(
 );
 
 const health = Items.searchAffixes("of health", "suffix", cap)[0];
-check("search of health", !!(health && /health/i.test(health.n)), health && health.n);
+check("search of health", !!(health && /health/i.test(health.n)), health && health.d);
+check("health uses damage reduced text", !!(health && /damage reduced/i.test(health.d || "")), health && health.d);
+
+const whale = Items.searchAffixes("life", "suffix", cap)[0] || Items.searchAffixes("whale", "suffix", cap, { fit: false })[0];
+check("whale uses life text", !!(whale && /to life/i.test(whale.d || "")), whale && { n: whale.n, d: whale.d });
 Items.addAffix(cap, "suffix", health.i);
 check(
   "prefix+suffix still magic",
@@ -54,3 +59,14 @@ if (shako) {
 
 const slots = Items.itemAffixSlots(cap);
 check("slots on rare", slots.mode === "rare" && slots.prefixes.length + slots.suffixes.length >= 2, JSON.stringify(slots));
+
+const helm = Items.spawnItem("fhl", place, {});
+helm.parseError = "simulated";
+check("edit allowed on parse error", Items.canEditAffixes(helm), helm.parseError);
+Items.setAffixSlot(helm, "prefix", 0, sturdy.i);
+Items.setAffixSlot(helm, "suffix", 0, health.i);
+check(
+  "helm prefix suffix picks",
+  helm.quality === 4 && helm.prefix === sturdy.i && helm.suffix === health.i && !helm.parseError && Items.displayName(helm).includes("Sturdy"),
+  JSON.stringify({ q: helm.quality, name: Items.displayName(helm), prefix: helm.prefix, suffix: helm.suffix, err: helm.parseError })
+);
