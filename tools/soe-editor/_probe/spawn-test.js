@@ -92,5 +92,23 @@ if (arachnid) {
 const catalog = Items.spawnCatalog("phase", "base");
 check("phase blade base", catalog.some((h) => /phase blade/i.test(h.name)), catalog.map((h) => h.name).slice(0, 5));
 
+const ascend = Items.listAscendancy();
+check("ascendancy groups", ascend.some((g) => g.group === "Class stones" && g.items.some((u) => /Lich/i.test(u.n))), JSON.stringify(ascend.map((g) => g.group)));
+const lich = (ascend.find((g) => g.group === "Class stones") || { items: [] }).items.find((u) => /Lich/i.test(u.n));
+if (lich) {
+  const item = Items.spawnUnique(lich.i, place, {});
+  const tier = (item.mods || []).find((m) => m.id === 296);
+  check(
+    "lich stone",
+    item.quality === 7 && item.version === 103 && !item.parseError && tier && tier.values[0] === 1433 && tier.values[1] === 33,
+    JSON.stringify({ name: Items.displayName(item), v: item.version, mods: item.mods, err: item.parseError })
+  );
+}
+const cairn = (ascend.find((g) => g.group === "Cairn") || { items: [] }).items[0];
+if (cairn) {
+  const item = Items.spawnUnique(cairn.i, place, {});
+  check("cairn", item.quality === 7 && item.code === "ascc" && !item.parseError, Items.displayName(item));
+}
+
 if (process.exitCode) console.log("FAILED");
 else console.log("ALL OK");

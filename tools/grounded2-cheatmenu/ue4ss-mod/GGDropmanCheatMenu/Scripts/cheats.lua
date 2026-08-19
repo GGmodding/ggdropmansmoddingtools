@@ -625,4 +625,120 @@ function M.probe()
     return setStatus(M.isValid(pawn), msg)
 end
 
+local function getPlayerState(pawn)
+    pawn = pawn or M.getPawn()
+    if not M.isValid(pawn) then return nil end
+    local ps = pawn.PlayerState
+    if M.isValid(ps) then return ps end
+    local pc = M.getPlayerController()
+    if M.isValid(pc) then
+        ps = pc.PlayerState
+        if M.isValid(ps) then return ps end
+    end
+    return nil
+end
+
+local function getAchievementsComponent(ps)
+    if M.isValid(ps) then
+        local ac = ps.AchievementsComponent
+        if M.isValid(ac) then return ac end
+    end
+    local found = FindFirstOf("AchievementsComponent")
+    if M.isValid(found) then return found end
+    return nil
+end
+
+local function foreachAchievement(ac, fn)
+    if not M.isValid(ac) then return 0 end
+    local list = ac.Achievements
+    if list == nil then return 0 end
+    local count = 0
+    if type(list.ForEach) == "function" then
+        list:ForEach(function(index, elem)
+            local st = elem
+            if type(elem) == "userdata" and elem.get ~= nil then
+                st = elem:get()
+            end
+            count = count + 1
+            fn(st, index)
+        end)
+        return count
+    end
+    local n = 0
+    if type(list.GetArrayNum) == "function" then
+        n = list:GetArrayNum()
+    elseif list.Num ~= nil then
+        n = list.Num
+    end
+    for i = 1, (n or 0) do
+        local st = list[i]
+        if st == nil and type(list.Get) == "function" then
+            st = list:Get(i - 1)
+        end
+        if st ~= nil then
+            count = count + 1
+            fn(st, i - 1)
+        end
+    end
+    return count
+end
+
+local function fstringToLua(fs)
+    if fs == nil then return nil end
+    if type(fs) == "string" then return fs end
+    local ok, s = pcall(function()
+        if type(fs.ToString) == "function" then return fs:ToString() end
+        if type(tostring) == "function" then return tostring(fs) end
+        return nil
+    end)
+    if ok and type(s) == "string" and #s > 0 and s ~= "nil" then return s end
+    return nil
+end
+
+--- Unlock local Achievements[] + push Steam via ClientUpdateAchievementProgressOnline.
+function M.unlockAllAchievements()
+    local ps = getPlayerState()
+    local ac = getAchievementsComponent(ps)
+    if not M.isValid(ac) then
+        return setStatus(false, "AchievementsComponent missing — load into a world")
+    end
+
+    local forced, online, total = 0, 0, 0
+    total = foreachAchievement(ac, function(st)
+        if st == nil then return end
+        pcall(function() st.bUnlocked = true end)
+        forced = forced + 1
+
+        local data = st.AchievementData
+        local tag, progress = nil, 1
+        if data ~= nil then
+            tag = fstringToLua(data.AchievementUnlockTag)
+            local cond = data.ConditionalValue
+            if type(cond) == "number" and cond > 0 then progress = math.floor(cond) end
+            pcall(function()
+                if type(cond) == "number" and cond > 0 then
+                    st.LastKnownStatValue = math.floor(cond)
+                elseif type(st.LastKnownStatValue) ~= "number" or st.LastKnownStatValue < 1 then
+                    st.LastKnownStatValue = 1
+                end
+            end)
+        end
+
+        if tag ~= nil and #tag > 0 and type(ac.ClientUpdateAchievementProgressOnline) == "function" then
+            local okCall = pcall(function()
+                ac:ClientUpdateAchievementProgressOnline(tag, progress)
+            end)
+            if okCall then online = online + 1 end
+        end
+    end)
+
+    if total < 1 then
+        return setStatus(false, "Achievements[] empty — open Journal/Achievements UI once, retry F10")
+    end
+    return setStatus(true, string.format(
+        "Achievements: forced %d, Steam-push %d / %d",
+        forced, online, total
+    ))
+end
+
 return M

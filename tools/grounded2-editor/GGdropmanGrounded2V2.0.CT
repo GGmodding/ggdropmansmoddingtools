@@ -33,8 +33,8 @@ Donate:  https://paypal.me/kd19902
 9. Stacks: raise max to 999 + fill/freeze inventory stacks
 9b. Inventory spawn: Init helpers then Duplicate held / Spawn by name / Build staples
 10. Survive: God Mode + Buggy tank (moldy) + No Fall Damage
-11. Combat: One-shot kill | Always perfect block | Unlock all mutations
-12. Crafting: Free craft | Analyzer infinite charges | Free build (risky) | SCRUB / Session / PERMANENT
+11. Combat: One-shot kill | Always perfect block | Unlock all mutations | Unlock all achievements
+12. Crafting: Free craft | Analyzer | Free build | Set Medium difficulty | SCRUB / Session / PERMANENT
 13. Use [DISABLE ALL scripts] to turn everything off (including ACTIVATE)
 
 Built from Dumper-7 CppSDK offsets (0.5.0.2). GObjects scan prefers possessed SurvivalPlayerCharacter.
@@ -116,7 +116,7 @@ end
 local bags = {
   gg2_freeze_vitals, gg2_currency_freeze, gg2_stack_freeze, gg2_inv_freeze, gg2_buggy_inv_freeze, gg2_god, gg2_buggy_god,
   gg2_nofall, gg2_tp, gg2_speed, gg2_jump, gg2_swim, gg2_fly, gg2_noclip,
-  gg2_session_unlock, gg_giant_held, gg2_oneshot, gg2_perfect_block, gg2_analyzer, gg2_spawn,
+  gg2_session_unlock, gg_giant_held, gg2_oneshot, gg2_perfect_block, gg2_analyzer, gg2_spawn, gg2_ach_freeze,
 }
 for _, bag in ipairs(bags) do
   if type(bag) == "table" then
@@ -1026,6 +1026,7 @@ local names = {
   "GG2_JumpMaxCount","GG2_JumpCurCount",
   "GG2_TakeFallDamage","GG2_MinFallVel","GG2_FallDamageRatio",
   "GG2_GameModeSettings","GG2_ModeManager","GG2_CustomSettingsBits","GG2_CurrentGameMode",
+  "GG2_GameDifficulty",
   "GG2_UnlockAllRecipes","GG2_AutoCompleteBuild","GG2_BuildingIntegrity","GG2_RecipesNeedItems",
   "GG2_Party","GG2_RawScience","GG2_Brainpower","GG2_GoldMolars","GG2_MilkMolars","GG2_MoldyMolars",
   "GG2_InvComp","GG2_InvDefaultMaxSize","GG2_MountInvComp","GG2_MountInvDefaultMaxSize",
@@ -1033,6 +1034,7 @@ local names = {
   "GG2_PetMaster","GG2_BuggyPet","GG2_BuggyHealthComp",
   "GG2_BuggyMaxHealth","GG2_BuggyDamage","GG2_BuggyTamedMaxHealth",
   "GG2_BuggyTamedRegen","GG2_BuggyTamedRegenTick","GG2_BuggyTamedCombatDelay",
+  "GG2_AchievementsComp",
 }
 for i=1,#names do
   pcall(function()
@@ -3499,6 +3501,185 @@ showMessage(string.format(
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
+              <ID>243</ID>
+              <Description>"[Script] Unlock ALL achievements"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function readFlag(addr)
+  local prev = readBytes(addr, 1, true)
+  if type(prev) == "table" then return prev[1] or 0 end
+  if type(prev) == "number" then return prev end
+  return 0
+end
+local function arrayAt(comp)
+  if not looksUObj(comp) then return nil, nil end
+  local data = readQword(comp + 0xD8)
+  local num = readInteger(comp + 0xE0)
+  if not isHeapPtr(data) or num == nil or num &lt; 1 or num &gt; 400 then return nil, nil end
+  -- sanity: first entry LastKnownStatValue / ConditionalValue look int-like
+  local stat = readInteger(data + 0xC)
+  local cond = readInteger(data + 0x50)
+  if stat == nil or cond == nil then return nil, nil end
+  if stat &lt; -1 or stat &gt; 100000000 then return nil, nil end
+  if cond &lt; 0 or cond &gt; 100000000 then return nil, nil end
+  return data, num
+end
+
+local yes = messageDialog(
+  "Unlock ALL achievements (v2)?\n\n"..
+  "1) Force-sets every Achievements[].bUnlocked\n"..
+  "2) Maxes LastKnownStatValue to ConditionalValue\n"..
+  "3) FREEZES unlocked flags ~90s (stops reevaluation wipe)\n\n"..
+  "Local/UI list only from CE. Steam pops need UE4SS\n"..
+  "hotkey F10 (ClientUpdateAchievementProgressOnline).\n\n"..
+  "Open the Achievements / Journal UI once if the list\n"..
+  "was empty on a prior try, then re-run.\n\n"..
+  "Continue?",
+  mtWarning, mbYes, mbNo)
+if yes ~= mrYes then error("cancelled") end
+
+-- stop prior freeze
+if gg2_ach_freeze ~= nil and gg2_ach_freeze.timer ~= nil then
+  pcall(function() gg2_ach_freeze.timer.Enabled = false end)
+  pcall(function() gg2_ach_freeze.timer.destroy() end)
+  gg2_ach_freeze = nil
+end
+
+local pawn = getAddressSafe("Player")
+local ps = readQword(pawn + 0x2D0) -- APawn::PlayerState
+if not looksUObj(ps) then
+  local ctrl = readQword(pawn + 0x2E0)
+  if looksUObj(ctrl) then ps = readQword(ctrl + 0x2B8) end
+end
+if not looksUObj(ps) then
+  showMessage("PlayerState missing.\nRe-run ACTIVATE in-world.")
+  error("no PS")
+end
+
+local ac = readQword(ps + 0x598) -- SurvivalPlayerState::AchievementsComponent
+local data, num = arrayAt(ac)
+local how = "PS+0x598"
+
+-- Probe nearby component slots if SDK offset empty / wrong build
+if data == nil then
+  print(string.format("AC@0x598 bad (ac=%s). Probing PS component slots...", tostring(ac)))
+  for off = 0x520, 0x680, 8 do
+    local cand = readQword(ps + off)
+    local d, n = arrayAt(cand)
+    if d ~= nil then
+      ac, data, num, how = cand, d, n, string.format("PS+0x%X", off)
+      break
+    end
+  end
+end
+
+if not looksUObj(ac) or data == nil or num == nil then
+  showMessage(
+    "Achievements[] empty or AchievementsComponent not found.\n\n"..
+    "Fix:\n"..
+    "1) Be fully in-world (not menu)\n"..
+    "2) Open Journal / Achievements UI once\n"..
+    "3) Re-enable this script\n\n"..
+    "Or use grounded2-editor HostPlayer complete-all offline,\n"..
+    "or UE4SS F10 key after the list is populated.")
+  error("no achievements array")
+end
+
+registerSymbol("GG2_AchievementsComp", ac, true)
+print(string.format("Achievements AC=%X via %s num=%d data=%X PS=%X", ac, how, num, data, ps))
+
+-- dump first entry for CE Lua Engine debug
+do
+  local b0 = data
+  print(string.format(
+    "  [0] nameCrc=%X stat=%s unlocked=%d cond=%s tagPtr=%s",
+    readInteger(b0) or 0,
+    tostring(readInteger(b0 + 0xC)),
+    readFlag(b0 + 0x10),
+    tostring(readInteger(b0 + 0x50)),
+    tostring(readQword(b0 + 0x20))))
+end
+
+local unlocked = 0
+local already = 0
+local flagAddrs = {}
+for i = 0, num - 1 do
+  local base = data + i * 0x58
+  local flagAddr = base + 0x10
+  table.insert(flagAddrs, flagAddr)
+  local v = readFlag(flagAddr)
+  if v ~= 0 then already = already + 1 end
+  -- always force-write (prior test may have been wiped by reevaluation)
+  writeBytes(flagAddr, 1)
+  local cond = readInteger(base + 0x50) -- AchievementData.ConditionalValue
+  if cond ~= nil and cond &gt; 0 and cond &lt; 100000000 then
+    writeInteger(base + 0xC, cond) -- LastKnownStatValue
+  else
+    local stat = readInteger(base + 0xC)
+    if stat == nil or stat &lt; 1 then writeInteger(base + 0xC, 1) end
+  end
+  unlocked = unlocked + 1
+end
+
+-- FREEZE: game calls ServerRequestAchievementReevaluation / OnPlayerStatChanged
+-- and can clear bUnlocked when real PlayerStats don't match.
+gg2_ach_freeze = { addrs = flagAddrs, ticks = 0, maxTicks = 450 } -- 90s @ 200ms
+local st = gg2_ach_freeze
+st.timer = createTimer(nil, false)
+st.timer.Interval = 200
+st.timer.OnTimer = function()
+  local bag = gg2_ach_freeze
+  if bag == nil or bag.addrs == nil then return end
+  bag.ticks = (bag.ticks or 0) + 1
+  for _, a in ipairs(bag.addrs) do
+    writeBytes(a, 1)
+  end
+  if bag.ticks &gt;= (bag.maxTicks or 450) then
+    pcall(function() bag.timer.Enabled = false end)
+    pcall(function() bag.timer.destroy() end)
+    bag.timer = nil
+    print("Achievements freeze ended (90s). Save now if UI looks good.")
+  end
+end
+st.timer.Enabled = true
+
+print(string.format(
+  "Achievements v2: forced %d flags (was-on %d) total %d; freeze 90s",
+  unlocked, already, num))
+
+showMessage(string.format(
+  "Achievements unlock v2 done.\n\nForced flags: %d\nWere already on: %d\nTotal: %d\nSource: %s\n\nFreeze holds flags for ~90s — open the\nachievement UI now, then SAVE.\n\nSteam overlay: press F10 in-game if UE4SS\nGGDropmanCheatMenu is installed.",
+  unlocked, already, num, how))
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+if gg2_ach_freeze ~= nil and gg2_ach_freeze.timer ~= nil then
+  pcall(function() gg2_ach_freeze.timer.Enabled = false end)
+  pcall(function() gg2_ach_freeze.timer.destroy() end)
+end
+gg2_ach_freeze = nil
+print("Achievements freeze OFF")
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
               <ID>214</ID>
               <Description>"PlayerDamageMultiplier"</Description>
               <ShowAsSigned>0</ShowAsSigned>
@@ -4725,6 +4906,127 @@ showMessage(
 </AssemblerScript>
             </CheatEntry>
             <CheatEntry>
+              <ID>244</ID>
+              <Description>"[Script] Set difficulty to Medium"</Description>
+              <Color>00FF00</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getAddressSafe("Player") == nil then
+  showMessage("Enable [ACTIVATE] first")
+  error("no Player")
+end
+
+-- UI "Medium" == SDK EGameMode.Normal (1) + EGameDifficulty.Normal (1)
+-- Mild = Relaxed (mode 2 / diff 0), Whoa = Hard (mode 3 / diff 2)
+
+local MODE_NORMAL = 1
+local DIFF_NORMAL = 1
+
+local function isHeapPtr(ptr)
+  if ptr == nil or ptr == 0 or ptr &lt; 0x100000000 then return false end
+  if ptr &gt;= 0x7F0000000000 then return false end
+  return true
+end
+local function looksUObj(ptr)
+  if not isHeapPtr(ptr) then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function looksAnyUObj(ptr)
+  if ptr == nil or ptr == 0 then return false end
+  local vf = readQword(ptr)
+  return vf ~= nil and vf &gt; 0x10000
+end
+local function readByte(a)
+  local t = readBytes(a, 1, true)
+  if type(t) == "table" then return t[1] or 0 end
+  if type(t) == "number" then return t end
+  return 0
+end
+local function writeByte(a, v)
+  writeBytes(a, v &amp; 0xFF)
+end
+local function isModuleCdo(ptr)
+  return ptr ~= nil and ptr &gt;= 0x7F0000000000
+end
+
+local mm = getAddressSafe("GG2_ModeManager")
+if not looksUObj(mm) then
+  showMessage("No ModeManager.\nRe-run ACTIVATE in a loaded world.")
+  error("no mm")
+end
+
+local beforeMode = readByte(mm + 0x110)
+local beforeDiff = readByte(mm + 0x114) -- CustomSettings.GameDifficulty
+
+writeByte(mm + 0x110, MODE_NORMAL) -- CurrentGameMode = Normal (Medium)
+writeByte(mm + 0x114, DIFF_NORMAL) -- CustomSettings.GameDifficulty = Normal
+
+-- Clear Whoa-ish CustomSettings bits: buggy permadeath (bit4 @ +0x117), keep other unlocks alone
+local b3 = readByte(mm + 0x117)
+writeByte(mm + 0x117, b3 &amp; (0xFF - 0x10)) -- clear bBuggyPermadeath
+
+-- CustomSettings multipliers -&gt; Medium baselines (1.0)
+writeFloat(mm + 0x11C, 1.0) -- TimeOfDaySpeedMultiplier
+writeFloat(mm + 0x120, 1.0) -- HungerMultiplier
+writeFloat(mm + 0x124, 1.0) -- ThirstMultiplier
+writeFloat(mm + 0x128, 1.0) -- ResourceRespawnMultiplier
+writeFloat(mm + 0x12C, 1.0) -- CreatureHealthMultiplier
+writeFloat(mm + 0x130, 1.0) -- FallDamageMultiplier
+
+registerSymbol("GG2_ModeManager", mm, true)
+registerSymbol("GG2_CurrentGameMode", mm + 0x110, true)
+registerSymbol("GG2_GameDifficulty", mm + 0x114, true)
+
+local s = getAddressSafe("GG2_GameModeSettings")
+if not looksAnyUObj(s) then
+  s = readQword(mm + 0x138)
+end
+
+local settingsNote = "settings skipped"
+if looksAnyUObj(s) and not isModuleCdo(s) then
+  registerSymbol("GG2_GameModeSettings", s, true)
+  writeByte(s + 0x38, DIFF_NORMAL) -- SurvivalGameModeSettings.GameDifficulty
+  writeByte(s + 0x48, 0) -- bMenusPauseGame off (Medium)
+  writeByte(s + 0x42, 0) -- bFriendlyFire off
+  writeByte(s + 0x4B, 0) -- bBuggyPermadeath off
+  -- Medium baseline multipliers
+  writeFloat(s + 0x54, 1.0) -- PlayerDamageMultiplier
+  writeFloat(s + 0x58, 1.0) -- EnemyDamageMultiplier
+  writeFloat(s + 0x5C, 1.0) -- BuildingHealthMultiplier
+  writeFloat(s + 0x60, 1.0) -- HeatMultiplier
+  writeFloat(s + 0x64, 1.0) -- ItemSpoilageMultiplier
+  writeFloat(s + 0x68, 1.0) -- ItemDurabilityMultiplier
+  writeFloat(s + 0x6C, 0.05) -- ItemDurabilityPenaltyOnDeathPercentage
+  writeFloat(s + 0x70, 1.0) -- SizzleMultiplier
+  writeFloat(s + 0x80, 1.0) -- TimeOfDaySpeedMultiplier
+  writeFloat(s + 0x84, 1.0) -- HungerMultiplier
+  writeFloat(s + 0x88, 1.0) -- ThirstMultiplier
+  writeFloat(s + 0x8C, 1.0) -- ResourceRespawnMultiplier
+  writeFloat(s + 0x90, 1.0) -- CreatureHealthMultiplier
+  writeFloat(s + 0x94, 1.0) -- FallDamageMultiplier
+  settingsNote = string.format("heap settings@%X written", s)
+elseif looksAnyUObj(s) and isModuleCdo(s) then
+  settingsNote = "settings is module CDO - left alone (mode/custom written)"
+end
+
+print(string.format(
+  "Difficulty Medium: mode %s-&gt;%d diff %s-&gt;%d (%s)",
+  tostring(beforeMode), MODE_NORMAL, tostring(beforeDiff), DIFF_NORMAL, settingsNote))
+
+showMessage(
+  "Difficulty set to Medium.\n\n"..
+  "SDK: CurrentGameMode=Normal (1)\n"..
+  "GameDifficulty=Normal (1)\n"..
+  "Multipliers reset to 1.0 baselines.\n\n"..
+  "Open/close options or save+reload if the UI label is stale.\n"..
+  settingsNote)
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
               <ID>100</ID>
               <Description>"GameMode settings (debug)"</Description>
               <Options moHideChildren="1" moManualExpandCollapse="1"/>
@@ -4758,6 +5060,20 @@ showMessage(
                   <ShowAsSigned>0</ShowAsSigned>
                   <VariableType>Byte</VariableType>
                   <Address>GG2_RecipesNeedItems</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>245</ID>
+                  <Description>"CurrentGameMode (1=Medium/Normal)"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Byte</VariableType>
+                  <Address>GG2_CurrentGameMode</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>246</ID>
+                  <Description>"GameDifficulty (1=Medium/Normal)"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Byte</VariableType>
+                  <Address>GG2_GameDifficulty</Address>
                 </CheatEntry>
                 <CheatEntry>
                   <ID>104</ID>

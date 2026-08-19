@@ -20,6 +20,7 @@ In-game cheat hotkeys for **Grounded 2** via [UE4SS](https://github.com/UE4SS-RE
 | **Page Up** | Cycle dup qty: 1 → 5 → 10 → 25 |
 | **F11** | Set bag `StackSize` to 999 on inventory items |
 | **F12** | Probe pawn / inventory / library (status line) |
+| **F10** | Unlock ALL achievements (sets `bUnlocked` + `ClientUpdateAchievementProgressOnline` for Steam) |
 
 Hotkeys are the real menu. Status prints to the UE4SS console.
 

@@ -31,6 +31,7 @@ local function helpLines()
         "PGUP Cycle dup qty (1/5/10/25)",
         "F11  Fill bag stacks to 999",
         "F12  Probe pawn/inv/lib",
+        "F10  Unlock ALL achievements (Steam push)",
         string.format(
             "Dup:%d God:%s Speed:%s Noclip:%s",
             dupQty,
@@ -356,6 +357,8 @@ local function doAction(action)
             Cheats.fillStacks(999)
         elseif action == "probe" then
             Cheats.probe()
+        elseif action == "achievements" then
+            Cheats.unlockAllAchievements()
         end
     end)
 end
@@ -390,6 +393,7 @@ bindKey(Key.F9, "dup")
 pcall(function() bindKey(Key.PAGE_UP, "qty") end)
 bindKey(Key.F11, "stacks")
 bindKey(Key.F12, "probe")
+bindKey(Key.F10, "achievements")
 
 pcall(function()
     RegisterHook("/Script/Engine.PlayerController:ClientRestart", function()
@@ -409,5 +413,5 @@ end)
 
 scheduleCheatTick()
 
-print("[GGDropmanCheatMenu] ready - F8 help (NO widgets), F3 speed, F4 noclip, F6 vitals, F7 god, F9 dup, PGUP qty, F11 stacks, F12 probe\n")
+print("[GGDropmanCheatMenu] ready - F8 help (NO widgets), F3 speed, F4 noclip, F6 vitals, F7 god, F9 dup, PGUP qty, F10 achievements, F11 stacks, F12 probe\n")
 print("[GGDropmanCheatMenu] Discord: https://discord.gg/PTwyDTFyR\n")

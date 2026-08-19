@@ -982,9 +982,10 @@ input[readonly] {
 .spawn-card-head .hint { margin: 0; }
 
 .spawn-groups { display: grid; gap: 0.55rem; margin-top: 0.75rem; }
-.spawn-group h4 { margin: 0 0 0.3rem; color: var(--muted); font-size: 0.75rem; letter-spacing: 0.04em; text-transform: uppercase; }
+.spawn-group h4 { margin: 0 0 0.3rem; width: 100%; color: var(--muted); font-size: 0.75rem; letter-spacing: 0.04em; text-transform: uppercase; }
 .spawn-group { display: flex; flex-wrap: wrap; gap: 0.28rem; }
 .spawn-group .btn { padding: 0.28rem 0.48rem; font-size: 0.75rem; }
+.spawn-group .btn.is-unique { color: #c48a3a; }
 
 .spawn-catalog { display: grid; gap: 0.5rem; }
 .spawn-catalog-row {

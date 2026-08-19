@@ -958,7 +958,7 @@
     w.write(0, 1);
     w.write(0, 1);
     w.write(0, 5);
-    w.write(101, 10); // version
+    w.write(flags.version || 101, 10);
     w.write(place.location || 0, 3);
     w.write(place.equipped || 0, 4);
     w.write(place.x || 0, 4);
@@ -986,10 +986,11 @@
     const quality = opts.quality || QUALITY.Normal;
     const ilvl = Math.max(1, Math.min(127, Number(opts.ilvl) || 99));
     const mods = opts.mods || [];
+    const version = Number(opts.version) || 101;
     const w = bitWriter();
-    writeItemHead(w, code, place, { simple: 0, socketed: sockets > 0, ethereal });
+    writeItemHead(w, code, place, { simple: 0, socketed: sockets > 0, ethereal, version });
     if (info.q) {
-      const q = magProp(356, 101) || { sB: 2, sA: 0 };
+      const q = magProp(356, version) || { sB: 2, sA: 0 };
       w.write(q.sA || 0, q.sB);
       w.write(0, 1);
     } else {
@@ -1015,14 +1016,14 @@
     if (code === "tbk" || code === "ibk") w.write(code === "ibk" ? 1 : 0, 5);
     w.write(0, 1); // timestamp
     if (info.k === "a") {
-      const def = magProp(31, 101) || { sB: 11, sA: 10 };
+      const def = magProp(31, version) || { sB: 11, sA: 10 };
       let ac = Number(info.ac) || 10;
       if (ethereal) ac = Math.floor(ac * 1.5);
       w.write(ac + (def.sA || 0), def.sB);
     }
     if (info.k === "a" || info.k === "w") {
-      const maxd = magProp(73, 101) || { sB: 8, sA: 0 };
-      const curd = magProp(72, 101) || { sB: 9, sA: 0 };
+      const maxd = magProp(73, version) || { sB: 8, sA: 0 };
+      const curd = magProp(72, version) || { sB: 9, sA: 0 };
       let maxDur = opts.indestruct || info.nd ? 0 : Number(info.dur) || 0;
       if (maxDur && ethereal) maxDur = maxDur - Math.ceil(maxDur / 2) + 1;
       w.write(maxDur + (maxd.sA || 0), maxd.sB);
@@ -1030,7 +1031,7 @@
     }
     if (info.s) w.write(place.quantity || opts.quantity || 1, 9);
     if (sockets) w.write(sockets, 4);
-    writeMagic(w, mods, 101);
+    writeMagic(w, mods, version);
     const item = parseItem(w.finish(), 0);
     if (item.parseError) throw new Error("Spawned item failed to parse: " + item.parseError);
     return item;
@@ -1505,6 +1506,30 @@
     return list.find((u) => u.i === id) || null;
   }
 
+  function isAscendancyUnique(u) {
+    if (!u) return false;
+    if (u.c === "assc" || u.c === "ascc") return true;
+    return /^Ascend( to |ancy )/i.test(u.n || "");
+  }
+
+  function listAscendancy() {
+    const classes = [];
+    const tiers = [];
+    const other = [];
+    for (const u of DB.UNIQUES || []) {
+      if (!isAscendancyUnique(u)) continue;
+      if (/^Ascend to /i.test(u.n)) classes.push(u);
+      else if (/tier\s*[2-4]/i.test(u.n)) tiers.push(u);
+      else other.push(u);
+    }
+    const groups = [];
+    if (other.length) groups.push({ group: "Cairn", items: other });
+    if (classes.length) groups.push({ group: "Class stones", items: classes });
+    if (tiers.length) groups.push({ group: "Tier stones", items: tiers });
+    if (ITEMS.asb1) groups.push({ group: "Box", codes: ["asb1"] });
+    return groups;
+  }
+
   function spawnUnique(id, place, opts) {
     const u = uniqueById(id);
     if (!u) throw new Error("Unknown unique id " + id);
@@ -1513,11 +1538,12 @@
     return spawnItem(u.c, place, {
       quality: QUALITY.Unique,
       uniqueId: u.i,
-      mods: (u.m || []).map((m) => ({ id: m.id, values: m.v })),
+      mods: (u.m || []).map((m) => ({ id: m.id, values: (m.v || []).slice() })),
       sockets: extra.sockets != null && extra.sockets !== "" ? extra.sockets : u.s || 0,
       ethereal: extra.ethereal || !!u.e,
       indestruct: !!u.d,
       ilvl: extra.ilvl || 99,
+      version: extra.version || (isAscendancyUnique(u) ? 103 : 101),
       quantity: (place && place.quantity) || (info.s ? 60 : undefined),
     });
   }
@@ -1567,6 +1593,7 @@
 
   function uniqueKind(u) {
     const c = u && u.c;
+    if (isAscendancyUnique(u)) return "Ascendancy";
     if (c === "rin" || c === "amu" || c === "jew" || /^cm[1-4]$/.test(c || "")) return "Jewelry";
     const info = ITEMS[c] || {};
     if (info.k === "w") return "Weapons";
@@ -2353,6 +2380,8 @@
     spawnItem,
     spawnUnique,
     spawnCatalog,
+    listAscendancy,
+    isAscendancyUnique,
     addAffix,
     removeAffix,
     setAffixSlot,

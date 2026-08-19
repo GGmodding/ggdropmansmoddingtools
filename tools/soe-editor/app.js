@@ -672,6 +672,36 @@
     });
   }
 
+  function ascendLabel(name) {
+    return String(name || "")
+      .replace(/^Ascend to /, "")
+      .replace(/^Ascendancy /, "")
+      .replace(/^Stone Box.*/, "Stone box");
+  }
+
+  function fillAscendancyGroups(box, destFn) {
+    if (!box) return;
+    const groups = Items.listAscendancy();
+    box.innerHTML = groups
+      .map((g) => {
+        const uniqueBtns = (g.items || [])
+          .map((u) => `<button type="button" class="btn is-unique" data-spawn-unique="${u.i}">${escHtml(ascendLabel(u.n))}</button>`)
+          .join("");
+        const codeBtns = (g.codes || [])
+          .filter((c) => Items.itemInfo(c).n)
+          .map((c) => `<button type="button" class="btn" data-spawn="${c}">${escHtml(ascendLabel(Items.itemInfo(c).n))}</button>`)
+          .join("");
+        return `<div class="spawn-group"><h4>${g.group}</h4>${uniqueBtns}${codeBtns}</div>`;
+      })
+      .join("");
+    box.querySelectorAll("[data-spawn-unique]").forEach((btn) => {
+      btn.addEventListener("click", () => spawnUnique(Number(btn.dataset.spawnUnique), destFn && destFn(), {}));
+    });
+    box.querySelectorAll("[data-spawn]").forEach((btn) => {
+      btn.addEventListener("click", () => spawnCode(btn.dataset.spawn, destFn && destFn()));
+    });
+  }
+
   function currentSpawnDest() {
     if (state.itemView === "shared") return "shared";
     if (state.itemView === "stash") return "stash";
@@ -682,6 +712,7 @@
   function renderSpawn() {
     const quick = Items.SPAWN.filter((g) => g.group === "Runes" || g.group === "Currency" || g.group === "Infusions");
     fillSpawnGroups($("item-spawn-groups"), quick, currentSpawnDest);
+    fillAscendancyGroups($("item-ascend-groups"), currentSpawnDest);
     fillSpawnGroups($("spawn-groups"), Items.SPAWN, null);
     $("spawn-kinds").querySelectorAll("[data-spawn-kind]").forEach((btn) => {
       btn.classList.toggle("is-active", btn.dataset.spawnKind === state.spawnKind);
@@ -1423,17 +1454,17 @@
     }
   }
 
-  function spawnUnique(id) {
+  function spawnUnique(id, destKey, extra) {
     const u = Items.uniqueById(id);
     if (!u) {
       setStatus("Unknown unique");
       return;
     }
     const info = Items.itemInfo(u.c);
-    const dest = spawnDestination(info.w, info.h);
+    const dest = spawnDestination(info.w, info.h, destKey);
     if (!dest) return;
     try {
-      const item = Items.spawnUnique(id, dest.place, spawnOpts());
+      const item = Items.spawnUnique(id, dest.place, extra || spawnOpts());
       finishSpawn(item, dest);
     } catch (err) {
       setStatus(err.message || String(err));
