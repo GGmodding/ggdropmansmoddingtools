@@ -489,6 +489,12 @@
         seen.add(id);
       }
     }
+    for (const id of [12, 13]) {
+      if (!seen.has(id)) {
+        ids.push(id);
+        seen.add(id);
+      }
+    }
     ids.sort((a, b) => a - b);
     for (const id of ids) {
       const meta = STAT_META[id];
@@ -566,6 +572,7 @@
   }
 
   function write(parsed) {
+    syncLevelAndExp(parsed.stats);
     const src = parsed.bytes;
     const statsBytes = writeStats(parsed.stats, parsed.present);
     const prefix = src.slice(0, parsed.gfOff + 2);
@@ -605,6 +612,19 @@
     return EXP_TABLE[lv] || 0;
   }
 
+  function syncLevelAndExp(stats) {
+    if (!stats) return stats;
+    const lv = Math.max(1, Math.min(99, Number(stats.level) || 1));
+    stats.level = lv;
+    const minExp = expForLevel(lv);
+    const cap = lv >= 99 ? expForLevel(99) : expForLevel(lv + 1) - 1;
+    let exp = Number(stats.experience);
+    if (!Number.isFinite(exp) || exp < minExp) exp = minExp;
+    if (exp > cap) exp = cap;
+    stats.experience = exp;
+    return stats;
+  }
+
   function verify(bytes) {
     const stored =
       bytes[12] | (bytes[13] << 8) | (bytes[14] << 16) | (bytes[15] << 24);
@@ -641,16 +661,7 @@
     writeMerc,
     hireDefaultMerc,
     mercKind,
-    EXP_TABLE,
-    parse,
-    write,
-    checksum,
-    applyChecksum,
-    expForLevel,
-    verify,
-    readName,
-    summarizeProgress,
-    unlockProgress,
+    syncLevelAndExp,
   };
 
   if (typeof window !== "undefined") window.SoESave = api;

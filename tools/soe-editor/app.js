@@ -130,6 +130,9 @@
     const s = p.stats;
     s.level = num("f-level");
     s.experience = num("f-experience");
+    Save.syncLevelAndExp(s);
+    $("f-level").value = s.level;
+    $("f-experience").value = s.experience;
     s.gold = num("f-gold");
     s.goldbank = num("f-goldbank");
     s.strength = num("f-strength");
@@ -2759,6 +2762,10 @@
     });
   });
 
+  $("f-level").addEventListener("input", () => {
+    const lv = Math.max(1, Math.min(99, Number($("f-level").value) || 1));
+    $("f-experience").value = Save.expForLevel(lv);
+  });
   ["f-name", "f-level", "f-experience", "f-gold", "f-goldbank", "f-strength", "f-dexterity", "f-vitality", "f-energy", "f-statpts", "f-newskills", "f-maxhp", "f-maxmana", "f-maxstamina", "f-hardcore", "f-died", "f-ladder", "f-class", "f-merc-type", "f-merc-name", "f-merc-exp", "f-merc-dead"].forEach((id) => {
     const el = $(id);
     if (!el) return;
