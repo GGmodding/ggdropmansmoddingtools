@@ -317,10 +317,10 @@
         const key =
           f.kind === "defense"
             ? 'data-stat="defense"'
-            : `data-mod-i="${f.modIndex}" data-val-i="${f.valueIndex}"`;
+            : `data-mod-list="${f.list || "mods"}" data-mod-i="${f.modIndex}" data-val-i="${f.valueIndex}"`;
         const del =
           f.kind === "mod" && f.valueIndex === 0
-            ? `<button type="button" class="stat-remove" data-mod-remove="${f.modIndex}" title="Remove property">×</button>`
+            ? `<button type="button" class="stat-remove" data-mod-list="${f.list || "mods"}" data-mod-remove="${f.modIndex}" title="Remove property">×</button>`
             : `<span></span>`;
         if (f.skill) {
           return `<li class="stat-row stat-row--skill"><label>${escHtml(f.label)}
@@ -337,19 +337,26 @@
         statHint.textContent =
           "Couldn't decode this item's saved property rolls. Prefix/suffix/automagic names come from the item header; numbers below are from those tables, not the original rolls. Random +skills on wands and necro heads (staffmods) only live in the unread rolls.";
       } else {
-        statHint.textContent =
-          "Type rolls, or search to add a property. SoE items (version 103) store wider stat fields than spawned editor items.";
-        statHint.hidden = !fields.length && !(Items.canEditAffixes(item) && !item.runeword);
+        statHint.textContent = item.runeword
+          ? "Runeword rolls are listed below (RW). Sockets stay locked; you can still change, add, or remove those properties."
+          : "Type rolls, or search to add a property. SoE items (version 103) store wider stat fields than spawned editor items.";
+        statHint.hidden = !fields.length && !Items.canEditAffixes(item);
       }
     }
     modsEl.querySelectorAll("select[data-mod-i]").forEach((sel) => {
-      const field = fields.find((f) => f.skill && String(f.modIndex) === sel.dataset.modI && String(f.valueIndex) === sel.dataset.valI);
+      const field = fields.find(
+        (f) =>
+          f.skill &&
+          String(f.modIndex) === sel.dataset.modI &&
+          String(f.valueIndex) === sel.dataset.valI &&
+          (f.list || "mods") === (sel.dataset.modList || "mods")
+      );
       if (field) sel.value = String(field.value);
     });
     modsEl.querySelectorAll("[data-mod-remove]").forEach((btn) => {
       btn.addEventListener("click", () => {
         try {
-          Items.removeMod(item, Number(btn.dataset.modRemove));
+          Items.removeMod(item, Number(btn.dataset.modRemove), btn.dataset.modList);
           markItemDirty();
           renderItems();
           setStatus("Removed property from " + Items.displayName(item));
@@ -383,7 +390,7 @@
     socks.value = item.socketed ? item.sockets || 0 : 0;
     const hint = $("item-inspect-socks");
     if (simple) hint.textContent = "Simple items cannot be ethereal or socketed.";
-    else if (item.runeword) hint.textContent = "Runeword sockets are locked.";
+    else if (item.runeword) hint.textContent = "Runeword sockets are locked. Property rolls below can still be edited.";
     else if (!canSock) hint.textContent = "Socket field not found on this item.";
     else {
       const filled = Items.filledSockets(item);
@@ -472,7 +479,7 @@
   function renderPropAdd(item) {
     const box = $("prop-add");
     if (!box) return;
-    const can = Items.canEditAffixes(item) && !item.runeword;
+    const can = Items.canEditAffixes(item);
     box.hidden = !can;
     if (!can) return;
     const search = $("f-prop-search");
@@ -2643,7 +2650,7 @@
       let result;
       if (input.dataset.stat === "defense") result = Items.setItemDefense(item, input.value);
       else if (input.dataset.modI != null) {
-        result = Items.setModValue(item, Number(input.dataset.modI), Number(input.dataset.valI), input.value);
+        result = Items.setModValue(item, Number(input.dataset.modI), Number(input.dataset.valI), input.value, input.dataset.modList);
       } else return;
       markItemDirty();
       renderItems();

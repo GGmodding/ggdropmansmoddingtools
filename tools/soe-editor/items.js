@@ -514,7 +514,7 @@
     }
     if (item.runeword) {
       item.runewordId = reader.read(12);
-      reader.read(4);
+      item.runewordPad = reader.read(4);
     }
     if (item.personalized) {
       let pname = "";
@@ -963,7 +963,7 @@
     w.write(place.equipped || 0, 4);
     w.write(place.x || 0, 4);
     w.write(place.y || 0, 4);
-    w.write(place.panel || 1, 3);
+    w.write(place.panel != null ? place.panel : 1, 3);
     const padded = (code + "    ").slice(0, 4);
     for (let i = 0; i < 4; i++) w.write(padded.charCodeAt(i), 8);
   }
@@ -1134,7 +1134,7 @@
     }
     if (item.runeword) {
       w.write(item.runewordId || 0, 12);
-      w.write(0, 4);
+      w.write(item.runewordPad != null ? item.runewordPad : 5, 4);
     }
     if (item.personalized) {
       const name = String(item.personalizedName || "");
@@ -1619,7 +1619,7 @@
 
   function grids() {
     return {
-      inv: { w: 10, h: 4, panel: 1, location: 0, label: "Inventory" },
+      inv: { w: 10, h: 10, panel: 1, location: 0, label: "Inventory" },
       cube: { w: 3, h: 4, panel: 4, location: 0, label: "Cube" },
       stash: { w: 6, h: 8, panel: 5, location: 0, label: "Personal stash" },
       shared: { w: 10, h: 16, panel: 6, location: 0, label: "Shared stash" },
@@ -1786,16 +1786,17 @@
     const uniq = item.quality === QUALITY.Unique ? uniqueById(item.uniqueId) : null;
     let base = (uniq && uniq.n) || (item.info && item.info.n) || item.code || "?";
     let q = uniq ? "" : item.quality ? DB.QUALITY[item.quality] : item.simple ? "" : "";
+    if (item.runeword) q = "Runeword";
     if (item.quality === QUALITY.Magic) {
       const p = affixName("prefix", item.prefix);
       const s = affixName("suffix", item.suffix);
       base = [p, (item.info && item.info.n) || item.code, s].filter(Boolean).join(" ");
-      q = "";
+      q = item.runeword ? "Runeword" : "";
     } else if (item.quality === QUALITY.Rare || item.quality === QUALITY.Crafted) {
       const n1 = rareName("prefix", item.rareName1);
       const n2 = rareName("suffix", item.rareName2);
       if (n1 || n2) base = [n1, n2].filter(Boolean).join(" ");
-      q = item.quality === QUALITY.Crafted ? "Crafted" : "";
+      q = item.runeword ? "Runeword" : item.quality === QUALITY.Crafted ? "Crafted" : "";
     }
     const bits = [];
     if (item.ethereal) bits.push("Eth");
@@ -1899,6 +1900,17 @@
     secondary_maxdamage: "Maximum Damage (2h)",
     secondary_mindamage: "Minimum Damage (2h)",
     item_maxdurability: "Max Durability",
+    extra_skele_war: "to Skeleton Warriors",
+    extra_skele_mage: "to Skeletal Mages",
+    extra_skele_archer: "to Skeleton Archers",
+    extra_golem: "to Golems",
+    extra_revives: "to Revives",
+    grims_extra_skele_mage: "to Skeletal Mages (Grim's)",
+    extra_spiritwolf: "to Spirit Wolves",
+    extra_grizzly: "to Grizzlies",
+    extra_spirits: "to Druid Spirits",
+    extra_hydra: "to Hydras",
+    extra_valk: "to Valkyries",
   };
 
   const STAT_ALIAS = {
@@ -1915,6 +1927,17 @@
     item_nonclassskill: "oskill extra skill",
     item_singleskill: "plus to skill",
     item_reanimate: "reanimate as monster",
+    extra_skele_war: "skeleton warrior raise skeleton necro summon extra minion",
+    extra_skele_mage: "skeletal mage raise mage necro summon extra minion",
+    extra_skele_archer: "skeleton archer raise archer necro summon extra minion",
+    extra_golem: "golem clay blood iron fire necro summon extra minion",
+    extra_revives: "revive revives necro summon extra minion",
+    grims_extra_skele_mage: "grim skeletal mage extra minion",
+    extra_spiritwolf: "spirit wolf druid summon extra minion",
+    extra_grizzly: "grizzly bear druid summon extra minion",
+    extra_spirits: "oak sage wolverine barbs spirit druid summon extra minion",
+    extra_hydra: "hydra sorceress summon extra minion",
+    extra_valk: "valkyrie amazon summon extra minion",
   };
 
   function skillsApi() {
@@ -1993,6 +2016,22 @@
     return fields.map((f) => ({ ...f, value: values[f.i] || 0, skillName: f.skill ? skillName(values[f.i] || 0) : "" }));
   }
 
+  function magLists(item) {
+    const lists = [{ key: "mods", mods: item.mods || [], prefix: "" }];
+    if (item && item.runeword) lists.push({ key: "runewordMods", mods: item.runewordMods || [], prefix: "RW " });
+    return lists;
+  }
+
+  function magListOf(item, key) {
+    const useRw = key === "runewordMods" || (!key && item && item.runeword);
+    if (useRw) {
+      if (!item.runewordMods) item.runewordMods = [];
+      return item.runewordMods;
+    }
+    if (!item.mods) item.mods = [];
+    return item.mods;
+  }
+
   function itemStatFields(item) {
     const out = [];
     if (!item || item.simple || item.ear) return out;
@@ -2008,22 +2047,25 @@
         max: r.max,
       });
     }
-    (item.mods || []).forEach((mod, modIndex) => {
-      if (groupedFollowOn(item.mods, mod.id)) return;
-      for (const f of modFields(mod, ver)) {
-        out.push({
-          kind: "mod",
-          modIndex,
-          valueIndex: f.i,
-          label: f.label,
-          value: f.value,
-          min: f.min,
-          max: f.max,
-          param: f.param,
-          skill: f.skill,
-        });
-      }
-    });
+    for (const list of magLists(item)) {
+      list.mods.forEach((mod, modIndex) => {
+        if (groupedFollowOn(list.mods, mod.id)) return;
+        for (const f of modFields(mod, ver)) {
+          out.push({
+            kind: "mod",
+            list: list.key,
+            modIndex,
+            valueIndex: f.i,
+            label: list.prefix + f.label,
+            value: f.value,
+            min: f.min,
+            max: f.max,
+            param: f.param,
+            skill: f.skill,
+          });
+        }
+      });
+    }
     return out;
   }
 
@@ -2038,9 +2080,10 @@
     return { value: item.defense, clamped: Number.isFinite(asked) && next !== asked, min: saveRange(magProp(31, verOf(item))).min, max: saveRange(magProp(31, verOf(item))).max, label: "Defense" };
   }
 
-  function setModValue(item, modIndex, valueIndex, n) {
+  function setModValue(item, modIndex, valueIndex, n, listKey) {
     if (!item || item.simple || item.ear) throw new Error("This item has no stats to edit");
-    const mod = (item.mods || [])[modIndex];
+    const list = magListOf(item, listKey);
+    const mod = list[modIndex];
     if (!mod) throw new Error("No such stat");
     const field = modFields(mod, verOf(item)).find((f) => f.i === valueIndex);
     if (!field) throw new Error("No such stat value");
@@ -2074,7 +2117,7 @@
     if (/resist/.test(s)) return "Resists";
     if (/armor|defense|block/.test(s)) return "Defense";
     if (/damage|tohit|deadly|crush|openwound|pierce|lifesteal|manasteal/.test(s)) return "Damage";
-    if (/skill|aura|oskill/.test(s)) return "Skills";
+    if (/skill|aura|oskill|^extra_(skele|golem|revives|spirit|grizzly|hydra|valk)/.test(s)) return "Skills";
     if (/magicbonus|goldbonus|quantity|socket|fastercast|fasterattack|fastermove|fastergethit|fasterblock/.test(s)) return "Extra";
     return "Other";
   }
@@ -2104,6 +2147,8 @@
       if (/^charges$/i.test(f.label)) return 20;
       if (f.param) return 0;
       if (f.max <= 0) return 0;
+      const rec = MAG[id];
+      if (rec && /^extra_/.test(rec.s || "")) return Math.min(f.max, 3);
       return Math.min(f.max, Math.max(1, f.max > 200 ? Math.min(50, f.max) : f.max));
     });
   }
@@ -2171,20 +2216,25 @@
     return out;
   }
 
-  function addMod(item, id, values) {
+  function addMod(item, id, values, listKey) {
     if (!item || item.simple || item.ear) throw new Error("This item cannot have properties");
     id = Number(id);
-    const save = magProp(id, verOf(item));
+    let save = magProp(id, verOf(item));
+    if ((!save || !save.sB) && verOf(item) < 103) {
+      save = magProp(id, 103);
+      if (save && save.sB) item.version = 103;
+    }
     if (!save || !save.sB) throw new Error("Unknown or unsavable stat id " + id);
     const vals = values && values.length ? values.slice() : defaultModValues(id);
-    item.mods = (item.mods || []).concat([{ id, values: vals }]);
+    magListOf(item, listKey).push({ id, values: vals });
     item.identified = 1;
     return rewriteItem(item);
   }
 
-  function removeMod(item, modIndex) {
-    if (!item || !item.mods || !item.mods[modIndex]) throw new Error("No such property");
-    item.mods.splice(modIndex, 1);
+  function removeMod(item, modIndex, listKey) {
+    const list = magListOf(item, listKey);
+    if (!list[modIndex]) throw new Error("No such property");
+    list.splice(modIndex, 1);
     return rewriteItem(item);
   }
 
@@ -2302,8 +2352,12 @@
     return item;
   }
 
+  function allItemMods(item) {
+    return magLists(item).reduce((acc, list) => acc.concat(list.mods), []);
+  }
+
   function listAuras(item) {
-    return (item.mods || [])
+    return allItemMods(item)
       .filter((m) => MAG[m.id] && MAG[m.id].s === "item_aura")
       .map((m) => {
         const v = m.values || [];
@@ -2312,24 +2366,28 @@
   }
 
   function formatMods(item) {
-    return (item.mods || [])
-      .filter((m) => !groupedFollowOn(item.mods, m.id))
-      .map((m) => {
-      const rec = MAG[m.id];
-      if (rec && rec.s === "item_aura") {
-        const v = m.values || [];
-        return "Level " + (v[1] || 0) + " " + skillName(v[0] || 0) + " Aura when Equipped";
-      }
-      if (rec && rec.s === "item_singleskill") {
-        const v = m.values || [];
-        const n = v.length > 1 ? v[v.length - 1] : 0;
-        const sk = v[0] || 0;
-        return "+" + n + " to " + skillName(sk);
-      }
-      const name = rec && rec.s ? rec.s.replace(/^item_/, "").replace(/_/g, " ") : "stat " + m.id;
-      const vals = (m.values || []).join(", ");
-      return vals ? name + "  " + vals : name;
-    });
+    return magLists(item).reduce((lines, list) => {
+      return lines.concat(
+        list.mods
+          .filter((m) => !groupedFollowOn(list.mods, m.id))
+          .map((m) => {
+            const rec = MAG[m.id];
+            if (rec && rec.s === "item_aura") {
+              const v = m.values || [];
+              return list.prefix + "Level " + (v[1] || 0) + " " + skillName(v[0] || 0) + " Aura when Equipped";
+            }
+            if (rec && rec.s === "item_singleskill") {
+              const v = m.values || [];
+              const n = v.length > 1 ? v[v.length - 1] : 0;
+              const sk = v[0] || 0;
+              return list.prefix + "+" + n + " to " + skillName(sk);
+            }
+            const name = prettyStatName(m.id);
+            const vals = (m.values || []).join(", ");
+            return list.prefix + (vals ? name + "  " + vals : name);
+          })
+      );
+    }, []);
   }
 
   function inspectMeta(item, where) {
@@ -2337,7 +2395,7 @@
     if (item.ilvl) bits.push("ilvl " + item.ilvl);
     if (item.defense != null) bits.push("Defense " + item.defense);
     if (item.maxDur != null) bits.push(item.maxDur ? "Dur " + (item.dur || 0) + "/" + item.maxDur : "Indestructible");
-    if (item.runeword) bits.push("Runeword");
+    if (item.runeword) bits.push("Runeword" + (item.runewordId ? " #" + item.runewordId : ""));
     if (item.classSpec && item.autoAffix) bits.push("automagic #" + item.autoAffix);
     if (item.parseError) bits.push("property rolls unread — showing affix names");
     return bits.filter(Boolean).join(" · ");
@@ -2357,6 +2415,32 @@
     if (item.ethereal) cls += " eth";
     return cls;
   }
+
+  function installSummonAffixes() {
+    const list = AFF.SUFFIX;
+    if (!list || list._soeSummons) return;
+    const defs = [
+      { i: 2040, n: "of Skeleton Warriors", id: 461, v: 3, keys: "skeleton warrior raise skeleton necro summon extra skele war" },
+      { i: 2041, n: "of Skeletal Mages", id: 462, v: 3, keys: "skeletal mage raise mage necro summon extra skele mage" },
+      { i: 2042, n: "of Skeleton Archers", id: 475, v: 3, keys: "skeleton archer raise archer necro summon extra skele archer" },
+      { i: 2043, n: "of Golems", id: 476, v: 1, keys: "golem clay blood iron fire necro summon extra golem" },
+      { i: 2044, n: "of Revives", id: 444, v: 3, keys: "revive revives necro summon extra revives" },
+    ];
+    for (const d of defs) {
+      if (!MAG[d.id] || !(MAG[d.id].sB || MAG[d.id].oB)) continue;
+      if (list.some((a) => a.i === d.i)) continue;
+      list.push({
+        i: d.i,
+        n: d.n,
+        d: d.n + " (+" + d.v + " " + prettyStatName(d.id) + ")",
+        s: (d.n + " " + d.keys + " " + prettyStatName(d.id)).toLowerCase(),
+        m: [{ id: d.id, v: [d.v] }],
+        synth: 1,
+      });
+    }
+    list._soeSummons = 1;
+  }
+  installSummonAffixes();
 
   const api = {
     SPAWN,
@@ -2426,6 +2510,7 @@
     setRareNames,
     rareNameList,
     insertSocketed,
+    rewriteItem,
     itemBytes,
     parseD2i,
     inspectMeta,
