@@ -78,6 +78,56 @@
     return Math.max(1, total - 50);
   }
 
+  // ---- Inventory: 1984 slots of 16 bytes [sort key][handle][item ID][count] starting at 0x8624 ----
+  const INV_START = 0x8624;
+  const INV_SLOTS = 1984;
+  const REC = 16;
+  const COUNT_MIN = 1;
+  const COUNT_MAX = 99;
+
+  function classify(handle, id) {
+    const hc = handle >>> 28, ic = id >>> 28;
+    if (hc === 0xB && ic === 4) return { type: "goods", baseId: id & 0xFFFFFF };
+    if (hc === 8 && ic === 0) return { type: "weapon", baseId: id };
+    if (hc === 9 && ic === 1) return { type: "armor", baseId: id & 0xFFFFFF };
+    if (hc === 0xA && ic === 2) return { type: "accessory", baseId: id & 0xFFFFFF };
+    return { type: "unknown", baseId: id };
+  }
+
+  function readInventory(bytes) {
+    const v = view(bytes);
+    const out = [];
+    for (let slot = 0; slot < INV_SLOTS; slot++) {
+      const o = INV_START + slot * REC;
+      const key = v.getUint32(o, true), handle = v.getUint32(o + 4, true);
+      const id = v.getUint32(o + 8, true), count = v.getUint32(o + 12, true);
+      if (handle === 0 && id === 0xFFFFFFFF) continue; // empty slot
+      const c = classify(handle, id);
+      out.push({ slot, offset: o, key, handle, itemId: id, count, type: c.type, baseId: c.baseId });
+    }
+    return out;
+  }
+
+  // counts: { slot: newCount }. Only stackable goods that are already in the inventory can change.
+  // Returns a modified COPY; the input is never changed.
+  function applyInventory(bytes, counts) {
+    const copy = new Uint8Array(bytes);
+    const v = view(copy);
+    for (const k of Object.keys(counts)) {
+      const slot = Number(k);
+      if (!(slot >= 0 && slot < INV_SLOTS)) throw new Error("Bad inventory slot " + k + ".");
+      const o = INV_START + slot * REC;
+      const handle = v.getUint32(o + 4, true), id = v.getUint32(o + 8, true);
+      if (classify(handle, id).type !== "goods") throw new Error("Slot " + slot + " is not a stackable item.");
+      const n = Math.trunc(Number(counts[k]));
+      if (!Number.isFinite(n) || n < COUNT_MIN || n > COUNT_MAX) {
+        throw new Error("Item count must be " + COUNT_MIN + " to " + COUNT_MAX + " (slot " + slot + ").");
+      }
+      v.setUint32(o + 12, n, true);
+    }
+    return copy;
+  }
+
   // Folders that never hold the save; skipping them keeps the search fast.
   const SKIP_DIRS = /^(_internal|_redist|game|bin|bundled|cache|shader|shader_catalog|tools|launcher|licenses|patches|mods|companions|download\d*|temp\d*|fonts|screenshots|captures|log|trophy.*|dlss|out|docs|scripts|node_modules|\.git)$/i;
 
@@ -125,7 +175,7 @@
     return info;
   }
 
-  const api = { EXPECTED_SIZE, NAME_OFFSET, FIELDS, STAT_IDS, readName, validate, readFields, applyFields, levelFromStats, findSave };
+  const api = { EXPECTED_SIZE, NAME_OFFSET, FIELDS, STAT_IDS, readName, validate, readFields, applyFields, levelFromStats, findSave, readInventory, applyInventory, COUNT_MIN, COUNT_MAX };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else window.BBSave = api;
 })();

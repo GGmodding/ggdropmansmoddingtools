@@ -9,6 +9,10 @@
   let rootHandle = null;   // folder the user picked (for backups)
   let saveHandle = null;   // FileSystemFileHandle of userdata0000, when found via folder
   const inputs = {};
+  let loadedInv = [];      // inventory records as loaded
+  const invInputs = {};    // slot -> count <input> (stackable goods only)
+  const ITEMS = window.BBItems || { goods: [], weapons: [], armor: [] };
+  const NAMES = { goods: new Map(ITEMS.goods), weapon: new Map(ITEMS.weapons), armor: new Map(ITEMS.armor) };
 
   function setStatus(msg) { $("status").textContent = msg; }
   function fail(msg) { setStatus(msg); alert(msg); }
@@ -23,7 +27,7 @@
   function markDirty() {
     if (!loadedValues) return;
     const cur = currentValues();
-    $("dirty-pill").hidden = !S.FIELDS.some((f) => cur[f.id] !== loadedValues[f.id]);
+    $("dirty-pill").hidden = !(S.FIELDS.some((f) => cur[f.id] !== loadedValues[f.id]) || invDirty());
   }
 
   function buildFields() {
@@ -59,12 +63,62 @@
 
   function showTab(name) {
     for (const t of document.querySelectorAll(".tab")) t.classList.toggle("is-active", t.dataset.tab === name);
-    for (const id of ["character", "notes"]) {
+    for (const id of ["character", "inventory", "notes"]) {
       const p = $("panel-" + id);
       const on = id === name;
       p.hidden = !on;
       p.classList.toggle("is-active", on);
     }
+  }
+
+  /* ---- inventory ---- */
+  function itemName(r) {
+    const m = NAMES[r.type];
+    return (m && m.get(r.baseId)) || ("Unknown " + r.type + " (" + r.baseId + ")");
+  }
+
+  function invCounts() {
+    const c = {};
+    for (const r of loadedInv) {
+      const inp = invInputs[r.slot];
+      if (inp && Number(inp.value) !== r.count) c[r.slot] = Number(inp.value);
+    }
+    return c;
+  }
+  function invDirty() { return Object.keys(invCounts()).length > 0; }
+
+  function buildEdited() {
+    return S.applyInventory(S.applyFields(original, currentValues()), invCounts());
+  }
+
+  function renderInventory() {
+    const body = $("inv-table").querySelector("tbody");
+    body.innerHTML = "";
+    for (const k of Object.keys(invInputs)) delete invInputs[k];
+    for (const r of loadedInv) {
+      const tr = document.createElement("tr");
+      tr.dataset.search = (itemName(r) + " " + r.type + " " + r.baseId).toLowerCase();
+      const cells = [r.slot, itemName(r), r.type, r.baseId];
+      for (const c of cells) { const td = document.createElement("td"); td.textContent = c; tr.appendChild(td); }
+      const td = document.createElement("td");
+      if (r.type === "goods") {
+        const inp = document.createElement("input");
+        inp.type = "number";
+        inp.min = S.COUNT_MIN;
+        inp.max = S.COUNT_MAX;
+        inp.step = "1";
+        inp.value = r.count;
+        inp.style.width = "5.5rem";
+        inp.addEventListener("input", markDirty);
+        invInputs[r.slot] = inp;
+        td.appendChild(inp);
+      } else {
+        td.textContent = r.count;
+      }
+      tr.appendChild(td);
+      body.appendChild(tr);
+    }
+    $("inv-summary").textContent = loadedInv.length + " items found in the main inventory table.";
   }
 
   /* ---- loading ---- */
@@ -79,6 +133,8 @@
     $("tabs").hidden = false;
     showTab("character");
     fillInputs(loadedValues);
+    loadedInv = S.readInventory(bytes);
+    renderInventory();
     $("btn-backup").disabled = false;
     $("btn-save").disabled = false;
     $("btn-install").disabled = !(saveHandle && rootHandle);
@@ -189,7 +245,7 @@
   async function install() {
     if (!original || !saveHandle || !rootHandle) return;
     try {
-      const edited = S.applyFields(original, currentValues());
+      const edited = buildEdited();
 
       // Refuse if the file changed on disk since loading (the game may have autosaved).
       const disk = new Uint8Array(await (await saveHandle.getFile()).arrayBuffer());
@@ -215,6 +271,8 @@
 
       original = edited;
       loadedValues = S.readFields(edited);
+      loadedInv = S.readInventory(edited);
+      renderInventory();
       markDirty();
       setStatus("Installed. Original saved as bb_editor_backups/" + bname + ". Start the game to check it loads.");
     } catch (e) {
@@ -239,7 +297,7 @@
     $("btn-save").addEventListener("click", () => {
       if (!original) return;
       try {
-        download(S.applyFields(original, currentValues()), fileName);
+        download(buildEdited(), fileName);
         setStatus("Downloaded edited " + fileName + ". Close the game, keep a backup, then replace the file in SPRJ0005.");
       } catch (e) { fail("Cannot save: " + e.message); }
     });
@@ -250,7 +308,11 @@
       inputs.level.value = S.levelFromStats(currentValues());
       markDirty();
     });
-    $("btn-reset").addEventListener("click", () => { if (loadedValues) fillInputs(loadedValues); });
+    $("btn-reset").addEventListener("click", () => { if (loadedValues) { fillInputs(loadedValues); renderInventory(); markDirty(); } });
+    $("inv-search").addEventListener("input", (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      for (const tr of $("inv-table").querySelectorAll("tbody tr")) tr.hidden = q && tr.dataset.search.indexOf(q) < 0;
+    });
 
     let depth = 0;
     window.addEventListener("dragenter", (e) => { e.preventDefault(); depth++; $("drop-overlay").hidden = false; });

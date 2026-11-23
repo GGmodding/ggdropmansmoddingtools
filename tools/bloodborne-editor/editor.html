@@ -45,6 +45,7 @@
 
   <nav class="tabs" id="tabs" aria-label="Editor sections" hidden>
     <button class="tab is-active" data-tab="character" type="button">Character</button>
+    <button class="tab" data-tab="inventory" type="button">Inventory</button>
     <button class="tab" data-tab="notes" type="button">Notes</button>
   </nav>
 
@@ -70,6 +71,28 @@
       </div>
     </section>
 
+    <section id="panel-inventory" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Inventory</h2>
+        <p id="inv-summary">Items found in the main inventory table.</p>
+      </div>
+      <div class="callout callout--warn">
+        Experimental: stack counts of items you already own can be changed (1 to 99). The game may cap some items at its own
+        maximum, and weapons / armor are shown but not editable. Adding new items is not wired yet.
+      </div>
+      <div class="toolbar">
+        <label>Search
+          <input id="inv-search" type="text" placeholder="blood vial, pebble, saw..." />
+        </label>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="inv-table">
+          <thead><tr><th>Slot</th><th>Item</th><th>Type</th><th>ID</th><th>Count</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
     <section id="panel-notes" class="panel" hidden>
       <div class="panel__head">
         <h2>Notes</h2>
@@ -85,7 +108,7 @@
             <tr><td>Level</td><td>Stored separately from the stats. Use the Level button to keep it matching (total of the six stats minus 50, inferred from one save).</td></tr>
             <tr><td>Max HP</td><td>Not stored directly; the game recalculates it from Vitality. Rest or re-equip after loading.</td></tr>
             <tr><td>Offline only</td><td>Do not use edited characters online or in co-op / PvP.</td></tr>
-            <tr><td>Not yet</td><td>Inventory and item editing are not mapped yet.</td></tr>
+            <tr><td>Inventory</td><td>Counts of owned stackable items can be edited. Adding new items is not wired yet; it needs a before/after save comparison to be safe.</td></tr>
           </tbody>
         </table>
       </div>
@@ -94,6 +117,7 @@
 
   <footer class="status-bar" id="status">Ready - load userdata0000.</footer>
 
+  <script src="items.js"></script>
   <script src="save.js"></script>
   <script src="../shared/donate.js"></script>
   <script src="app.js"></script>

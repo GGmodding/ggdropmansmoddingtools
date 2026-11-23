@@ -1,0 +1,1437 @@
+Bloodborne item IDs (from English item text in the game dump)
+Format: ID | hex | name
+Goods save ID = 0x40000000 + ID, weapons save ID = ID, armor save ID = 0x10000000 + ID
+
+== GOODS (264) ==
+100 | 0x64 | Hunter's Mark
+111 | 0x6F | Silencing Blank
+120 | 0x78 | Notebook
+130 | 0x82 | Vileblood Register
+131 | 0x83 | League Staff
+200 | 0xC8 | Beckoning Bell
+205 | 0xCD | Small Resonant Bell
+225 | 0xE1 | Sinister Resonant Bell
+700 | 0x2BC | Tiny Music Box
+701 | 0x2BD | Blood of Arianna
+702 | 0x2BE | Blood of Adella
+703 | 0x2BF | Iosefka's Blood Vial
+704 | 0x2C0 | Blood Dreg
+705 | 0x2C1 | Queenly Blood
+706 | 0x2C2 | Blood of Adeline
+800 | 0x320 | Point Forward
+801 | 0x321 | Hunter's Salutation
+802 | 0x322 | Conviction
+803 | 0x323 | Joy
+804 | 0x324 | Shake off Cape
+805 | 0x325 | Church Bow (Male)
+806 | 0x326 | Curtsy
+807 | 0x327 | Church Bow (Female)
+808 | 0x328 | Wave
+809 | 0x329 | Pray
+810 | 0x32A | Wait
+811 | 0x32B | Shh!
+812 | 0x32C | Hunter's Rally
+813 | 0x32D | Triumph
+814 | 0x32E | Approval
+815 | 0x32F | Roar
+816 | 0x330 | Beg for Life
+817 | 0x331 | Brush off Dust
+818 | 0x332 | Respect
+819 | 0x333 | Deep Respect
+820 | 0x334 | Make Contact
+821 | 0x335 | Sit Down
+822 | 0x336 | League Oath
+900 | 0x384 | Quicksilver Bullets
+901 | 0x385 | Blood Bullets
+1000 | 0x3E8 | Blood Vial
+1020 | 0x3FC | Quicksilver Bullets
+1100 | 0x44C | Antidote
+1101 | 0x44D | Sedative
+1110 | 0x456 | Beast Blood Pellet
+1120 | 0x460 | Blue Elixir
+1200 | 0x4B0 | Molotov Cocktail
+1201 | 0x4B1 | Delayed Molotov
+1210 | 0x4BA | Poison Knife
+1220 | 0x4C4 | Oil Urn
+1230 | 0x4CE | Pebble
+1240 | 0x4D8 | Throwing Knife
+1250 | 0x4E2 | Rope Molotov Cocktail
+1251 | 0x4E3 | Delayed Rope Molotov
+1260 | 0x4EC | Pungent Blood Cocktail
+1270 | 0x4F6 | Numbing Mist
+1300 | 0x514 | Fire Paper
+1310 | 0x51E | Empty Phantasm Shell
+1320 | 0x528 | Bolt Paper
+1330 | 0x532 | Bone Marrow Ash
+1400 | 0x578 | Bold Hunter's Mark
+1410 | 0x582 | Shining Coins
+1411 | 0x583 | Monocular
+1412 | 0x584 | Hand Lantern
+1500 | 0x5DC | Madman's Knowledge
+1501 | 0x5DD | Great One's Wisdom
+1510 | 0x5E6 | Coldblood Dew (1)
+1511 | 0x5E7 | Coldblood Dew (2)
+1512 | 0x5E8 | Coldblood Dew (3)
+1513 | 0x5E9 | Thick Coldblood (4)
+1514 | 0x5EA | Thick Coldblood (5)
+1515 | 0x5EB | Thick Coldblood (6)
+1516 | 0x5EC | Frenzied Coldblood (7)
+1517 | 0x5ED | Frenzied Coldblood (8)
+1518 | 0x5EE | Frenzied Coldblood (9)
+1519 | 0x5EF | Kin Coldblood (10)
+1590 | 0x636 | Kin Coldblood (11)
+1591 | 0x637 | Kin Coldblood (12)
+1592 | 0x638 | Great One Coldblood
+1593 | 0x639 | Old Great One Coldblood
+1594 | 0x63A | Revered Great One Coldblood
+1600 | 0x640 | Caryll Rune: "Clockwise Metamorphosis"
+1601 | 0x641 | Caryll Rune: "Anti-Clockwise Metamorphosis"
+1602 | 0x642 | Caryll Rune: "Communion"
+1603 | 0x643 | Caryll Rune: "Oedon Liaison"
+1604 | 0x644 | Caryll Rune: "Lake"
+1605 | 0x645 | Caryll Rune: "Deep Sea"
+1606 | 0x646 | Caryll Rune: "Destroyer"
+1607 | 0x647 | Caryll Rune: "Reveler"
+1608 | 0x648 | Caryll Rune: "Liaison"
+1609 | 0x649 | Caryll Rune: "Heir"
+1610 | 0x64A | Caryll Rune: "Beast"
+1611 | 0x64B | Caryll Rune: "Moon"
+1612 | 0x64C | Caryll Rune: "Eye"
+1650 | 0x672 | Petrified Blood Gem (1)
+1651 | 0x673 | Petrified Blood Gem (2)
+1652 | 0x674 | Petrified Blood Gem (3)
+1653 | 0x675 | Petrified Blood Gem (4)
+1654 | 0x676 | Petrified Blood Gem (5)
+1655 | 0x677 | Petrified Blood Gem (6)
+1656 | 0x678 | Petrified Abyssal Blood Gem
+1657 | 0x679 | Petrified Blood Gem (1)
+1658 | 0x67A | Petrified Blood Gem (2)
+1659 | 0x67B | Petrified Blood Gem (3)
+1660 | 0x67C | Petrified Blood Gem (4)
+1661 | 0x67D | Petrified Blood Gem (5)
+1662 | 0x67E | Petrified Blood Gem (6)
+1663 | 0x67F | Petrified Abyssal Blood Gem
+1664 | 0x680 | Petrified Blood Gem (1)
+1665 | 0x681 | Petrified Blood Gem (2)
+1666 | 0x682 | Petrified Blood Gem (3)
+1667 | 0x683 | Petrified Blood Gem (4)
+1668 | 0x684 | Petrified Blood Gem (5)
+1669 | 0x685 | Petrified Blood Gem (6)
+1670 | 0x686 | Petrified Abyssal Blood Gem
+1671 | 0x687 | Petrified Blood Gem (1)
+1672 | 0x688 | Petrified Blood Gem (2)
+1673 | 0x689 | Petrified Blood Gem (3)
+1674 | 0x68A | Petrified Blood Gem (4)
+1675 | 0x68B | Petrified Blood Gem (5)
+1676 | 0x68C | Petrified Blood Gem (6)
+1677 | 0x68D | Petrified Abyssal Blood Gem
+1678 | 0x68E | Petrified Blood Gem (1)
+1679 | 0x68F | Petrified Blood Gem (2)
+1680 | 0x690 | Petrified Blood Gem (3)
+1681 | 0x691 | Petrified Blood Gem (4)
+1682 | 0x692 | Petrified Blood Gem (5)
+1683 | 0x693 | Petrified Blood Gem (6)
+1684 | 0x694 | Petrified Abyssal Blood Gem
+1700 | 0x6A4 | Vermin
+2000 | 0x7D0 | Augur of Ebrietas
+2010 | 0x7DA | A Call Beyond
+2020 | 0x7E4 | Beast Roar
+2030 | 0x7EE | Lead Elixir
+2050 | 0x802 | Choir Bell
+2060 | 0x80C | Old Hunter Bone
+2070 | 0x816 | Tiny Tonitrus
+2080 | 0x820 | Executioner's Gloves
+2090 | 0x82A | Shaman Bone Blade
+2110 | 0x83E | Messenger's Gift
+2120 | 0x848 | Blacksky Eye
+2130 | 0x852 | Accursed Brew
+2140 | 0x85C | Madaras Whistle
+3000 | 0xBB8 | Blood Stone Shard
+3010 | 0xBC2 | Twin Blood Stone Shards
+3020 | 0xBCC | Blood Stone Chunk
+3030 | 0xBD6 | Blood Rock
+4000 | 0xFA0 | Oedon Tomb Key
+4001 | 0xFA1 | Gold Pendant
+4003 | 0xFA3 | Cainhurst Summons
+4006 | 0xFA6 | Orphanage Key
+4009 | 0xFA9 | Iron Door Key
+4010 | 0xFAA | Upper Cathedral Key
+4011 | 0xFAB | Hunter Chief Emblem
+4012 | 0xFAC | Lecture Theatre Key
+4013 | 0xFAD | Lunarium Key
+4014 | 0xFAE | Laurence's Skull
+4015 | 0xFAF | Underground Cell Inner Chamber Key
+4017 | 0xFB1 | Eye Pendant
+4018 | 0xFB2 | Underground Cell Key
+4019 | 0xFB3 | Balcony Key
+4020 | 0xFB4 | Astral Clocktower Key
+4021 | 0xFB5 | Celestial Dial
+4102 | 0x1006 | Workshop Haze Extractor
+4103 | 0x1007 | Blood Gem Workshop Tool
+4104 | 0x1008 | Rune Workshop Tool
+4105 | 0x1009 | Short Ritual Root Chalice
+4110 | 0x100E | Saw Hunter Badge
+4111 | 0x100F | Crow Hunter Badge
+4112 | 0x1010 | Powder Keg Hunter Badge
+4113 | 0x1011 | Old Hunter Badge
+4114 | 0x1012 | Sword Hunter Badge
+4115 | 0x1013 | Radiant Sword Hunter Badge
+4116 | 0x1014 | Wheel Hunter Badge
+4117 | 0x1015 | Cainhurst Badge
+4118 | 0x1016 | Spark Hunter Badge
+4119 | 0x1017 | Cosmic Eye Watcher Badge
+4120 | 0x1018 | Firing Hammer Badge
+4300 | 0x10CC | Small Hair Ornament
+4301 | 0x10CD | Tear Stone
+4304 | 0x10D0 | Ring of Betrothal
+4305 | 0x10D1 | Queenly Flesh
+4306 | 0x10D2 | Red Jeweled Brooch
+4308 | 0x10D4 | Unopened Summons
+4310 | 0x10D6 | Tonsil Stone
+4311 | 0x10D7 | Eye of a Blood-drunk Hunter
+4312 | 0x10D8 | Old Hunter Bell
+4320 | 0x10E0 | One Third of Umbilical Cord
+4321 | 0x10E1 | One Third of Umbilical Cord
+4322 | 0x10E2 | One Third of Umbilical Cord
+4323 | 0x10E3 | One Third of Umbilical Cord
+4330 | 0x10EA | Yharnam Stone
+4340 | 0x10F4 | Brain Fluid
+4341 | 0x10F5 | Brain Fluid
+4342 | 0x10F6 | Brain Fluid
+4900 | 0x1324 | Yharnam Messenger Hat
+4901 | 0x1325 | Worn Messenger Top Hat
+4902 | 0x1326 | Messenger Head Bandage
+4903 | 0x1327 | White Messenger Ribbon
+4904 | 0x1328 | Red Messenger Ribbon
+4905 | 0x1329 | Messenger Top Hat
+4906 | 0x132A | Black Messenger Hat
+4907 | 0x132B | Bloody Messenger Head Bandage
+4908 | 0x132C | Messenger Urn Festival
+6100 | 0x17D4 | Pthumeru Root Chalice
+6109 | 0x17DD | Pthumeru Chalice
+6200 | 0x1838 | Central Pthumeru Root Chalice
+6209 | 0x1841 | Central Pthumeru Chalice
+6210 | 0x1842 | Hintertomb Root Chalice
+6219 | 0x184B | Hintertomb Chalice
+6300 | 0x189C | Lower Pthumeru Root Chalice
+6302 | 0x189E | Sinister Lower Pthumeru Root Chalice
+6309 | 0x18A5 | Lower Pthumeru Chalice
+6310 | 0x18A6 | Lower Hintertomb Root Chalice
+6312 | 0x18A8 | Sinister Hintertomb Root Chalice
+6319 | 0x18AF | Lower Hintertomb Chalice
+6401 | 0x1901 | Cursed and Defiled Root Chalice
+6409 | 0x1909 | Defiled Chalice
+6420 | 0x1914 | Ailing Loran Root Chalice
+6429 | 0x191D | Ailing Loran Chalice
+6500 | 0x1964 | Pthumeru Ihyll Root Chalice
+6502 | 0x1966 | Sinister Pthumeru Ihyll Root Chalice
+6509 | 0x196D | Great Pthumeru Ihyll Chalice
+6520 | 0x1978 | Lower Ailing Loran Root Chalice
+6522 | 0x197A | Sinister Lower Loran Root Chalice
+6529 | 0x1981 | Lower Loran Chalice
+6530 | 0x1982 | Isz Root Chalice
+6532 | 0x1984 | Sinister Isz Root Chalice
+6539 | 0x198B | Great Isz Chalice
+7000 | 0x1B58 | Ritual Blood (1)
+7001 | 0x1B59 | Ritual Blood (2)
+7002 | 0x1B5A | Ritual Blood (3)
+7003 | 0x1B5B | Ritual Blood (4)
+7004 | 0x1B5C | Ritual Blood (5)
+7005 | 0x1B5D | Ritual Vestige (6)
+7006 | 0x1B5E | Perfect Ritual Vestige
+7010 | 0x1B62 | Coldblood Flowerbud (1)
+7011 | 0x1B63 | Coldblood Flowerbud (2)
+7012 | 0x1B64 | Coldblood Flowerbud
+7013 | 0x1B65 | Coldblood Flower Bulb
+7014 | 0x1B66 | Blooming Coldblood Flower
+7015 | 0x1B67 | Coldblood Flower Bulb (6)
+7016 | 0x1B68 | Blooming Coldblood Flower
+7020 | 0x1B6C | Tomb Mold (1)
+7021 | 0x1B6D | Tomb Mold (2)
+7022 | 0x1B6E | Tomb Mold (3)
+7023 | 0x1B6F | Tomb Mold (4)
+7024 | 0x1B70 | Tomb Mold (5)
+7025 | 0x1B71 | Tomb Mold Spore (6)
+7026 | 0x1B72 | Soaring Tomb Mold
+7050 | 0x1B8A | Arcane Haze
+7100 | 0x1BBC | Pearl Slug
+7101 | 0x1BBD | Hidden Incoagulable Blood
+7102 | 0x1BBE | Cursed Incoagulable Blood
+7110 | 0x1BC6 | Red Jelly
+7111 | 0x1BC7 | Vermiculum (not needed)
+7112 | 0x1BC8 | Radiant Eelworm (not needed)
+7120 | 0x1BD0 | Sage's Wrist
+7121 | 0x1BD1 | Sage's Hair
+7130 | 0x1BDA | Inflicted Organ
+7131 | 0x1BDB | Yellow Backbone
+7140 | 0x1BE4 | Bastard of Loran
+7150 | 0x1BEE | Bloodshot Eyeball
+7200 | 0x1C20 | Living String
+
+== WEAPONS (1035) ==
+1000000 | 0xF4240 | Bare Fists
+2000000 | 0x1E8480 | Chikage
+2000100 | 0x1E84E4 | Chikage +1
+2000200 | 0x1E8548 | Chikage +2
+2000300 | 0x1E85AC | Chikage +3
+2000400 | 0x1E8610 | Chikage +4
+2000500 | 0x1E8674 | Chikage +5
+2000600 | 0x1E86D8 | Chikage +6
+2000700 | 0x1E873C | Chikage +7
+2000800 | 0x1E87A0 | Chikage +8
+2000900 | 0x1E8804 | Chikage +9
+2001000 | 0x1E8868 | Chikage +10
+2010000 | 0x1EAB90 | Uncanny Chikage
+2010100 | 0x1EABF4 | Uncanny Chikage +1
+2010200 | 0x1EAC58 | Uncanny Chikage +2
+2010300 | 0x1EACBC | Uncanny Chikage +3
+2010400 | 0x1EAD20 | Uncanny Chikage +4
+2010500 | 0x1EAD84 | Uncanny Chikage +5
+2010600 | 0x1EADE8 | Uncanny Chikage +6
+2010700 | 0x1EAE4C | Uncanny Chikage +7
+2010800 | 0x1EAEB0 | Uncanny Chikage +8
+2010900 | 0x1EAF14 | Uncanny Chikage +9
+2011000 | 0x1EAF78 | Uncanny Chikage +10
+2020000 | 0x1ED2A0 | Lost Chikage
+2020100 | 0x1ED304 | Lost Chikage +1
+2020200 | 0x1ED368 | Lost Chikage +2
+2020300 | 0x1ED3CC | Lost Chikage +3
+2020400 | 0x1ED430 | Lost Chikage +4
+2020500 | 0x1ED494 | Lost Chikage +5
+2020600 | 0x1ED4F8 | Lost Chikage +6
+2020700 | 0x1ED55C | Lost Chikage +7
+2020800 | 0x1ED5C0 | Lost Chikage +8
+2020900 | 0x1ED624 | Lost Chikage +9
+2021000 | 0x1ED688 | Lost Chikage +10
+4000000 | 0x3D0900 | Blade of Mercy
+4000100 | 0x3D0964 | Blade of Mercy +1
+4000200 | 0x3D09C8 | Blade of Mercy +2
+4000300 | 0x3D0A2C | Blade of Mercy +3
+4000400 | 0x3D0A90 | Blade of Mercy +4
+4000500 | 0x3D0AF4 | Blade of Mercy +5
+4000600 | 0x3D0B58 | Blade of Mercy +6
+4000700 | 0x3D0BBC | Blade of Mercy +7
+4000800 | 0x3D0C20 | Blade of Mercy +8
+4000900 | 0x3D0C84 | Blade of Mercy +9
+4001000 | 0x3D0CE8 | Blade of Mercy +10
+4010000 | 0x3D3010 | Uncanny Blade of Mercy
+4010100 | 0x3D3074 | Uncanny Blade of Mercy +1
+4010200 | 0x3D30D8 | Uncanny Blade of Mercy +2
+4010300 | 0x3D313C | Uncanny Blade of Mercy +3
+4010400 | 0x3D31A0 | Uncanny Blade of Mercy +4
+4010500 | 0x3D3204 | Uncanny Blade of Mercy +5
+4010600 | 0x3D3268 | Uncanny Blade of Mercy +6
+4010700 | 0x3D32CC | Uncanny Blade of Mercy +7
+4010800 | 0x3D3330 | Uncanny Blade of Mercy +8
+4010900 | 0x3D3394 | Uncanny Blade of Mercy +9
+4011000 | 0x3D33F8 | Uncanny Blade of Mercy +10
+4020000 | 0x3D5720 | Lost Blade of Mercy
+4020100 | 0x3D5784 | Lost Blade of Mercy +1
+4020200 | 0x3D57E8 | Lost Blade of Mercy +2
+4020300 | 0x3D584C | Lost Blade of Mercy +3
+4020400 | 0x3D58B0 | Lost Blade of Mercy +4
+4020500 | 0x3D5914 | Lost Blade of Mercy +5
+4020600 | 0x3D5978 | Lost Blade of Mercy +6
+4020700 | 0x3D59DC | Lost Blade of Mercy +7
+4020800 | 0x3D5A40 | Lost Blade of Mercy +8
+4020900 | 0x3D5AA4 | Lost Blade of Mercy +9
+4021000 | 0x3D5B08 | Lost Blade of Mercy +10
+5000000 | 0x4C4B40 | Hunter Axe
+5000100 | 0x4C4BA4 | Hunter Axe +1
+5000200 | 0x4C4C08 | Hunter Axe +2
+5000300 | 0x4C4C6C | Hunter Axe +3
+5000400 | 0x4C4CD0 | Hunter Axe +4
+5000500 | 0x4C4D34 | Hunter Axe +5
+5000600 | 0x4C4D98 | Hunter Axe +6
+5000700 | 0x4C4DFC | Hunter Axe +7
+5000800 | 0x4C4E60 | Hunter Axe +8
+5000900 | 0x4C4EC4 | Hunter Axe +9
+5001000 | 0x4C4F28 | Hunter Axe +10
+5010000 | 0x4C7250 | Uncanny Hunter Axe
+5010100 | 0x4C72B4 | Uncanny Hunter Axe +1
+5010200 | 0x4C7318 | Uncanny Hunter Axe +2
+5010300 | 0x4C737C | Uncanny Hunter Axe +3
+5010400 | 0x4C73E0 | Uncanny Hunter Axe +4
+5010500 | 0x4C7444 | Uncanny Hunter Axe +5
+5010600 | 0x4C74A8 | Uncanny Hunter Axe +6
+5010700 | 0x4C750C | Uncanny Hunter Axe +7
+5010800 | 0x4C7570 | Uncanny Hunter Axe +8
+5010900 | 0x4C75D4 | Uncanny Hunter Axe +9
+5011000 | 0x4C7638 | Uncanny Hunter Axe +10
+5020000 | 0x4C9960 | Lost Hunter Axe
+5020100 | 0x4C99C4 | Lost Hunter Axe +1
+5020200 | 0x4C9A28 | Lost Hunter Axe +2
+5020300 | 0x4C9A8C | Lost Hunter Axe +3
+5020400 | 0x4C9AF0 | Lost Hunter Axe +4
+5020500 | 0x4C9B54 | Lost Hunter Axe +5
+5020600 | 0x4C9BB8 | Lost Hunter Axe +6
+5020700 | 0x4C9C1C | Lost Hunter Axe +7
+5020800 | 0x4C9C80 | Lost Hunter Axe +8
+5020900 | 0x4C9CE4 | Lost Hunter Axe +9
+5021000 | 0x4C9D48 | Lost Hunter Axe +10
+5100000 | 0x4DD1E0 | Burial Blade
+5100100 | 0x4DD244 | Burial Blade +1
+5100200 | 0x4DD2A8 | Burial Blade +2
+5100300 | 0x4DD30C | Burial Blade +3
+5100400 | 0x4DD370 | Burial Blade +4
+5100500 | 0x4DD3D4 | Burial Blade +5
+5100600 | 0x4DD438 | Burial Blade +6
+5100700 | 0x4DD49C | Burial Blade +7
+5100800 | 0x4DD500 | Burial Blade +8
+5100900 | 0x4DD564 | Burial Blade +9
+5101000 | 0x4DD5C8 | Burial Blade +10
+5110000 | 0x4DF8F0 | Uncanny Burial Blade
+5110100 | 0x4DF954 | Uncanny Burial Blade +1
+5110200 | 0x4DF9B8 | Uncanny Burial Blade +2
+5110300 | 0x4DFA1C | Uncanny Burial Blade +3
+5110400 | 0x4DFA80 | Uncanny Burial Blade +4
+5110500 | 0x4DFAE4 | Uncanny Burial Blade +5
+5110600 | 0x4DFB48 | Uncanny Burial Blade +6
+5110700 | 0x4DFBAC | Uncanny Burial Blade +7
+5110800 | 0x4DFC10 | Uncanny Burial Blade +8
+5110900 | 0x4DFC74 | Uncanny Burial Blade +9
+5111000 | 0x4DFCD8 | Uncanny Burial Blade +10
+5120000 | 0x4E2000 | Lost Burial Blade
+5120100 | 0x4E2064 | Lost Burial Blade +1
+5120200 | 0x4E20C8 | Lost Burial Blade +2
+5120300 | 0x4E212C | Lost Burial Blade +3
+5120400 | 0x4E2190 | Lost Burial Blade +4
+5120500 | 0x4E21F4 | Lost Burial Blade +5
+5120600 | 0x4E2258 | Lost Burial Blade +6
+5120700 | 0x4E22BC | Lost Burial Blade +7
+5120800 | 0x4E2320 | Lost Burial Blade +8
+5120900 | 0x4E2384 | Lost Burial Blade +9
+5121000 | 0x4E23E8 | Lost Burial Blade +10
+6000000 | 0x5B8D80 | Hunter Blunderbuss
+6000100 | 0x5B8DE4 | Hunter Blunderbuss +1
+6000200 | 0x5B8E48 | Hunter Blunderbuss +2
+6000300 | 0x5B8EAC | Hunter Blunderbuss +3
+6000400 | 0x5B8F10 | Hunter Blunderbuss +4
+6000500 | 0x5B8F74 | Hunter Blunderbuss +5
+6000600 | 0x5B8FD8 | Hunter Blunderbuss +6
+6000700 | 0x5B903C | Hunter Blunderbuss +7
+6000800 | 0x5B90A0 | Hunter Blunderbuss +8
+6000900 | 0x5B9104 | Hunter Blunderbuss +9
+6001000 | 0x5B9168 | Hunter Blunderbuss +10
+6100000 | 0x5D1420 | Ludwig's Rifle
+6100100 | 0x5D1484 | Ludwig's Rifle +1
+6100200 | 0x5D14E8 | Ludwig's Rifle +2
+6100300 | 0x5D154C | Ludwig's Rifle +3
+6100400 | 0x5D15B0 | Ludwig's Rifle +4
+6100500 | 0x5D1614 | Ludwig's Rifle +5
+6100600 | 0x5D1678 | Ludwig's Rifle +6
+6100700 | 0x5D16DC | Ludwig's Rifle +7
+6100800 | 0x5D1740 | Ludwig's Rifle +8
+6100900 | 0x5D17A4 | Ludwig's Rifle +9
+6101000 | 0x5D1808 | Ludwig's Rifle +10
+7000000 | 0x6ACFC0 | Saw Cleaver
+7000100 | 0x6AD024 | Saw Cleaver +1
+7000200 | 0x6AD088 | Saw Cleaver +2
+7000300 | 0x6AD0EC | Saw Cleaver +3
+7000400 | 0x6AD150 | Saw Cleaver +4
+7000500 | 0x6AD1B4 | Saw Cleaver +5
+7000600 | 0x6AD218 | Saw Cleaver +6
+7000700 | 0x6AD27C | Saw Cleaver +7
+7000800 | 0x6AD2E0 | Saw Cleaver +8
+7000900 | 0x6AD344 | Saw Cleaver +9
+7001000 | 0x6AD3A8 | Saw Cleaver +10
+7010000 | 0x6AF6D0 | Uncanny Saw Cleaver
+7010100 | 0x6AF734 | Uncanny Saw Cleaver +1
+7010200 | 0x6AF798 | Uncanny Saw Cleaver +2
+7010300 | 0x6AF7FC | Uncanny Saw Cleaver +3
+7010400 | 0x6AF860 | Uncanny Saw Cleaver +4
+7010500 | 0x6AF8C4 | Uncanny Saw Cleaver +5
+7010600 | 0x6AF928 | Uncanny Saw Cleaver +6
+7010700 | 0x6AF98C | Uncanny Saw Cleaver +7
+7010800 | 0x6AF9F0 | Uncanny Saw Cleaver +8
+7010900 | 0x6AFA54 | Uncanny Saw Cleaver +9
+7011000 | 0x6AFAB8 | Uncanny Saw Cleaver +10
+7020000 | 0x6B1DE0 | Lost Saw Cleaver
+7020100 | 0x6B1E44 | Lost Saw Cleaver +1
+7020200 | 0x6B1EA8 | Lost Saw Cleaver +2
+7020300 | 0x6B1F0C | Lost Saw Cleaver +3
+7020400 | 0x6B1F70 | Lost Saw Cleaver +4
+7020500 | 0x6B1FD4 | Lost Saw Cleaver +5
+7020600 | 0x6B2038 | Lost Saw Cleaver +6
+7020700 | 0x6B209C | Lost Saw Cleaver +7
+7020800 | 0x6B2100 | Lost Saw Cleaver +8
+7020900 | 0x6B2164 | Lost Saw Cleaver +9
+7021000 | 0x6B21C8 | Lost Saw Cleaver +10
+7100000 | 0x6C5660 | Saw Spear
+7100100 | 0x6C56C4 | Saw Spear +1
+7100200 | 0x6C5728 | Saw Spear +2
+7100300 | 0x6C578C | Saw Spear +3
+7100400 | 0x6C57F0 | Saw Spear +4
+7100500 | 0x6C5854 | Saw Spear +5
+7100600 | 0x6C58B8 | Saw Spear +6
+7100700 | 0x6C591C | Saw Spear +7
+7100800 | 0x6C5980 | Saw Spear +8
+7100900 | 0x6C59E4 | Saw Spear +9
+7101000 | 0x6C5A48 | Saw Spear +10
+7110000 | 0x6C7D70 | Uncanny Saw Spear
+7110100 | 0x6C7DD4 | Uncanny Saw Spear +1
+7110200 | 0x6C7E38 | Uncanny Saw Spear +2
+7110300 | 0x6C7E9C | Uncanny Saw Spear +3
+7110400 | 0x6C7F00 | Uncanny Saw Spear +4
+7110500 | 0x6C7F64 | Uncanny Saw Spear +5
+7110600 | 0x6C7FC8 | Uncanny Saw Spear +6
+7110700 | 0x6C802C | Uncanny Saw Spear +7
+7110800 | 0x6C8090 | Uncanny Saw Spear +8
+7110900 | 0x6C80F4 | Uncanny Saw Spear +9
+7111000 | 0x6C8158 | Uncanny Saw Spear +10
+7120000 | 0x6CA480 | Lost Saw Spear
+7120100 | 0x6CA4E4 | Lost Saw Spear +1
+7120200 | 0x6CA548 | Lost Saw Spear +2
+7120300 | 0x6CA5AC | Lost Saw Spear +3
+7120400 | 0x6CA610 | Lost Saw Spear +4
+7120500 | 0x6CA674 | Lost Saw Spear +5
+7120600 | 0x6CA6D8 | Lost Saw Spear +6
+7120700 | 0x6CA73C | Lost Saw Spear +7
+7120800 | 0x6CA7A0 | Lost Saw Spear +8
+7120900 | 0x6CA804 | Lost Saw Spear +9
+7121000 | 0x6CA868 | Lost Saw Spear +10
+8000000 | 0x7A1200 | Kirkhammer
+8000100 | 0x7A1264 | Kirkhammer +1
+8000200 | 0x7A12C8 | Kirkhammer +2
+8000300 | 0x7A132C | Kirkhammer +3
+8000400 | 0x7A1390 | Kirkhammer +4
+8000500 | 0x7A13F4 | Kirkhammer +5
+8000600 | 0x7A1458 | Kirkhammer +6
+8000700 | 0x7A14BC | Kirkhammer +7
+8000800 | 0x7A1520 | Kirkhammer +8
+8000900 | 0x7A1584 | Kirkhammer +9
+8001000 | 0x7A15E8 | Kirkhammer +10
+8010000 | 0x7A3910 | Uncanny Kirkhammer
+8010100 | 0x7A3974 | Uncanny Kirkhammer +1
+8010200 | 0x7A39D8 | Uncanny Kirkhammer +2
+8010300 | 0x7A3A3C | Uncanny Kirkhammer +3
+8010400 | 0x7A3AA0 | Uncanny Kirkhammer +4
+8010500 | 0x7A3B04 | Uncanny Kirkhammer +5
+8010600 | 0x7A3B68 | Uncanny Kirkhammer +6
+8010700 | 0x7A3BCC | Uncanny Kirkhammer +7
+8010800 | 0x7A3C30 | Uncanny Kirkhammer +8
+8010900 | 0x7A3C94 | Uncanny Kirkhammer +9
+8011000 | 0x7A3CF8 | Uncanny Kirkhammer +10
+8020000 | 0x7A6020 | Lost Kirkhammer
+8020100 | 0x7A6084 | Lost Kirkhammer +1
+8020200 | 0x7A60E8 | Lost Kirkhammer +2
+8020300 | 0x7A614C | Lost Kirkhammer +3
+8020400 | 0x7A61B0 | Lost Kirkhammer +4
+8020500 | 0x7A6214 | Lost Kirkhammer +5
+8020600 | 0x7A6278 | Lost Kirkhammer +6
+8020700 | 0x7A62DC | Lost Kirkhammer +7
+8020800 | 0x7A6340 | Lost Kirkhammer +8
+8020900 | 0x7A63A4 | Lost Kirkhammer +9
+8021000 | 0x7A6408 | Lost Kirkhammer +10
+8100000 | 0x7B98A0 | Ludwig's Holy Blade
+8100100 | 0x7B9904 | Ludwig's Holy Blade +1
+8100200 | 0x7B9968 | Ludwig's Holy Blade +2
+8100300 | 0x7B99CC | Ludwig's Holy Blade +3
+8100400 | 0x7B9A30 | Ludwig's Holy Blade +4
+8100500 | 0x7B9A94 | Ludwig's Holy Blade +5
+8100600 | 0x7B9AF8 | Ludwig's Holy Blade +6
+8100700 | 0x7B9B5C | Ludwig's Holy Blade +7
+8100800 | 0x7B9BC0 | Ludwig's Holy Blade +8
+8100900 | 0x7B9C24 | Ludwig's Holy Blade +9
+8101000 | 0x7B9C88 | Ludwig's Holy Blade +10
+8110000 | 0x7BBFB0 | Ludwig's Uncanny Holy Blade
+8110100 | 0x7BC014 | Ludwig's Uncanny Holy Blade +1
+8110200 | 0x7BC078 | Ludwig's Uncanny Holy Blade +2
+8110300 | 0x7BC0DC | Ludwig's Uncanny Holy Blade +3
+8110400 | 0x7BC140 | Ludwig's Uncanny Holy Blade +4
+8110500 | 0x7BC1A4 | Ludwig's Uncanny Holy Blade +5
+8110600 | 0x7BC208 | Ludwig's Uncanny Holy Blade +6
+8110700 | 0x7BC26C | Ludwig's Uncanny Holy Blade +7
+8110800 | 0x7BC2D0 | Ludwig's Uncanny Holy Blade +8
+8110900 | 0x7BC334 | Ludwig's Uncanny Holy Blade +9
+8111000 | 0x7BC398 | Ludwig's Uncanny Holy Blade +10
+8120000 | 0x7BE6C0 | Ludwig's Lost Holy Blade
+8120100 | 0x7BE724 | Ludwig's Lost Holy Blade +1
+8120200 | 0x7BE788 | Ludwig's Lost Holy Blade +2
+8120300 | 0x7BE7EC | Ludwig's Lost Holy Blade +3
+8120400 | 0x7BE850 | Ludwig's Lost Holy Blade +4
+8120500 | 0x7BE8B4 | Ludwig's Lost Holy Blade +5
+8120600 | 0x7BE918 | Ludwig's Lost Holy Blade +6
+8120700 | 0x7BE97C | Ludwig's Lost Holy Blade +7
+8120800 | 0x7BE9E0 | Ludwig's Lost Holy Blade +8
+8120900 | 0x7BEA44 | Ludwig's Lost Holy Blade +9
+8121000 | 0x7BEAA8 | Ludwig's Lost Holy Blade +10
+9000000 | 0x895440 | Beast Claw
+9000100 | 0x8954A4 | Beast Claw +1
+9000200 | 0x895508 | Beast Claw +2
+9000300 | 0x89556C | Beast Claw +3
+9000400 | 0x8955D0 | Beast Claw +4
+9000500 | 0x895634 | Beast Claw +5
+9000600 | 0x895698 | Beast Claw +6
+9000700 | 0x8956FC | Beast Claw +7
+9000800 | 0x895760 | Beast Claw +8
+9000900 | 0x8957C4 | Beast Claw +9
+9001000 | 0x895828 | Beast Claw +10
+9010000 | 0x897B50 | Uncanny Beast Claw
+9010100 | 0x897BB4 | Uncanny Beast Claw +1
+9010200 | 0x897C18 | Uncanny Beast Claw +2
+9010300 | 0x897C7C | Uncanny Beast Claw +3
+9010400 | 0x897CE0 | Uncanny Beast Claw +4
+9010500 | 0x897D44 | Uncanny Beast Claw +5
+9010600 | 0x897DA8 | Uncanny Beast Claw +6
+9010700 | 0x897E0C | Uncanny Beast Claw +7
+9010800 | 0x897E70 | Uncanny Beast Claw +8
+9010900 | 0x897ED4 | Uncanny Beast Claw +9
+9011000 | 0x897F38 | Uncanny Beast Claw +10
+9020000 | 0x89A260 | Lost Beast Claw
+9020100 | 0x89A2C4 | Lost Beast Claw +1
+9020200 | 0x89A328 | Lost Beast Claw +2
+9020300 | 0x89A38C | Lost Beast Claw +3
+9020400 | 0x89A3F0 | Lost Beast Claw +4
+9020500 | 0x89A454 | Lost Beast Claw +5
+9020600 | 0x89A4B8 | Lost Beast Claw +6
+9020700 | 0x89A51C | Lost Beast Claw +7
+9020800 | 0x89A580 | Lost Beast Claw +8
+9020900 | 0x89A5E4 | Lost Beast Claw +9
+9021000 | 0x89A648 | Lost Beast Claw +10
+10000000 | 0x989680 | Rifle Spear
+10000100 | 0x9896E4 | Rifle Spear +1
+10000200 | 0x989748 | Rifle Spear +2
+10000300 | 0x9897AC | Rifle Spear +3
+10000400 | 0x989810 | Rifle Spear +4
+10000500 | 0x989874 | Rifle Spear +5
+10000600 | 0x9898D8 | Rifle Spear +6
+10000700 | 0x98993C | Rifle Spear +7
+10000800 | 0x9899A0 | Rifle Spear +8
+10000900 | 0x989A04 | Rifle Spear +9
+10001000 | 0x989A68 | Rifle Spear +10
+10010000 | 0x98BD90 | Uncanny Rifle Spear
+10010100 | 0x98BDF4 | Uncanny Rifle Spear +1
+10010200 | 0x98BE58 | Uncanny Rifle Spear +2
+10010300 | 0x98BEBC | Uncanny Rifle Spear +3
+10010400 | 0x98BF20 | Uncanny Rifle Spear +4
+10010500 | 0x98BF84 | Uncanny Rifle Spear +5
+10010600 | 0x98BFE8 | Uncanny Rifle Spear +6
+10010700 | 0x98C04C | Uncanny Rifle Spear +7
+10010800 | 0x98C0B0 | Uncanny Rifle Spear +8
+10010900 | 0x98C114 | Uncanny Rifle Spear +9
+10011000 | 0x98C178 | Uncanny Rifle Spear +10
+10020000 | 0x98E4A0 | Lost Rifle Spear
+10020100 | 0x98E504 | Lost Rifle Spear +1
+10020200 | 0x98E568 | Lost Rifle Spear +2
+10020300 | 0x98E5CC | Lost Rifle Spear +3
+10020400 | 0x98E630 | Lost Rifle Spear +4
+10020500 | 0x98E694 | Lost Rifle Spear +5
+10020600 | 0x98E6F8 | Lost Rifle Spear +6
+10020700 | 0x98E75C | Lost Rifle Spear +7
+10020800 | 0x98E7C0 | Lost Rifle Spear +8
+10020900 | 0x98E824 | Lost Rifle Spear +9
+10021000 | 0x98E888 | Lost Rifle Spear +10
+10100000 | 0x9A1D20 | Reiterpallasch
+10100100 | 0x9A1D84 | Reiterpallasch +1
+10100200 | 0x9A1DE8 | Reiterpallasch +2
+10100300 | 0x9A1E4C | Reiterpallasch +3
+10100400 | 0x9A1EB0 | Reiterpallasch +4
+10100500 | 0x9A1F14 | Reiterpallasch +5
+10100600 | 0x9A1F78 | Reiterpallasch +6
+10100700 | 0x9A1FDC | Reiterpallasch +7
+10100800 | 0x9A2040 | Reiterpallasch +8
+10100900 | 0x9A20A4 | Reiterpallasch +9
+10101000 | 0x9A2108 | Reiterpallasch +10
+10110000 | 0x9A4430 | Uncanny Reiterpallasch
+10110100 | 0x9A4494 | Uncanny Reiterpallasch +1
+10110200 | 0x9A44F8 | Uncanny Reiterpallasch +2
+10110300 | 0x9A455C | Uncanny Reiterpallasch +3
+10110400 | 0x9A45C0 | Uncanny Reiterpallasch +4
+10110500 | 0x9A4624 | Uncanny Reiterpallasch +5
+10110600 | 0x9A4688 | Uncanny Reiterpallasch +6
+10110700 | 0x9A46EC | Uncanny Reiterpallasch +7
+10110800 | 0x9A4750 | Uncanny Reiterpallasch +8
+10110900 | 0x9A47B4 | Uncanny Reiterpallasch +9
+10111000 | 0x9A4818 | Uncanny Reiterpallasch +10
+10120000 | 0x9A6B40 | Lost Reiterpallasch
+10120100 | 0x9A6BA4 | Lost Reiterpallasch +1
+10120200 | 0x9A6C08 | Lost Reiterpallasch +2
+10120300 | 0x9A6C6C | Lost Reiterpallasch +3
+10120400 | 0x9A6CD0 | Lost Reiterpallasch +4
+10120500 | 0x9A6D34 | Lost Reiterpallasch +5
+10120600 | 0x9A6D98 | Lost Reiterpallasch +6
+10120700 | 0x9A6DFC | Lost Reiterpallasch +7
+10120800 | 0x9A6E60 | Lost Reiterpallasch +8
+10120900 | 0x9A6EC4 | Lost Reiterpallasch +9
+10121000 | 0x9A6F28 | Lost Reiterpallasch +10
+11000000 | 0xA7D8C0 | Stake Driver
+11000100 | 0xA7D924 | Stake Driver +1
+11000200 | 0xA7D988 | Stake Driver +2
+11000300 | 0xA7D9EC | Stake Driver +3
+11000400 | 0xA7DA50 | Stake Driver +4
+11000500 | 0xA7DAB4 | Stake Driver +5
+11000600 | 0xA7DB18 | Stake Driver +6
+11000700 | 0xA7DB7C | Stake Driver +7
+11000800 | 0xA7DBE0 | Stake Driver +8
+11000900 | 0xA7DC44 | Stake Driver +9
+11001000 | 0xA7DCA8 | Stake Driver +10
+11010000 | 0xA7FFD0 | Uncanny Stake Driver
+11010100 | 0xA80034 | Uncanny Stake Driver +1
+11010200 | 0xA80098 | Uncanny Stake Driver +2
+11010300 | 0xA800FC | Uncanny Stake Driver +3
+11010400 | 0xA80160 | Uncanny Stake Driver +4
+11010500 | 0xA801C4 | Uncanny Stake Driver +5
+11010600 | 0xA80228 | Uncanny Stake Driver +6
+11010700 | 0xA8028C | Uncanny Stake Driver +7
+11010800 | 0xA802F0 | Uncanny Stake Driver +8
+11010900 | 0xA80354 | Uncanny Stake Driver +9
+11011000 | 0xA803B8 | Uncanny Stake Driver +10
+11020000 | 0xA826E0 | Lost Stake Driver
+11020100 | 0xA82744 | Lost Stake Driver +1
+11020200 | 0xA827A8 | Lost Stake Driver +2
+11020300 | 0xA8280C | Lost Stake Driver +3
+11020400 | 0xA82870 | Lost Stake Driver +4
+11020500 | 0xA828D4 | Lost Stake Driver +5
+11020600 | 0xA82938 | Lost Stake Driver +6
+11020700 | 0xA8299C | Lost Stake Driver +7
+11020800 | 0xA82A00 | Lost Stake Driver +8
+11020900 | 0xA82A64 | Lost Stake Driver +9
+11021000 | 0xA82AC8 | Lost Stake Driver +10
+12000000 | 0xB71B00 | Logarius' Wheel
+12000100 | 0xB71B64 | Logarius' Wheel +1
+12000200 | 0xB71BC8 | Logarius' Wheel +2
+12000300 | 0xB71C2C | Logarius' Wheel +3
+12000400 | 0xB71C90 | Logarius' Wheel +4
+12000500 | 0xB71CF4 | Logarius' Wheel +5
+12000600 | 0xB71D58 | Logarius' Wheel +6
+12000700 | 0xB71DBC | Logarius' Wheel +7
+12000800 | 0xB71E20 | Logarius' Wheel +8
+12000900 | 0xB71E84 | Logarius' Wheel +9
+12001000 | 0xB71EE8 | Logarius' Wheel +10
+12010000 | 0xB74210 | Logarius' Uncanny Wheel
+12010100 | 0xB74274 | Logarius' Uncanny Wheel +1
+12010200 | 0xB742D8 | Logarius' Uncanny Wheel +2
+12010300 | 0xB7433C | Logarius' Uncanny Wheel +3
+12010400 | 0xB743A0 | Logarius' Uncanny Wheel +4
+12010500 | 0xB74404 | Logarius' Uncanny Wheel +5
+12010600 | 0xB74468 | Logarius' Uncanny Wheel +6
+12010700 | 0xB744CC | Logarius' Uncanny Wheel +7
+12010800 | 0xB74530 | Logarius' Uncanny Wheel +8
+12010900 | 0xB74594 | Logarius' Uncanny Wheel +9
+12011000 | 0xB745F8 | Logarius' Uncanny Wheel +10
+12020000 | 0xB76920 | Logarius' Lost Wheel
+12020100 | 0xB76984 | Logarius' Lost Wheel +1
+12020200 | 0xB769E8 | Logarius' Lost Wheel +2
+12020300 | 0xB76A4C | Logarius' Lost Wheel +3
+12020400 | 0xB76AB0 | Logarius' Lost Wheel +4
+12020500 | 0xB76B14 | Logarius' Lost Wheel +5
+12020600 | 0xB76B78 | Logarius' Lost Wheel +6
+12020700 | 0xB76BDC | Logarius' Lost Wheel +7
+12020800 | 0xB76C40 | Logarius' Lost Wheel +8
+12020900 | 0xB76CA4 | Logarius' Lost Wheel +9
+12021000 | 0xB76D08 | Logarius' Lost Wheel +10
+13000000 | 0xC65D40 | Tonitrus
+13000100 | 0xC65DA4 | Tonitrus +1
+13000200 | 0xC65E08 | Tonitrus +2
+13000300 | 0xC65E6C | Tonitrus +3
+13000400 | 0xC65ED0 | Tonitrus +4
+13000500 | 0xC65F34 | Tonitrus +5
+13000600 | 0xC65F98 | Tonitrus +6
+13000700 | 0xC65FFC | Tonitrus +7
+13000800 | 0xC66060 | Tonitrus +8
+13000900 | 0xC660C4 | Tonitrus +9
+13001000 | 0xC66128 | Tonitrus +10
+13010000 | 0xC68450 | Uncanny Tonitrus
+13010100 | 0xC684B4 | Uncanny Tonitrus +1
+13010200 | 0xC68518 | Uncanny Tonitrus +2
+13010300 | 0xC6857C | Uncanny Tonitrus +3
+13010400 | 0xC685E0 | Uncanny Tonitrus +4
+13010500 | 0xC68644 | Uncanny Tonitrus +5
+13010600 | 0xC686A8 | Uncanny Tonitrus +6
+13010700 | 0xC6870C | Uncanny Tonitrus +7
+13010800 | 0xC68770 | Uncanny Tonitrus +8
+13010900 | 0xC687D4 | Uncanny Tonitrus +9
+13011000 | 0xC68838 | Uncanny Tonitrus +10
+13020000 | 0xC6AB60 | Lost Tonitrus
+13020100 | 0xC6ABC4 | Lost Tonitrus +1
+13020200 | 0xC6AC28 | Lost Tonitrus +2
+13020300 | 0xC6AC8C | Lost Tonitrus +3
+13020400 | 0xC6ACF0 | Lost Tonitrus +4
+13020500 | 0xC6AD54 | Lost Tonitrus +5
+13020600 | 0xC6ADB8 | Lost Tonitrus +6
+13020700 | 0xC6AE1C | Lost Tonitrus +7
+13020800 | 0xC6AE80 | Lost Tonitrus +8
+13020900 | 0xC6AEE4 | Lost Tonitrus +9
+13021000 | 0xC6AF48 | Lost Tonitrus +10
+14000000 | 0xD59F80 | Hunter Pistol
+14000100 | 0xD59FE4 | Hunter Pistol +1
+14000200 | 0xD5A048 | Hunter Pistol +2
+14000300 | 0xD5A0AC | Hunter Pistol +3
+14000400 | 0xD5A110 | Hunter Pistol +4
+14000500 | 0xD5A174 | Hunter Pistol +5
+14000600 | 0xD5A1D8 | Hunter Pistol +6
+14000700 | 0xD5A23C | Hunter Pistol +7
+14000800 | 0xD5A2A0 | Hunter Pistol +8
+14000900 | 0xD5A304 | Hunter Pistol +9
+14001000 | 0xD5A368 | Hunter Pistol +10
+14100000 | 0xD72620 | Evelyn
+14100100 | 0xD72684 | Evelyn +1
+14100200 | 0xD726E8 | Evelyn +2
+14100300 | 0xD7274C | Evelyn +3
+14100400 | 0xD727B0 | Evelyn +4
+14100500 | 0xD72814 | Evelyn +5
+14100600 | 0xD72878 | Evelyn +6
+14100700 | 0xD728DC | Evelyn +7
+14100800 | 0xD72940 | Evelyn +8
+14100900 | 0xD729A4 | Evelyn +9
+14101000 | 0xD72A08 | Evelyn +10
+14200000 | 0xD8ACC0 | Repeating Pistol
+14200100 | 0xD8AD24 | Repeating Pistol +1
+14200200 | 0xD8AD88 | Repeating Pistol +2
+14200300 | 0xD8ADEC | Repeating Pistol +3
+14200400 | 0xD8AE50 | Repeating Pistol +4
+14200500 | 0xD8AEB4 | Repeating Pistol +5
+14200600 | 0xD8AF18 | Repeating Pistol +6
+14200700 | 0xD8AF7C | Repeating Pistol +7
+14200800 | 0xD8AFE0 | Repeating Pistol +8
+14200900 | 0xD8B044 | Repeating Pistol +9
+14201000 | 0xD8B0A8 | Repeating Pistol +10
+15000000 | 0xE4E1C0 | Cannon
+15000100 | 0xE4E224 | Cannon +1
+15000200 | 0xE4E288 | Cannon +2
+15000300 | 0xE4E2EC | Cannon +3
+15000400 | 0xE4E350 | Cannon +4
+15000500 | 0xE4E3B4 | Cannon +5
+15000600 | 0xE4E418 | Cannon +6
+15000700 | 0xE4E47C | Cannon +7
+15000800 | 0xE4E4E0 | Cannon +8
+15000900 | 0xE4E544 | Cannon +9
+15001000 | 0xE4E5A8 | Cannon +10
+18000000 | 0x112A880 | Rosmarinus
+18000100 | 0x112A8E4 | Rosmarinus +1
+18000200 | 0x112A948 | Rosmarinus +2
+18000300 | 0x112A9AC | Rosmarinus +3
+18000400 | 0x112AA10 | Rosmarinus +4
+18000500 | 0x112AA74 | Rosmarinus +5
+18000600 | 0x112AAD8 | Rosmarinus +6
+18000700 | 0x112AB3C | Rosmarinus +7
+18000800 | 0x112ABA0 | Rosmarinus +8
+18000900 | 0x112AC04 | Rosmarinus +9
+18001000 | 0x112AC68 | Rosmarinus +10
+18100000 | 0x1142F20 | Flamesprayer
+18100100 | 0x1142F84 | Flamesprayer +1
+18100200 | 0x1142FE8 | Flamesprayer +2
+18100300 | 0x114304C | Flamesprayer +3
+18100400 | 0x11430B0 | Flamesprayer +4
+18100500 | 0x1143114 | Flamesprayer +5
+18100600 | 0x1143178 | Flamesprayer +6
+18100700 | 0x11431DC | Flamesprayer +7
+18100800 | 0x1143240 | Flamesprayer +8
+18100900 | 0x11432A4 | Flamesprayer +9
+18101000 | 0x1143308 | Flamesprayer +10
+19000000 | 0x121EAC0 | Wooden Shield
+19000100 | 0x121EB24 | Wooden Shield +1
+19000200 | 0x121EB88 | Wooden Shield +2
+19000300 | 0x121EBEC | Wooden Shield +3
+19000400 | 0x121EC50 | Wooden Shield +4
+19000500 | 0x121ECB4 | Wooden Shield +5
+19000600 | 0x121ED18 | Wooden Shield +6
+19000700 | 0x121ED7C | Wooden Shield +7
+19000800 | 0x121EDE0 | Wooden Shield +8
+19000900 | 0x121EE44 | Wooden Shield +9
+19001000 | 0x121EEA8 | Wooden Shield +10
+19100000 | 0x1237160 | Loch Shield
+19100100 | 0x12371C4 | Loch Shield +1
+19100200 | 0x1237228 | Loch Shield +2
+19100300 | 0x123728C | Loch Shield +3
+19100400 | 0x12372F0 | Loch Shield +4
+19100500 | 0x1237354 | Loch Shield +5
+19100600 | 0x12373B8 | Loch Shield +6
+19100700 | 0x123741C | Loch Shield +7
+19100800 | 0x1237480 | Loch Shield +8
+19100900 | 0x12374E4 | Loch Shield +9
+19101000 | 0x1237548 | Loch Shield +10
+20000000 | 0x1312D00 | Hunter's Torch
+20000100 | 0x1312D64 | Hunter's Torch +1
+20000200 | 0x1312DC8 | Hunter's Torch +2
+20000300 | 0x1312E2C | Hunter's Torch +3
+20000400 | 0x1312E90 | Hunter's Torch +4
+20000500 | 0x1312EF4 | Hunter's Torch +5
+20000600 | 0x1312F58 | Hunter's Torch +6
+20000700 | 0x1312FBC | Hunter's Torch +7
+20000800 | 0x1313020 | Hunter's Torch +8
+20000900 | 0x1313084 | Hunter's Torch +9
+20001000 | 0x13130E8 | Hunter's Torch +10
+20100000 | 0x132B3A0 | Torch
+20100100 | 0x132B404 | Torch +1
+20100200 | 0x132B468 | Torch +2
+20100300 | 0x132B4CC | Torch +3
+20100400 | 0x132B530 | Torch +4
+20100500 | 0x132B594 | Torch +5
+20100600 | 0x132B5F8 | Torch +6
+20100700 | 0x132B65C | Torch +7
+20100800 | 0x132B6C0 | Torch +8
+20100900 | 0x132B724 | Torch +9
+20101000 | 0x132B788 | Torch +10
+22000000 | 0x14FB180 | Threaded Cane
+22000100 | 0x14FB1E4 | Threaded Cane +1
+22000200 | 0x14FB248 | Threaded Cane +2
+22000300 | 0x14FB2AC | Threaded Cane +3
+22000400 | 0x14FB310 | Threaded Cane +4
+22000500 | 0x14FB374 | Threaded Cane +5
+22000600 | 0x14FB3D8 | Threaded Cane +6
+22000700 | 0x14FB43C | Threaded Cane +7
+22000800 | 0x14FB4A0 | Threaded Cane +8
+22000900 | 0x14FB504 | Threaded Cane +9
+22001000 | 0x14FB568 | Threaded Cane +10
+22010000 | 0x14FD890 | Uncanny Threaded Cane
+22010100 | 0x14FD8F4 | Uncanny Threaded Cane +1
+22010200 | 0x14FD958 | Uncanny Threaded Cane +2
+22010300 | 0x14FD9BC | Uncanny Threaded Cane +3
+22010400 | 0x14FDA20 | Uncanny Threaded Cane +4
+22010500 | 0x14FDA84 | Uncanny Threaded Cane +5
+22010600 | 0x14FDAE8 | Uncanny Threaded Cane +6
+22010700 | 0x14FDB4C | Uncanny Threaded Cane +7
+22010800 | 0x14FDBB0 | Uncanny Threaded Cane +8
+22010900 | 0x14FDC14 | Uncanny Threaded Cane +9
+22011000 | 0x14FDC78 | Uncanny Threaded Cane +10
+22020000 | 0x14FFFA0 | Lost Threaded Cane
+22020100 | 0x1500004 | Lost Threaded Cane +1
+22020200 | 0x1500068 | Lost Threaded Cane +2
+22020300 | 0x15000CC | Lost Threaded Cane +3
+22020400 | 0x1500130 | Lost Threaded Cane +4
+22020500 | 0x1500194 | Lost Threaded Cane +5
+22020600 | 0x15001F8 | Lost Threaded Cane +6
+22020700 | 0x150025C | Lost Threaded Cane +7
+22020800 | 0x15002C0 | Lost Threaded Cane +8
+22020900 | 0x1500324 | Lost Threaded Cane +9
+22021000 | 0x1500388 | Lost Threaded Cane +10
+23000000 | 0x15EF3C0 | Beasthunter Saif
+23000100 | 0x15EF424 | Beasthunter Saif +1
+23000200 | 0x15EF488 | Beasthunter Saif +2
+23000300 | 0x15EF4EC | Beasthunter Saif +3
+23000400 | 0x15EF550 | Beasthunter Saif +4
+23000500 | 0x15EF5B4 | Beasthunter Saif +5
+23000600 | 0x15EF618 | Beasthunter Saif +6
+23000700 | 0x15EF67C | Beasthunter Saif +7
+23000800 | 0x15EF6E0 | Beasthunter Saif +8
+23000900 | 0x15EF744 | Beasthunter Saif +9
+23001000 | 0x15EF7A8 | Beasthunter Saif +10
+23010000 | 0x15F1AD0 | Uncanny Beasthunter Saif
+23010100 | 0x15F1B34 | Uncanny Beasthunter Saif +1
+23010200 | 0x15F1B98 | Uncanny Beasthunter Saif +2
+23010300 | 0x15F1BFC | Uncanny Beasthunter Saif +3
+23010400 | 0x15F1C60 | Uncanny Beasthunter Saif +4
+23010500 | 0x15F1CC4 | Uncanny Beasthunter Saif +5
+23010600 | 0x15F1D28 | Uncanny Beasthunter Saif +6
+23010700 | 0x15F1D8C | Uncanny Beasthunter Saif +7
+23010800 | 0x15F1DF0 | Uncanny Beasthunter Saif +8
+23010900 | 0x15F1E54 | Uncanny Beasthunter Saif +9
+23011000 | 0x15F1EB8 | Uncanny Beasthunter Saif +10
+23020000 | 0x15F41E0 | Lost Beasthunter Saif
+23020100 | 0x15F4244 | Lost Beasthunter Saif +1
+23020200 | 0x15F42A8 | Lost Beasthunter Saif +2
+23020300 | 0x15F430C | Lost Beasthunter Saif +3
+23020400 | 0x15F4370 | Lost Beasthunter Saif +4
+23020500 | 0x15F43D4 | Lost Beasthunter Saif +5
+23020600 | 0x15F4438 | Lost Beasthunter Saif +6
+23020700 | 0x15F449C | Lost Beasthunter Saif +7
+23020800 | 0x15F4500 | Lost Beasthunter Saif +8
+23020900 | 0x15F4564 | Lost Beasthunter Saif +9
+23021000 | 0x15F45C8 | Lost Beasthunter Saif +10
+24000000 | 0x16E3600 | Beast Cutter
+24000100 | 0x16E3664 | Beast Cutter +1
+24000200 | 0x16E36C8 | Beast Cutter +2
+24000300 | 0x16E372C | Beast Cutter +3
+24000400 | 0x16E3790 | Beast Cutter +4
+24000500 | 0x16E37F4 | Beast Cutter +5
+24000600 | 0x16E3858 | Beast Cutter +6
+24000700 | 0x16E38BC | Beast Cutter +7
+24000800 | 0x16E3920 | Beast Cutter +8
+24000900 | 0x16E3984 | Beast Cutter +9
+24001000 | 0x16E39E8 | Beast Cutter +10
+24010000 | 0x16E5D10 | Uncanny Beast Cutter
+24010100 | 0x16E5D74 | Uncanny Beast Cutter +1
+24010200 | 0x16E5DD8 | Uncanny Beast Cutter +2
+24010300 | 0x16E5E3C | Uncanny Beast Cutter +3
+24010400 | 0x16E5EA0 | Uncanny Beast Cutter +4
+24010500 | 0x16E5F04 | Uncanny Beast Cutter +5
+24010600 | 0x16E5F68 | Uncanny Beast Cutter +6
+24010700 | 0x16E5FCC | Uncanny Beast Cutter +7
+24010800 | 0x16E6030 | Uncanny Beast Cutter +8
+24010900 | 0x16E6094 | Uncanny Beast Cutter +9
+24011000 | 0x16E60F8 | Uncanny Beast Cutter +10
+24020000 | 0x16E8420 | Lost Beast Cutter
+24020100 | 0x16E8484 | Lost Beast Cutter +1
+24020200 | 0x16E84E8 | Lost Beast Cutter +2
+24020300 | 0x16E854C | Lost Beast Cutter +3
+24020400 | 0x16E85B0 | Lost Beast Cutter +4
+24020500 | 0x16E8614 | Lost Beast Cutter +5
+24020600 | 0x16E8678 | Lost Beast Cutter +6
+24020700 | 0x16E86DC | Lost Beast Cutter +7
+24020800 | 0x16E8740 | Lost Beast Cutter +8
+24020900 | 0x16E87A4 | Lost Beast Cutter +9
+24021000 | 0x16E8808 | Lost Beast Cutter +10
+25000000 | 0x17D7840 | Amygdalan Arm
+25000100 | 0x17D78A4 | Amygdalan Arm +1
+25000200 | 0x17D7908 | Amygdalan Arm +2
+25000300 | 0x17D796C | Amygdalan Arm +3
+25000400 | 0x17D79D0 | Amygdalan Arm +4
+25000500 | 0x17D7A34 | Amygdalan Arm +5
+25000600 | 0x17D7A98 | Amygdalan Arm +6
+25000700 | 0x17D7AFC | Amygdalan Arm +7
+25000800 | 0x17D7B60 | Amygdalan Arm +8
+25000900 | 0x17D7BC4 | Amygdalan Arm +9
+25001000 | 0x17D7C28 | Amygdalan Arm +10
+25010000 | 0x17D9F50 | Uncanny Amygdalan Arm
+25010100 | 0x17D9FB4 | Uncanny Amygdalan Arm +1
+25010200 | 0x17DA018 | Uncanny Amygdalan Arm +2
+25010300 | 0x17DA07C | Uncanny Amygdalan Arm +3
+25010400 | 0x17DA0E0 | Uncanny Amygdalan Arm +4
+25010500 | 0x17DA144 | Uncanny Amygdalan Arm +5
+25010600 | 0x17DA1A8 | Uncanny Amygdalan Arm +6
+25010700 | 0x17DA20C | Uncanny Amygdalan Arm +7
+25010800 | 0x17DA270 | Uncanny Amygdalan Arm +8
+25010900 | 0x17DA2D4 | Uncanny Amygdalan Arm +9
+25011000 | 0x17DA338 | Uncanny Amygdalan Arm +10
+25020000 | 0x17DC660 | Lost Amygdalan Arm
+25020100 | 0x17DC6C4 | Lost Amygdalan Arm +1
+25020200 | 0x17DC728 | Lost Amygdalan Arm +2
+25020300 | 0x17DC78C | Lost Amygdalan Arm +3
+25020400 | 0x17DC7F0 | Lost Amygdalan Arm +4
+25020500 | 0x17DC854 | Lost Amygdalan Arm +5
+25020600 | 0x17DC8B8 | Lost Amygdalan Arm +6
+25020700 | 0x17DC91C | Lost Amygdalan Arm +7
+25020800 | 0x17DC980 | Lost Amygdalan Arm +8
+25020900 | 0x17DC9E4 | Lost Amygdalan Arm +9
+25021000 | 0x17DCA48 | Lost Amygdalan Arm +10
+26000000 | 0x18CBA80 | Holy Moonlight Sword
+26000100 | 0x18CBAE4 | Holy Moonlight Sword +1
+26000200 | 0x18CBB48 | Holy Moonlight Sword +2
+26000300 | 0x18CBBAC | Holy Moonlight Sword +3
+26000400 | 0x18CBC10 | Holy Moonlight Sword +4
+26000500 | 0x18CBC74 | Holy Moonlight Sword +5
+26000600 | 0x18CBCD8 | Holy Moonlight Sword +6
+26000700 | 0x18CBD3C | Holy Moonlight Sword +7
+26000800 | 0x18CBDA0 | Holy Moonlight Sword +8
+26000900 | 0x18CBE04 | Holy Moonlight Sword +9
+26001000 | 0x18CBE68 | Holy Moonlight Sword +10
+26010000 | 0x18CE190 | Uncanny Holy Moonlight Sword
+26010100 | 0x18CE1F4 | Uncanny Holy Moonlight Sword +1
+26010200 | 0x18CE258 | Uncanny Holy Moonlight Sword +2
+26010300 | 0x18CE2BC | Uncanny Holy Moonlight Sword +3
+26010400 | 0x18CE320 | Uncanny Holy Moonlight Sword +4
+26010500 | 0x18CE384 | Uncanny Holy Moonlight Sword +5
+26010600 | 0x18CE3E8 | Uncanny Holy Moonlight Sword +6
+26010700 | 0x18CE44C | Uncanny Holy Moonlight Sword +7
+26010800 | 0x18CE4B0 | Uncanny Holy Moonlight Sword +8
+26010900 | 0x18CE514 | Uncanny Holy Moonlight Sword +9
+26011000 | 0x18CE578 | Uncanny Holy Moonlight Sword +10
+26020000 | 0x18D08A0 | Lost Holy Moonlight Sword
+26020100 | 0x18D0904 | Lost Holy Moonlight Sword +1
+26020200 | 0x18D0968 | Lost Holy Moonlight Sword +2
+26020300 | 0x18D09CC | Lost Holy Moonlight Sword +3
+26020400 | 0x18D0A30 | Lost Holy Moonlight Sword +4
+26020500 | 0x18D0A94 | Lost Holy Moonlight Sword +5
+26020600 | 0x18D0AF8 | Lost Holy Moonlight Sword +6
+26020700 | 0x18D0B5C | Lost Holy Moonlight Sword +7
+26020800 | 0x18D0BC0 | Lost Holy Moonlight Sword +8
+26020900 | 0x18D0C24 | Lost Holy Moonlight Sword +9
+26021000 | 0x18D0C88 | Lost Holy Moonlight Sword +10
+27000000 | 0x19BFCC0 | Rakuyo
+27000100 | 0x19BFD24 | Rakuyo +1
+27000200 | 0x19BFD88 | Rakuyo +2
+27000300 | 0x19BFDEC | Rakuyo +3
+27000400 | 0x19BFE50 | Rakuyo +4
+27000500 | 0x19BFEB4 | Rakuyo +5
+27000600 | 0x19BFF18 | Rakuyo +6
+27000700 | 0x19BFF7C | Rakuyo +7
+27000800 | 0x19BFFE0 | Rakuyo +8
+27000900 | 0x19C0044 | Rakuyo +9
+27001000 | 0x19C00A8 | Rakuyo +10
+27010000 | 0x19C23D0 | Uncanny Rakuyo
+27010100 | 0x19C2434 | Uncanny Rakuyo +1
+27010200 | 0x19C2498 | Uncanny Rakuyo +2
+27010300 | 0x19C24FC | Uncanny Rakuyo +3
+27010400 | 0x19C2560 | Uncanny Rakuyo +4
+27010500 | 0x19C25C4 | Uncanny Rakuyo +5
+27010600 | 0x19C2628 | Uncanny Rakuyo +6
+27010700 | 0x19C268C | Uncanny Rakuyo +7
+27010800 | 0x19C26F0 | Uncanny Rakuyo +8
+27010900 | 0x19C2754 | Uncanny Rakuyo +9
+27011000 | 0x19C27B8 | Uncanny Rakuyo +10
+27020000 | 0x19C4AE0 | Lost Rakuyo
+27020100 | 0x19C4B44 | Lost Rakuyo +1
+27020200 | 0x19C4BA8 | Lost Rakuyo +2
+27020300 | 0x19C4C0C | Lost Rakuyo +3
+27020400 | 0x19C4C70 | Lost Rakuyo +4
+27020500 | 0x19C4CD4 | Lost Rakuyo +5
+27020600 | 0x19C4D38 | Lost Rakuyo +6
+27020700 | 0x19C4D9C | Lost Rakuyo +7
+27020800 | 0x19C4E00 | Lost Rakuyo +8
+27020900 | 0x19C4E64 | Lost Rakuyo +9
+27021000 | 0x19C4EC8 | Lost Rakuyo +10
+28000000 | 0x1AB3F00 | Boom Hammer
+28000100 | 0x1AB3F64 | Boom Hammer +1
+28000200 | 0x1AB3FC8 | Boom Hammer +2
+28000300 | 0x1AB402C | Boom Hammer +3
+28000400 | 0x1AB4090 | Boom Hammer +4
+28000500 | 0x1AB40F4 | Boom Hammer +5
+28000600 | 0x1AB4158 | Boom Hammer +6
+28000700 | 0x1AB41BC | Boom Hammer +7
+28000800 | 0x1AB4220 | Boom Hammer +8
+28000900 | 0x1AB4284 | Boom Hammer +9
+28001000 | 0x1AB42E8 | Boom Hammer +10
+28010000 | 0x1AB6610 | Uncanny Boom Hammer
+28010100 | 0x1AB6674 | Uncanny Boom Hammer +1
+28010200 | 0x1AB66D8 | Uncanny Boom Hammer +2
+28010300 | 0x1AB673C | Uncanny Boom Hammer +3
+28010400 | 0x1AB67A0 | Uncanny Boom Hammer +4
+28010500 | 0x1AB6804 | Uncanny Boom Hammer +5
+28010600 | 0x1AB6868 | Uncanny Boom Hammer +6
+28010700 | 0x1AB68CC | Uncanny Boom Hammer +7
+28010800 | 0x1AB6930 | Uncanny Boom Hammer +8
+28010900 | 0x1AB6994 | Uncanny Boom Hammer +9
+28011000 | 0x1AB69F8 | Uncanny Boom Hammer +10
+28020000 | 0x1AB8D20 | Lost Boom Hammer
+28020100 | 0x1AB8D84 | Lost Boom Hammer +1
+28020200 | 0x1AB8DE8 | Lost Boom Hammer +2
+28020300 | 0x1AB8E4C | Lost Boom Hammer +3
+28020400 | 0x1AB8EB0 | Lost Boom Hammer +4
+28020500 | 0x1AB8F14 | Lost Boom Hammer +5
+28020600 | 0x1AB8F78 | Lost Boom Hammer +6
+28020700 | 0x1AB8FDC | Lost Boom Hammer +7
+28020800 | 0x1AB9040 | Lost Boom Hammer +8
+28020900 | 0x1AB90A4 | Lost Boom Hammer +9
+28021000 | 0x1AB9108 | Lost Boom Hammer +10
+29000000 | 0x1BA8140 | Bloodletter
+29000100 | 0x1BA81A4 | Bloodletter +1
+29000200 | 0x1BA8208 | Bloodletter +2
+29000300 | 0x1BA826C | Bloodletter +3
+29000400 | 0x1BA82D0 | Bloodletter +4
+29000500 | 0x1BA8334 | Bloodletter +5
+29000600 | 0x1BA8398 | Bloodletter +6
+29000700 | 0x1BA83FC | Bloodletter +7
+29000800 | 0x1BA8460 | Bloodletter +8
+29000900 | 0x1BA84C4 | Bloodletter +9
+29001000 | 0x1BA8528 | Bloodletter +10
+29010000 | 0x1BAA850 | Uncanny Bloodletter
+29010100 | 0x1BAA8B4 | Uncanny Bloodletter +1
+29010200 | 0x1BAA918 | Uncanny Bloodletter +2
+29010300 | 0x1BAA97C | Uncanny Bloodletter +3
+29010400 | 0x1BAA9E0 | Uncanny Bloodletter +4
+29010500 | 0x1BAAA44 | Uncanny Bloodletter +5
+29010600 | 0x1BAAAA8 | Uncanny Bloodletter +6
+29010700 | 0x1BAAB0C | Uncanny Bloodletter +7
+29010800 | 0x1BAAB70 | Uncanny Bloodletter +8
+29010900 | 0x1BAABD4 | Uncanny Bloodletter +9
+29011000 | 0x1BAAC38 | Uncanny Bloodletter +10
+29020000 | 0x1BACF60 | Lost Bloodletter
+29020100 | 0x1BACFC4 | Lost Bloodletter +1
+29020200 | 0x1BAD028 | Lost Bloodletter +2
+29020300 | 0x1BAD08C | Lost Bloodletter +3
+29020400 | 0x1BAD0F0 | Lost Bloodletter +4
+29020500 | 0x1BAD154 | Lost Bloodletter +5
+29020600 | 0x1BAD1B8 | Lost Bloodletter +6
+29020700 | 0x1BAD21C | Lost Bloodletter +7
+29020800 | 0x1BAD280 | Lost Bloodletter +8
+29020900 | 0x1BAD2E4 | Lost Bloodletter +9
+29021000 | 0x1BAD348 | Lost Bloodletter +10
+30000000 | 0x1C9C380 | Church Pick
+30000100 | 0x1C9C3E4 | Church Pick +1
+30000200 | 0x1C9C448 | Church Pick +2
+30000300 | 0x1C9C4AC | Church Pick +3
+30000400 | 0x1C9C510 | Church Pick +4
+30000500 | 0x1C9C574 | Church Pick +5
+30000600 | 0x1C9C5D8 | Church Pick +6
+30000700 | 0x1C9C63C | Church Pick +7
+30000800 | 0x1C9C6A0 | Church Pick +8
+30000900 | 0x1C9C704 | Church Pick +9
+30001000 | 0x1C9C768 | Church Pick +10
+30010000 | 0x1C9EA90 | Uncanny Church Pick
+30010100 | 0x1C9EAF4 | Uncanny Church Pick +1
+30010200 | 0x1C9EB58 | Uncanny Church Pick +2
+30010300 | 0x1C9EBBC | Uncanny Church Pick +3
+30010400 | 0x1C9EC20 | Uncanny Church Pick +4
+30010500 | 0x1C9EC84 | Uncanny Church Pick +5
+30010600 | 0x1C9ECE8 | Uncanny Church Pick +6
+30010700 | 0x1C9ED4C | Uncanny Church Pick +7
+30010800 | 0x1C9EDB0 | Uncanny Church Pick +8
+30010900 | 0x1C9EE14 | Uncanny Church Pick +9
+30011000 | 0x1C9EE78 | Uncanny Church Pick +10
+30020000 | 0x1CA11A0 | Lost Church Pick
+30020100 | 0x1CA1204 | Lost Church Pick +1
+30020200 | 0x1CA1268 | Lost Church Pick +2
+30020300 | 0x1CA12CC | Lost Church Pick +3
+30020400 | 0x1CA1330 | Lost Church Pick +4
+30020500 | 0x1CA1394 | Lost Church Pick +5
+30020600 | 0x1CA13F8 | Lost Church Pick +6
+30020700 | 0x1CA145C | Lost Church Pick +7
+30020800 | 0x1CA14C0 | Lost Church Pick +8
+30020900 | 0x1CA1524 | Lost Church Pick +9
+30021000 | 0x1CA1588 | Lost Church Pick +10
+31000000 | 0x1D905C0 | Whirligig Saw
+31000100 | 0x1D90624 | Whirligig Saw +1
+31000200 | 0x1D90688 | Whirligig Saw +2
+31000300 | 0x1D906EC | Whirligig Saw +3
+31000400 | 0x1D90750 | Whirligig Saw +4
+31000500 | 0x1D907B4 | Whirligig Saw +5
+31000600 | 0x1D90818 | Whirligig Saw +6
+31000700 | 0x1D9087C | Whirligig Saw +7
+31000800 | 0x1D908E0 | Whirligig Saw +8
+31000900 | 0x1D90944 | Whirligig Saw +9
+31001000 | 0x1D909A8 | Whirligig Saw +10
+31010000 | 0x1D92CD0 | Uncanny Whirligig Saw
+31010100 | 0x1D92D34 | Uncanny Whirligig Saw +1
+31010200 | 0x1D92D98 | Uncanny Whirligig Saw +2
+31010300 | 0x1D92DFC | Uncanny Whirligig Saw +3
+31010400 | 0x1D92E60 | Uncanny Whirligig Saw +4
+31010500 | 0x1D92EC4 | Uncanny Whirligig Saw +5
+31010600 | 0x1D92F28 | Uncanny Whirligig Saw +6
+31010700 | 0x1D92F8C | Uncanny Whirligig Saw +7
+31010800 | 0x1D92FF0 | Uncanny Whirligig Saw +8
+31010900 | 0x1D93054 | Uncanny Whirligig Saw +9
+31011000 | 0x1D930B8 | Uncanny Whirligig Saw +10
+31020000 | 0x1D953E0 | Lost Whirligig Saw
+31020100 | 0x1D95444 | Lost Whirligig Saw +1
+31020200 | 0x1D954A8 | Lost Whirligig Saw +2
+31020300 | 0x1D9550C | Lost Whirligig Saw +3
+31020400 | 0x1D95570 | Lost Whirligig Saw +4
+31020500 | 0x1D955D4 | Lost Whirligig Saw +5
+31020600 | 0x1D95638 | Lost Whirligig Saw +6
+31020700 | 0x1D9569C | Lost Whirligig Saw +7
+31020800 | 0x1D95700 | Lost Whirligig Saw +8
+31020900 | 0x1D95764 | Lost Whirligig Saw +9
+31021000 | 0x1D957C8 | Lost Whirligig Saw +10
+32000000 | 0x1E84800 | Simon's Bowblade
+32000100 | 0x1E84864 | Simon's Bowblade +1
+32000200 | 0x1E848C8 | Simon's Bowblade +2
+32000300 | 0x1E8492C | Simon's Bowblade +3
+32000400 | 0x1E84990 | Simon's Bowblade +4
+32000500 | 0x1E849F4 | Simon's Bowblade +5
+32000600 | 0x1E84A58 | Simon's Bowblade +6
+32000700 | 0x1E84ABC | Simon's Bowblade +7
+32000800 | 0x1E84B20 | Simon's Bowblade +8
+32000900 | 0x1E84B84 | Simon's Bowblade +9
+32001000 | 0x1E84BE8 | Simon's Bowblade +10
+32010000 | 0x1E86F10 | Uncanny Bowblade
+32010100 | 0x1E86F74 | Uncanny Bowblade +1
+32010200 | 0x1E86FD8 | Uncanny Bowblade +2
+32010300 | 0x1E8703C | Uncanny Bowblade +3
+32010400 | 0x1E870A0 | Uncanny Bowblade +4
+32010500 | 0x1E87104 | Uncanny Bowblade +5
+32010600 | 0x1E87168 | Uncanny Bowblade +6
+32010700 | 0x1E871CC | Uncanny Bowblade +7
+32010800 | 0x1E87230 | Uncanny Bowblade +8
+32010900 | 0x1E87294 | Uncanny Bowblade +9
+32011000 | 0x1E872F8 | Uncanny Bowblade +10
+32020000 | 0x1E89620 | Lost Bowblade
+32020100 | 0x1E89684 | Lost Bowblade +1
+32020200 | 0x1E896E8 | Lost Bowblade +2
+32020300 | 0x1E8974C | Lost Bowblade +3
+32020400 | 0x1E897B0 | Lost Bowblade +4
+32020500 | 0x1E89814 | Lost Bowblade +5
+32020600 | 0x1E89878 | Lost Bowblade +6
+32020700 | 0x1E898DC | Lost Bowblade +7
+32020800 | 0x1E89940 | Lost Bowblade +8
+32020900 | 0x1E899A4 | Lost Bowblade +9
+32021000 | 0x1E89A08 | Lost Bowblade +10
+33000000 | 0x1F78A40 | Gatling Gun
+33000100 | 0x1F78AA4 | Gatling Gun +1
+33000200 | 0x1F78B08 | Gatling Gun +2
+33000300 | 0x1F78B6C | Gatling Gun +3
+33000400 | 0x1F78BD0 | Gatling Gun +4
+33000500 | 0x1F78C34 | Gatling Gun +5
+33000600 | 0x1F78C98 | Gatling Gun +6
+33000700 | 0x1F78CFC | Gatling Gun +7
+33000800 | 0x1F78D60 | Gatling Gun +8
+33000900 | 0x1F78DC4 | Gatling Gun +9
+33001000 | 0x1F78E28 | Gatling Gun +10
+34000000 | 0x206CC80 | Fist of Gratia
+34000100 | 0x206CCE4 | Fist of Gratia +1
+34000200 | 0x206CD48 | Fist of Gratia +2
+34000300 | 0x206CDAC | Fist of Gratia +3
+34000400 | 0x206CE10 | Fist of Gratia +4
+34000500 | 0x206CE74 | Fist of Gratia +5
+34000600 | 0x206CED8 | Fist of Gratia +6
+34000700 | 0x206CF3C | Fist of Gratia +7
+34000800 | 0x206CFA0 | Fist of Gratia +8
+34000900 | 0x206D004 | Fist of Gratia +9
+34001000 | 0x206D068 | Fist of Gratia +10
+35000000 | 0x2160EC0 | Church Cannon
+35000100 | 0x2160F24 | Church Cannon +1
+35000200 | 0x2160F88 | Church Cannon +2
+35000300 | 0x2160FEC | Church Cannon +3
+35000400 | 0x2161050 | Church Cannon +4
+35000500 | 0x21610B4 | Church Cannon +5
+35000600 | 0x2161118 | Church Cannon +6
+35000700 | 0x216117C | Church Cannon +7
+35000800 | 0x21611E0 | Church Cannon +8
+35000900 | 0x2161244 | Church Cannon +9
+35001000 | 0x21612A8 | Church Cannon +10
+36000000 | 0x2255100 | Piercing Rifle
+36000100 | 0x2255164 | Piercing Rifle +1
+36000200 | 0x22551C8 | Piercing Rifle +2
+36000300 | 0x225522C | Piercing Rifle +3
+36000400 | 0x2255290 | Piercing Rifle +4
+36000500 | 0x22552F4 | Piercing Rifle +5
+36000600 | 0x2255358 | Piercing Rifle +6
+36000700 | 0x22553BC | Piercing Rifle +7
+36000800 | 0x2255420 | Piercing Rifle +8
+36000900 | 0x2255484 | Piercing Rifle +9
+36001000 | 0x22554E8 | Piercing Rifle +10
+38000000 | 0x243D580 | Kos Parasite
+38000100 | 0x243D5E4 | Kos Parasite +1
+38000200 | 0x243D648 | Kos Parasite +2
+38000300 | 0x243D6AC | Kos Parasite +3
+38000400 | 0x243D710 | Kos Parasite +4
+38000500 | 0x243D774 | Kos Parasite +5
+38000600 | 0x243D7D8 | Kos Parasite +6
+38000700 | 0x243D83C | Kos Parasite +7
+38000800 | 0x243D8A0 | Kos Parasite +8
+38000900 | 0x243D904 | Kos Parasite +9
+38001000 | 0x243D968 | Kos Parasite +10
+38010000 | 0x243FC90 | Uncanny Parasite
+38010100 | 0x243FCF4 | Uncanny Parasite +1
+38010200 | 0x243FD58 | Uncanny Parasite +2
+38010300 | 0x243FDBC | Uncanny Parasite +3
+38010400 | 0x243FE20 | Uncanny Parasite +4
+38010500 | 0x243FE84 | Uncanny Parasite +5
+38010600 | 0x243FEE8 | Uncanny Parasite +6
+38010700 | 0x243FF4C | Uncanny Parasite +7
+38010800 | 0x243FFB0 | Uncanny Parasite +8
+38010900 | 0x2440014 | Uncanny Parasite +9
+38011000 | 0x2440078 | Uncanny Parasite +10
+38020000 | 0x24423A0 | Lost Parasite
+38020100 | 0x2442404 | Lost Parasite +1
+38020200 | 0x2442468 | Lost Parasite +2
+38020300 | 0x24424CC | Lost Parasite +3
+38020400 | 0x2442530 | Lost Parasite +4
+38020500 | 0x2442594 | Lost Parasite +5
+38020600 | 0x24425F8 | Lost Parasite +6
+38020700 | 0x244265C | Lost Parasite +7
+38020800 | 0x24426C0 | Lost Parasite +8
+38020900 | 0x2442724 | Lost Parasite +9
+38021000 | 0x2442788 | Lost Parasite +10
+
+== ARMOR (129) ==
+10000 | 0x2710 | Gray Wolf Cap
+11000 | 0x2AF8 | Charred Hunter Garb
+12000 | 0x2EE0 | Charred Hunter Gloves
+13000 | 0x32C8 | Charred Hunter Trousers
+20000 | 0x4E20 | Black Hooded Iron Helm
+21000 | 0x5208 | Yahar'gul Black Garb
+22000 | 0x55F0 | Yahar'gul Black Gloves
+23000 | 0x59D8 | Yahar'gul Black Trousers
+30000 | 0x7530 | Graveguard Mask
+31000 | 0x7918 | Graveguard Robe
+32000 | 0x7D00 | Graveguard Manchettes
+33000 | 0x80E8 | Graveguard Kilt
+40000 | 0x9C40 | Bone Ash Mask
+41000 | 0xA028 | Bone Ash Armor
+42000 | 0xA410 | Bone Ash Gauntlets
+43000 | 0xA7F8 | Bone Ash Leggings
+50000 | 0xC350 | Henryk's Hunter Cap
+51000 | 0xC738 | Henryk's Hunter Garb
+52000 | 0xCB20 | Henryk's Hunter Gloves
+53000 | 0xCF08 | Henryk's Hunter Trousers
+60000 | 0xEA60 | Yharnam Hunter Cap
+61000 | 0xEE48 | Yharnam Hunter Garb
+62000 | 0xF230 | Yharnam Hunter Gloves
+63000 | 0xF618 | Yharnam Hunter Trousers
+70000 | 0x11170 | Hunter Hat
+71000 | 0x11558 | Hunter Garb
+72000 | 0x11940 | Hunter Gloves
+73000 | 0x11D28 | Hunter Trousers
+80000 | 0x13880 | Knight's Wig
+81000 | 0x13C68 | Knight's Garb
+82000 | 0x14050 | Knight's Gloves
+83000 | 0x14438 | Knight's Trousers/Dress
+90000 | 0x15F90 | en5304
+91000 | 0x16378 | en5305
+100000 | 0x186A0 | Cainhurst Helmet
+101000 | 0x18A88 | Cainhurst Armor
+102000 | 0x18E70 | Cainhurst Gauntlets
+103000 | 0x19258 | Cainhurst Leggings
+110000 | 0x1ADB0 | Black Church Hat
+111000 | 0x1B198 | Black Church Garb
+112000 | 0x1B580 | Surgical Long Gloves
+113000 | 0x1B968 | Black Church Trousers/Dress
+120000 | 0x1D4C0 | Blindfold Cap
+121000 | 0x1D8A8 | Choir Garb
+122000 | 0x1DC90 | Choir Gloves
+123000 | 0x1E078 | Choir Trousers
+130000 | 0x1FBD0 | Gascoigne's Cap
+131000 | 0x1FFB8 | Gascoigne's Garb
+132000 | 0x203A0 | Gascoigne's Gloves
+133000 | 0x20788 | Gascoigne's Trousers
+140000 | 0x222E0 | Tomb Prospector Hood
+141000 | 0x226C8 | Tomb Prospector Garb
+142000 | 0x22AB0 | Tomb Prospector Gloves
+143000 | 0x22E98 | Tomb Prospector Trousers
+150000 | 0x249F0 | Gold Ardeo
+151000 | 0x24DD8 | Executioner Garb
+152000 | 0x251C0 | Executioner Gauntlets
+153000 | 0x255A8 | Executioner Trousers
+180000 | 0x2BF20 | Beak Mask
+181000 | 0x2C308 | Crowfeather Garb
+182000 | 0x2C6F0 | Crowfeather Manchettes
+183000 | 0x2CAD8 | Crowfeather Trousers
+190000 | 0x2E630 | Mensis Cage
+191000 | 0x2EA18 | Student Uniform
+193000 | 0x2F1E8 | Student Trousers
+200000 | 0x30D40 | Gehrman's Hunter Cap
+201000 | 0x31128 | Gehrman's Hunter Garb
+203000 | 0x318F8 | Gehrman's Hunter Trousers
+210000 | 0x33450 | Madman Hood
+211000 | 0x33838 | Madman Garb
+212000 | 0x33C20 | Madman Manchettes
+213000 | 0x34008 | Madman Leggings
+220000 | 0x35B60 | Doll Hat
+221000 | 0x35F48 | Doll Clothes
+222000 | 0x36330 | Doll Gloves
+223000 | 0x36718 | Doll Skirt
+230000 | 0x38270 | Black Hood
+231000 | 0x38658 | Foreign Garb
+232000 | 0x38A40 | Sullied Bandage
+233000 | 0x38E28 | Foreign Trousers
+241000 | 0x3AD68 | Ashen Hunter Garb
+242000 | 0x3B150 | Ashen Hunter Gloves
+243000 | 0x3B538 | Ashen Hunter Trousers
+250000 | 0x3D090 | Crown of Illusions
+260000 | 0x3F7A0 | Master's Iron Helm
+270000 | 0x41EB0 | Iron Yahar'gul Helm
+280000 | 0x445C0 | Top Hat
+281000 | 0x449A8 | Hunter Garb
+290000 | 0x46CD0 | White Church Hat
+291000 | 0x470B8 | White Church Garb
+293000 | 0x47888 | White Church Trousers/Dress
+301000 | 0x497C8 | Student Uniform
+311000 | 0x4BED8 | Noble Dress
+313000 | 0x4C6A8 | Arianna's Shoes
+320000 | 0x4E200 | Rumpled Yharnam Hat
+321000 | 0x4E5E8 | Sweaty Clothes
+330000 | 0x50910 | Butcher Mask
+331000 | 0x50CF8 | Butcher Garb
+332000 | 0x510E0 | Butcher Gloves
+333000 | 0x514C8 | Butcher Trousers
+340000 | 0x53020 | Harrowed Hood
+341000 | 0x53408 | Harrowed Garb
+342000 | 0x537F0 | Harrowed Gloves
+343000 | 0x53BD8 | Harrowed Trousers
+350000 | 0x55730 | Old Hunter Cap
+351000 | 0x55B18 | Old Hunter Garb
+352000 | 0x55F00 | Old Hunter Gloves
+353000 | 0x562E8 | Old Hunter Trousers
+360000 | 0x57E40 | Old Hunter Top Hat
+361000 | 0x58228 | Decorative Old Hunter Garb
+363000 | 0x589F8 | Decorative Old Hunter Trousers
+370000 | 0x5A550 | Maria Hunter Cap
+371000 | 0x5A938 | Maria Hunter Garb
+372000 | 0x5AD20 | Maria Hunter Gloves
+373000 | 0x5B108 | Maria Hunter Trousers
+380000 | 0x5CC60 | One-eyed Iron Helm
+381000 | 0x5D048 | Constable's Garb
+382000 | 0x5D430 | Constable's Gloves
+383000 | 0x5D818 | Constable's Trousers
+390000 | 0x5F370 | Brador's Testimony
+391000 | 0x5F758 | Beast Hide Garb
+392000 | 0x5FB40 | Bloodied Arm Bands
+393000 | 0x5FF28 | Bloodied Trousers
+400000 | 0x61A80 | Yamamura Hunter Hat
+401000 | 0x61E68 | Khaki Haori
+402000 | 0x62250 | Old Hunter Arm Bands
+403000 | 0x62638 | Wine Hakama
+430000 | 0x68FB0 | Enlarged Head
+920000 | 0xE09C0 | en5473
