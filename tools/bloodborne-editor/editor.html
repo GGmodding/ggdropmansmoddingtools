@@ -27,16 +27,20 @@
         Load Save
         <input id="file-input" type="file" accept="*/*" />
       </label>
+      <button id="btn-find" class="btn" type="button">Find Save</button>
+      <button id="btn-pick" class="btn" type="button">Pick Folder</button>
       <button id="btn-backup" class="btn" type="button" disabled>Download Backup</button>
-      <button id="btn-save" class="btn btn--accent" type="button" disabled>Download Edited Save</button>
+      <button id="btn-save" class="btn" type="button" disabled>Download Edited Save</button>
+      <button id="btn-install" class="btn btn--accent" type="button" disabled>Install to Save Folder</button>
       <span id="dirty-pill" class="pill" hidden>Unsaved</span>
     </div>
   </header>
 
   <section class="path-banner">
     <strong>bbport saves</strong>
-    <span>Open <code>userdata0000</code> from <code>&lt;game folder&gt;\bbport-windows\user\savedata\1\CUSA00207\SPRJ0005</code>.
-      Everything runs in your browser; the file is never uploaded. Close the game, back up first, and replace the file with the edited one.</span>
+    <span>Click <b>Find Save</b> and pick your <code>bbport-windows</code> folder (the one containing <code>Bloodborne.exe</code>);
+      the editor searches inside it for <code>userdata0000</code> and remembers the folder. Chrome or Edge needed for that;
+      otherwise use <b>Load Save</b>. Everything runs in your browser and nothing is uploaded. Close the game first.</span>
   </section>
 
   <nav class="tabs" id="tabs" aria-label="Editor sections" hidden>
@@ -47,7 +51,7 @@
   <main class="main">
     <div id="empty-state" class="empty">
       <h2>Load a Bloodborne save</h2>
-      <p>Pick <code>userdata0000</code> from the port's <code>user\savedata</code> folder, or drag it onto this page.</p>
+      <p>Click <b>Find Save</b> and pick your <code>bbport-windows</code> folder, or use Load Save / drag <code>userdata0000</code> onto this page.</p>
     </div>
 
     <section id="panel-character" class="panel is-active" hidden>
@@ -76,7 +80,8 @@
           <thead><tr><th>Tip</th><th>Detail</th></tr></thead>
           <tbody>
             <tr><td>Which file</td><td>Only the unencrypted main save <code>userdata0000</code> of the bbport PC port (1,310,720 bytes). Real PS4 saves are encrypted and will be refused.</td></tr>
-            <tr><td>Game open</td><td>Close the game fully before replacing the file; it autosaves and will overwrite your edit.</td></tr>
+            <tr><td>Game open</td><td>Close the game fully before installing; it autosaves and will overwrite your edit. Install refuses if the file changed on disk since you loaded it.</td></tr>
+            <tr><td>Backups</td><td>Install to Save Folder first writes the original into a <code>bb_editor_backups</code> folder inside the folder you picked, then replaces the save and re-reads it to verify.</td></tr>
             <tr><td>Level</td><td>Stored separately from the stats. Use the Level button to keep it matching (total of the six stats minus 50, inferred from one save).</td></tr>
             <tr><td>Max HP</td><td>Not stored directly; the game recalculates it from Vitality. Rest or re-equip after loading.</td></tr>
             <tr><td>Offline only</td><td>Do not use edited characters online or in co-op / PvP.</td></tr>

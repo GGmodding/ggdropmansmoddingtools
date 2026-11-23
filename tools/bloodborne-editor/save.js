@@ -78,7 +78,32 @@
     return Math.max(1, total - 50);
   }
 
-  const api = { EXPECTED_SIZE, NAME_OFFSET, FIELDS, STAT_IDS, readName, validate, readFields, applyFields, levelFromStats };
+  // Folders that never hold the save; skipping them keeps the search fast.
+  const SKIP_DIRS = /^(_internal|bin|bundled|cache|shader|shader_catalog|tools|launcher|licenses|patches|mods|companions|download\d*|temp\d*|fonts|screenshots|captures|log|trophy.*|dlss|out|docs|scripts|node_modules|\.git)$/i;
+
+  // Breadth-first search below a picked folder for the main save (userdata0000 of the right size).
+  // `root` is a FileSystemDirectoryHandle (or anything with the same entries()/kind/getFile() shape).
+  async function findSave(root, maxDepth = 8, maxEntries = 30000) {
+    const queue = [{ dir: root, depth: 0, path: root.name }];
+    let seen = 0;
+    while (queue.length) {
+      const { dir, depth, path } = queue.shift();
+      for await (const [name, h] of dir.entries()) {
+        if (++seen > maxEntries) return null;
+        if (h.kind === "file") {
+          if (/^userdata0000$/i.test(name)) {
+            const f = await h.getFile();
+            if (f.size === EXPECTED_SIZE) return { fileHandle: h, dirHandle: dir, path: path + "/" + name };
+          }
+        } else if (depth < maxDepth && !SKIP_DIRS.test(name)) {
+          queue.push({ dir: h, depth: depth + 1, path: path + "/" + name });
+        }
+      }
+    }
+    return null;
+  }
+
+  const api = { EXPECTED_SIZE, NAME_OFFSET, FIELDS, STAT_IDS, readName, validate, readFields, applyFields, levelFromStats, findSave };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else window.BBSave = api;
 })();
