@@ -4,19 +4,19 @@
   // Bloodborne PC port (bbport) main save: userdata0000, plain unencrypted data.
   // The player block starts at file offset 33720 and mirrors the layout in live game memory.
   const EXPECTED_SIZE = 1310720;
-  const NAME_OFFSET = 33888;
+  const NAME_OFFSET = 33888; // only the position in the layout we first saw; real position is found by locate()
   const NAME_MAX_CHARS = 16;
 
   const FIELDS = [
-    { id: "level", label: "Level", offset: 33864, min: 1, max: 999999, group: "main" },
-    { id: "insight", label: "Insight", offset: 33852, min: 0, max: 9999, group: "main" },
-    { id: "echoes", label: "Blood Echoes", offset: 33868, min: 0, max: 2000000000, group: "main" },
-    { id: "vitality", label: "Vitality", offset: 33784, min: 1, max: 99, group: "stat" },
-    { id: "endurance", label: "Endurance", offset: 33792, min: 1, max: 99, group: "stat" },
-    { id: "strength", label: "Strength", offset: 33808, min: 1, max: 99, group: "stat" },
-    { id: "skill", label: "Skill", offset: 33816, min: 1, max: 99, group: "stat" },
-    { id: "bloodtinge", label: "Bloodtinge", offset: 33824, min: 1, max: 99, group: "stat" },
-    { id: "arcane", label: "Arcane", offset: 33832, min: 1, max: 99, group: "stat" },
+    { id: "level", label: "Level", rel: -24, min: 1, max: 999999, group: "main" },
+    { id: "insight", label: "Insight", rel: -36, min: 0, max: 9999, group: "main" },
+    { id: "echoes", label: "Blood Echoes", rel: -20, min: 0, max: 2000000000, group: "main" },
+    { id: "vitality", label: "Vitality", rel: -104, min: 1, max: 99, group: "stat" },
+    { id: "endurance", label: "Endurance", rel: -96, min: 1, max: 99, group: "stat" },
+    { id: "strength", label: "Strength", rel: -80, min: 1, max: 99, group: "stat" },
+    { id: "skill", label: "Skill", rel: -72, min: 1, max: 99, group: "stat" },
+    { id: "bloodtinge", label: "Bloodtinge", rel: -64, min: 1, max: 99, group: "stat" },
+    { id: "arcane", label: "Arcane", rel: -56, min: 1, max: 99, group: "stat" },
   ];
   const STAT_IDS = FIELDS.filter((f) => f.group === "stat").map((f) => f.id);
 
@@ -24,11 +24,56 @@
     return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   }
 
+  // The game rewrites the save with its sections shifted by varying amounts, so absolute offsets are
+  // unreliable. Every field keeps a fixed distance from the character name, so we find the name first.
+  const anchorCache = new WeakMap();
+  function plausibleName(v, n) {
+    let len = 0;
+    for (; len < NAME_MAX_CHARS; len++) {
+      const c = v.getUint16(n + len * 2, true);
+      if (c === 0) break;
+      const ok = (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 95 || c === 45 || c === 32;
+      if (!ok) return false;
+    }
+    if (len < 1 || len >= NAME_MAX_CHARS) return false;
+    const first = v.getUint16(n, true);
+    return (first >= 65 && first <= 90) || (first >= 97 && first <= 122);
+  }
+  function locate(bytes) {
+    if (!bytes || bytes.length !== EXPECTED_SIZE) return -1;
+    if (anchorCache.has(bytes)) return anchorCache.get(bytes);
+    const v = view(bytes);
+    const rel = (id) => FIELDS.find((f) => f.id === id).rel;
+    let found = -1;
+    for (let n = 256; n < EXPECTED_SIZE - 64 && found < 0; n += 2) {
+      if (!plausibleName(v, n)) continue;
+      let ok = true;
+      for (const id of STAT_IDS) {
+        const x = v.getInt32(n + rel(id), true);
+        if (x < 1 || x > 99) { ok = false; break; }
+      }
+      if (!ok) continue;
+      const ins = v.getInt32(n + rel("insight"), true), lvl = v.getInt32(n + rel("level"), true), ech = v.getInt32(n + rel("echoes"), true);
+      if (ins < 0 || ins > 9999 || lvl < 1 || lvl > 999999 || ech < 0) continue;
+      found = n;
+    }
+    anchorCache.set(bytes, found);
+    return found;
+  }
+  const INV_REL = 452; // inventory table starts this many bytes after the name
+  function invStart(bytes) {
+    const n = locate(bytes);
+    if (n < 0) throw new Error("Could not locate the character data in this save.");
+    return n + INV_REL;
+  }
+
   function readName(bytes) {
     let s = "";
+    const n = locate(bytes);
+    if (n < 0) return "";
     const v = view(bytes);
     for (let i = 0; i < NAME_MAX_CHARS; i++) {
-      const c = v.getUint16(NAME_OFFSET + i * 2, true);
+      const c = v.getUint16(n + i * 2, true);
       if (c === 0) break;
       s += String.fromCharCode(c);
     }
@@ -45,20 +90,24 @@
       };
     }
     if (!readName(bytes)) {
-      return { ok: false, error: "No character name found where expected - not editing this file." };
+      return { ok: false, error: "Could not find a character (name + stats) in this file - not editing it. Make sure it is userdata0000 from a game with a created character." };
     }
     return { ok: true };
   }
 
   function readFields(bytes) {
     const v = view(bytes);
+    const n = locate(bytes);
+    if (n < 0) throw new Error("Could not locate the character data in this save.");
     const out = {};
-    for (const f of FIELDS) out[f.id] = v.getInt32(f.offset, true);
+    for (const f of FIELDS) out[f.id] = v.getInt32(n + f.rel, true);
     return out;
   }
 
   // Returns a modified COPY; the input is never changed.
   function applyFields(bytes, values) {
+    const base = locate(bytes);
+    if (base < 0) throw new Error("Could not locate the character data in this save.");
     const copy = new Uint8Array(bytes);
     const v = view(copy);
     for (const f of FIELDS) {
@@ -66,7 +115,7 @@
       const n = Math.trunc(Number(values[f.id]));
       if (!Number.isFinite(n)) throw new Error(f.label + " is not a number.");
       if (n < -2147483648 || n > 2147483647) throw new Error(f.label + " is out of range.");
-      v.setInt32(f.offset, n, true);
+      v.setInt32(base + f.rel, n, true);
     }
     return copy;
   }
@@ -79,7 +128,7 @@
   }
 
   // ---- Inventory: 1984 slots of 16 bytes [sort key][handle][item ID][count] starting at 0x8624 ----
-  const INV_START = 0x8624;
+  // (start is found per-file with invStart(): name offset + INV_REL)
   const INV_SLOTS = 1984;
   const REC = 16;
   const COUNT_MIN = 1;
@@ -96,6 +145,7 @@
 
   function readInventory(bytes) {
     const v = view(bytes);
+    const INV_START = invStart(bytes);
     const out = [];
     for (let slot = 0; slot < INV_SLOTS; slot++) {
       const o = INV_START + slot * REC;
@@ -111,6 +161,7 @@
   // counts: { slot: newCount }. Only stackable goods that are already in the inventory can change.
   // Returns a modified COPY; the input is never changed.
   function applyInventory(bytes, counts) {
+    const INV_START = invStart(bytes);
     const copy = new Uint8Array(bytes);
     const v = view(copy);
     for (const k of Object.keys(counts)) {
@@ -175,7 +226,7 @@
     return info;
   }
 
-  const api = { EXPECTED_SIZE, NAME_OFFSET, FIELDS, STAT_IDS, readName, validate, readFields, applyFields, levelFromStats, findSave, readInventory, applyInventory, COUNT_MIN, COUNT_MAX };
+  const api = { locate, EXPECTED_SIZE, NAME_OFFSET, FIELDS, STAT_IDS, readName, validate, readFields, applyFields, levelFromStats, findSave, readInventory, applyInventory, COUNT_MIN, COUNT_MAX };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else window.BBSave = api;
 })();
