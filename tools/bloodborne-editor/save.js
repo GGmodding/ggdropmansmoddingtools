@@ -32,12 +32,12 @@
     for (; len < NAME_MAX_CHARS; len++) {
       const c = v.getUint16(n + len * 2, true);
       if (c === 0) break;
-      const ok = (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 95 || c === 45 || c === 32;
+      const ok = c >= 32 && c <= 126; // printable ASCII (names like "SAVE (male)" exist)
       if (!ok) return false;
     }
     if (len < 1 || len >= NAME_MAX_CHARS) return false;
     const first = v.getUint16(n, true);
-    return (first >= 65 && first <= 90) || (first >= 97 && first <= 122);
+    return first > 32;
   }
   function locate(bytes) {
     if (!bytes || bytes.length !== EXPECTED_SIZE) return -1;
@@ -54,7 +54,7 @@
       }
       if (!ok) continue;
       const ins = v.getInt32(n + rel("insight"), true), lvl = v.getInt32(n + rel("level"), true), ech = v.getInt32(n + rel("echoes"), true);
-      if (ins < 0 || ins > 9999 || lvl < 1 || lvl > 999999 || ech < 0) continue;
+      if (ins < 0 || lvl < 1 || lvl > 999999 || ech < 0) continue; // loose: only used to find the block
       found = n;
     }
     anchorCache.set(bytes, found);
