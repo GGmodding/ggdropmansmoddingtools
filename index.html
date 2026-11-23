@@ -24,7 +24,7 @@
       --subnautica: #3de0c8;
       --grounded: #8fbf4a;
       --abyss: #3ec8c8;
-      --expedition: #d4a84b;
+      --shell: #c45a3a;
       --steam: #66c0f4;
       --visitor: #e8a87c;
       --donate: #f0c14a;
@@ -832,19 +832,19 @@
         linear-gradient(125deg, rgba(18, 50, 90, 0.55), transparent 55%);
     }
 
-    .tile--expedition {
-      --accent: var(--expedition);
-      --art: url("https://cdn.cloudflare.steamstatic.com/steam/apps/1903340/header.jpg");
+    .tile--shell {
+      --accent: var(--shell);
+      --art: url("https://cdn.cloudflare.steamstatic.com/steam/apps/2584270/header.jpg");
     }
 
-    .tile--expedition::after {
+    .tile--shell::after {
       background:
-        radial-gradient(circle at 30% 35%, rgba(212, 168, 75, 0.34), transparent 44%),
-        linear-gradient(125deg, rgba(80, 40, 20, 0.5), transparent 55%);
+        radial-gradient(circle at 28% 30%, rgba(232, 192, 112, 0.28), transparent 42%),
+        linear-gradient(125deg, rgba(120, 40, 24, 0.5), transparent 55%);
     }
 
     .tile--bloodborne {
-      --accent: #c45a3a;
+      --accent: var(--shell);
     }
 
     .tile--bloodborne::after {
@@ -1030,15 +1030,6 @@
       <div class="tools-panel is-active" role="tabpanel" id="panel-editors" data-panel="editors" aria-labelledby="tab-editors">
         <p class="tools-panel__sub">Browser tools for editing save files offline. Load, tweak, download.</p>
         <nav class="hud-grid" aria-label="Save editors">
-          <a class="tile tile--expedition" href="tools/expedition33-editor/editor.html">
-            <span class="tile__badge tile__badge--live">Live</span>
-            <span class="tile__body">
-              <span class="tile__game">Clair Obscur</span>
-              <span class="tile__name">Expedition 33</span>
-              <span class="tile__meta">Chroma · party · inventory · Steam ach</span>
-            </span>
-          </a>
-
           <a class="tile tile--tcg" href="tools/tcg-editor/editor.html">
             <span class="tile__badge tile__badge--live">Live</span>
             <span class="tile__body">
@@ -1129,6 +1120,15 @@
             </span>
           </a>
 
+          <a class="tile tile--shell" href="tools/mortal-shell2-editor/editor.html">
+            <span class="tile__badge tile__badge--live">Live</span>
+            <span class="tile__body">
+              <span class="tile__game">Fallgrim</span>
+              <span class="tile__name">Mortal Shell 2</span>
+              <span class="tile__meta">GVAS · Tar · Glimpse · property scan</span>
+            </span>
+          </a>
+
           <a class="tile tile--bloodborne" href="tools/bloodborne-editor/editor.html">
             <span class="tile__badge">Beta</span>
             <span class="tile__body">
@@ -1214,21 +1214,12 @@
       <div class="tools-panel" role="tabpanel" id="panel-unlockers" data-panel="unlockers" aria-labelledby="tab-unlockers" hidden>
         <p class="tools-panel__sub">Local Steam tools to list, unlock, or lock achievements for owned games.</p>
         <nav class="hud-grid" aria-label="Achievement unlockers">
-          <a class="tile tile--expedition" href="tools/steam-achievement-unlocker/guide.html#expedition33">
-            <span class="tile__badge tile__badge--live">CLI</span>
-            <span class="tile__body">
-              <span class="tile__game">Clair Obscur</span>
-              <span class="tile__name">Expedition 33 Achievements</span>
-              <span class="tile__meta">Steamworks · AppID 1903340 · unlock-all</span>
-            </span>
-          </a>
-
           <a class="tile tile--steam" href="tools/steam-achievement-unlocker/guide.html">
             <span class="tile__badge tile__badge--live">CLI</span>
             <span class="tile__body">
               <span class="tile__game">Steamworks</span>
               <span class="tile__name">Achievement Unlocker</span>
-              <span class="tile__meta">Node · SoD2 · E33 · any AppID</span>
+              <span class="tile__meta">Node · SoD2 · any AppID</span>
             </span>
           </a>
         </nav>
@@ -1260,7 +1251,6 @@
             <label>Game
               <input id="visitor-game" type="text" maxlength="60" placeholder="Grounded 2, Palworld, Hades II…" list="visitor-game-list" />
               <datalist id="visitor-game-list">
-                <option value="Clair Obscur: Expedition 33"></option>
                 <option value="Grounded"></option>
                 <option value="Grounded 2"></option>
                 <option value="Final Fantasy VII"></option>
@@ -1270,6 +1260,7 @@
                 <option value="Subnautica 2"></option>
                 <option value="Last Epoch"></option>
                 <option value="TCG Card Shop Simulator"></option>
+                <option value="Mortal Shell 2"></option>
               </datalist>
             </label>
             <label>Message
@@ -1344,7 +1335,6 @@
         <p><strong>Partner / close friend:</strong> <a href="https://ynot-gzo.github.io/GameZoneOfficial/" target="_blank" rel="noopener noreferrer">GameZone Official</a></p>
         <p><strong>Save Editors:</strong></p>
         <ul>
-          <li><a href="tools/expedition33-editor/editor.html">Clair Obscur: Expedition 33 Save Editor</a> — GGdropman</li>
           <li><a href="tools/tcg-editor/editor.html">TCG Card Shop Save Editor</a> — GGdropman</li>
           <li><a href="tools/ff7-editor/editor.html">Final Fantasy VII Steam Save Editor</a> — GGdropman</li>
           <li><a href="tools/last-epoch-editor/editor.html">Last Epoch Offline Save Editor</a> — GGdropman</li>
@@ -1355,6 +1345,7 @@
           <li><a href="tools/grounded-editor/editor.html">Grounded Save Editor</a> — GGdropman</li>
           <li><a href="tools/grounded2-editor/editor.html">Grounded 2 Save Editor</a> — GGdropman</li>
           <li><a href="tools/soe-editor/editor.html">Diablo II Sanctuary of Exile Save Editor</a> — GGdropman (v3 safe backups / stats / items / stash)</li>
+          <li><a href="tools/mortal-shell2-editor/editor.html">Mortal Shell 2 Save Editor</a> — GGdropman (v1 GVAS · Tar / Glimpse / property browser)</li>
           <li><a href="tools/bloodborne-editor/editor.html">Bloodborne (bbport PC) Save Editor</a> — GGdropman (beta · stats / level / insight / echoes)</li>
         </ul>
         <p><strong>Cheat Tables:</strong></p>
@@ -1371,7 +1362,7 @@
         </ul>
         <p><strong>Achievement Unlockers:</strong></p>
         <ul>
-          <li><a href="tools/steam-achievement-unlocker/guide.html">Steam Achievement Unlocker</a> — GGdropman (local Node CLI · SoD2 · Expedition 33 · any AppID)</li>
+          <li><a href="tools/steam-achievement-unlocker/guide.html">Steam Achievement Unlocker</a> — GGdropman (local Node CLI · SoD2 · any AppID)</li>
         </ul>
         <p><strong>Art:</strong> Steam header images used as tile atmosphere only. Grounded 2 tiles use the Into the Abyss key art.</p>
       </div>

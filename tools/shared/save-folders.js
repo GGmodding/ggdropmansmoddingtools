@@ -159,22 +159,23 @@
         </div>
       `,
     },
-    expedition33: {
-      id: "expedition33",
-      name: "Clair Obscur: Expedition 33",
-      pathTemplate: "%LOCALAPPDATA%\\Sandfall\\Saved\\SaveGames",
-      pathHint: "Paste that path, then open your SteamID folder. Target EXPEDITION_0.sav (etc).",
-      batName: "open-expedition33-saves.bat",
+    mortalshell2: {
+      id: "mortalshell2",
+      name: "Mortal Shell 2",
+      pathTemplate: "%LOCALAPPDATA%\\MortalShell2\\Saved\\SaveGames",
+      pathHint: "Paste that path, then open a SteamID folder if one exists. Target .sav slot files.",
+      batName: "open-mortalshell2-saves.bat",
       tryPaths: [
-        "%LOCALAPPDATA%\\Sandfall\\Saved\\SaveGames",
+        "%LOCALAPPDATA%\\MortalShell2\\Saved\\SaveGames",
+        "%LOCALAPPDATA%\\MortalShellII\\Saved\\SaveGames",
       ],
       directory: true,
       maxDepth: 3,
-      fileLabel: "Expedition 33 save (.sav / .zip)",
-      matchFile: (name) => /^EXPEDITION_\d+\.sav$/i.test(name) || /\.zip$/i.test(name),
+      fileLabel: "Mortal Shell 2 save (.sav / .bak / .zip)",
+      matchFile: (name) => /\.(sav|bak)$/i.test(name) || /\.zip$/i.test(name),
       guideExtra: `
         <div class="gg-sf-warn">
-          Close Clair Obscur: Expedition 33 before overwriting. Prefer <code>EXPEDITION_N.sav</code> (not Backup timestamp copies).
+          Close Mortal Shell 2 before overwriting. Prefer the live <code>.sav</code> (not timestamped copies).
           Disable Steam Cloud while testing installs if sync fights your edits.
         </div>
       `,

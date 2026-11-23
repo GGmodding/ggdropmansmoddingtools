@@ -1,0 +1,204 @@
+2276	Sparta_Player
+2542	Sparta_Player
+2643	ProloguePlayerStart
+2667	PrologueStart_FirstBeacon
+2843	Sparta_Player
+3099	WBP_TN_Heal_C
+3140	WBP_TN_Shell_Ability_C
+3284	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+3380	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+3476	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+3572	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+3668	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+3764	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+3860	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+3956	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+4052	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+4148	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+4244	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+4340	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+4436	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+4532	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+4628	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+4724	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+4820	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+4916	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+6862	/Game/Sparta/Core/SaveObjects/BPSO_FC_TarRoots.BPSO_FC_TarRoots_C
+7314	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+7397	PlayerClensed
+7454	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+7550	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+7646	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+7742	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+7838	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+7934	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+8030	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+8126	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+8222	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+21859	/Game/Sparta/Core/SaveObjects/BPSO_CraftingItemPickup.BPSO_CraftingItemPickup_C
+27130	/Script/Sparta.TarstoneSaveData
+27187	TarstoneBuilds
+27321	TarstoneArray
+27417	CharacterId.Player.Shell.Harros
+27462	Tarstones
+27577	Weapon.HadernsSword
+27610	Tarstones
+27725	Weapon.NailShotgun
+27757	Tarstones
+28188	/Game/Sparta/Core/Player/Save/BP_SpartaPlayerSaveObject.BP_SpartaPlayerSaveObject_C
+28423	DropItems
+28513	/Game/Sparta/Items/Pickups/ID_Gloom.ID_Gloom_C
+28568	/Game/Sparta/Items/Pickups/ID_Gold.ID_Gold_C
+28621	/Game/Sparta/Items/Pickups/Tarforge/ID_TFM_01_Ventrium.ID_TFM_01_Ventrium_C
+28705	/Game/Sparta/Items/Pickups/Tarforge/ID_Tarforge_ForgeMode_Weapon.ID_Tarforge_ForgeMode_Weapon_C
+28809	/Game/Sparta/Items/Pickups/ID_Glimpses.ID_Glimpses_C
+28870	/Game/Sparta/Items/Pickups/PermProgression/ID/ID_PP_Moonshine_Inferior.ID_PP_Moonshine_Inferior_C
+28976	CumulativeGloom
+29025	CumulativeGold
+29073	ActiveDarkFormItemDefinition
+29134	/Game/Sparta/Items/Shells/ID_Darkform_StrongOne.ID_Darkform_StrongOne_C
+29210	ActiveShellItemDefinition
+29268	/Game/Sparta/Items/Shells/ID_Shell_Harros.ID_Shell_Harros_C
+29332	ActiveSealItemDefinition
+29389	/Game/Sparta/Items/Seals/ID_Seal_Default.ID_Seal_Default_C
+29452	ActiveWeaponItemDefinition
+29511	/Game/Sparta/Items/Weapons/ID_HadernsSword.ID_HadernsSword_C
+29576	ActiveSidearmItemDefinition
+29636	/Game/Sparta/Items/Sidearms/ID_Sidearm_NailShotgun.ID_Sidearm_NailShotgun_C
+29905	Weapon.HadernsSword
+29977	Weapon.NailShotgun
+30048	Weapon.Seal.Default
+30082	CumulativeGlimpses
+30521	SoftItemStatus
+30598	/Game/Sparta/Items/Weapons/ID_HadernsSword
+30671	/Game/Sparta/Items/Sidearms/ID_Sidearm_NailShotgun
+30759	/Game/Sparta/Items/Seals/ID_Seal_Default
+30830	/Game/Sparta/Items/Pickups/Tarforge/ID_TFM_01_Ventrium
+30889	ID_TFM_01_Ventrium_C
+30918	/Game/Sparta/Items/Pickups/Tarforge/ID_Tarforge_ForgeMode_Weapon
+30987	ID_Tarforge_ForgeMode_Weapon_C
+31026	/Game/Sparta/Items/Pickups/PermProgression/ID/ID_PP_Moonshine_Inferior
+31246	InventoryItem_ID_PP_Moonshine_Inferior_C
+31291	InventoryItem_ID_HadernsSword_C
+31327	InventoryItem_ID_Sidearm_NailShotgun_C
+31514	WBP_LTMP_ShellAbilities_C
+31562	WBP_LTMP_ShellRevive_C
+31725	CurrentSpawnLocation
+32122	CharacterId.Player.Darkform.Lavender
+32210	Sparta.Item.Mask.FlowerCrown
+32494	Sparta.Item.Mask.FlowerCrown
+32540	CharacterId.Player.Darkform.StrongOne
+32753	/Game/Sparta/SaveObjects/BPSO_ShellMemories.BPSO_ShellMemories_C
+33060	/Script/Sparta.PPItemsSaveData
+33116	PPItemLevels
+33213	/Game/Sparta/Items/Pickups/PermProgression/ID/ID_PP_Moonshine_Inferior
+33327	PPItemFoundAmounts
+33430	/Game/Sparta/Items/Pickups/PermProgression/ID/ID_PP_Moonshine_Inferior
+33956	/Game/Sparta/Core/SaveObjects/BPSO_CraftingItemPickup.BPSO_CraftingItemPickup_C
+35620	/Game/Sparta/Core/SaveObjects/BPSO_CraftingItemPickup.BPSO_CraftingItemPickup_C
+37216	/Game/Sparta/Core/SaveObjects/BPSO_CraftingItemPickup.BPSO_CraftingItemPickup_C
+37321	ItemCollected
+37635	/Game/Sparta/Core/SaveObjects/BPSO_CraftingItemPickup.BPSO_CraftingItemPickup_C
+40788	/Game/Sparta/Core/SaveObjects/BPSO_CraftingItemPickup.BPSO_CraftingItemPickup_C
+40906	/Game/Sparta/Core/SaveObjects/BPSO_CraftingItemPickup.BPSO_CraftingItemPickup_C
+41011	ItemCollected
+45734	/Game/Sparta/Core/SaveObjects/BPSO_TarGate.BPSO_TarGate_C
+45817	PlayerClensed
+45990	/Game/Sparta/Core/SaveObjects/BPSO_CraftingItemPickup.BPSO_CraftingItemPickup_C
+46108	/Game/Sparta/Core/SaveObjects/BPSO_Ovum.BPSO_Ovum_C
+46224	OvumCollected
+46654	/Game/Sparta/Core/SaveObjects/BPSO_CraftingItemPickup.BPSO_CraftingItemPickup_C
+46759	ItemCollected
+49236	/Game/Sparta/Core/SaveObjects/BPSO_CraftingItemPickup.BPSO_CraftingItemPickup_C
+
+---PROPS---
+ActorInts :MapProperty = {"size":2,"inner":null}
+Map :MapProperty = {"size":2,"inner":null}
+Map :MapProperty = {"size":2,"inner":null}
+ActorNames :MapProperty = {"size":2,"inner":null}
+Map :MapProperty = {"size":2,"inner":null}
+ActorBools :MapProperty = {"size":2,"inner":null}
+Map :MapProperty = {"size":2,"inner":null}
+ActorObjectMapAsString :StrProperty = "{\r\n\t\"Keys\": [],\r\n\t\"Values\": []\r\n}"
+PlayerClensed :BoolProperty = true
+Visible :BoolProperty = true
+Revealed :BoolProperty = true
+Completed :BoolProperty = true
+Visible :BoolProperty = true
+Revealed :BoolProperty = true
+Completed :BoolProperty = true
+Visible :BoolProperty = true
+Revealed :BoolProperty = true
+Completed :BoolProperty = true
+Visible :BoolProperty = true
+Revealed :BoolProperty = true
+Completed :BoolProperty = true
+TarstoneBuilds :MapProperty = {"size":2,"inner":null}
+TagName :NameProperty = "CharacterId.Player.Shell.Harros"
+Tarstones :ArrayProperty = {"size":1,"inner":null}
+TagName :NameProperty = "Weapon.HadernsSword"
+Tarstones :ArrayProperty = {"size":1,"inner":null}
+TagName :NameProperty = "Weapon.NailShotgun"
+Tarstones :ArrayProperty = {"size":1,"inner":null}
+NarrativeTags :StructProperty = null
+ActorBools :MapProperty = {"size":2,"inner":null}
+DropItems :MapProperty = {"size":2,"inner":null}
+CumulativeGloom :IntProperty = 2417
+CumulativeGold :IntProperty = 449
+ActiveDarkFormItemDefinition :ObjectProperty = null
+ActiveShellItemDefinition :ObjectProperty = null
+ActiveSealItemDefinition :ObjectProperty = null
+ActiveWeaponItemDefinition :ObjectProperty = null
+ActiveSidearmItemDefinition :ObjectProperty = null
+EquipmentUnlockState :MapProperty = {"size":2,"inner":null}
+TagName :NameProperty = "Weapon.HadernsSword"
+TagName :NameProperty = "Weapon.NailShotgun"
+TagName :NameProperty = "Weapon.Seal.Default"
+CumulativeGlimpses :IntProperty = 1
+TotalDeaths :IntProperty = 1
+UnlockedLandingAreas :ArrayProperty = {"size":1,"inner":null}
+CleansedLandingAreas :ArrayProperty = {"size":1,"inner":null}
+CinematicsWatched :StructProperty = null
+SoftItemStatus :ArrayProperty = {"size":1,"inner":null}
+AttentionGrabberStatus :ArrayProperty = {"size":1,"inner":null}
+ShownTutorials :ArrayProperty = {"size":1,"inner":null}
+EarnedAchievements :MapProperty = {"size":2,"inner":null}
+ActiveDarkFormMask :MapProperty = {"size":2,"inner":null}
+TagName :NameProperty = "CharacterId.Player.Darkform.Lavender"
+TagName :NameProperty = "Sparta.Item.Mask.FlowerCrown"
+UnlockedMasks :MapProperty = {"size":2,"inner":null}
+TagName :NameProperty = "Sparta.Item.Mask.FlowerCrown"
+TotalPlayTimeSeconds :FloatProperty = 1672.50537109375
+LastSaveDateTime :StructProperty = null
+PPItemLevels :MapProperty = {"size":2,"inner":null}
+PPItemFoundAmounts :MapProperty = {"size":2,"inner":null}
+MyBool :BoolProperty = true
+MyBool :BoolProperty = true
+WasEverKilled :BoolProperty = true
+WasEverKilled :BoolProperty = true
+WasEverKilled :BoolProperty = true
+WasEverKilled :BoolProperty = true
+MyBool :BoolProperty = true
+ItemCollected :BoolProperty = true
+MyBool :BoolProperty = true
+Visible :BoolProperty = true
+Revealed :BoolProperty = true
+PlayedRevealScript :BoolProperty = true
+WasEverKilled :BoolProperty = true
+ItemCollected :BoolProperty = true
+WasEverKilled :BoolProperty = true
+WasEverKilled :BoolProperty = true
+WasEverKilled :BoolProperty = true
+WasEverKilled :BoolProperty = true
+WasEverKilled :BoolProperty = true
+WasEverKilled :BoolProperty = true
+WasEverKilled :BoolProperty = true
+WasEverKilled :BoolProperty = true
+PlayerClensed :BoolProperty = true
+Cleansed :BoolProperty = true
+OvumCollected :BoolProperty = true
+MyBool :BoolProperty = true
+ItemCollected :BoolProperty = true
+Visible :BoolProperty = true
+Revealed :BoolProperty = true
+PlayedRevealScript :BoolProperty = true

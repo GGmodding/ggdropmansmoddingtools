@@ -12,11 +12,7 @@
   }
 
   function isSaveName(name) {
-    return /^EXPEDITION_\d+\.sav$/i.test(name) || /^EXPEDITION_\d+_.+\.sav$/i.test(name);
-  }
-
-  function isContainerName(name) {
-    return /^SavesContainer\.sav$/i.test(name);
+    return /\.(sav|bak)$/i.test(name);
   }
 
   function formatBytes(n) {
@@ -24,17 +20,6 @@
     if (n < 1024) return n + " B";
     if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
     return (n / (1024 * 1024)).toFixed(2) + " MB";
-  }
-
-  function formatPlaytime(sec) {
-    if (sec == null || !Number.isFinite(sec)) return "—";
-    const s = Math.floor(sec);
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    const r = s % 60;
-    if (h) return h + "h " + m + "m";
-    if (m) return m + "m " + r + "s";
-    return r + "s";
   }
 
   async function readFileAsBytes(file) {
@@ -46,14 +31,17 @@
     if (typeof JSZip === "undefined") throw new Error("JSZip not loaded.");
     const zip = await JSZip.loadAsync(file);
     const entries = [];
-    const names = Object.keys(zip.files);
-    for (const name of names) {
+    for (const name of Object.keys(zip.files)) {
       const zf = zip.files[name];
       if (zf.dir) continue;
       const base = basename(name);
-      if (!isSaveName(base) && !isContainerName(base) && !/\.sav$/i.test(base)) continue;
-      const bytes = new Uint8Array(await zf.async("uint8array"));
-      entries.push({ name: base, path: name, bytes, file: null });
+      if (!isSaveName(base)) continue;
+      entries.push({
+        name: base,
+        path: name,
+        bytes: new Uint8Array(await zf.async("uint8array")),
+        file: null,
+      });
     }
     return entries;
   }
@@ -63,16 +51,14 @@
     for (const file of fileList) {
       const name = file.name;
       if (/\.zip$/i.test(name)) {
-        const inner = await readZip(file);
-        entries.push(...inner);
+        entries.push(...(await readZip(file)));
         continue;
       }
-      if (!/\.sav$/i.test(name)) continue;
-      const bytes = await readFileAsBytes(file);
+      if (!isSaveName(name)) continue;
       entries.push({
         name,
         path: file.webkitRelativePath || name,
-        bytes,
+        bytes: await readFileAsBytes(file),
         file,
       });
     }
@@ -80,29 +66,23 @@
   }
 
   function pickPrimary(entries) {
-    const slots = entries.filter((e) => /^EXPEDITION_\d+\.sav$/i.test(e.name));
-    if (slots.length) {
-      slots.sort((a, b) => {
-        const na = Number((a.name.match(/EXPEDITION_(\d+)/i) || [])[1] || 99);
-        const nb = Number((b.name.match(/EXPEDITION_(\d+)/i) || [])[1] || 99);
-        return na - nb;
-      });
-      return slots[0];
+    const savs = entries.filter((e) => /\.sav$/i.test(e.name) && !/backup/i.test(e.name));
+    if (savs.length) {
+      savs.sort((a, b) => b.bytes.length - a.bytes.length);
+      return savs[0];
     }
     const any = entries.filter((e) => isSaveName(e.name));
     if (any.length) {
       any.sort((a, b) => b.bytes.length - a.bytes.length);
       return any[0];
     }
-    return entries.find((e) => /\.sav$/i.test(e.name) && !isContainerName(e.name)) || entries[0] || null;
+    return entries[0] || null;
   }
 
-  window.E33Save = {
+  window.MortalShell2Save = {
     isSaveName,
-    isContainerName,
     basename,
     formatBytes,
-    formatPlaytime,
     readZip,
     readFileEntriesFromList,
     pickPrimary,

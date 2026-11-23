@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GGdropmans Mortal Shell 2 Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Cinzel:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="drop-overlay" class="drop-overlay" hidden>
+    <div class="drop-overlay__panel">Drop .sav / .bak / ZIP</div>
+  </div>
+
+  <header class="topbar">
+    <a class="brand" href="../../index.html" style="text-decoration:none;color:inherit">
+      <span class="brand__mark">MS</span>
+      <div class="brand__text">
+        <h1>GGdropmans Mortal Shell 2 Editor</h1>
+        <p>UE · GVAS · Back to hub</p>
+      </div>
+    </a>
+    <div class="topbar__actions">
+      <label class="btn btn--primary">
+        Load Save
+        <input id="files-input" type="file" multiple accept=".sav,.bak,.zip,application/zip" />
+      </label>
+      <label class="btn">
+        Load Folder
+        <input id="folder-input" type="file" webkitdirectory multiple />
+      </label>
+      <button id="btn-find-save" class="btn" type="button">Find Save</button>
+      <button id="btn-open-save-folder" class="btn" type="button">Open Folder</button>
+      <label class="btn">
+        Load ZIP
+        <input id="zip-input" type="file" accept=".zip,application/zip" />
+      </label>
+      <label class="slot-pick" id="slot-wrap" hidden>
+        Slot
+        <select id="slot-select"></select>
+      </label>
+      <button id="btn-backup" class="btn" type="button" disabled>Download Backup</button>
+      <button id="btn-save" class="btn btn--accent" type="button" disabled>Save .sav</button>
+      <button id="btn-install" class="btn" type="button" disabled>Install to Folder</button>
+      <span id="dirty-pill" class="pill" hidden>Unsaved</span>
+    </div>
+  </header>
+
+  <section class="path-banner">
+    <strong>MS2 saves</strong>
+    <span>Steam: <code>%LOCALAPPDATA%\MortalShell2\Saved\SaveGames</code> (often a SteamID subfolder).
+      Unreal GVAS <code>.sav</code>. Close the game before overwriting. Always backup.</span>
+  </section>
+
+  <nav class="tabs" id="tabs" aria-label="Editor sections" hidden>
+    <button class="tab is-active" data-tab="overview" type="button">Overview</button>
+    <button class="tab" data-tab="player" type="button">Player</button>
+    <button class="tab" data-tab="properties" type="button">Properties</button>
+    <button class="tab" data-tab="inventory" type="button">Inventory scan</button>
+    <button class="tab" data-tab="notes" type="button">Notes</button>
+  </nav>
+
+  <main class="main">
+    <div id="empty-state" class="empty">
+      <h2>Load a Mortal Shell 2 save</h2>
+      <p>Pick a <code>.sav</code> from <code>%LOCALAPPDATA%\MortalShell2\Saved\SaveGames</code>, or use Find Save / Load Folder / ZIP.</p>
+    </div>
+
+    <section id="panel-overview" class="panel is-active" hidden>
+      <div class="panel__head">
+        <h2>Save status</h2>
+        <p>Header + property scan. Gold / Gloom / Glimpses live in the DropItems wallet on <strong>Player</strong>. Health is runtime-only and will not appear.</p>
+      </div>
+      <div id="overview-meta" class="meta-strip"></div>
+      <div class="callout">
+        v1 is a safe in-place editor: numbers, bools, and same-length strings. Adding items or growing maps is not wired yet.
+      </div>
+    </section>
+
+    <section id="panel-player" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Player fields</h2>
+        <p>HUD coins = Gold, HUD souls = Gloom. Save .sav and Install now write these automatically. Quit the game before installing or the live process will overwrite the slot.</p>
+      </div>
+      <div id="player-missing" class="callout" hidden>No curated names found in this save yet. Search the Property tab.</div>
+      <div id="player-fields" class="form-grid"></div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn--accent" id="btn-player-apply">Apply player fields</button>
+        <button type="button" class="btn" id="btn-player-refresh">Reload from save</button>
+      </div>
+    </section>
+
+    <section id="panel-properties" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Property browser</h2>
+        <p>Every named UE property the scanner can see. Apply writes the first matching name+type in-place.</p>
+      </div>
+      <div class="toolbar">
+        <label>Search
+          <input id="prop-search" type="text" placeholder="tar, glimpse, health…" />
+        </label>
+      </div>
+      <p class="hint" id="prop-hint">Load a save to scan.</p>
+      <div class="table-wrap">
+        <table class="data-table" id="prop-table">
+          <thead><tr><th>Name</th><th>Type</th><th>Hits</th><th>Value</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-inventory" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Wallet &amp; assets</h2>
+        <p>DropItems stacks are editable. Asset paths below that are mentions only — adding new items is not wired yet.</p>
+      </div>
+      <p class="hint" id="inv-hint">Load a save to scan.</p>
+      <div class="table-wrap">
+        <table class="data-table" id="inv-table">
+          <thead><tr><th>Item / path</th><th>Amount</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-notes" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Notes &amp; paths</h2>
+        <p>Basic editor — expand from your live save as we map more fields.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="notes-table">
+          <thead><tr><th>Tip</th><th>Detail</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="status-bar" id="status">Ready — load a Mortal Shell 2 .sav.</footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="../shared/save-folders.js"></script>
+  <script src="data.js"></script>
+  <script src="gvas.js"></script>
+  <script src="save.js"></script>
+  <script src="../shared/donate.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
