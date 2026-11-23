@@ -60,6 +60,7 @@
     anchorCache.set(bytes, found);
     return found;
   }
+  const SEQ_REL = 34256; // item-acquisition counter, distance from the name (confirmed in-game)
   const INV_REL = 452; // inventory table starts this many bytes after the name
   function invStart(bytes) {
     const n = locate(bytes);
@@ -182,6 +183,39 @@
   // Folders that never hold the save; skipping them keeps the search fast.
   const SKIP_DIRS = /^(_internal|_redist|game|bin|bundled|cache|shader|shader_catalog|tools|launcher|licenses|patches|mods|companions|download\d*|temp\d*|fonts|screenshots|captures|log|trophy.*|dlss|out|docs|scripts|node_modules|\.git)$/i;
 
+  // Append a new item record in the first empty slot. Returns a modified COPY.
+  // Only "goods" (consumables/key items) is confirmed working in-game. Weapons and armor also need an
+  // entry in a separate per-item table, which is not written yet, so they are refused for now.
+  // Each new record takes the next number from the save's item counter (key = counter, counter + 1).
+  function addItem(bytes, kind, baseId, count) {
+    if (kind !== "goods") throw new Error("Only consumables and key items can be added so far.");
+    const base = locate(bytes);
+    if (base < 0) throw new Error("Could not locate the character data in this save.");
+    const start = base + INV_REL, seqOff = base + SEQ_REL;
+    const copy = new Uint8Array(bytes);
+    const v = view(copy);
+    const seq = v.getUint32(seqOff, true);
+    if (seq < 1 || seq > 0xFFF) throw new Error("Unexpected item counter value (" + seq + "); not editing this save.");
+    const handle = (0xB0000000 | baseId) >>> 0, id = (0x40000000 | baseId) >>> 0;
+    const n = Math.trunc(Number(count));
+    if (!(n >= COUNT_MIN && n <= COUNT_MAX)) throw new Error("Count must be " + COUNT_MIN + " to " + COUNT_MAX + ".");
+    let free = -1;
+    for (let slot = 0; slot < INV_SLOTS; slot++) {
+      const o = start + slot * REC;
+      const h = v.getUint32(o + 4, true), i = v.getUint32(o + 8, true);
+      if (h === handle) throw new Error("You already have this item - change its count instead.");
+      if (free < 0 && h === 0 && i === 0xFFFFFFFF) free = slot;
+    }
+    if (free < 0) throw new Error("Inventory is full.");
+    const o = start + free * REC;
+    v.setUint32(o, seq, true);
+    v.setUint32(o + 4, handle, true);
+    v.setUint32(o + 8, id, true);
+    v.setUint32(o + 12, n, true);
+    v.setUint32(seqOff, seq + 1, true);
+    return copy;
+  }
+
   async function descend(dir, parts) {
     let cur = dir;
     for (const p of parts) {
@@ -226,7 +260,7 @@
     return info;
   }
 
-  const api = { locate, EXPECTED_SIZE, NAME_OFFSET, FIELDS, STAT_IDS, readName, validate, readFields, applyFields, levelFromStats, findSave, readInventory, applyInventory, COUNT_MIN, COUNT_MAX };
+  const api = { locate, EXPECTED_SIZE, NAME_OFFSET, FIELDS, STAT_IDS, readName, validate, readFields, applyFields, levelFromStats, findSave, readInventory, applyInventory, addItem, COUNT_MIN, COUNT_MAX };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else window.BBSave = api;
 })();

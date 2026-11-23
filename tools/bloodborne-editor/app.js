@@ -11,6 +11,7 @@
   const inputs = {};
   let loadedInv = [];      // inventory records as loaded
   const invInputs = {};    // slot -> count <input> (stackable goods only)
+  let pendingAdds = [];    // [{ baseId, name, count }] new consumables to append on save
   const ITEMS = window.BBItems || { goods: [], weapons: [], armor: [] };
   const NAMES = { goods: new Map(ITEMS.goods), weapon: new Map(ITEMS.weapons), armor: new Map(ITEMS.armor) };
 
@@ -85,10 +86,61 @@
     }
     return c;
   }
-  function invDirty() { return Object.keys(invCounts()).length > 0; }
+  function invDirty() { return Object.keys(invCounts()).length > 0 || pendingAdds.length > 0; }
 
   function buildEdited() {
-    return S.applyInventory(S.applyFields(original, currentValues()), invCounts());
+    let out = S.applyInventory(S.applyFields(original, currentValues()), invCounts());
+    for (const p of pendingAdds) out = S.addItem(out, "goods", p.baseId, p.count);
+    return out;
+  }
+
+  /* ---- adding new consumables ---- */
+  function ownedGoodsIds() {
+    const s = new Set();
+    for (const r of loadedInv) if (r.type === "goods") s.add(r.baseId);
+    for (const p of pendingAdds) s.add(p.baseId);
+    return s;
+  }
+  function refreshAddList() {
+    const dl = $("add-list");
+    if (!dl) return;
+    dl.innerHTML = "";
+    const owned = ownedGoodsIds();
+    for (const g of ITEMS.goods) {
+      if (owned.has(g[0])) continue;
+      const o = document.createElement("option");
+      o.value = g[1] + " (" + g[0] + ")";
+      dl.appendChild(o);
+    }
+  }
+  function renderPending() {
+    const ul = $("add-pending");
+    ul.innerHTML = "";
+    pendingAdds.forEach((p, i) => {
+      const li = document.createElement("li");
+      li.textContent = p.name + " x" + p.count + "  ";
+      const b = document.createElement("button");
+      b.type = "button"; b.textContent = "Remove";
+      b.addEventListener("click", () => { pendingAdds.splice(i, 1); renderPending(); refreshAddList(); markDirty(); });
+      li.appendChild(b);
+      ul.appendChild(li);
+    });
+    ul.hidden = pendingAdds.length === 0;
+  }
+  function addPending() {
+    if (!original) { fail("Load a save first."); return; }
+    const txt = $("add-item").value.trim().toLowerCase();
+    const count = Math.trunc(Number($("add-count").value));
+    if (!(count >= S.COUNT_MIN && count <= S.COUNT_MAX)) { fail("Count must be " + S.COUNT_MIN + " to " + S.COUNT_MAX + "."); return; }
+    const owned = ownedGoodsIds();
+    let hit = ITEMS.goods.find((g) => (g[1] + " (" + g[0] + ")").toLowerCase() === txt);
+    if (!hit) { const m = ITEMS.goods.filter((g) => !owned.has(g[0]) && g[1].toLowerCase().indexOf(txt) >= 0); if (m.length === 1) hit = m[0]; }
+    if (!hit) { fail("Pick one item from the list (type part of the name and choose it)."); return; }
+    if (owned.has(hit[0])) { fail(hit[1] + " is already in your inventory - change its count in the table instead."); return; }
+    pendingAdds.push({ baseId: hit[0], name: hit[1], count });
+    $("add-item").value = "";
+    renderPending(); refreshAddList(); markDirty();
+    setStatus("Queued " + hit[1] + " x" + count + ". It is added when you install or download.");
   }
 
   function renderInventory() {
@@ -119,6 +171,7 @@
       body.appendChild(tr);
     }
     $("inv-summary").textContent = loadedInv.length + " items found in the main inventory table.";
+    refreshAddList();
   }
 
   /* ---- loading ---- */
@@ -133,7 +186,9 @@
     $("tabs").hidden = false;
     showTab("character");
     fillInputs(loadedValues);
+    pendingAdds = [];
     loadedInv = S.readInventory(bytes);
+    renderPending();
     renderInventory();
     $("btn-backup").disabled = false;
     $("btn-save").disabled = false;
@@ -271,7 +326,9 @@
 
       original = edited;
       loadedValues = S.readFields(edited);
+      pendingAdds = [];
       loadedInv = S.readInventory(edited);
+      renderPending();
       renderInventory();
       markDirty();
       setStatus("Installed. Original saved as bb_editor_backups/" + bname + ". Start the game to check it loads.");
@@ -308,7 +365,8 @@
       inputs.level.value = S.levelFromStats(currentValues());
       markDirty();
     });
-    $("btn-reset").addEventListener("click", () => { if (loadedValues) { fillInputs(loadedValues); renderInventory(); markDirty(); } });
+    $("btn-reset").addEventListener("click", () => { if (loadedValues) { fillInputs(loadedValues); pendingAdds = []; renderPending(); renderInventory(); markDirty(); } });
+    $("btn-add-item").addEventListener("click", addPending);
     $("inv-search").addEventListener("input", (e) => {
       const q = e.target.value.trim().toLowerCase();
       for (const tr of $("inv-table").querySelectorAll("tbody tr")) tr.hidden = q && tr.dataset.search.indexOf(q) < 0;

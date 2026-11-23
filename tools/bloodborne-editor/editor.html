@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Cinzel:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=6" />
+  <link rel="stylesheet" href="styles.css?v=7" />
 </head>
 <body>
   <div id="drop-overlay" class="drop-overlay" hidden>
@@ -77,9 +77,21 @@
         <p id="inv-summary">Items found in the main inventory table.</p>
       </div>
       <div class="callout callout--warn">
-        Experimental: stack counts of items you already own can be changed (1 to 99). The game may cap some items at its own
-        maximum, and weapons / armor are shown but not editable. Adding new items is not wired yet.
+        Stack counts of items you own can be changed (1 to 99); the game may cap some items at its own maximum. New
+        consumables / key items you do not own yet can be added below (tested in-game). Weapons and armor are shown
+        but cannot be edited or added yet. Always keep a backup.
       </div>
+      <div class="toolbar">
+        <label>Add a consumable
+          <input id="add-item" type="text" list="add-list" placeholder="start typing a name..." autocomplete="off" />
+          <datalist id="add-list"></datalist>
+        </label>
+        <label>Count
+          <input id="add-count" type="number" min="1" max="99" step="1" value="1" style="width:5rem" />
+        </label>
+        <button id="btn-add-item" type="button">Add to save</button>
+      </div>
+      <ul id="add-pending" hidden></ul>
       <div class="toolbar">
         <label>Search
           <input id="inv-search" type="text" placeholder="blood vial, pebble, saw..." />
@@ -117,9 +129,9 @@
 
   <footer class="status-bar" id="status">Ready - load userdata0000.</footer>
 
-  <script src="items.js?v=6"></script>
-  <script src="save.js?v=6"></script>
+  <script src="items.js?v=7"></script>
+  <script src="save.js?v=7"></script>
   <script src="../shared/donate.js"></script>
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>
