@@ -11,7 +11,7 @@
   const inputs = {};
   let loadedInv = [];      // inventory records as loaded
   const invInputs = {};    // slot -> count <input> (stackable goods only)
-  let pendingAdds = [];    // [{ baseId, name, count }] new consumables to append on save
+  let pendingAdds = [];    // [{ kind, baseId, name, count }] new items to append on save
   const ITEMS = window.BBItems || { goods: [], weapons: [], armor: [] };
   const NAMES = { goods: new Map(ITEMS.goods), weapon: new Map(ITEMS.weapons), armor: new Map(ITEMS.armor) };
 
@@ -90,35 +90,39 @@
 
   function buildEdited() {
     let out = S.applyInventory(S.applyFields(original, currentValues()), invCounts());
-    for (const p of pendingAdds) out = S.addItem(out, "goods", p.baseId, p.count);
+    for (const p of pendingAdds) out = S.addItem(out, p.kind, p.baseId, p.count);
     return out;
   }
 
-  /* ---- adding new consumables ---- */
+  /* ---- adding new items ---- */
+  const KIND_LIST = { goods: () => ITEMS.goods, weapon: () => ITEMS.weapons, armor: () => ITEMS.armor };
+  function addKind() { return $("add-kind").value; }
   function ownedGoodsIds() {
     const s = new Set();
     for (const r of loadedInv) if (r.type === "goods") s.add(r.baseId);
-    for (const p of pendingAdds) s.add(p.baseId);
+    for (const p of pendingAdds) if (p.kind === "goods") s.add(p.baseId);
     return s;
   }
   function refreshAddList() {
     const dl = $("add-list");
     if (!dl) return;
     dl.innerHTML = "";
-    const owned = ownedGoodsIds();
-    for (const g of ITEMS.goods) {
+    const kind = addKind();
+    const owned = kind === "goods" ? ownedGoodsIds() : new Set();
+    for (const g of KIND_LIST[kind]()) {
       if (owned.has(g[0])) continue;
       const o = document.createElement("option");
       o.value = g[1] + " (" + g[0] + ")";
       dl.appendChild(o);
     }
+    $("add-count").disabled = kind !== "goods";
   }
   function renderPending() {
     const ul = $("add-pending");
     ul.innerHTML = "";
     pendingAdds.forEach((p, i) => {
       const li = document.createElement("li");
-      li.textContent = p.name + " x" + p.count + "  ";
+      li.textContent = p.name + " (" + p.kind + ")" + (p.kind === "goods" ? " x" + p.count : "") + "  ";
       const b = document.createElement("button");
       b.type = "button"; b.textContent = "Remove";
       b.addEventListener("click", () => { pendingAdds.splice(i, 1); renderPending(); refreshAddList(); markDirty(); });
@@ -129,18 +133,20 @@
   }
   function addPending() {
     if (!original) { fail("Load a save first."); return; }
+    const kind = addKind();
+    const list = KIND_LIST[kind]();
     const txt = $("add-item").value.trim().toLowerCase();
-    const count = Math.trunc(Number($("add-count").value));
+    const count = kind === "goods" ? Math.trunc(Number($("add-count").value)) : 1;
     if (!(count >= S.COUNT_MIN && count <= S.COUNT_MAX)) { fail("Count must be " + S.COUNT_MIN + " to " + S.COUNT_MAX + "."); return; }
-    const owned = ownedGoodsIds();
-    let hit = ITEMS.goods.find((g) => (g[1] + " (" + g[0] + ")").toLowerCase() === txt);
-    if (!hit) { const m = ITEMS.goods.filter((g) => !owned.has(g[0]) && g[1].toLowerCase().indexOf(txt) >= 0); if (m.length === 1) hit = m[0]; }
+    const owned = kind === "goods" ? ownedGoodsIds() : new Set();
+    let hit = list.find((g) => (g[1] + " (" + g[0] + ")").toLowerCase() === txt);
+    if (!hit) { const m = list.filter((g) => !owned.has(g[0]) && g[1].toLowerCase().indexOf(txt) >= 0); if (txt && m.length === 1) hit = m[0]; }
     if (!hit) { fail("Pick one item from the list (type part of the name and choose it)."); return; }
     if (owned.has(hit[0])) { fail(hit[1] + " is already in your inventory - change its count in the table instead."); return; }
-    pendingAdds.push({ baseId: hit[0], name: hit[1], count });
+    pendingAdds.push({ kind, baseId: hit[0], name: hit[1], count });
     $("add-item").value = "";
     renderPending(); refreshAddList(); markDirty();
-    setStatus("Queued " + hit[1] + " x" + count + ". It is added when you install or download.");
+    setStatus("Queued " + hit[1] + ". It is added when you install or download.");
   }
 
   function renderInventory() {
@@ -367,6 +373,7 @@
     });
     $("btn-reset").addEventListener("click", () => { if (loadedValues) { fillInputs(loadedValues); pendingAdds = []; renderPending(); renderInventory(); markDirty(); } });
     $("btn-add-item").addEventListener("click", addPending);
+    $("add-kind").addEventListener("change", () => { $("add-item").value = ""; refreshAddList(); });
     $("inv-search").addEventListener("input", (e) => {
       const q = e.target.value.trim().toLowerCase();
       for (const tr of $("inv-table").querySelectorAll("tbody tr")) tr.hidden = q && tr.dataset.search.indexOf(q) < 0;

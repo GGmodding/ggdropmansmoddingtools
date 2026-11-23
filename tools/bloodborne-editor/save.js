@@ -183,12 +183,25 @@
   // Folders that never hold the save; skipping them keeps the search fast.
   const SKIP_DIRS = /^(_internal|_redist|game|bin|bundled|cache|shader|shader_catalog|tools|launcher|licenses|patches|mods|companions|download\d*|temp\d*|fonts|screenshots|captures|log|trophy.*|dlss|out|docs|scripts|node_modules|\.git)$/i;
 
-  // Append a new item record in the first empty slot. Returns a modified COPY.
-  // Only "goods" (consumables/key items) is confirmed working in-game. Weapons and armor also need an
-  // entry in a separate per-item table, which is not written yet, so they are refused for now.
+  let WEAPON_TPL = (typeof window !== "undefined" && window.BBWeaponTpl) || {};
+  function setWeaponTemplates(t) { WEAPON_TPL = t || {}; }
+
+  // Weapons and armor each have TWO records: one in the inventory table, and a 60-byte "instance" entry
+  // [handle][id][13 words] in a table before it. The game appends new ones after the last used instance entry.
+  function instanceEntryWords(kind, id) {
+    const NONE = 0x80000000;
+    if (kind === "armor") return [1, 0, 1, NONE, 0, NONE, 0, NONE, 0, NONE, 0, NONE, 0];
+    const lvl = Math.floor((id % 10000) / 100), base = id - lvl * 100;
+    const t = WEAPON_TPL[String(base)] || [200, -1, -1, -1, -1, -1];
+    const sl = t.slice(1).map((x) => (x < 0 ? NONE : x));
+    return [t[0], 0, 1, sl[0], 0, sl[1], 0, sl[2], 0, sl[3], 0, sl[4], 0];
+  }
+
+  // Appends a new item. Returns a modified COPY. kind: "goods" | "weapon" | "armor".
+  // Consumables are confirmed working in-game. Weapons/armor are EXPERIMENTAL (inventory record + instance entry).
   // Each new record takes the next number from the save's item counter (key = counter, counter + 1).
   function addItem(bytes, kind, baseId, count) {
-    if (kind !== "goods") throw new Error("Only consumables and key items can be added so far.");
+    if (kind !== "goods" && kind !== "weapon" && kind !== "armor") throw new Error("Unknown item kind.");
     const base = locate(bytes);
     if (base < 0) throw new Error("Could not locate the character data in this save.");
     const start = base + INV_REL, seqOff = base + SEQ_REL;
@@ -196,17 +209,44 @@
     const v = view(copy);
     const seq = v.getUint32(seqOff, true);
     if (seq < 1 || seq > 0xFFF) throw new Error("Unexpected item counter value (" + seq + "); not editing this save.");
-    const handle = (0xB0000000 | baseId) >>> 0, id = (0x40000000 | baseId) >>> 0;
-    const n = Math.trunc(Number(count));
+    const n = kind === "goods" ? Math.trunc(Number(count)) : 1;
     if (!(n >= COUNT_MIN && n <= COUNT_MAX)) throw new Error("Count must be " + COUNT_MIN + " to " + COUNT_MAX + ".");
-    let free = -1;
+    let free = -1, maxHandle = 0;
+    const wanted = new Set();
+    const handleGoods = (0xB0000000 | baseId) >>> 0;
     for (let slot = 0; slot < INV_SLOTS; slot++) {
       const o = start + slot * REC;
       const h = v.getUint32(o + 4, true), i = v.getUint32(o + 8, true);
-      if (h === handle) throw new Error("You already have this item - change its count instead.");
+      if (kind === "goods" && h === handleGoods) throw new Error("You already have this item - change its count instead.");
       if (free < 0 && h === 0 && i === 0xFFFFFFFF) free = slot;
+      const t = classify(h, i).type;
+      if (t === "weapon" || t === "armor") { maxHandle = Math.max(maxHandle, h & 0xFFFF); wanted.add(h + ":" + i); }
     }
     if (free < 0) throw new Error("Inventory is full.");
+
+    let handle, id;
+    if (kind === "goods") {
+      handle = handleGoods; id = (0x40000000 | baseId) >>> 0;
+    } else {
+      id = kind === "armor" ? (0x10000000 | baseId) >>> 0 : baseId >>> 0;
+      handle = ((kind === "armor" ? 0x90800000 : 0x80800000) | (maxHandle + 1)) >>> 0;
+      // find the last used instance entry, then the empty entry right after it
+      let last = -1;
+      for (let o = 0; o + 8 <= start; o += 4) {
+        if (wanted.has(v.getUint32(o, true) + ":" + v.getUint32(o + 4, true)) && o > last) last = o;
+      }
+      if (last < 0) throw new Error("Could not find the item table in this save.");
+      const e = last + 60;
+      // unused space is filled with an alternating (0, 0xFFFFFFFF) pattern; the phase flips every other entry
+      const w0 = v.getUint32(e, true), w1 = v.getUint32(e + 4, true);
+      const blank = (w0 === 0 && w1 === 0xFFFFFFFF) || (w0 === 0xFFFFFFFF && w1 === 0);
+      if (e + 60 > start || !blank) {
+        throw new Error("No free entry in the weapon/armor table.");
+      }
+      v.setUint32(e, handle, true);
+      v.setUint32(e + 4, id, true);
+      instanceEntryWords(kind, baseId).forEach((w, k) => v.setUint32(e + 8 + k * 4, w >>> 0, true));
+    }
     const o = start + free * REC;
     v.setUint32(o, seq, true);
     v.setUint32(o + 4, handle, true);
@@ -260,7 +300,7 @@
     return info;
   }
 
-  const api = { locate, EXPECTED_SIZE, NAME_OFFSET, FIELDS, STAT_IDS, readName, validate, readFields, applyFields, levelFromStats, findSave, readInventory, applyInventory, addItem, COUNT_MIN, COUNT_MAX };
+  const api = { locate, EXPECTED_SIZE, NAME_OFFSET, FIELDS, STAT_IDS, readName, validate, readFields, applyFields, levelFromStats, findSave, readInventory, applyInventory, addItem, setWeaponTemplates, COUNT_MIN, COUNT_MAX };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else window.BBSave = api;
 })();

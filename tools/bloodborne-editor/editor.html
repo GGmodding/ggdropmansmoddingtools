@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Cinzel:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=7" />
+  <link rel="stylesheet" href="styles.css?v=8" />
 </head>
 <body>
   <div id="drop-overlay" class="drop-overlay" hidden>
@@ -78,11 +78,18 @@
       </div>
       <div class="callout callout--warn">
         Stack counts of items you own can be changed (1 to 99); the game may cap some items at its own maximum. New
-        consumables / key items you do not own yet can be added below (tested in-game). Weapons and armor are shown
-        but cannot be edited or added yet. Always keep a backup.
+        consumables / key items can be added below (tested in-game). Adding weapons and armor is experimental and
+        untested in-game: try it on a copy first. Always keep a backup.
       </div>
       <div class="toolbar">
-        <label>Add a consumable
+        <label>Add item
+          <select id="add-kind">
+            <option value="goods">Consumable / key item</option>
+            <option value="weapon">Weapon (experimental)</option>
+            <option value="armor">Armor (experimental)</option>
+          </select>
+        </label>
+        <label>Name
           <input id="add-item" type="text" list="add-list" placeholder="start typing a name..." autocomplete="off" />
           <datalist id="add-list"></datalist>
         </label>
@@ -129,9 +136,10 @@
 
   <footer class="status-bar" id="status">Ready - load userdata0000.</footer>
 
-  <script src="items.js?v=7"></script>
-  <script src="save.js?v=7"></script>
+  <script src="items.js?v=8"></script>
+  <script src="weapon-templates.js?v=8"></script>
+  <script src="save.js?v=8"></script>
   <script src="../shared/donate.js"></script>
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>
