@@ -843,6 +843,16 @@
         linear-gradient(125deg, rgba(80, 40, 20, 0.5), transparent 55%);
     }
 
+    .tile--bloodborne {
+      --accent: #c45a3a;
+    }
+
+    .tile--bloodborne::after {
+      background:
+        radial-gradient(circle at 28% 30%, rgba(196, 40, 40, 0.3), transparent 42%),
+        linear-gradient(125deg, rgba(90, 14, 14, 0.55), transparent 55%);
+    }
+
     .tile--soon {
       opacity: 0.92;
     }
@@ -1118,6 +1128,15 @@
               <span class="tile__meta">v2 · stats · items · shared stash · .d2s</span>
             </span>
           </a>
+
+          <a class="tile tile--bloodborne" href="tools/bloodborne-editor/editor.html">
+            <span class="tile__badge">Beta</span>
+            <span class="tile__body">
+              <span class="tile__game">bbport PC</span>
+              <span class="tile__name">Bloodborne</span>
+              <span class="tile__meta">Stats · Level · Insight · Echoes</span>
+            </span>
+          </a>
         </nav>
       </div>
 
@@ -1336,6 +1355,7 @@
           <li><a href="tools/grounded-editor/editor.html">Grounded Save Editor</a> — GGdropman</li>
           <li><a href="tools/grounded2-editor/editor.html">Grounded 2 Save Editor</a> — GGdropman</li>
           <li><a href="tools/soe-editor/editor.html">Diablo II Sanctuary of Exile Save Editor</a> — GGdropman (v3 safe backups / stats / items / stash)</li>
+          <li><a href="tools/bloodborne-editor/editor.html">Bloodborne (bbport PC) Save Editor</a> — GGdropman (beta · stats / level / insight / echoes)</li>
         </ul>
         <p><strong>Cheat Tables:</strong></p>
         <ul>

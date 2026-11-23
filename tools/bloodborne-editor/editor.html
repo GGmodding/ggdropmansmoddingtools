@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GGdropmans Bloodborne Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Cinzel:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="drop-overlay" class="drop-overlay" hidden>
+    <div class="drop-overlay__panel">Drop userdata0000</div>
+  </div>
+
+  <header class="topbar">
+    <a class="brand" href="../../index.html" style="text-decoration:none;color:inherit">
+      <span class="brand__mark">BB</span>
+      <div class="brand__text">
+        <h1>GGdropmans Bloodborne Editor</h1>
+        <p>bbport PC save &middot; Back to hub</p>
+      </div>
+    </a>
+    <div class="topbar__actions">
+      <label class="btn btn--primary">
+        Load Save
+        <input id="file-input" type="file" accept="*/*" />
+      </label>
+      <button id="btn-backup" class="btn" type="button" disabled>Download Backup</button>
+      <button id="btn-save" class="btn btn--accent" type="button" disabled>Download Edited Save</button>
+      <span id="dirty-pill" class="pill" hidden>Unsaved</span>
+    </div>
+  </header>
+
+  <section class="path-banner">
+    <strong>bbport saves</strong>
+    <span>Open <code>userdata0000</code> from <code>&lt;game folder&gt;\bbport-windows\user\savedata\1\CUSA00207\SPRJ0005</code>.
+      Everything runs in your browser; the file is never uploaded. Close the game, back up first, and replace the file with the edited one.</span>
+  </section>
+
+  <nav class="tabs" id="tabs" aria-label="Editor sections" hidden>
+    <button class="tab is-active" data-tab="character" type="button">Character</button>
+    <button class="tab" data-tab="notes" type="button">Notes</button>
+  </nav>
+
+  <main class="main">
+    <div id="empty-state" class="empty">
+      <h2>Load a Bloodborne save</h2>
+      <p>Pick <code>userdata0000</code> from the port's <code>user\savedata</code> folder, or drag it onto this page.</p>
+    </div>
+
+    <section id="panel-character" class="panel is-active" hidden>
+      <div class="panel__head">
+        <h2>Character</h2>
+        <p id="char-name">-</p>
+      </div>
+      <div class="callout callout--warn">
+        Experimental: it is not yet known whether the game checks saves for edits. Keep a backup and test offline only.
+      </div>
+      <div id="fields" class="form-grid"></div>
+      <div class="quick-actions">
+        <button type="button" class="btn" id="btn-level">Set Level from stats (total &minus; 50)</button>
+        <button type="button" class="btn" id="btn-max">Max all 6 stats (99)</button>
+        <button type="button" class="btn" id="btn-reset">Reset to loaded values</button>
+      </div>
+    </section>
+
+    <section id="panel-notes" class="panel" hidden>
+      <div class="panel__head">
+        <h2>Notes</h2>
+        <p>What this editor does and does not do.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Tip</th><th>Detail</th></tr></thead>
+          <tbody>
+            <tr><td>Which file</td><td>Only the unencrypted main save <code>userdata0000</code> of the bbport PC port (1,310,720 bytes). Real PS4 saves are encrypted and will be refused.</td></tr>
+            <tr><td>Game open</td><td>Close the game fully before replacing the file; it autosaves and will overwrite your edit.</td></tr>
+            <tr><td>Level</td><td>Stored separately from the stats. Use the Level button to keep it matching (total of the six stats minus 50, inferred from one save).</td></tr>
+            <tr><td>Max HP</td><td>Not stored directly; the game recalculates it from Vitality. Rest or re-equip after loading.</td></tr>
+            <tr><td>Offline only</td><td>Do not use edited characters online or in co-op / PvP.</td></tr>
+            <tr><td>Not yet</td><td>Inventory and item editing are not mapped yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="status-bar" id="status">Ready - load userdata0000.</footer>
+
+  <script src="save.js"></script>
+  <script src="../shared/donate.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
