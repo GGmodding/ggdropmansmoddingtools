@@ -128,10 +128,14 @@
 
   async function searchIn(root) {
     setStatus("Searching " + root.name + " ...");
-    const found = await S.findSave(root);
+    const info = await S.findSave(root);
+    const found = info.result;
     if (!found) {
-      fail("No userdata0000 found inside \"" + root.name + "\". Pick the bbport-windows folder (the one with Bloodborne.exe), " +
-        "and make sure you have started the game at least once so it created a save.");
+      let msg = "No usable userdata0000 found inside \"" + root.name + "\" (looked at " + info.scanned + " items).";
+      if (info.capped) msg += " The search gave up because the folder is very large - pick the bbport-windows folder itself.";
+      if (info.wrongSize.length) msg += " Found file(s) of the wrong size: " + info.wrongSize.join("; ") + ".";
+      msg += " Pick the bbport-windows folder (the one with Bloodborne.exe), and start the game once so it creates a save.";
+      fail(msg);
       return;
     }
     const file = await found.fileHandle.getFile();
