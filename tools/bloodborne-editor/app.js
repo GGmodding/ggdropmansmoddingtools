@@ -10,36 +10,8 @@
   let saveHandle = null;   // FileSystemFileHandle of userdata0000, when found via folder
   const inputs = {};
 
-  const canPick = typeof window.showDirectoryPicker === "function";
-
   function setStatus(msg) { $("status").textContent = msg; }
   function fail(msg) { setStatus(msg); alert(msg); }
-
-  /* ---- remember the picked folder (IndexedDB) ---- */
-  function idb() {
-    return new Promise((resolve, reject) => {
-      const r = indexedDB.open("bb-editor", 1);
-      r.onupgradeneeded = () => r.result.createObjectStore("handles");
-      r.onsuccess = () => resolve(r.result);
-      r.onerror = () => reject(r.error);
-    });
-  }
-  async function rememberRoot(h) {
-    try {
-      const db = await idb();
-      db.transaction("handles", "readwrite").objectStore("handles").put(h, "root");
-    } catch (e) { /* remembering is optional */ }
-  }
-  async function recallRoot() {
-    try {
-      const db = await idb();
-      return await new Promise((resolve) => {
-        const q = db.transaction("handles").objectStore("handles").get("root");
-        q.onsuccess = () => resolve(q.result || null);
-        q.onerror = () => resolve(null);
-      });
-    } catch (e) { return null; }
-  }
 
   /* ---- form ---- */
   function currentValues() {
@@ -143,32 +115,51 @@
     saveHandle = found.fileHandle;
     rootHandle = root;
     if (loadBytes(bytes, "userdata0000", found.path)) {
-      await rememberRoot(root);
       setStatus("Found and loaded " + found.path + ". Close the game, edit, then Install to Save Folder.");
     }
   }
 
-  async function pickFolder() {
-    if (!canPick) { fail("Your browser can't open folders. Use Chrome or Edge, or use Load Save."); return; }
-    try {
-      const root = await window.showDirectoryPicker({ id: "bbport", mode: "readwrite" });
-      await searchIn(root);
-    } catch (e) {
-      if (e && e.name !== "AbortError") setStatus("Could not open the folder: " + e.message);
+  // Fallback for browsers without folder access: a plain folder chooser (read-only).
+  async function loadFromFolderInput(fileList) {
+    const files = Array.prototype.slice.call(fileList || []);
+    const cands = files.filter((f) => /(^|\/)userdata0000$/i.test(f.webkitRelativePath || f.name));
+    const good = cands.filter((f) => f.size === S.EXPECTED_SIZE);
+    if (!good.length) {
+      fail("No usable userdata0000 found in that folder (" + files.length + " files looked at" +
+        (cands.length ? "; found " + cands.length + " userdata0000 of the wrong size" : "") +
+        "). Pick the bbport-windows folder (the one with Bloodborne.exe).");
+      return;
+    }
+    good.sort((x, y) => {
+      const sx = /savedata/i.test(x.webkitRelativePath) ? 0 : 1, sy = /savedata/i.test(y.webkitRelativePath) ? 0 : 1;
+      return sx - sy || x.webkitRelativePath.length - y.webkitRelativePath.length;
+    });
+    saveHandle = null;
+    rootHandle = null;
+    const bytes = new Uint8Array(await good[0].arrayBuffer());
+    if (loadBytes(bytes, "userdata0000", good[0].webkitRelativePath)) {
+      setStatus("Found " + good[0].webkitRelativePath + ". This browser can't write back to the folder: use Download Edited Save, " +
+        "then replace the file yourself (Chrome or Edge can install directly).");
     }
   }
 
   async function findSave() {
-    if (!canPick) { fail("Your browser can't open folders. Use Chrome or Edge, or use Load Save."); return; }
-    const remembered = await recallRoot();
-    if (remembered) {
-      try {
-        let perm = await remembered.queryPermission({ mode: "readwrite" });
-        if (perm !== "granted") perm = await remembered.requestPermission({ mode: "readwrite" });
-        if (perm === "granted") { await searchIn(remembered); return; }
-      } catch (e) { /* fall through to the picker */ }
+    setStatus("Opening folder picker ...");
+    if (typeof window.showDirectoryPicker !== "function") {
+      setStatus("This browser can't open folders directly (" + (window.isSecureContext ? "no support" : "page not in a secure context") +
+        "). Using the basic folder chooser instead.");
+      $("folder-input").click();
+      return;
     }
-    await pickFolder();
+    try {
+      const root = await window.showDirectoryPicker({ id: "bbport", mode: "readwrite" });
+      await searchIn(root);
+    } catch (e) {
+      if (e && e.name === "AbortError") { setStatus("Folder picker cancelled."); return; }
+      setStatus("Folder picker failed (" + (e && e.name) + ": " + (e && e.message) + "). Using the basic folder chooser instead.");
+      alert("The browser refused direct folder access (" + (e && e.name) + "). I'll open the basic folder chooser instead.");
+      $("folder-input").click();
+    }
   }
 
   /* ---- saving ---- */
@@ -233,14 +224,9 @@
 
   function init() {
     buildFields();
-    if (!canPick) {
-      $("btn-find").disabled = true;
-      $("btn-pick").disabled = true;
-      $("btn-find").title = "Needs Chrome or Edge";
-    }
     $("file-input").addEventListener("change", (e) => { if (e.target.files[0]) loadFile(e.target.files[0]); e.target.value = ""; });
     $("btn-find").addEventListener("click", findSave);
-    $("btn-pick").addEventListener("click", pickFolder);
+    $("folder-input").addEventListener("change", (e) => { loadFromFolderInput(e.target.files); e.target.value = ""; });
     $("btn-install").addEventListener("click", install);
     for (const t of document.querySelectorAll(".tab")) t.addEventListener("click", () => showTab(t.dataset.tab));
 

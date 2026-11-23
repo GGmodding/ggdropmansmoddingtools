@@ -23,12 +23,12 @@
       </div>
     </a>
     <div class="topbar__actions">
+      <input id="folder-input" type="file" webkitdirectory multiple hidden />
       <label class="btn btn--primary">
         Load Save
         <input id="file-input" type="file" accept="*/*" />
       </label>
       <button id="btn-find" class="btn" type="button">Find Save</button>
-      <button id="btn-pick" class="btn" type="button">Pick Folder</button>
       <button id="btn-backup" class="btn" type="button" disabled>Download Backup</button>
       <button id="btn-save" class="btn" type="button" disabled>Download Edited Save</button>
       <button id="btn-install" class="btn btn--accent" type="button" disabled>Install to Save Folder</button>
@@ -39,8 +39,8 @@
   <section class="path-banner">
     <strong>bbport saves</strong>
     <span>Click <b>Find Save</b> and pick your <code>bbport-windows</code> folder (the one containing <code>Bloodborne.exe</code>);
-      the editor searches inside it for <code>userdata0000</code> and remembers the folder. Chrome or Edge needed for that;
-      otherwise use <b>Load Save</b>. Everything runs in your browser and nothing is uploaded. Close the game first.</span>
+      the editor searches inside it for <code>userdata0000</code>. In Chrome or Edge it can also install the edited save straight back;
+      in other browsers it loads the save and you download the edited file. Everything runs in your browser and nothing is uploaded. Close the game first.</span>
   </section>
 
   <nav class="tabs" id="tabs" aria-label="Editor sections" hidden>
