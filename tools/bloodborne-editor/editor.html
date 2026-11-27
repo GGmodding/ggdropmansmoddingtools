@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Cinzel:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=8" />
+  <link rel="stylesheet" href="styles.css?v=11" />
 </head>
 <body>
   <div id="drop-overlay" class="drop-overlay" hidden>
@@ -78,20 +78,22 @@
       </div>
       <div class="callout callout--warn">
         Stack counts of items you own can be changed (1 to 99); the game may cap some items at its own maximum. New
-        consumables / key items can be added below (tested in-game). Adding weapons and armor is experimental and
-        untested in-game: try it on a copy first. Always keep a backup.
+        consumables / key items can be added below (tested in-game). The game will not show brand-new weapons or armor
+        inserted into a save, so weapons and armor work by <b>changing one you already own</b>: pick any spare weapon or
+        armor piece in the table and type what it should become in its "change into" box. Own a few cheap spare weapons
+        first (buy some in the Hunter's Dream), then turn them into the ones you want. Weapon-to-weapon and
+        armor-to-armor only. Always keep a backup.
       </div>
       <div class="toolbar">
         <label>Add item
           <select id="add-kind">
             <option value="goods">Consumable / key item</option>
-            <option value="weapon">Weapon (experimental)</option>
-            <option value="armor">Armor (experimental)</option>
           </select>
         </label>
         <label>Name
           <input id="add-item" type="text" list="add-list" placeholder="start typing a name..." autocomplete="off" />
           <datalist id="add-list"></datalist>
+          <datalist id="swap-list-weapon"></datalist><datalist id="swap-list-armor"></datalist>
         </label>
         <label>Count
           <input id="add-count" type="number" min="1" max="99" step="1" value="1" style="width:5rem" />
@@ -106,7 +108,7 @@
       </div>
       <div class="table-wrap">
         <table class="data-table" id="inv-table">
-          <thead><tr><th>Slot</th><th>Item</th><th>Type</th><th>ID</th><th>Count</th></tr></thead>
+          <thead><tr><th>Slot</th><th>Item</th><th>Type</th><th>ID</th><th>Count</th><th>Change into (weapons / armor)</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -136,10 +138,11 @@
 
   <footer class="status-bar" id="status">Ready - load userdata0000.</footer>
 
-  <script src="items.js?v=8"></script>
-  <script src="weapon-templates.js?v=8"></script>
-  <script src="save.js?v=8"></script>
+  <script src="items.js?v=11"></script>
+  <script src="weapon-templates.js?v=11"></script>
+  <script src="valid-ids.js?v=11"></script>
+  <script src="save.js?v=11"></script>
   <script src="../shared/donate.js"></script>
-  <script src="app.js?v=8"></script>
+  <script src="app.js?v=11"></script>
 </body>
 </html>

@@ -11,6 +11,8 @@
   const inputs = {};
   let loadedInv = [];      // inventory records as loaded
   const invInputs = {};    // slot -> count <input> (stackable goods only)
+  const swapInputs = {};   // slot -> 'change into' <input> (weapons and armor)
+  const NO_SWAP = new Set([1000000, 1000]); // bare fists / hunter's pocket slots: leave alone
   let pendingAdds = [];    // [{ kind, baseId, name, count }] new items to append on save
   const ITEMS = window.BBItems || { goods: [], weapons: [], armor: [] };
   const NAMES = { goods: new Map(ITEMS.goods), weapon: new Map(ITEMS.weapons), armor: new Map(ITEMS.armor) };
@@ -86,16 +88,46 @@
     }
     return c;
   }
-  function invDirty() { return Object.keys(invCounts()).length > 0 || pendingAdds.length > 0; }
+  // slot -> { baseId, name } for every weapon/armor row whose "change into" box names one valid item
+  function resolveSwap(r, txt) {
+    txt = (txt || "").trim().toLowerCase();
+    if (!txt) return null;
+    const list = KIND_LIST[r.type]();
+    let hit = list.find((g) => (g[1] + " (" + g[0] + ")").toLowerCase() === txt);
+    if (!hit) { const m = list.filter((g) => g[1].toLowerCase().indexOf(txt) >= 0); if (m.length === 1) hit = m[0]; }
+    return hit ? { baseId: hit[0], name: hit[1] } : null;
+  }
+  function invSwaps() {
+    const out = [];
+    for (const r of loadedInv) {
+      const inp = swapInputs[r.slot];
+      if (!inp) continue;
+      const hit = resolveSwap(r, inp.value);
+      if (hit && hit.baseId !== r.baseId) out.push({ slot: r.slot, baseId: hit.baseId, name: hit.name });
+    }
+    return out;
+  }
+  function invDirty() { return Object.keys(invCounts()).length > 0 || pendingAdds.length > 0 || invSwaps().length > 0; }
 
   function buildEdited() {
     let out = S.applyInventory(S.applyFields(original, currentValues()), invCounts());
+    for (const w of invSwaps()) out = S.replaceItem(out, w.slot, w.baseId);
     for (const p of pendingAdds) out = S.addItem(out, p.kind, p.baseId, p.count);
     return out;
   }
 
   /* ---- adding new items ---- */
-  const KIND_LIST = { goods: () => ITEMS.goods, weapon: () => ITEMS.weapons, armor: () => ITEMS.armor };
+  const VALID = window.BBValid || null;
+  function onlyValid(list, key) {
+    if (!VALID || !VALID[key]) return list;
+    const s = new Set(VALID[key]);
+    return list.filter((g) => s.has(g[0]));
+  }
+  const KIND_LIST = {
+    goods: () => onlyValid(ITEMS.goods, "goods"),
+    weapon: () => onlyValid(ITEMS.weapons, "weapon"),
+    armor: () => onlyValid(ITEMS.armor, "armor"),
+  };
   function addKind() { return $("add-kind").value; }
   function ownedGoodsIds() {
     const s = new Set();
@@ -153,6 +185,7 @@
     const body = $("inv-table").querySelector("tbody");
     body.innerHTML = "";
     for (const k of Object.keys(invInputs)) delete invInputs[k];
+    for (const k of Object.keys(swapInputs)) delete swapInputs[k];
     for (const r of loadedInv) {
       const tr = document.createElement("tr");
       tr.dataset.search = (itemName(r) + " " + r.type + " " + r.baseId).toLowerCase();
@@ -174,7 +207,26 @@
         td.textContent = r.count;
       }
       tr.appendChild(td);
+      const td2 = document.createElement("td");
+      if ((r.type === "weapon" || r.type === "armor") && !NO_SWAP.has(r.baseId)) {
+        const inp = document.createElement("input");
+        inp.type = "text";
+        inp.setAttribute("list", "swap-list-" + r.type);
+        inp.placeholder = "change into...";
+        inp.autocomplete = "off";
+        inp.style.width = "14rem";
+        inp.addEventListener("input", markDirty);
+        swapInputs[r.slot] = inp;
+        td2.appendChild(inp);
+      }
+      tr.appendChild(td2);
       body.appendChild(tr);
+    }
+    for (const kind of ["weapon", "armor"]) {
+      const dl = $("swap-list-" + kind);
+      if (!dl) continue;
+      dl.innerHTML = "";
+      for (const g of KIND_LIST[kind]()) { const o = document.createElement("option"); o.value = g[1] + " (" + g[0] + ")"; dl.appendChild(o); }
     }
     $("inv-summary").textContent = loadedInv.length + " items found in the main inventory table.";
     refreshAddList();
