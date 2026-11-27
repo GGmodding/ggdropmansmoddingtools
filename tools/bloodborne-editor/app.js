@@ -36,7 +36,7 @@
   function buildFields() {
     const host = $("fields");
     host.innerHTML = "";
-    for (const [g, title] of [["main", "Progress"], ["stat", "Attributes"]]) {
+    for (const [g, title] of [["main", "Progress"], ["stat", "Attributes"], ["vitals", "Health & Stamina (experimental)"]]) {
       const h = document.createElement("div");
       h.className = "bb-section-title";
       h.textContent = title;

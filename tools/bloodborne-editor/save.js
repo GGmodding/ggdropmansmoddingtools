@@ -17,6 +17,9 @@
     { id: "skill", label: "Skill", rel: -72, min: 1, max: 99, group: "stat" },
     { id: "bloodtinge", label: "Bloodtinge", rel: -64, min: 1, max: 99, group: "stat" },
     { id: "arcane", label: "Arcane", rel: -56, min: 1, max: 99, group: "stat" },
+    // HP and stamina are stored three times in a row (same value each time); all three are written together.
+    { id: "hp", label: "HP", rel: -148, copies: 3, min: 1, max: 99999, group: "vitals" },
+    { id: "stamina", label: "Stamina", rel: -120, copies: 3, min: 1, max: 9999, group: "vitals" },
   ];
   const STAT_IDS = FIELDS.filter((f) => f.group === "stat").map((f) => f.id);
 
@@ -116,7 +119,7 @@
       const n = Math.trunc(Number(values[f.id]));
       if (!Number.isFinite(n)) throw new Error(f.label + " is not a number.");
       if (n < -2147483648 || n > 2147483647) throw new Error(f.label + " is out of range.");
-      v.setInt32(base + f.rel, n, true);
+      for (let k = 0; k < (f.copies || 1); k++) v.setInt32(base + f.rel + k * 4, n, true);
     }
     return copy;
   }
